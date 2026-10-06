@@ -1,0 +1,12 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+.env
+.env.*
+!.env.example
+.sites-runtime/
+tmp/
+docs/screenshots/redesign/*-390*.png
+docs/screenshots/redesign/launched-browser.png
+docs/screenshots/redesign/gallery-opened.png

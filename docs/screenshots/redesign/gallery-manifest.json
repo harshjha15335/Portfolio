@@ -1,0 +1,290 @@
+[
+  {
+    "file": "overview-1440-1.png",
+    "label": "PC overview / screens 1–9",
+    "group": "overview",
+    "width": 1440
+  },
+  {
+    "file": "overview-1440-2.png",
+    "label": "PC overview / screens 10–15",
+    "group": "overview",
+    "width": 1440
+  },
+  {
+    "file": "home-1440.png",
+    "label": "Home",
+    "group": "screen",
+    "width": 1440
+  },
+  {
+    "file": "world-1440.png",
+    "label": "Driving world",
+    "group": "screen",
+    "width": 1440
+  },
+  {
+    "file": "map-1440.png",
+    "label": "Directory / map",
+    "group": "screen",
+    "width": 1440
+  },
+  {
+    "file": "about-1440.png",
+    "label": "About / career",
+    "group": "screen",
+    "width": 1440
+  },
+  {
+    "file": "quick-1440.png",
+    "label": "Quick View",
+    "group": "screen",
+    "width": 1440
+  },
+  {
+    "file": "quick-full-1440.png",
+    "label": "Quick View / complete page",
+    "group": "full-page",
+    "width": 1440
+  },
+  {
+    "file": "quick-work-1440.png",
+    "label": "Selected work",
+    "group": "section",
+    "width": 1440
+  },
+  {
+    "file": "quick-experience-1440.png",
+    "label": "Experience",
+    "group": "section",
+    "width": 1440
+  },
+  {
+    "file": "quick-skills-1440.png",
+    "label": "Skills",
+    "group": "section",
+    "width": 1440
+  },
+  {
+    "file": "quick-footer-1440.png",
+    "label": "Contact footer",
+    "group": "section",
+    "width": 1440
+  },
+  {
+    "file": "contact-1440.png",
+    "label": "Contact",
+    "group": "screen",
+    "width": 1440
+  },
+  {
+    "file": "palette-1440.png",
+    "label": "Command palette",
+    "group": "screen",
+    "width": 1440
+  },
+  {
+    "file": "ffprime-1440.png",
+    "label": "FFprime",
+    "group": "screen",
+    "width": 1440
+  },
+  {
+    "file": "ffprime-details-1440.png",
+    "label": "FFprime / evidence and links",
+    "group": "case-details",
+    "width": 1440
+  },
+  {
+    "file": "northstar-1440.png",
+    "label": "NORTHSTAR",
+    "group": "screen",
+    "width": 1440
+  },
+  {
+    "file": "northstar-details-1440.png",
+    "label": "NORTHSTAR / evidence and links",
+    "group": "case-details",
+    "width": 1440
+  },
+  {
+    "file": "reco-1440.png",
+    "label": "RECO",
+    "group": "screen",
+    "width": 1440
+  },
+  {
+    "file": "reco-details-1440.png",
+    "label": "RECO / evidence and links",
+    "group": "case-details",
+    "width": 1440
+  },
+  {
+    "file": "moneymetrics-1440.png",
+    "label": "MoneyMetrics",
+    "group": "screen",
+    "width": 1440
+  },
+  {
+    "file": "moneymetrics-details-1440.png",
+    "label": "MoneyMetrics / evidence and links",
+    "group": "case-details",
+    "width": 1440
+  },
+  {
+    "file": "meeting-intelligence-1440.png",
+    "label": "Meeting Intelligence",
+    "group": "screen",
+    "width": 1440
+  },
+  {
+    "file": "meeting-intelligence-details-1440.png",
+    "label": "Meeting Intelligence / evidence and links",
+    "group": "case-details",
+    "width": 1440
+  },
+  {
+    "file": "rideflow-1440.png",
+    "label": "RideFlow",
+    "group": "screen",
+    "width": 1440
+  },
+  {
+    "file": "rideflow-details-1440.png",
+    "label": "RideFlow / evidence and links",
+    "group": "case-details",
+    "width": 1440
+  },
+  {
+    "file": "diagnostics-1440.png",
+    "label": "Engine controls / diagnostics",
+    "group": "screen",
+    "width": 1440
+  },
+  {
+    "file": "menu-1440.png",
+    "label": "World menu",
+    "group": "screen",
+    "width": 1440
+  },
+  {
+    "file": "world-ffprime-1440.png",
+    "label": "FFprime / world landmark",
+    "group": "world-zone",
+    "width": 1440
+  },
+  {
+    "file": "world-northstar-1440.png",
+    "label": "NORTHSTAR / world landmark",
+    "group": "world-zone",
+    "width": 1440
+  },
+  {
+    "file": "world-reco-1440.png",
+    "label": "RECO / world landmark",
+    "group": "world-zone",
+    "width": 1440
+  },
+  {
+    "file": "world-moneymetrics-1440.png",
+    "label": "MoneyMetrics / world landmark",
+    "group": "world-zone",
+    "width": 1440
+  },
+  {
+    "file": "home-1920.png",
+    "label": "Home",
+    "group": "screen",
+    "width": 1920
+  },
+  {
+    "file": "world-1920.png",
+    "label": "Driving world",
+    "group": "screen",
+    "width": 1920
+  },
+  {
+    "file": "map-1920.png",
+    "label": "Directory / map",
+    "group": "screen",
+    "width": 1920
+  },
+  {
+    "file": "about-1920.png",
+    "label": "About / career",
+    "group": "screen",
+    "width": 1920
+  },
+  {
+    "file": "quick-1920.png",
+    "label": "Quick View",
+    "group": "screen",
+    "width": 1920
+  },
+  {
+    "file": "quick-full-1920.png",
+    "label": "Quick View / complete page",
+    "group": "full-page",
+    "width": 1920
+  },
+  {
+    "file": "contact-1920.png",
+    "label": "Contact",
+    "group": "screen",
+    "width": 1920
+  },
+  {
+    "file": "palette-1920.png",
+    "label": "Command palette",
+    "group": "screen",
+    "width": 1920
+  },
+  {
+    "file": "ffprime-1920.png",
+    "label": "FFprime",
+    "group": "screen",
+    "width": 1920
+  },
+  {
+    "file": "northstar-1920.png",
+    "label": "NORTHSTAR",
+    "group": "screen",
+    "width": 1920
+  },
+  {
+    "file": "reco-1920.png",
+    "label": "RECO",
+    "group": "screen",
+    "width": 1920
+  },
+  {
+    "file": "moneymetrics-1920.png",
+    "label": "MoneyMetrics",
+    "group": "screen",
+    "width": 1920
+  },
+  {
+    "file": "meeting-intelligence-1920.png",
+    "label": "Meeting Intelligence",
+    "group": "screen",
+    "width": 1920
+  },
+  {
+    "file": "rideflow-1920.png",
+    "label": "RideFlow",
+    "group": "screen",
+    "width": 1920
+  },
+  {
+    "file": "diagnostics-1920.png",
+    "label": "Engine controls / diagnostics",
+    "group": "screen",
+    "width": 1920
+  },
+  {
+    "file": "menu-1920.png",
+    "label": "World menu",
+    "group": "screen",
+    "width": 1920
+  }
+]
