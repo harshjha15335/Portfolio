@@ -1,0 +1,145 @@
+/* Ticket typography, warm city surfaces, and a graphic sea-blue frame. */
+.mode-world .header { background:#283c41; color:#f3e5c7; border-color:#f3e5c744; }
+.mode-world .world-title { background:#f3e5c7ed; border-left:5px solid #cb633e; max-width:280px; }
+.mode-world .world-title h1 { font-size:40px; }
+.mode-world .world-title p { max-width:230px; }
+.mode-world .destination-rail { width:216px; max-height:49vh; overflow:auto; background:#f3e5c7ed; }
+.mode-world .destination-rail button { font-size:11px; padding:10px 0; }
+.mode-world .world-bottom { background:#f3e5c7f5; border-color:#283c41; left:20px; right:20px; }
+.mode-world .proximity-prompt { background:#f3e5c7; border-color:#283c41; max-width:430px; }
+.city-transport-actions { position:absolute; left:3.2%; top:215px; display:flex; flex-wrap:wrap; gap:8px; width:250px; }
+.city-transport-actions .caption { width:100%; color:#283c41; }
+.city-transport-actions button { background:#f9c847; border:1px solid #283c41; padding:11px 15px; font:10px var(--mono); }
+.city-transport-actions button:disabled { opacity:.45; }
+.city-transport-actions button:hover { background:#fff0be; }
+.ride-meter { position:absolute; left:3.2%; top:275px; width:280px; max-height:calc(100dvh - 390px); overflow:auto; padding:16px; color:#f0e4c9; background:#283536; border:3px solid #f9c847; box-shadow:5px 5px 0 #28353644; pointer-events:auto; }
+.meter-top { display:flex; justify-content:space-between; align-items:center; gap:8px; font:8px var(--mono); }
+.meter-top button { font-size:20px; padding:0 3px; }
+.meter-face { padding:12px 15px; margin:12px 0; color:#d6ff9a; border:1px solid #708076; background:#172021; }
+.meter-face .caption { color:#d6ff9a; }
+.meter-face strong { display:block; font:42px/1.3 var(--mono); font-variant-numeric:tabular-nums; letter-spacing:-.05em; }
+.meter-face > span:last-child { font:7px var(--mono); }
+.ride-meter p { font-size:12px; margin:10px 0; }
+.ride-destination { display:block; font:9px var(--mono); }
+.ride-destination select { display:block; width:100%; padding:12px 8px; margin-top:8px; background:#f3e5c7; color:#283536; border:1px solid #f3e5c7; font:11px var(--body); }
+.ride-meter .primary-button { background:#f9c847; color:#283536; border-color:#f9c847; padding:12px 10px; width:100%; font-size:9px; margin-top:12px; gap:5px; }
+.meter-readings { display:flex; justify-content:space-between; gap:8px; font:8px var(--mono); }
+.ride-meter progress { display:block; width:100%; height:5px; margin-top:12px; accent-color:#f9c847; }
+.ride-destination-name { font-weight:700; }
+.city-map-modal { width:min(1080px,94vw); background:#f3e5c7; }
+.city-map-heading h2 { font:600 clamp(44px,5vw,76px)/1 var(--display); margin:10px 0; }
+.city-map-heading p { max-width:590px; font-size:13px; }
+.city-map-layout { display:grid; grid-template-columns:1fr 1fr; gap:36px; margin-top:28px; align-items:start; }
+.city-map-graphic { position:sticky; top:0; aspect-ratio:1; background:#5c99a8; overflow:hidden; border:1px solid #283c41; }
+.city-map-graphic svg { width:100%; height:100%; }
+.map-sea { fill:#5c99a8; }.map-land { fill:#e2cfad; }.map-loop { fill:none; stroke:#344147; stroke-width:4; }.map-cross { stroke:#344147; stroke-width:2; }
+.map-sea-label { position:absolute; left:9px; bottom:9px; font:7px/1.6 var(--mono); color:#f3e5c7; }
+.city-map-stop { position:absolute; transform:translate(-50%,-50%); border:1px solid #f3e5c7; color:#fff9e8; padding:5px 9px; min-width:52px; box-shadow:2px 2px 0 #283c4144; }
+.city-map-stop:hover { transform:translate(-50%,-50%) scale(1.08); z-index:2; }
+.city-map-stop b { font:18px/1 var(--display); }.city-map-stop span { display:block; font:8px var(--mono); }
+.map-you { position:absolute; transform:translate(-50%,-50%); color:#f9c847; text-shadow:0 1px 2px #000; font-size:18px; pointer-events:none; z-index:3; }
+.map-you small { display:block; text-align:center; font:7px var(--mono); }
+.transport-choice { display:flex; border:1px solid #283c41; margin-bottom:10px; }
+.transport-choice button { flex:1; padding:9px; font:10px var(--mono); }
+.transport-choice button[aria-pressed=true] { background:#283c41; color:#f9c847; }
+.city-directory article { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; border-top:1px solid #283c4144; padding:10px 0; gap:5px; }
+.city-directory article > button { display:flex; gap:12px; text-align:left; padding:0; }
+.district-number { font:30px/1 var(--display); }
+.city-directory strong { display:block; font-size:12px; }.city-directory small { display:block; font-size:9px; color:var(--muted); }
+.city-directory article > div { display:flex; gap:10px; margin-left:38px; }
+.city-directory article > div button { font:9px var(--mono); padding:4px 0; border-bottom:1px solid currentColor; }
+.city-directory > .caption { margin-top:16px; font-size:7px; }
+.district-modal { width:min(960px,94vw); background:#f3e5c7; }
+.district-heading { border-left:5px solid var(--district-color); padding:18px 24px; background:#e9dac0; }
+.district-heading h2 { font:600 clamp(42px,5.5vw,76px)/.95 var(--display); margin:10px 0; max-width:680px; }
+.district-heading p { font-size:13px; color:#455758; }
+.guide-dialogue { display:flex; gap:20px; padding:25px 0; border-bottom:1px solid #283c4144; }
+.guide-avatar { flex:0 0 60px; align-self:start; width:60px; height:60px; border:1px solid #283c41; border-radius:50%; background:#f9c847; display:grid; place-items:center; font-size:36px; }
+.guide-dialogue p { font-size:16px; max-width:610px; margin-top:8px; }
+.guide-actions { display:flex; align-items:center; gap:20px; margin-top:16px; flex-wrap:wrap; }
+.guide-actions .primary-button { font-size:9px; padding:12px 15px; }
+.district-content { padding-top:28px; }
+.district-content h3 { font:600 clamp(25px,3vw,40px)/1.1 var(--display); margin-bottom:12px; }
+.district-content p { font-size:14px; max-width:740px; margin:12px 0; }
+.district-content ul { padding-left:20px; font-size:14px; line-height:1.8; }
+.district-content .primary-button { margin-top:16px; }
+.district-stop-list { display:grid; grid-template-columns:1fr 1fr; margin:20px 0; border-top:1px solid #283c41; }
+.district-stop-list button { padding:15px 8px; text-align:left; border-bottom:1px solid #283c4144; display:flex; justify-content:space-between; gap:8px; font-size:13px; }
+.district-metrics { display:flex; flex-wrap:wrap; gap:22px; padding:20px 0; }
+.district-metrics a { min-width:120px; flex:1; border-top:2px solid #283c41; padding-top:15px; }
+.district-metrics strong { display:block; font:600 56px/1 var(--display); }
+.district-metrics span { display:block; font:9px/1.5 var(--mono); margin-top:8px; max-width:200px; }
+.system-route { display:flex; flex-wrap:wrap; gap:15px; align-items:center; margin:28px 0; }
+.system-route span { padding:18px; background:#537b9a; color:#fff; font:11px var(--mono); }
+.bazaar-stalls { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:20px 0; }
+.bazaar-stalls section { border:1px solid #bdb29b; padding:16px; background:#ecdbb8; }
+.bazaar-stalls section > div { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.bazaar-stalls button { border:1px solid #283c41; padding:6px 9px; font-size:11px; }
+.bazaar-stalls button[aria-pressed=true] { background:#283c41; color:#f9c847; }
+.bazaar-evidence { padding:20px; border:1px solid #283c41; background:#eee5d1; }
+.bazaar-evidence > button { display:block; text-align:left; width:100%; font:600 32px var(--display); padding:15px 0; border-top:1px solid #283c4144; }
+.bazaar-evidence small { display:block; font:12px/1.5 var(--body); margin:8px 0; }.bazaar-evidence button span { font:9px var(--mono); }
+.district-projects { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.district-projects article { border-top:3px solid #5f7850; padding:20px 0; }
+.district-projects h3 { margin-top:15px; }
+.district-projects .architecture-strip { font:9px/1.6 var(--mono); background:#e9dac0; padding:12px; }
+.district-projects .primary-button { padding:12px; font-size:9px; gap:8px; }
+.journey-platforms article { display:flex; gap:24px; padding:24px 0; border-top:1px solid #283c4144; }
+.journey-platforms article > b { font:600 50px/1 var(--display); color:#b65442; }
+.journey-platforms h3 { margin-top:10px; }
+.signal-evidence { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.signal-evidence article { padding:20px 0; border-top:1px solid #283c41; }
+.signal-evidence a { font:10px var(--mono); border-bottom:1px solid currentColor; }
+.talkies { position:relative; padding:34px 24px 24px; background:#20272b; color:#f3e5c7; overflow:hidden; }
+.projector-beam { position:absolute; inset:0; background:linear-gradient(160deg,transparent 10%,#f3e5c712 45%,transparent 65%); pointer-events:none; }
+.cinema-screen { position:relative; padding:34px; min-height:320px; background:#eee0c4; color:#283c41; border:8px solid #11191d; box-shadow:0 0 30px #f3e5c711; }
+.cinema-screen h3 { font-size:clamp(30px,4vw,60px); max-width:600px; margin:45px 0 22px; }
+.cinema-screen p { font-size:14px; }.cinema-screen .caption { font-size:8px; }
+.scene-number { position:absolute; right:20px; top:10px; font:600 55px var(--display); color:#8a4e68; }
+.cinema-seats { font-size:40px; letter-spacing:12px; text-align:center; color:#9f574e; white-space:nowrap; margin:15px -20px 0; }
+.theatre-controls { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid #f3e5c755; padding:16px 0; }
+.theatre-controls button { font:9px var(--mono); color:#f3e5c7; padding:8px 0; border-bottom:1px solid currentColor; }
+.theatre-controls button:disabled { opacity:.3; cursor:default; }.theatre-controls > span { font:8px var(--mono); }
+.scene-selector { display:flex; justify-content:center; flex-wrap:wrap; gap:6px; }
+.scene-selector button { font:9px var(--mono); padding:8px; border:1px solid #f3e5c744; }
+.scene-selector button[aria-current] { background:#f9c847; color:#283c41; }
+.talkies > .caption { color:#cdbda3; font-size:7px; margin-top:18px; text-align:center; }
+.home-car-sticker svg { filter:drop-shadow(5px 8px 0 #08080822); }
+.home-city-ticket { position:absolute; left:6%; top:44%; transform:rotate(-7deg); background:#f9c847; padding:12px 20px; border:1px dashed #283c41; font:11px var(--mono); }
+.home-city-ticket strong { display:block; font:600 33px/1 var(--display); }
+.home-city-ticket small { font:8px var(--mono); display:block; margin-top:5px; }
+@media (max-width:1100px) {
+  .world-bottom nav { gap:12px; }.world-bottom { gap:10px; padding:0 12px; }
+  .controls { gap:9px; }.controls kbd { padding:2px 3px; }
+  .world-bottom nav > button:nth-child(2),.world-bottom nav > button:nth-child(3) { display:none; }
+}
+@media (max-width:760px) {
+  .mode-world .world-title { left:12px; top:15px; padding:12px; max-width:240px; }
+  .mode-world .world-title h1 { font-size:30px; }.mode-world .world-title p { font-size:10px; }
+  .mode-world .destination-rail { display:none; }
+  .city-transport-actions { left:12px; top:158px; width:230px; }
+  .city-transport-actions button { font-size:9px; padding:9px 12px; }
+  .ride-meter { left:12px; top:208px; width:255px; max-height:calc(100dvh - 352px); padding:12px; }
+  .mode-world .world-bottom { left:12px; right:12px; height:65px; padding:0 10px; }
+  .world-bottom .controls > span { font-size:7px; }.world-bottom .speed-readout { display:none; }
+  .world-bottom nav button { font-size:9px; }.mode-world .proximity-prompt { min-width:0; width:calc(100% - 24px); bottom:80px; padding:12px; gap:10px; }
+  .proximity-prompt strong { font-size:11px; }.proximity-prompt small { font-size:10px; }
+  .city-map-modal,.district-modal { padding:18px!important; }
+  .city-map-layout { grid-template-columns:1fr; gap:20px; }
+  .city-map-graphic { position:relative; }
+  .city-map-heading h2 { font-size:46px; }.city-map-heading p { font-size:12px; }
+  .district-heading { padding:15px; }.district-heading h2 { font-size:43px; }
+  .guide-dialogue { gap:12px; }.guide-avatar { flex-basis:40px; width:40px; height:40px; font-size:28px; }
+  .guide-dialogue p { font-size:13px; }.guide-actions { gap:10px; }
+  .district-stop-list,.bazaar-stalls,.district-projects,.signal-evidence { grid-template-columns:1fr; }
+  .district-metrics { gap:16px; }.district-metrics strong { font-size:43px; }
+  .talkies { padding:18px 12px; }.cinema-screen { padding:18px; min-height:350px; border-width:5px; }
+  .cinema-screen h3 { margin-top:50px; font-size:35px; }.cinema-screen p { font-size:12px; }
+  .scene-number { font-size:45px; }.scene-selector { gap:3px; }.scene-selector button { padding:7px; }
+  .home-city-ticket { top:43%; left:6%; padding:8px 12px; }.home-city-ticket strong { font-size:23px; }
+}
+@media (max-height:650px) and (min-width:761px) {
+  .ride-meter { left:calc(50% - 140px); top:25px; max-height:calc(100dvh - 185px); }
+  .home-city-ticket { display:none; }
+}
+@media (prefers-reduced-motion:reduce) { .city-map-stop { transition:none; } }

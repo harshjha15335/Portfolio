@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { projects } from '../../data/projects';
+import { districts } from '../../data/city';
+import { createTransitModel } from './TransitModel';
+import { ringPoint } from './transit';
 
 export interface Landmark { id: string; title: string; position: [number, number, number]; color: string }
 
@@ -9,6 +12,7 @@ type Triple = [number, number, number];
 
 /** Workshop arrivals use the front road, clear of the preserved jump ramps. */
 export function landmarkArrival(landmark: Landmark) {
+  if (landmark.id === 'cst') return { x: 0, z: -10, heading: 0, direction: new THREE.Vector3(0, 0, -1) };
   const direction = landmark.id === 'garage' || landmark.id === 'about'
     ? new THREE.Vector3(0, 0, -1)
     : new THREE.Vector3(-landmark.position[0], 0, -landmark.position[2]).normalize();
@@ -29,9 +33,12 @@ export class Campus {
 
   constructor(private physics: CANNON.World, readonly landmarks: Landmark[]) {
     this.buildLandscape();
-    this.buildHub();
-    landmarks.forEach(landmark => this.buildLandmark(landmark));
-    this.buildPlayground();
+    if (landmarks.some(item => item.id === 'cst')) this.buildCity();
+    else {
+      this.buildHub();
+      landmarks.forEach(landmark => this.buildLandmark(landmark));
+      this.buildPlayground();
+    }
     this.instanceStatics();
   }
 
@@ -110,7 +117,7 @@ export class Campus {
   }
 
   private buildLandscape() {
-    const slab = new THREE.Mesh(new THREE.CylinderGeometry(57, 55, 3.1, 8), this.material(BLUE));
+    const slab = new THREE.Mesh(new THREE.CylinderGeometry(57, 55, 3.1, 8), this.material(this.landmarks.some(item => item.id === 'cst') ? '#e2cfad' : BLUE));
     slab.position.y = -1.55; slab.rotation.y = Math.PI / 8; slab.receiveShadow = true; this.group.add(slab);
     const ground = new CANNON.Body({ mass: 0, shape: new CANNON.Plane(), collisionFilterGroup: 1 });
     ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0); ground.aabbNeedsUpdate = true; this.physics.addBody(ground);
@@ -125,10 +132,10 @@ export class Campus {
       this.box(this.group, [1.6, 0.01, 0.09], [index * 5.6, 0.047, 0], PAPER);
     }
     const roads: Array<[string, string, Triple, number]> = [
-      ['01 / FFPRIME', 'RESEARCH ↑', [0, 0.055, -18], 0],
-      ['02 / NORTHSTAR', 'SYSTEMS ↑', [18, 0.055, 0], -Math.PI / 2],
-      ['03 / RECO', 'DECISIONS ↑', [0, 0.055, 18], Math.PI],
-      ['04 / MONEYMETRICS', 'PRODUCTS ↑', [-18, 0.055, 0], Math.PI / 2],
+      [this.landmarks.some(l => l.id === 'cst') ? 'FORT / LABS' : '01 / FFPRIME', 'RESEARCH ↑', [0, 0.055, -18], 0],
+      [this.landmarks.some(l => l.id === 'cst') ? 'BKC / SYSTEMS' : '02 / NORTHSTAR', 'SYSTEMS ↑', [18, 0.055, 0], -Math.PI / 2],
+      [this.landmarks.some(l => l.id === 'cst') ? 'DADAR / JOURNEY' : '03 / RECO', 'JOURNEY ↑', [0, 0.055, 18], Math.PI],
+      [this.landmarks.some(l => l.id === 'cst') ? 'ANDHERI / SKILLS' : '04 / MONEYMETRICS', 'SKILLS ↑', [-18, 0.055, 0], Math.PI / 2],
     ];
     roads.forEach(([name, sub, pos, rotation]) => { const label = this.label(this.group, name, sub, pos, 6.8, INK, PAPER, true); label.rotation.z = rotation; });
     for (let index = 0; index < 32; index++) {
@@ -385,6 +392,191 @@ export class Campus {
     // Blueprint pad in a quiet quadrant: an intentional pause between dense landmarks.
     this.label(this.group, '01 → 02 → 03 → 04', 'RESEARCH / SYSTEMS / DECISIONS / PRODUCTS', [-19, 0.025, -21], 12, BLUE, PAPER, true).rotation.z = -0.12;
     for (const x of [-26, -11]) this.box(this.group, [0.18, 0.045, 10], [x, 0.023, -21], PAPER);
+  }
+
+  private buildCity() {
+    const sea = new THREE.Mesh(new THREE.CircleGeometry(125, 64), this.material('#5c99a8'));
+    sea.rotation.x = -Math.PI / 2; sea.position.y = -3.2; this.group.add(sea);
+    const lane = new THREE.Mesh(new THREE.RingGeometry(18.5, 23.5, 96), this.material('#343c40'));
+    lane.rotation.x = -Math.PI / 2; lane.position.y = 0.06; this.group.add(lane);
+    const promenade = new THREE.Mesh(new THREE.RingGeometry(41.5, 46, 96), this.material('#e9dfc5'));
+    promenade.rotation.x = -Math.PI / 2; promenade.position.y = 0.05; this.group.add(promenade);
+    for (let i = 0; i < 48; i++) {
+      const a = i / 48 * Math.PI * 2, p = ringPoint(a);
+      this.box(this.group, [0.1, 0.014, 0.9], [p.x, 0.085, p.z], '#f9c847', false, [0, a, 0]);
+      if (i % 2 === 0) {
+        const lamp = ringPoint(a, 44.5);
+        this.cylinder(this.group, 0.09, 2.8, [lamp.x, 1.4, lamp.z], '#343c40');
+        this.sphere(this.group, 0.24, [lamp.x, 2.9, lamp.z], '#ffe9a6');
+      }
+    }
+    this.label(this.group, 'MARINE WALK', 'A SMALL CITY / A LONG STORY', [-30, 0.09, 34], 10, '#e9dfc5', INK, true).rotation.z = -0.6;
+    this.label(this.group, 'NO RUSH. NO REAL FARE.', 'CATCH A TAXI / FIND YOUR NEXT STOP', [0, 0.08, 10], 8, '#e2cfad', INK, true);
+    // Density is concentrated behind destinations; every arrival and transit lane stays clear.
+    for (let i = 0; i < 24; i++) {
+      const a = i / 24 * Math.PI * 2 + 0.08, p = ringPoint(a, 46.5), h = 3 + i % 5 * 1.3;
+      if (Math.abs(p.x) > 46 || Math.abs(p.z) > 46) continue;
+      const block = new THREE.Group(); block.position.set(p.x, 0, p.z); block.rotation.y = a; this.group.add(block);
+      const paint = ['#cda17f', '#8baca2', '#c6b4a2', '#b58c84'][i % 4];
+      this.box(block, [3.1, h, 3.2], [0, h / 2, 0], paint);
+      this.box(block, [3.4, 0.18, 3.5], [0, h + 0.1, 0], '#eee0bf');
+      for (let row = 0; row < Math.floor(h / 1.3); row++) for (const x of [-0.8, 0.8]) this.box(block, [0.5, 0.65, 0.05], [x, 1 + row * 1.3, -1.63], '#354749');
+    }
+    for (const district of districts) this.cityDistrict(district.id);
+    this.cityPeople();
+    // Ambient traffic uses the same legible loop as ride transport.
+    for (let i = 0; i < 6; i++) {
+      const vehicle = createTransitModel(i % 2 ? 'auto' : 'taxi');
+      vehicle.scale.setScalar(0.8); this.group.add(vehicle);
+      const move = (time: number) => {
+        const a = i * Math.PI / 3 + time * (i % 2 ? -0.045 : 0.055), p = ringPoint(a, i % 2 ? 19.7 : 22.2);
+        vehicle.position.set(p.x, 0.09, p.z); vehicle.rotation.y = a + (i % 2 ? Math.PI / 2 : -Math.PI / 2);
+      };
+      move(0); this.motion.push(move);
+    }
+    // Small transport stands are physical objects and can be selected in the world.
+    for (const [kind, x] of [['taxi', 5.5], ['auto', -5.5]] as const) {
+      const stand = createTransitModel(kind); stand.position.set(x, 0.06, -11); stand.rotation.y = Math.PI / 2; this.group.add(stand);
+      const picker = new THREE.Mesh(new THREE.BoxGeometry(4, 3, 4), new THREE.MeshBasicMaterial({ visible: false }));
+      picker.position.set(x, 1, -11); picker.userData.landmarkId = `hail-${kind}`; this.group.add(picker); this.targets.push(picker);
+      this.label(this.group, kind === 'taxi' ? 'TAXI' : 'AUTO', 'HAIL / BOARD', [x, 2.9, -11], 3, '#f9c847', INK);
+    }
+    // A compact sea-link silhouette supplies a skyline cue rather than a second game map.
+    for (const x of [33, 41]) {
+      this.box(this.group, [0.45, 8, 0.45], [x, 4, 33], '#f2e8ce');
+      this.line(this.group, [[x - 4, 2, 33], [x, 8, 33], [x + 4, 2, 33]], '#f2e8ce', 0.06);
+    }
+    this.box(this.group, [18, 0.25, 2], [37, 2, 33], '#34494e');
+    // Chai and vada-pav kiosks flank, rather than occupy, the central foot route.
+    for (const [x, name] of [[-10, 'CHAI TAPRI'], [10, 'VADA PAV']] as const) {
+      this.box(this.group, [3, 1.3, 2], [x, 0.65, 9], '#ae6c43', true);
+      this.box(this.group, [3.7, 0.15, 2.6], [x, 2.6, 9], '#e9b44b');
+      for (const dx of [-1.35, 1.35]) this.box(this.group, [0.1, 2.4, 0.1], [x + dx, 1.2, 9], '#34494e');
+      this.label(this.group, name, 'TAKE A MOMENT', [x, 2.15, 10.1], 3, '#e9b44b', INK);
+    }
+  }
+
+  private cityDistrict(id: string) {
+    const d = districts.find(item => item.id === id)!;
+    const group = new THREE.Group(); group.position.set(...d.position);
+    group.rotation.y = id === 'cst' ? 0 : Math.atan2(-d.position[0], -d.position[2]); this.group.add(group);
+    const cream = '#f0e4c9', ink = '#344147', gold = '#f9c847';
+    if (id === 'cst') {
+      // The station is beside the spawn lane, not across it.
+      this.box(group, [9, 4, 5], [-8, 2, -3], d.color, true);
+      this.box(group, [3, 8, 3], [-8, 4, -3], d.color, true);
+      this.cylinder(group, 1.9, 0.3, [-8, 8.1, -3], cream);
+      this.sphere(group, 1.4, [-8, 8.8, -3], cream);
+      this.label(group, 'CST', 'ARRIVAL SQUARE / HARSH JHA', [-8, 4.5, -0.45], 8, d.color, cream);
+      this.label(group, '09 STOPS. ONE STORY.', 'SOFTWARE / AI / SCIENTIFIC COMPUTING', [2, 0.08, -3], 9, '#e2cfad', ink, true);
+      this.box(group, [2.2, 2.2, 0.12], [-8, 6.4, -1.42], cream);
+      this.line(group, [[-8, 7.1, -1.3], [-8, 6.4, -1.3], [-7.4, 6.4, -1.3]], ink, 0.065);
+    } else {
+      this.box(group, [14, 0.12, 12], [0, 0.06, 0], cream);
+      this.label(group, d.title.toUpperCase(), d.descriptor.toUpperCase(), [0, 7.9, 0], 15, d.color, cream);
+      this.label(group, `0${districts.indexOf(d) + 1}`, 'YOUR NEXT CHAPTER', [-5, 0.13, 4.5], 2.4, cream, ink, true);
+      if (id === 'fort') {
+        this.box(group, [12, 3.6, 4], [0, 1.9, -2.5], '#c2ad87', true);
+        for (const x of [-5, -2.5, 0, 2.5, 5]) {
+          this.cylinder(group, 0.25, 4.3, [x, 2.25, 0], cream, true);
+          this.box(group, [1, 0.15, 1], [x, 4.5, 0], cream);
+        }
+        this.box(group, [13, 0.35, 5], [0, 4.75, -2], d.color);
+        this.sphere(group, 1.2, [0, 6.3, -2], cream);
+        this.label(group, 'FFPRIME / GSOC 26', 'QC-DEVS / THEOCHEM', [0, 3.2, -0.36], 10, d.color, cream);
+        const sculpture = new THREE.Group(); sculpture.position.set(4, 5.8, -2); group.add(sculpture);
+        for (let n = 0; n < 3; n++) { const r = this.ring(sculpture, 1.7, 0.04, gold, [0, 0, 0]); r.rotation.set(n, n * 0.5, 0); }
+        this.sphere(sculpture, 0.5, [0, 0, 0], cream, false, true);
+        this.motion.push(t => { sculpture.rotation.y = t * 0.18; });
+      } else if (id === 'bkc') {
+        for (let i = 0; i < 3; i++) {
+          const x = (i - 1) * 3.6, h = 5 + i;
+          this.box(group, [3.1, h, 4], [x, h / 2 + 0.12, -2], d.color, true);
+          for (let row = 0; row < 4; row++) this.box(group, [2.8, 0.18, 0.05], [x, 1.4 + row * 1.2, 0.03], cream);
+        }
+        this.label(group, 'CCIEEXPERT', 'POLICY / OAUTH2 / CISCO SECURE ACCESS', [0, 2.6, 1], 10, ink, cream);
+      } else if (id === 'andheri') {
+        ['PYTHON', 'REACT', 'FASTAPI', 'SQL', 'DOCKER'].forEach((name, i) => {
+          const x = (i - 2) * 2.6, z = i % 2 ? -2 : 0;
+          this.box(group, [2.2, 1.5, 2], [x, 0.9, z], i % 2 ? '#60908b' : d.color, true);
+          this.box(group, [2.5, 0.25, 2.6], [x, 3, z], i % 2 ? cream : gold, false, [0.08, 0, 0]);
+          this.label(group, name, 'EVIDENCE INSIDE', [x, 2.4, z + 1.1], 2.5, ink, cream);
+        });
+        this.label(group, 'NO PROGRESS BARS', 'JUST WORK YOU CAN INSPECT', [0, 5.3, -3], 11, d.color, cream);
+      } else if (id === 'powai') {
+        ['NORTHSTAR', 'RECO', 'MONEY', 'MEETING', 'RIDEFLOW'].forEach((name, i) => {
+          const x = (i - 2) * 2.65, h = [6, 4, 5, 3.5, 4.5][i];
+          this.box(group, [2.3, h, 4], [x, h / 2 + 0.12, -2], i % 2 ? '#60908b' : d.color, true);
+          this.box(group, [2.5, 0.16, 4.2], [x, h + 0.2, -2], gold);
+          this.label(group, name, 'OPEN CASE STUDY', [x, h - 0.6, 0.05], 2.3, ink, cream);
+        });
+      } else if (id === 'dadar') {
+        this.box(group, [12, 0.3, 4], [0, 0.3, -2], '#cba97d', true);
+        for (const x of [-5.5, 5.5]) this.box(group, [0.2, 4.5, 0.2], [x, 2.4, 0], ink, true);
+        this.box(group, [13, 0.35, 5], [0, 4.7, -2], d.color);
+        for (const z of [-4, -2.7]) this.box(group, [14, 0.1, 0.12], [0, 0.5, z], ink);
+        for (let x = -6; x <= 6; x++) this.box(group, [0.18, 0.08, 2], [x, 0.49, -3.3], cream);
+        const train = new THREE.Group(); train.position.set(0, 1.1, -3.3); group.add(train);
+        this.box(train, [8, 1.2, 1.5], [0, 0, 0], cream, false, [0, 0, 0], true);
+        for (let x = -3; x <= 3; x++) this.box(train, [0.55, 0.4, 0.05], [x, 0.15, 0.78], d.color, false, [0, 0, 0], true);
+        this.motion.push(t => { train.position.x = Math.sin(t * 0.15) * 2; });
+        this.label(group, 'NEXT: JULY 2028', 'VIT / CSE / JOURNEY IN PROGRESS', [0, 3.9, 0.7], 10, ink, cream);
+      } else if (id === 'worli') {
+        for (const x of [-5, 5]) {
+          this.box(group, [0.4, 6, 0.4], [x, 3, -3], cream, true);
+          this.line(group, [[x - 1.5, 2, -3], [x, 6, -3], [x + 1.5, 2, -3]], cream, 0.055);
+        }
+        this.box(group, [12, 0.4, 5], [0, 2.1, -2], d.color, true);
+        this.label(group, 'EVIDENCE > BUZZWORDS', 'SIGNALS / SOURCES / QUALIFIERS', [0, 4.2, 0], 12, d.color, cream);
+        for (const x of [-3, 0, 3]) this.cylinder(group, 0.35, 2, [x, 3.3, -2], gold);
+      } else if (id === 'juhu') {
+        this.box(group, [9, 3.4, 5], [0, 1.8, -2], d.color, true);
+        this.box(group, [10, 0.35, 6], [0, 3.7, -2], cream, false, [0, 0, -0.08]);
+        this.box(group, [5, 0.2, 2], [0, 1.4, 2], '#b88952', true);
+        this.box(group, [2.3, 1.1, 0.15], [0, 2.05, 1.5], ink);
+        this.label(group, 'HARSH JHA', 'A DESK / TOO MANY IDEAS', [0, 2.9, 0.55], 8, d.color, cream);
+        for (const x of [-6, 6]) {
+          this.cylinder(group, 0.16, 5, [x, 2.5, -3], '#947150');
+          for (let i = 0; i < 5; i++) this.box(group, [0.6, 0.14, 3.7], [x, 5, -3], '#6b8d57', false, [0.2, i * Math.PI * 0.4, 0.12]);
+        }
+      } else {
+        this.box(group, [12, 5.5, 6], [0, 2.85, -2], d.color, true);
+        this.box(group, [13, 1.5, 1], [0, 4, 1.3], cream, true);
+        this.label(group, 'TALKIES', 'NOW SHOWING / HARSH JHA', [0, 4.05, 1.85], 11, cream, ink);
+        this.box(group, [4, 2.6, 0.1], [0, 1.5, 1.06], ink);
+        for (let i = -5; i <= 5; i++) this.sphere(group, 0.13, [i, 3.3, 1.87], gold);
+        this.label(group, 'ADMIT ONE', 'NINE SCENES / YOUR OWN PACE', [0, 6.4, -2], 10, d.color, cream);
+      }
+    }
+    const guideX = id === 'cst' ? 4 : 5, guideZ = id === 'cst' ? -7 : 7.5;
+    this.sphere(group, 0.27, [guideX, 1.63, guideZ], '#ac795b');
+    this.box(group, [0.55, 0.75, 0.35], [guideX, 1.05, guideZ], d.color);
+    for (const side of [-1, 1]) this.box(group, [0.17, 0.6, 0.2], [guideX + side * 0.16, 0.4, guideZ], ink);
+    this.label(group, 'HELLO ↗', d.shortName.toUpperCase() + ' / YOUR GUIDE', [guideX, 2.6, guideZ], 3.3, cream, ink);
+    const picker = new THREE.Mesh(new THREE.BoxGeometry(id === 'cst' ? 12 : 15, 10, 18), new THREE.MeshBasicMaterial({ visible: false }));
+    picker.position.set(id === 'cst' ? -5 : 0, 4, id === 'cst' ? -3 : 0); picker.userData.landmarkId = id; group.add(picker); this.targets.push(picker);
+  }
+
+  private cityPeople() {
+    const count = 24, geometry = this.boxGeometry;
+    const bodies = new THREE.InstancedMesh(geometry, this.material('#5b7f84'), count);
+    const heads = new THREE.InstancedMesh(this.sphereGeometry, this.material('#b48765'), count);
+    const legs = new THREE.InstancedMesh(geometry, this.material('#344147'), count * 2);
+    this.group.add(bodies, heads, legs);
+    const dummy = new THREE.Object3D();
+    const move = (time: number) => {
+      for (let i = 0; i < count; i++) {
+        const a = i * Math.PI * 2 / count + time * (i % 2 ? 0.014 : -0.012), p = ringPoint(a, i % 3 ? 26 : 42.5);
+        const gait = Math.sin(time * 3 + i) * 0.12;
+        dummy.rotation.set(0, a, 0); dummy.scale.set(0.48, 0.72, 0.3); dummy.position.set(p.x, 1.04, p.z); dummy.updateMatrix(); bodies.setMatrixAt(i, dummy.matrix);
+        dummy.scale.setScalar(0.25); dummy.position.y = 1.61; dummy.updateMatrix(); heads.setMatrixAt(i, dummy.matrix);
+        for (const side of [-1, 1]) {
+          dummy.scale.set(0.15, 0.62, 0.17); dummy.position.set(p.x + side * Math.cos(a) * 0.15, 0.37, p.z - side * Math.sin(a) * 0.15); dummy.rotation.x = side * gait; dummy.updateMatrix(); legs.setMatrixAt(i * 2 + (side + 1) / 2, dummy.matrix);
+        }
+      }
+      for (const mesh of [bodies, heads, legs]) { mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere(); }
+    };
+    move(0); this.motion.push(move);
   }
 
   private instanceStatics() {

@@ -23,7 +23,7 @@ export class Vehicle {
     this.body.material = new CANNON.Material('vehicle');
     this.world.addBody(this.body);
     this.mesh.add(this.shell);
-    const bodyPaint = new THREE.MeshStandardMaterial({ color: '#3155ff', roughness: 0.75, metalness: 0.12 });
+    const bodyPaint = new THREE.MeshStandardMaterial({ color: '#f9c847', roughness: 0.75, metalness: 0.12 });
     const paper = new THREE.MeshStandardMaterial({ color: '#f2efe7', roughness: 0.8 });
     const black = new THREE.MeshStandardMaterial({ color: '#080a0d', roughness: 0.8 });
     const glass = new THREE.MeshStandardMaterial({ color: '#526473', roughness: 0.25, metalness: 0.7 });
@@ -45,7 +45,8 @@ export class Vehicle {
     ], 3));
     cabin.setIndex([0, 4, 5, 0, 5, 1, 1, 5, 6, 1, 6, 2, 2, 6, 7, 2, 7, 3, 3, 7, 4, 3, 4, 0, 4, 7, 6, 4, 6, 5, 0, 1, 2, 0, 2, 3]); cabin.computeVertexNormals();
     const canopy = new THREE.Mesh(cabin, glass); canopy.castShadow = true; this.shell.add(canopy);
-    part(1.37, 0.09, 1.14, 0, 0.66, 0.21, bodyPaint);
+    part(1.37, 0.09, 1.14, 0, 0.66, 0.21, black);
+    part(0.52, 0.18, 0.3, 0, 0.85, 0.21, light);
     part(0.32, 0.025, 1.13, 0, 0.718, 0.21, paper);
     for (const x of [-0.7, 0.7]) part(0.075, 0.43, 0.08, x, 0.43, 0.29, bodyPaint);
     part(1.89, 0.12, 0.15, 0, -0.08, -1.77, black);

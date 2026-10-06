@@ -1,6 +1,7 @@
 export type Mode = 'intro' | 'world' | 'quick';
-export function readRoute(hash: string): { mode: Mode; project: string | null; section: string | null } {
+export function readRoute(hash: string): { mode: Mode; project: string | null; section: string | null; district?: string | null } {
   const value = hash.replace(/^#\/?/, '');
+  if (value.startsWith('place/')) return { mode: 'world', project: null, section: null, district: value.slice(6) };
   if (value.startsWith('project/')) {
     try { return { mode: 'quick', project: decodeURIComponent(value.slice(8)), section: null }; }
     catch { return { mode: 'quick', project: null, section: null }; }

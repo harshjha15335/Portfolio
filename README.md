@@ -1,73 +1,99 @@
-# Harsh Jha — Engineering Campus
+# Harsh Jha — Mini Mumbai
 
-A personal portfolio built as an electric-blue editorial playground. Oversized identity typography leads into a drivable world connecting research, AI systems, revenue recovery, and finance landmarks. Quick View presents the same sourced work through large project spreads. The visual architecture, car, signs, terrain, and decoration are constructed procedurally in Three.js.
+An original, compact portfolio city inspired by Mumbai's station culture, kaali-peeli taxis, autos, street markets, sea-facing promenades and film culture. It is a stylized diorama built to tell an engineer's story, with short routes and readable silhouettes rather than a realistic city map.
 
-## Run locally
+The existing React portfolio, Three.js renderer, Cannon physics, case studies, hash navigation, command palette, Quick View and accessibility foundation are retained. The city adds walking, guided transport, nine destinations, moving traffic, pedestrians, local guides and a text-led cinema.
+
+## Run
 
 Requires Node.js 22.12+ (or a compatible newer version) and npm.
 
 ```sh
 npm ci
 npm run dev
-npm run typecheck
 npm test
-npm run test:browser
 npm run build
-npm run preview
 ```
 
-Development serves `http://127.0.0.1:5173`. The browser suite uses installed Microsoft Edge through Playwright's `msedge` channel. Install Edge if unavailable, or remove `channel: 'msedge'` from `playwright.config.ts` and run `npx playwright install chromium` to use Playwright Chromium. Browser reports are written to `playwright-report/`; failing tests retain traces and screenshots in `test-results/`.
+Development uses port 5173. `npm run build` includes TypeScript checking and produces `dist/`. `npm run preview` serves that production output.
+
+The default browser configuration uses Microsoft Edge. For the cloud's installed Chromium:
+
+```sh
+npm run test:browser -- --config playwright.cloud.config.ts
+```
+
+Set `CHROMIUM_PATH` if the executable is elsewhere. The override enables software WebGL, while leaving the default Edge configuration available. Browser tests capture some screenshots in `docs/screenshots`; onboarding's ignored runner starts from `.sites-runtime/cloud-onboarding` to keep generated evidence separate:
+
+```sh
+bash .sites-runtime/cloud-onboarding/run-browser.sh
+```
+
+## Nine stops
+
+| Destination | Experience |
+| --- | --- |
+| CST Arrival Square | Welcome, orientation, introduction and city directions |
+| Fort Open Source Labs | GSoC, QC-Devs / Theochem and FFprime research |
+| BKC Systems House | CCIEeXpert internship and enterprise security tooling |
+| Andheri Skill Bazaar | Skill clusters with links to project evidence |
+| Powai Product District | NORTHSTAR, RECO, MoneyMetrics, Meeting Intelligence and RideFlow |
+| Dadar Junction | Education, projects, open source and internship journey |
+| Worli Signal Deck | Achievements and engineering metrics with source qualifiers |
+| Juhu Studio | About, education, résumé, GitHub, LinkedIn and contact |
+| Film City Talkies | Nine-scene story theatre with manual and autoplay controls |
+
+Each district has an original low-poly silhouette, accent color, clickable scene target and a guide. Guide dialogue is curated, deterministic copy, not a chatbot. The surrounding city includes a clock-tower arrival station, research colonnade, office towers, skill stalls, product skyline, miniature local train, signal deck, seaside studio, cinema marquee, chai/vada-pav kiosks, promenade lights and a small sea-link silhouette.
 
 ## Explore
 
-| Input | Action |
+| Control | Action |
 | --- | --- |
-| W / S or ↑ / ↓ | Accelerate, brake, and reverse |
-| A / D or ← / → | Steer |
-| Space | Handbrake / drift |
-| E | Inspect a nearby landmark |
-| R | Reset car |
-| M | Campus directory and fast travel |
-| Escape | Close an overlay; open the world menu |
-| Ctrl+K / Cmd+K | Search projects, technologies, experience, and commands |
-| Pointer / touch | Inspect landmarks; drag to orbit on mobile |
+| W / A / S / D or arrows | Walk; drive when Take the Wheel is selected |
+| Take the Wheel / Explore on Foot | Switch between walking and the retained physics vehicle |
+| Space | Handbrake while driving |
+| E | Talk to a nearby guide or board a nearby taxi/auto stand |
+| R | Return to CST |
+| M | Open the city directory |
+| Escape | Close a dialog; open the world menu |
+| Ctrl+K / Cmd+K | Search projects, city stops, skills and commands |
+| Pointer / touch | Select a destination or transport stand; orbit the city on mobile |
 
-Mobile uses guided exploration instead of keyboard driving. Destination buttons and the directory open the same case studies. Native dialogs support keyboard focus containment and Escape. The skip link opens Quick View. The motion control follows the initial system preference and stores a local setting.
+On mobile, guided travel and touch selection replace manual walking/driving. Quick View remains available for fast scanning and accessible navigation.
 
-## Architecture and content
+### Transport
 
-- `src/app/App.tsx` owns view state, hash history, overlays, command search, and accessible HTML content.
-- `src/core/WorldEngine.ts` owns rendering, fixed-step Cannon physics, input, cameras, proximity, raycasting, pause/resume, diagnostics, and disposal. It loads after the initial UI paint.
-- `src/game/World/Campus.ts` creates original procedural landmarks, paths, collision geometry, labels, and decoration.
-- `src/game/Vehicle/` contains the procedural vehicle, physics integration, and testable driving calculations.
-- `src/data/` is the shared source for Quick View, project overlays, commands, and world placement.
-- `src/ui/` contains native dialogs and local interactive demonstrations.
-- `tests/` separates Vitest content/navigation/physics checks from Playwright browser journeys.
+Multiple taxis and autos circulate on the painted loop. Click a waiting vehicle, press E near its stand, or use Hail Taxi / Hail Auto to board a ride. The vehicle pulls over before boarding; reduced motion skips pickup animation. Choose any of the nine stops. A dedicated ride vehicle follows sampled radial connections and a short loop arc, with a damped chase camera. The meter tracks model distance, elapsed simulation time and a decorative story fare; there is no payment or real-world fare claim. Skip travel or exit at any time. The map offers both ride booking and immediate fast travel, and tracks the current visitor/ride position.
 
-To update a project, edit its entry in `src/data/projects.ts`. Keep IDs stable because shared links use `#/project/<id>`. Provide problem, approach, architecture, challenges, results, ownership, skills, and source links. Preserve evidence qualifiers: résumé-reported benchmarks and seeded demo figures are explicitly identified. See [content evidence](docs/SOURCES.md) before changing claims.
+Ambient vehicles are scenery rather than collision obstacles. Guided rides use paths instead of the manual vehicle's tire physics. Pedestrians use shared instanced primitives and simple looping gait animation. Reduced motion freezes ambient animation and makes selected rides arrive directly.
 
-The four entries with priority 1–4 form dedicated campus landmarks. Their `worldPosition`, color, and metadata feed the world. For a new landmark shape, extend `Campus.ts` and its landmark assembly, then verify collision geometry, arrival distance, camera visibility, tap selection, and mobile layout. Secondary projects share the project garage. Identity/contact and résumé path live in `src/data/portfolio.ts`; career entries and skill groups have separate data files. Replace `public/resume/Harsh-Jha-Resume.pdf` with an actual PDF at the same path. Résumé links appear only after a successful PDF content-type check.
+### Talkies
 
-## Diagnostics and fallback
+Enter Film City Talkies and select Take a Seat. A dim theatre, illustrated seat silhouettes, projector glow and a large typographic screen present nine scenes. Previous, Next, scene selection and opt-in Autoplay control the story; playback stops at the final scene. Escape exits. No audio autoplays. Reduced motion starts in manual mode.
 
-Open `/?debug#world` for renderer statistics and live vehicle/camera tuning controls. Tuning is temporary and returns to defaults on reload. Open `/?webgl=off#world` to exercise the renderer failure path: the app displays a status message and opens Quick View. WebGL context loss also falls back to the HTML portfolio. Quick View remains readable without waiting for rendering. Project demonstrations are explanatory local models; they do not connect to the original project's APIs, financial accounts, or AI providers.
+## Content and architecture
 
-The world caps pixel ratio, uses simple generated geometry/materials, and pauses simulation while overlays are open or the page is hidden. Barlow Condensed, DM Sans, and IBM Plex Mono are self-hosted in `public/fonts/` with OFL notices and system-font fallbacks. Typography makes no request to a third-party font API. Performance depends on hardware, browser, power settings, and GPU availability. No universal frame-rate or mobile-device guarantee is made. The current automated browser coverage is Chromium through Edge, with a simulated phone viewport; Safari, Firefox, real touch hardware, assistive technology, and physical-device performance still need separate checks.
+- `src/data/city.ts`: nine named destinations, spatial layout, guides and sourced journey copy.
+- `src/game/World/Campus.ts`: shared primitive builders, colliders, city scenery, instancing, guides, pedestrians and ambient traffic. The earlier reusable workshop builders remain available.
+- `src/game/World/transit.ts`: sampled route construction, distance interpolation and decorative meter calculations.
+- `src/game/World/TransitModel.ts`: original taxi/auto silhouettes, merged by material to reduce draw calls.
+- `src/core/WorldEngine.ts`: renderer, fixed-step manual physics, walking, rides, cameras, proximity, picking, pause/resume and resource disposal.
+- `src/ui/CityExperience.tsx`: directory, meter, district content and theatre.
+- `src/app/App.tsx`: routing, content state, case studies, command palette, Quick View and accessible dialogs.
+- `src/data/projects.ts`, `experience.ts`, `skills.ts`, `portfolio.ts`: the existing portfolio source of truth.
 
-## Deployment and metadata
+`#/place/fort` and other district IDs open shareable guide experiences. Existing `#/project/<id>` links still open case studies, including after reload. Project demonstrations are explanatory local models; they do not connect to live financial accounts, project APIs or AI providers.
 
-`npm run build` creates `dist/`. Deploy that directory to any static host. `netlify.toml` and `vercel.json` provide Vite build settings. GitHub Pages needs an appropriate Vite `base` for a repository subpath and matching public asset URLs; the default configuration targets a domain root. Hash routing keeps case-study links on the entry document without server route handling.
+Content provenance lives in [docs/SOURCES.md](docs/SOURCES.md). Keep résumé-reported metrics, upstream test counts, repository audits and seeded fixtures explicitly distinct. No new dates, production outcomes or unsupported personal claims have been invented. Static city labels are environmental art; sourced detail is in the HTML experiences and case studies.
 
-Before publishing on a real domain, replace `https://YOUR-DOMAIN.example` in `public/sitemap.xml` with the canonical origin, add a canonical link and `og:url` in `index.html`, and configure the host's custom domain/HTTPS. The placeholder is documentation, not an active deployment. The sitemap lists the document origin because hash fragments are client state. `robots.txt` permits indexing; HTML title/description/Open Graph metadata cover the entry page, while project overlays update titles and descriptions locally. Social preview crawlers generally do not execute client hash routes; dedicated prerendered project pages and a social preview image would be needed for independent rich previews.
+## Fallback and limitations
 
-Content provenance is recorded in [docs/SOURCES.md](docs/SOURCES.md). Asset and dependency attribution is in [CREDITS.md](CREDITS.md). The original functional audit is in [docs/QA.md](docs/QA.md); redesign verification, viewport evidence, and visual limitations are in [docs/REDESIGN-QA.md](docs/REDESIGN-QA.md).
+`/?webgl=off#world` exercises the Quick View fallback. District guides and the theatre remain usable without WebGL. `/?debug#world` opens renderer statistics and manual-vehicle tuning controls. The world caps pixel ratio, shares primitive geometry, instances repeated scenery/pedestrians, merges transit models by material and pauses movement during dialogs or page hiding. Fonts are self-hosted with OFL licenses.
 
-## Screenshots
+Models are intentionally original procedural art, not final realistic assets. Pedestrians and guides are simple stylized figures. Rides have an exterior follow camera rather than detailed interiors; ambient traffic is path-based. There is no audio, multiplayer or full city simulation. Automated coverage uses desktop and simulated phone Chromium; real touch devices, other browsers, assistive technology and hardware GPU performance need separate evaluation. Software-rendered cloud frame rates are not representative of a modern laptop GPU.
 
-- [Desktop home, 1440 × 900](docs/screenshots/redesign/home-1440.png)
-- [Desktop home, 1920 × 1080](docs/screenshots/redesign/home-1920.png)
-- [Desktop world](docs/screenshots/redesign/world-1440.png)
-- [Desktop Quick View](docs/screenshots/redesign/quick-1440.png)
-- [All PC UI images — gallery](docs/screenshots/redesign/index.html)
-- [PC screenshots ZIP — 48 images](docs/screenshots/redesign/pc-ui-screenshots.zip)
-- [Full screen/viewport audit](docs/REDESIGN-QA.md)
+## Deployment
+
+Deploy `dist/` to a static host. Existing Netlify and Vercel settings remain usable. GitHub Pages requires a suitable Vite `base` and public asset URLs for a repository subpath; the default targets a domain root. Hash routes need no server rewrite for individual case studies.
+
+Before public deployment, replace the canonical-origin placeholder in `public/sitemap.xml`, configure HTTPS/custom-domain metadata, and add canonical and Open Graph URL information. Hash routes are client state; independent social previews would require prerendered pages. See [CREDITS.md](CREDITS.md) for attribution and [docs/CITY-QA.md](docs/CITY-QA.md) for current validation.
