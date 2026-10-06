@@ -5,6 +5,7 @@ import { projects } from '../data/projects';
 import { portfolio } from '../data/portfolio';
 import { skills } from '../data/skills';
 import { Modal } from './Modal';
+import { streetStops } from '../game/World/streetLayout';
 import type { Point, RideStatus, TransitKind } from '../game/World/transit';
 
 export function CityMap({ position, canRide, onTravel, onOpen, onRide, onClose }: {
@@ -14,15 +15,15 @@ export function CityMap({ position, canRide, onTravel, onOpen, onRide, onClose }
 }) {
   const [kind, setKind] = useState<TransitKind>('taxi');
   return <Modal title="MUMBAI CITY DIRECTORY" onClose={onClose} className="city-map-modal">
-    <div className="city-map-heading"><span className="eyebrow">A SMALL CITY. NINE BIG STOPS.</span><h2>Where to, boss?</h2><p>A made-up Mumbai, built around the work. Take a scenic ride or go straight to a stop.</p></div>
+    <div className="city-map-heading"><span className="eyebrow">CST → FORT / CITY DIRECTORY</span><h2>Where to, boss?</h2><p>Walk Fort Road or catch a ride between CST and Fort. Browse every portfolio stop in the directory.</p></div>
     <div className="city-map-layout"><div className="city-map-graphic" aria-label="Stylized city map with current position">
-      <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="45" className="map-sea"/><circle cx="50" cy="50" r="39" className="map-land"/><circle cx="50" cy="50" r="21" className="map-loop"/><path d="M50 14V86M14 50H86" className="map-cross"/></svg>
-      <span className="map-sea-label">ARABIAN SEA<br />/ A LITTLE IMAGINATION</span>
-      {districts.map((d, i) => <button className="city-map-stop" style={{ left: `${50 + d.position[0]}%`, top: `${50 + d.position[2]}%`, background: d.color }} key={d.id} aria-label={`Explore ${d.title}`} onClick={() => onOpen(d.id)}><b>{String(i + 1).padStart(2, '0')}</b><span>{d.shortName}</span></button>)}
-      <span className="map-you" style={{ left: `${50 + position.x}%`, top: `${50 + position.z}%` }} aria-label="Your current position">▲<small>YOU</small></span>
+      <svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" className="map-land"/><path d="M23 16 V76 H50 V36 H77 V76" className="map-loop"/><path d="M5 0V100" stroke="#5c99a8" strokeWidth="15"/></svg>
+      <span className="map-sea-label">FORT ROAD<br />CST ↔ RESEARCH INSTITUTE</span>
+      {districts.map((d, i) => <button className="city-map-stop" style={{ left: `${[23,23,23,50,50,50,77,77,77][i]}%`, top: `${[16,46,76,76,56,36,36,56,76][i]}%`, background: d.color }} key={d.id} aria-label={`Explore ${d.title}`} onClick={() => onOpen(d.id)}><b>{String(i + 1).padStart(2, '0')}</b><span>{d.shortName}</span></button>)}
+      <span className="map-you" style={{ left: '23%', top: `${16 + Math.max(0,Math.min(1,(10-position.z)/45))*30}%` }} aria-label="Your current position">●<small>YOU ARE HERE</small></span>
     </div><div className="city-directory"><div className="transport-choice" aria-label="Ride type"><button aria-pressed={kind === 'taxi'} onClick={() => setKind('taxi')}>KAALI-PEELI</button><button aria-pressed={kind === 'auto'} onClick={() => setKind('auto')}>AUTO</button></div>
-      {districts.map((d, i) => <article key={d.id}><button onClick={() => onOpen(d.id)}><span className="district-number" style={{ color: d.color }}>{String(i + 1).padStart(2, '0')}</span><span><strong>{d.title}</strong><small>{d.descriptor}</small></span></button><div><button disabled={!canRide} aria-label={`Ride to ${d.title}`} onClick={() => onRide(kind, d.id)}>RIDE ↗</button><button aria-label={`Travel to ${d.title}`} onClick={() => onTravel(d.id)}>GO →</button></div></article>)}
-      <p className="caption">RIDE = TAKE THE SCENIC ROUTE · GO = FAST TRAVEL</p></div></div>
+      {districts.map((d, i) => <article key={d.id}><button onClick={() => onOpen(d.id)}><span className="district-number" style={{ color: d.color }}>{String(i + 1).padStart(2, '0')}</span><span><strong>{d.title}</strong><small>{d.descriptor}</small></span></button><div><button disabled={!canRide || !streetStops[d.id]} aria-label={`Ride to ${d.title}`} onClick={() => onRide(kind, d.id)}>RIDE ↗</button><button aria-label={`Travel to ${d.title}`} onClick={() => onTravel(d.id)}>GO →</button></div></article>)}
+      <p className="caption">CST + FORT: WALK OR RIDE · OTHER STOPS: OPEN PORTFOLIO</p></div></div>
   </Modal>;
 }
 
@@ -31,8 +32,8 @@ export function RideMeter({ ride, onChoose, onSkip, onExit, onOpen }: { ride: Ri
   const destination = districts.find(d => d.id === ride.destination);
   return <section className="ride-meter" aria-label="Portfolio Meter">
     <div className="meter-top"><span>{ride.kind === 'auto' ? 'AUTO RICKSHAW' : 'KAALI-PEELI'} / STORY FARE</span><button aria-label="Exit ride" onClick={onExit}>✕</button></div>
-    <div className="meter-face"><span className="caption">PORTFOLIO METER</span><strong data-testid="ride-fare">₹{ride.fare.toFixed(2)}</strong><span>JUST FOR THE JOURNEY. NO PAYMENT.</span></div>
-    {ride.phase === 'hailing' ? <p role="status">Your driver is pulling over. One moment…</p> : ride.phase === 'boarding' ? <><p>Your ride is ready.<br /><strong>Choose your next stop.</strong></p><label className="ride-destination">DESTINATION<select aria-label="Ride destination" value="" onChange={e => onChoose(e.target.value)}><option value="" disabled>Where shall we go?</option>{districts.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}</select></label></> : <><p className="ride-destination-name">{destination?.title}</p><div className="meter-readings"><span>{Math.round(ride.distance)} m / model distance</span><span>{Math.floor(ride.elapsed)} sec</span></div><progress aria-label="Ride progress" value={ride.progress} max={1} />{ride.phase === 'riding' ? <button className="primary-button" onClick={onSkip}>SKIP TO ARRIVAL →</button> : <><p role="status">Arrived. Your story continues here.</p><button className="primary-button" onClick={() => { onExit(); if (destination) onOpen(destination.id); }}>STEP OUT & MEET THE GUIDE →</button></>}</>}
+    <div className="meter-face"><span className="caption">PORTFOLIO METER</span><strong data-testid="ride-fare">₹{ride.fare.toFixed(2)}</strong><span>FOR THE JOURNEY · NO PAYMENT</span></div>
+    {ride.phase === 'hailing' ? <p role="status">Your driver is pulling over. One moment…</p> : ride.phase === 'boarding' ? <><p>Your ride is ready.<br /><strong>Choose your next stop.</strong></p><label className="ride-destination">DESTINATION<select aria-label="Ride destination" value="" onChange={e => onChoose(e.target.value)}><option value="" disabled>Where shall we go?</option>{districts.filter(d => streetStops[d.id]).map(d => <option key={d.id} value={d.id}>{d.title}</option>)}</select></label></> : <><p className="ride-destination-name">{destination?.title}</p><div className="meter-readings"><span>{Math.round(ride.distance)} m</span><span>{Math.floor(ride.elapsed)} sec</span></div><progress aria-label="Ride progress" value={ride.progress} max={1} />{ride.phase === 'riding' ? <button className="primary-button" onClick={onSkip}>SKIP TO ARRIVAL →</button> : <><p role="status">Arrived. Your story continues here.</p><button className="primary-button" onClick={() => { onExit(); if (destination) onOpen(destination.id); }}>STEP OUT & MEET THE GUIDE →</button></>}</>}
   </section>;
 }
 

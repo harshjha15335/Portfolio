@@ -8,8 +8,10 @@ export function createTransitModel(kind: TransitKind) {
   const box = new THREE.BoxGeometry(1, 1, 1);
   const yellow = new THREE.MeshStandardMaterial({ color: '#f9c847', roughness: 0.85 });
   const black = new THREE.MeshStandardMaterial({ color: '#25292b', roughness: 0.85 });
-  const glass = new THREE.MeshStandardMaterial({ color: '#8ebfc0', roughness: 0.7 });
-  const cream = new THREE.MeshStandardMaterial({ color: '#fff4d0' });
+  const glass = new THREE.MeshStandardMaterial({ color: '#a0adb0', roughness: 0.7, transparent: true, opacity: 0.18, depthWrite: false });
+  const cream = new THREE.MeshStandardMaterial({ color: '#fff4d0', emissive: '#eec786', emissiveIntensity: .45 });
+  const skin = new THREE.MeshStandardMaterial({ color: '#98745b', roughness: .95 });
+  const shirt = new THREE.MeshStandardMaterial({ color: '#7d8872', roughness: .95 });
   const part = (size: [number, number, number], position: [number, number, number], material: THREE.Material) => {
     const mesh = new THREE.Mesh(box, material); mesh.scale.set(...size); mesh.position.set(...position); mesh.castShadow = true; group.add(mesh); return mesh;
   };
@@ -30,6 +32,12 @@ export function createTransitModel(kind: TransitKind) {
   const wheels = auto ? [[0, -0.95], [-0.72, 0.8], [0.72, 0.8]] : [[-0.9, -1.1], [0.9, -1.1], [-0.9, 1.1], [0.9, 1.1]];
   const tyre = new THREE.CylinderGeometry(0.35, 0.35, 0.2, 10); tyre.rotateZ(Math.PI / 2);
   wheels.forEach(([x, z]) => { const mesh = new THREE.Mesh(tyre, black); mesh.position.set(x, 0.35, z); group.add(mesh); });
+  // Passenger cabin stays open to the city; original seats, dashboard and driver.
+  part([auto ? 1.2 : 1.5, 0.08, 0.42], [0, 1.03, auto ? -0.53 : -0.66], black);
+  part([auto ? 1.12 : 1.5, 0.15, 0.48], [0, 0.88, 0.58], black);
+  part([0.36, 0.43, 0.22], [-0.35, 1.1, -0.18], shirt);
+  part([0.23, 0.25, 0.23], [-0.35, 1.44, -0.18], skin);
+  part([0.4, 0.05, 0.07], [-0.35, 1.04, -0.45], black);
   // Each vehicle moves as a unit. Merge its parts into four material batches.
   const buckets = new Map<THREE.Material, THREE.BufferGeometry[]>();
   group.updateMatrixWorld(true);

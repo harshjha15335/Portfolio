@@ -143,3 +143,47 @@
   .home-city-ticket { display:none; }
 }
 @media (prefers-reduced-motion:reduce) { .city-map-stop { transition:none; } }
+/* First-person street: small instruments at the edge, architecture owns the frame. */
+.mode-world .header { height:56px; padding:0 24px; background:#191d25e8; color:#dfd6bc; border-color:#d5bb8d25; }
+.mode-world .brand-mark { font-size:33px; }.mode-world .brand-copy { font-size:10px; }.mode-world .brand-copy small { font-size:7px; }
+.mode-world .header-nav { font-size:9px; gap:22px; }.mode-world .search-button { padding:6px 12px; }
+.mode-world .world-ui { top:0; height:calc(100dvh - 56px); }
+.street-location { position:absolute; top:20px; left:24px; font:11px var(--mono); letter-spacing:.08em; color:#efe0bd; text-shadow:0 1px 4px #000; }
+.street-location small { display:block; font-size:8px; margin:8px 0 0 14px; opacity:.65; }
+.street-live { display:inline-block; width:5px; height:5px; margin-right:9px; border-radius:50%; background:#dfb773; }
+.street-reticle { position:absolute; top:50%; left:50%; width:3px; height:3px; background:#fff8dccc; border-radius:50%; box-shadow:0 0 3px #000; pointer-events:none; }
+.mode-world .world-bottom { left:20px; right:20px; bottom:18px; height:44px; padding:0 15px; background:#1d222bdc; color:#e8d8b7; border:1px solid #d0b98c30; }
+.mode-world .world-bottom .controls { font-size:8px; gap:12px; }.mode-world .world-bottom kbd { background:transparent; border-color:#e8d8b744; color:#e8d8b7; font-size:8px; }
+.mode-world .world-bottom nav button { font-size:9px; }
+.mode-world .proximity-prompt { width:auto; min-width:0; max-width:400px; left:50%; bottom:82px; transform:translateX(-50%); padding:10px 14px; gap:12px; background:#22262ddb; color:#efd4a1; border:1px solid #efd4a13d; }
+.mode-world .proximity-prompt strong { font-size:12px; font-weight:500; }.mode-world .proximity-prompt kbd { border-color:#efd4a155; color:#efd4a1; background:transparent; }
+.mode-world .city-transport-actions { left:auto; right:24px; top:20px; width:auto; gap:6px; }
+.mode-world .city-transport-actions button { color:#ead3a9; border-color:#e8d8b72d; background:#22262dc4; padding:8px 10px; font-size:8px; }
+.mode-world .ride-meter { top:auto; left:auto; right:24px; bottom:82px; width:225px; background:#161d21ed; border:1px solid #dba76677; box-shadow:0 6px 20px #0004; padding:13px; max-height:calc(100dvh - 200px); }
+.mode-world .meter-face { margin:10px 0; color:#eca85c; background:#151615; }.mode-world .meter-face strong { font-size:32px; }.mode-world .meter-face .caption { color:#eca85c; }
+.mode-world .ride-meter .primary-button { background:#d9ae6f; border-color:#d9ae6f; }
+.mode-world .custom-cursor { display:none; }.mode-world, .mode-world button, .mode-world a, .mode-world canvas { cursor:auto!important; }
+.street-intro { background:radial-gradient(ellipse at 70% 60%,#44313c 0,#171e2c 45%,#0d111b 80%); color:#e5d5b7; padding:9vh 9vw 5vh; min-height:calc(100dvh - 92px); position:relative; overflow:hidden; }
+.street-intro::before { content:""; position:absolute; width:50vw; height:90vh; right:-7vw; bottom:-42vh; transform:rotate(-18deg); background:linear-gradient(90deg,transparent,#df8d4e12,transparent); pointer-events:none; }
+.arrival-line { display:flex; align-items:center; gap:20px; font:9px var(--mono); color:#c3a381; margin-bottom:8vh; }.arrival-line span:first-child { font-size:23px; }.arrival-line i { height:1px; background:#c3a38144; width:100px; }
+.street-intro h1 { font:600 clamp(62px,9.5vw,145px)/.86 var(--display); letter-spacing:-.025em; margin:16px 0 24px; }
+.street-intro h1 em { font-style:normal; color:#dba56e; }.arrival-description { font:14px/1.9 var(--body); color:#b1aba7; }
+.street-intro .home-actions { position:static; display:flex; gap:26px; justify-content:flex-start; margin-top:30px; }.street-intro .primary-button { background:#dba56e; color:#171b24; border-color:#dba56e; }.street-intro .text-button { color:#e5d5b7; }
+.arrival-footer { display:flex; justify-content:space-between; font:8px var(--mono); letter-spacing:.06em; color:#a79585; margin-top:8vh; }
+.street-entry { position:fixed; inset:0; background:#0e131d; z-index:100; display:flex; align-items:center; justify-content:center; flex-direction:column; color:#dba56e; animation:street-arrive 1.1s both; pointer-events:none; }.street-entry span { font-size:44px; }.street-entry small { margin-top:15px; font:9px var(--mono); }
+@keyframes street-arrive { 0%,35% { opacity:1; } 100% { opacity:0; } }
+.touch-walk { position:absolute; left:18px; bottom:84px; display:grid; grid-template-columns:repeat(3,40px); gap:4px; pointer-events:auto; }.touch-walk button { height:40px; border:1px solid #e8d8b744; background:#20262dcb; color:#ead3a9; touch-action:none; }.touch-walk button:first-child { grid-column:2; }.touch-walk button:nth-child(2) { grid-column:1; }
+@media(max-width:760px) { .mode-world .header { padding:0 12px; }.mode-world .header-nav { gap:12px; }.mode-world .world-ui { top:0; height:calc(100dvh - 56px); }.street-location { left:14px; top:16px; font-size:9px; }.mode-world .city-transport-actions { right:12px; top:60px; }.mode-world .world-bottom { left:10px; right:10px; bottom:10px; height:50px; }.mode-world .world-bottom .controls { font-size:7px; }.mode-world .world-bottom nav button { font-size:8px; }.mode-world .ride-meter { right:12px; bottom:75px; width:210px; }.mode-world .proximity-prompt { bottom:138px; max-width:90vw; }.street-intro { padding:7vh 8vw 4vh; min-height:calc(100dvh - 72px); }.arrival-line { margin-bottom:7vh; }.street-intro h1 { font-size:clamp(65px,16vw,105px); }.street-intro .home-actions { gap:16px; flex-wrap:wrap; }.arrival-footer { gap:15px; margin-top:6vh; } }
+@media(prefers-reduced-motion:reduce) { .street-entry { display:none; } }
+.world-debug { position:absolute; z-index:4; bottom:75px; left:24px; background:#101923d9; color:#d7bf90; padding:7px 10px; font:9px var(--mono); pointer-events:none; }
+
+.passenger-entry-fade { position:absolute; inset:0; z-index:2; background:#111720; pointer-events:none; animation:passenger-entry .4s both; }
+@keyframes passenger-entry { from {opacity:.7;} to {opacity:0;} }
+.mode-intro .header { background:#101722; color:#e5d5b7; border-color:#c3a38125; }
+.street-intro > .eyebrow { color:#a8a095; }
+.street-intro .home-actions { flex-direction:row; align-items:center; }
+.street-intro .home-actions .primary-button { flex:0 1 auto; min-width:180px; }
+.street-intro .home-actions .text-button { text-align:left; }
+@media(max-width:760px) { .street-intro .home-actions .primary-button { min-width:155px; } }
+.app.mode-intro { background:#0d111b; }
+@media(max-width:760px) { .mode-world .proximity-prompt { bottom:190px; } }

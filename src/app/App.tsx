@@ -12,6 +12,7 @@ import { Annotation } from '../ui/Annotation';
 import { districts } from '../data/city';
 import { CityMap, DistrictExperience, RideMeter } from '../ui/CityExperience';
 import { idleRide, type Point, type TransitKind } from '../game/World/transit';
+import { streetStops, STREET_SPAWN } from '../game/World/streetLayout';
 import type { WorldEngine } from '../core/WorldEngine';
 
 const heroProjects = () => projects.filter(p => p.priority <= 4);
@@ -22,10 +23,9 @@ export default function App() {
   const [projectId, setProjectId] = useState<string | null>(route.project);
   const [placeId, setPlaceId] = useState<string | null>(route.district ?? null);
   const [ride, setRide] = useState(idleRide);
-  const [position, setPosition] = useState<Point>({ x: 0, z: -10 });
-  const [exploration, setExploration] = useState<'walk' | 'drive'>('walk');
+  const [position, setPosition] = useState<Point>({ x: STREET_SPAWN.x, z: STREET_SPAWN.z });
   const [near, setNear] = useState<string | null>(null);
-  const [speed, setSpeed] = useState(0);
+  const [, setSpeed] = useState(0);
   const [ready, setReady] = useState(false);
   const [loadWorld, setLoadWorld] = useState(route.mode !== 'quick');
   const [fallback, setFallback] = useState('');
@@ -42,6 +42,7 @@ export default function App() {
   const [reduced, setReduced] = useState(() => {
     try { return localStorage.getItem('hj-motion') === 'reduced' || matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return matchMedia('(prefers-reduced-motion: reduce)').matches; }
   });
+  const pendingMenu = useRef(false);
   const container = useRef<HTMLDivElement>(null);
   const engine = useRef<WorldEngine | null>(null);
   const modeRef = useRef(mode);
@@ -93,8 +94,7 @@ export default function App() {
     setMap(false); setPalette(false);
     if (fallback) { if (districts.some(d => d.id === id)) openProject(id); else if (id === 'about') setAbout(true); else if (id === 'garage') navigate('quick'); else openProject(id); return; }
     navigate('world');
-    engine.current?.travelTo(id);
-    if (mobile) openProject(id);
+    if (streetStops[id]) engine.current?.travelTo(id); else openProject(id);
   };
 
   useEffect(() => {
@@ -172,10 +172,11 @@ export default function App() {
       if (overlayOpen) return;
       if (mode === 'world') {
         if (e.key.toLowerCase() === 'm') { e.preventDefault(); setMap(true); }
-        if (e.key === 'Escape') { e.preventDefault(); setMenu(true); }
+        if (e.key === 'Escape' && !e.repeat) { e.preventDefault(); pendingMenu.current = true; }
       }
     };
-    window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey);
+    const onKeyUp = (e: KeyboardEvent) => { if (e.key === 'Escape' && pendingMenu.current) { pendingMenu.current = false; setMenu(true); } };
+    window.addEventListener('keydown', onKey); window.addEventListener('keyup', onKeyUp); return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', onKeyUp); };
   }, [mode, near, overlayOpen, openProject]);
   useEffect(() => {
     const cursor = document.getElementById('cursor');
@@ -183,7 +184,7 @@ export default function App() {
     const move = (event: PointerEvent) => {
       cursor.style.transform = `translate(${event.clientX}px,${event.clientY}px)`;
       const target = (event.target as HTMLElement).closest('a,button,canvas,input');
-      cursor.dataset.context = target?.tagName === 'A' ? 'external' : target?.tagName === 'CANVAS' ? 'drive' : target?.classList.contains('proximity-prompt') ? 'view' : target ? 'open' : 'default';
+      cursor.dataset.context = target?.tagName === 'A' ? 'external' : target?.tagName === 'CANVAS' ? 'look' : target?.classList.contains('proximity-prompt') ? 'view' : target ? 'open' : 'default';
       cursor.style.opacity = '1';
     };
     const hide = () => { cursor.style.opacity = '0'; };
@@ -206,7 +207,7 @@ export default function App() {
   ];
   const filtered = filterCommands(commands, query);
   const nearDistrict = districts.find(d => d.id === near);
-  const boardNear = Math.hypot(position.x - 5.5, position.z + 11) < 4 ? 'taxi' : Math.hypot(position.x + 5.5, position.z + 11) < 4 ? 'auto' : null;
+  const boardNear = near?.startsWith('hail-') ? (near.endsWith('taxi') ? 'taxi' : 'auto') : null;
 
   return <div className={`app mode-${mode} ${overlayOpen ? 'has-overlay' : ''}`}>
     <a className="skip-link" href="#main-content" onClick={e => { e.preventDefault(); navigate('quick'); setTimeout(() => document.getElementById('main-content')?.focus(), 0); }}>Skip to portfolio content</a>
@@ -226,12 +227,15 @@ export default function App() {
     {entering && <EntryTransition />}
     {mode === 'world' && <main className="world-ui" id="main-content" tabIndex={-1} aria-label="Interactive mini Mumbai portfolio city">
       {!ready && <div className="loader" role="status"><span className="status-dot" /><span>OPENING THE CITY</span><small>Warming renderer · Quick View is ready</small></div>}
-      <div className="world-title"><span className="eyebrow">HARSH JHA / MINI MUMBAI</span><h1>A city of<br />working ideas.</h1><p>{mobile ? 'Drag to orbit. Tap a stop or catch a ride.' : 'Nine neighbourhoods. One story. Take the scenic route.'}</p></div>
-      <div className="destination-rail"><span className="eyebrow">YOUR NEXT STOP</span>{districts.map((d, i) => <button key={d.id} onClick={() => travel(d.id)}><span>{String(i + 1).padStart(2, '0')}</span>{d.title}<span>↗</span></button>)}</div>
-      {ride.phase === 'idle' && near && <button className="proximity-prompt" onClick={() => boardNear ? hail(boardNear) : openProject(near)}><span className="status-dot" /><div><strong>{boardNear ? `Board ${boardNear === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : nearDistrict?.title}</strong><small>{boardNear ? 'Your next stop is a short ride away' : nearDistrict?.descriptor}</small></div><kbd>{mobile ? '↗' : 'E'}</kbd></button>}
-      <div className="city-transport-actions"><span className="caption">CATCH A RIDE</span><button disabled={!ready} onClick={() => hail('taxi')}>HAIL TAXI ↗</button><button disabled={!ready} onClick={() => hail('auto')}>HAIL AUTO ↗</button></div>
+      <div className="street-location"><span className="street-live" /> CST / FORT ROAD <small>18:42 · MUMBAI</small></div>
+      <div className="street-reticle" aria-hidden="true" />
+      {ride.phase === 'idle' && near && <button className="proximity-prompt" onClick={() => boardNear ? hail(boardNear) : openProject(near)}><kbd>{mobile ? '↗' : 'E'}</kbd><strong>{boardNear ? `Hail ${boardNear === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : near === 'ffprime' ? 'Read the FFprime research' : `Talk · ${nearDistrict?.guide}`}</strong></button>}
+      <div className="city-transport-actions"><button disabled={!ready} onClick={() => hail('taxi')}>HAIL TAXI ↗</button><button disabled={!ready} onClick={() => hail('auto')}>HAIL AUTO ↗</button></div>
+      {ride.phase === 'boarding' && !reduced && <div className="passenger-entry-fade" aria-hidden="true" />}
       <RideMeter ride={ride} onChoose={id => engine.current?.rideTo(id)} onSkip={() => engine.current?.skipRide()} onExit={() => engine.current?.endRide()} onOpen={openProject} />
-      <div className="world-bottom"><div className="controls">{mobile ? <span>DRAG TO ORBIT · TAP TO EXPLORE</span> : <><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> {exploration === 'walk' ? 'WALK' : 'DRIVE'}</span><button aria-pressed={exploration === 'drive'} onClick={() => { const next = exploration === 'walk' ? 'drive' : 'walk'; setExploration(next); engine.current?.setExploration(next); }}>{exploration === 'walk' ? 'TAKE THE WHEEL' : 'EXPLORE ON FOOT'}</button><button onClick={() => engine.current?.reset()}><kbd>R</kbd> CST</button></>}<button onClick={() => setMap(true)}><kbd>M</kbd> MAP</button></div><span className="speed-readout"><strong>{String(Math.round(Math.abs(speed))).padStart(2, '0')}</strong> KM/H</span><nav aria-label="City navigation"><button onClick={() => setMap(true)}>CITY MAP ↗</button><button onClick={() => openProject('filmcity')}>TALKIES ↗</button><button onClick={() => openProject('juhu')}>STUDIO ↗</button><button onClick={() => setMenu(true)} aria-label="Open world menu">☰</button></nav></div>
+      <div className="world-bottom"><div className="controls">{mobile ? <span>DRAG TO LOOK · HOLD ARROWS TO WALK</span> : <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> WALK · CLICK / DRAG TO LOOK · <kbd>E</kbd> TALK</span>}<button onClick={() => setMap(true)}><kbd>M</kbd> MAP</button></div><nav aria-label="City navigation"><button onClick={() => setMap(true)}>CITY DIRECTORY ↗</button><button onClick={() => openProject('filmcity')}>TALKIES ↗</button><button onClick={() => setMenu(true)} aria-label="Open world menu">☰</button></nav></div>
+      {mobile && <div className="touch-walk" aria-label="Walking controls">{[['w','↑','Walk forward'],['a','←','Step left'],['s','↓','Walk backward'],['d','→','Step right']].map(([key,label,name]) => <button key={key} aria-label={name} onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); engine.current?.setMove(key,true); }} onPointerUp={() => engine.current?.setMove(key,false)} onPointerCancel={() => engine.current?.setMove(key,false)}>{label}</button>)}</div>}
+
     </main>}
     {mode === 'quick' && <main className="quick-view" id="main-content" tabIndex={-1}>
       <section className="quick-hero"><div><p className="eyebrow"><i className="status-dot" /> MINI MUMBAI / THE WORK, AT A GLANCE</p><h1>Engineering,<br /><span>with evidence.</span></h1><p>Harsh Jha. {portfolio.education}<br />Scientific computing, AI systems, and full-stack products.</p><div className="quick-links">{resumeAvailable && <a className="primary-button" href={portfolio.resume} target="_blank" rel="noreferrer">DOWNLOAD RÉSUMÉ <span>↓</span></a>}<button className="text-button" onClick={() => setContact(true)}>GET IN TOUCH ↗</button></div></div><aside className="research-card"><span className="eyebrow">FEATURED EXPERIENCE / 2026</span><ProjectGraphic project={projects[0]} className="research-symbol" /><h2>Google Summer<br />of Code.</h2><Annotation mark="circle" className="research-note">research gets weird over here</Annotation><p>QC-Devs / Theochem<br />Multipole electrostatics in FFprime</p><button onClick={() => openProject('ffprime')}>EXPLORE THE RESEARCH <span>↗</span></button></aside></section>
@@ -246,7 +250,7 @@ export default function App() {
     {palette && <Modal title="COMMAND CENTER" onClose={() => setPalette(false)} className="palette-modal"><label className="search-input"><span>⌕</span><input autoFocus placeholder="Search projects, skills, or commands…" aria-label="Search commands" value={query} onChange={e => { setQuery(e.target.value); setCommandIndex(0); }} onKeyDown={e => { if (e.key === 'ArrowDown') { e.preventDefault(); setCommandIndex(i => Math.min(i + 1, filtered.length - 1)); } if (e.key === 'ArrowUp') { e.preventDefault(); setCommandIndex(i => Math.max(i - 1, 0)); } if (e.key === 'Enter') { e.preventDefault(); filtered[commandIndex]?.action(); } }} /></label><div className="command-results">{filtered.length ? filtered.map((command, i) => <button key={command.id} className={i === commandIndex ? 'active' : ''} onClick={command.action} onMouseEnter={() => setCommandIndex(i)}><span><strong>{command.label}</strong><small>{command.detail}</small></span><span>↗</span></button>) : <p className="empty-state">No matches. Try a project name or technology.</p>}</div><p className="palette-help caption">↑ ↓ NAVIGATE · ENTER OPEN · ESC CLOSE</p></Modal>}
     {map && <CityMap position={position} canRide={ready && !fallback} onTravel={travel} onOpen={openProject} onRide={hail} onClose={() => setMap(false)} />}
     {district && <DistrictExperience key={district.id} district={district} reduced={reduced} resumeAvailable={resumeAvailable} onClose={closePlace} onProject={openProject} onQuick={() => navigate('quick')} onContact={() => { closePlace(); setContact(true); }} onDestination={id => { closePlace(); travel(id); }} />}
-    {menu && <Modal title="WORLD MENU" onClose={() => setMenu(false)} className="small-modal"><h2>Take a moment.</h2><div className="menu-actions"><button className="primary-button" onClick={() => setMenu(false)}>CONTINUE EXPLORING →</button><button onClick={() => navigate('quick')}>OPEN QUICK VIEW ↗</button><button onClick={() => { engine.current?.reset(); setMenu(false); }}>RESET VEHICLE ↻</button><button onClick={toggleReduced}>{reduced ? 'USE FULL MOTION' : 'REDUCE MOTION'} ◐</button><button onClick={() => navigate('intro')}>RETURN TO INTRO ←</button></div></Modal>}
+    {menu && <Modal title="WORLD MENU" onClose={() => setMenu(false)} className="small-modal"><h2>Take a moment.</h2><div className="menu-actions"><button className="primary-button" onClick={() => setMenu(false)}>CONTINUE EXPLORING →</button><button onClick={() => navigate('quick')}>OPEN QUICK VIEW ↗</button><button onClick={() => { engine.current?.reset(); setMenu(false); }}>RETURN TO CST ↻</button><button onClick={toggleReduced}>{reduced ? 'USE FULL MOTION' : 'REDUCE MOTION'} ◐</button><button onClick={() => navigate('intro')}>RETURN TO INTRO ←</button></div></Modal>}
     {contact && <Modal title="CONTACT" onClose={() => setContact(false)} className="small-modal"><h2>Let’s build<br />something.</h2><p>For engineering opportunities, research, or a good technical conversation.</p><a className="contact-email" href={`mailto:${portfolio.email}`}>{portfolio.email} ↗</a><div className="contact-social"><a href={portfolio.linkedin} target="_blank" rel="noreferrer">LINKEDIN ↗</a><a href={portfolio.github} target="_blank" rel="noreferrer">GITHUB ↗</a>{resumeAvailable && <a href={portfolio.resume} target="_blank" rel="noreferrer">RÉSUMÉ ↓</a>}</div></Modal>}
     {about && <Modal title="ABOUT / CAREER" onClose={() => setAbout(false)} className="about-modal"><h2>Harsh Jha<span className="blue-period">.</span></h2><p className="case-lead">{portfolio.education}<br />Expected graduation: {portfolio.graduation}</p>{experience.map(item => <section className="about-experience" key={item.title}><span className="eyebrow">{item.period}</span><h3>{item.title}</h3><p>{item.organization}</p><p>{item.description}</p></section>)}<div className="about-recognition"><span className="eyebrow">SELECTED ACHIEVEMENTS</span>{achievements.slice(0, 2).map(item => <article key={item.title}><h3>{item.title}</h3><p>{item.detail}</p><a href={item.source} target="_blank" rel="noreferrer">SOURCE ↗</a></article>)}</div><div className="case-links"><a className="primary-button" href={portfolio.github} target="_blank" rel="noreferrer">GITHUB ↗</a>{resumeAvailable && <a className="text-button" href={portfolio.resume} target="_blank" rel="noreferrer">RÉSUMÉ ↓</a>}<button className="text-button" onClick={() => { setAbout(false); setContact(true); }}>CONTACT ↗</button></div></Modal>}
     {!mobile && <div id="cursor" className="custom-cursor" aria-hidden="true"><svg viewBox="0 0 20 24"><path d="M2 2 17 15 9 15 6 22Z" /></svg><span /></div>}
