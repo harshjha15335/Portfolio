@@ -1,3 +1,5 @@
+> Historical record of the first-person checkpoint `465de29`. Current visual-rebuild results are in [VISUAL-REBUILD-QA.md](VISUAL-REBUILD-QA.md).
+
 # First-person Mumbai vertical slice
 
 ## Scope gate

@@ -66,3 +66,14 @@ test('poster directory fast travel arrives at a working research landmark', asyn
   await page.getByRole('button', { name: 'OPEN FFPRIME CASE STUDY' }).click();
   await expect(page.getByRole('dialog', { name: 'CASE STUDY / FFprime' })).toBeVisible();
 });
+
+for(const width of [960,390]) {
+test(`city sound starts muted and its menu is reachable at ${width}px`,async({page})=>{
+  await page.setViewportSize({width,height:844});
+  await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/#world');await expect(page.locator('.world-container canvas')).toBeVisible();await expect(page.locator('.loader')).toHaveCount(0);
+  await page.getByRole('button',{name:'Open world menu'}).click();const menu=page.getByRole('dialog',{name:'WORLD MENU'});
+  const enable=menu.getByRole('button',{name:'ENABLE CITY SOUND'});await expect(enable).toHaveAttribute('aria-pressed','false');await enable.click();
+  await expect(menu.getByRole('button',{name:'MUTE CITY SOUND'})).toHaveAttribute('aria-pressed','true');await menu.getByRole('button',{name:'CONTINUE EXPLORING'}).click();
+  await page.getByRole('button',{name:'Open world menu'}).click();await menu.getByRole('button',{name:'MUTE CITY SOUND'}).click();await expect(menu.getByRole('button',{name:'ENABLE CITY SOUND'})).toHaveAttribute('aria-pressed','false');
+});
+}

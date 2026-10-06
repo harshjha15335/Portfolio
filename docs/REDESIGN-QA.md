@@ -1,3 +1,5 @@
+> Historical record of the earlier electric-blue/car-first redesign. Current first-person Mumbai results are in [VISUAL-REBUILD-QA.md](VISUAL-REBUILD-QA.md).
+
 # Editorial redesign audit — 6 October 2026
 
 The redesign preserves the Three.js/Cannon engine, vehicle controls, project facts, hash routes, Quick View, résumé/contact links, command palette, native dialogs, and HTML fallback. The homepage, visual tokens, typography, entry transition, project spreads, directory, world landmarks, road graphics, props, ambient motion, terrain, garage, and About area have been redesigned.

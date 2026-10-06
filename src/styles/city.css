@@ -187,3 +187,7 @@
 @media(max-width:760px) { .street-intro .home-actions .primary-button { min-width:155px; } }
 .app.mode-intro { background:#0d111b; }
 @media(max-width:760px) { .mode-world .proximity-prompt { bottom:190px; } }
+
+/* The compact street menu remains reachable at every width, including touch devices. */
+.mode-world .world-bottom nav > button:last-child { display:inline-flex; align-items:center; justify-content:center; min-width:30px; }
+@media(max-width:760px) { .mode-world .world-bottom nav > button:last-child { min-width:44px; min-height:44px; } }

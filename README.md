@@ -74,3 +74,11 @@ No audio is currently enabled. Real devices, hardware GPU performance and other 
 ## Deploy
 
 Deploy `dist/` with the existing Vercel or Netlify config. Use the branch containing the first-person change, rather than an older city branch. Repository-subpath hosting such as GitHub Pages requires an appropriate Vite `base`. Before a permanent public deployment, set the real canonical origin in metadata/sitemap. Hash routes need no case-study server rewrites.
+
+## Visual rebuild checkpoint
+
+The `feat/mumbai-visual-rebuild` revision upgrades this same street with four deterministic façade grammars, inset windows, PBR surface variation, original shaped taxi/auto bodywork, articulated pedestrians and branched vegetation. City audio is optional and muted until enabled in the world menu. Adaptive quality reduces render scale, shadows and pedestrian density after sustained slow frames.
+
+See [reference audit](docs/GULMOHAR_REFERENCE_AUDIT.md) and [visual rebuild QA](docs/VISUAL-REBUILD-QA.md) for evidence and the expansion gate. The public reference could not be fetched through this workspace's network. This is still the CST/Fort slice; the seven other physical districts and a walk-in cinema remain future work.
+
+To reproduce the review captures, start Vite and run `node scripts/capture-street.mjs`. Set `CHROMIUM_PATH` when Chromium is installed elsewhere. `STREET_CAPTURE_URL` can select a different development-server address; the fixed review poses require Vite development mode.

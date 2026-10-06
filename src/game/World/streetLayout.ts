@@ -20,3 +20,9 @@ export function walkingVelocity(forward: number, strafe: number, yaw: number, sp
   return { x: (-Math.sin(yaw) * forward + Math.cos(yaw) * strafe) * speed / length, z: (-Math.cos(yaw) * forward - Math.sin(yaw) * strafe) * speed / length };
 }
 
+
+/** Pickup stays clear of the station frontage, including the full vehicle length. */
+export function streetPickupRoute(visitor:Point):Point[] {
+  const x=visitor.x<0?-2.8:2.8,z=Math.max(-49,Math.min(11,visitor.z));
+  return [{x,z:z+(z>6?-8:8)},{x,z}];
+}

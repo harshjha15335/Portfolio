@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { createVisitor } from '../game/World/WalkingBody';
 import { MumbaiStreet } from '../game/World/MumbaiStreet';
-import { createTransitModel } from '../game/World/TransitModel';
+import { createTransitModel, animateTransit } from '../game/World/TransitModel';
 import { idleRide, pointAtDistance, routeLength, storyFare, type Point, type RideStatus, type TransitKind } from '../game/World/transit';
-import { STREET_SPAWN, streetStops, streetRideRoute, walkingVelocity } from '../game/World/streetLayout';
+import { STREET_SPAWN, streetStops, streetRideRoute, streetPickupRoute, walkingVelocity } from '../game/World/streetLayout';
 
 interface WorldOptions {
   onNear: (id: string | null) => void; onSpeed: (speed: number) => void;
@@ -12,6 +12,8 @@ interface WorldOptions {
   onHail: (kind: TransitKind) => void; onError: (error: unknown) => void;
   onSelect: (id: string) => void; reducedMotion: boolean; mobile: boolean;
 }
+import { AdaptiveQuality } from './AdaptiveQuality';
+import { StreetAudio } from './StreetAudio';
 type Mode = 'intro' | 'world' | 'quick';
 
 /** First-person visitor and passenger camera. No personal vehicle or chase camera. */
@@ -25,6 +27,12 @@ export class WorldEngine {
   private pausedFrameDirty = true;
   private mode: Mode = 'intro'; private paused = false; private disposed = false;
   private reducedMotion: boolean;
+  private quality: AdaptiveQuality;
+  private reviewQuality=import.meta.env.DEV&&new URLSearchParams(location.search).get('review')==='1';
+  private lastShadow=0;
+  private audio: StreetAudio | null=null;
+  private soundEnabled=false;
+  private rideSpeed=0;
   private keys = new Set<string>(); private touchKeys = new Set<string>();
   private yaw = STREET_SPAWN.yaw; private pitch = -.015;
   private rideYaw = 0; private ridePitch = 0; private gait = 0;
@@ -38,11 +46,11 @@ export class WorldEngine {
   private debug: HTMLElement | null = null; private debugTime = 0; private debugFrames = 0;
 
   constructor(private container: HTMLElement, private options: WorldOptions) {
-    this.reducedMotion = options.reducedMotion;
+    this.reducedMotion = options.reducedMotion; this.quality=new AdaptiveQuality(options.mobile);
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, options.mobile ? 1.25 : 1.5));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.25;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.12;
     this.renderer.shadowMap.enabled = !options.mobile; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; this.renderer.shadowMap.autoUpdate = false; this.renderer.shadowMap.needsUpdate = true;
     const canvas = this.renderer.domElement;
     canvas.setAttribute('aria-label', 'First-person Mumbai street. WASD or arrows to walk, Shift for a brisk walk, E to interact. Click to look with the mouse. Escape releases the mouse.');
@@ -50,7 +58,7 @@ export class WorldEngine {
     this.lighting();
     this.physics.broadphase = new CANNON.SAPBroadphase(this.physics); this.physics.allowSleep = true;
     this.physics.defaultContactMaterial.friction = 0; this.physics.defaultContactMaterial.restitution = 0;
-    this.street = new MumbaiStreet(this.physics); this.scene.add(this.street.group);
+    this.street = new MumbaiStreet(this.physics); this.scene.add(this.street.group); this.street.setQuality(this.quality.low);
     this.visitor = createVisitor(STREET_SPAWN.x, STREET_SPAWN.z);
     this.physics.addBody(this.visitor);
     this.transit.add(this.taxi, this.auto); this.transit.visible = false; this.scene.add(this.transit);
@@ -60,13 +68,13 @@ export class WorldEngine {
     document.addEventListener('visibilitychange', this.visibilityChanged); document.addEventListener('pointerlockchange', this.lockChanged);
     canvas.addEventListener('pointerdown', this.pointerDown); window.addEventListener('pointermove', this.pointerMove); window.addEventListener('pointerup', this.pointerUp); canvas.addEventListener('pointercancel', this.pointerUp);
     canvas.addEventListener('webglcontextlost', this.contextLost);
-    if (new URLSearchParams(location.search).has('debug')) { this.debug = document.createElement('div'); this.debug.className = 'world-debug'; this.debug.setAttribute('aria-label', 'Renderer diagnostics'); container.append(this.debug); }
+    if (import.meta.env.DEV && new URLSearchParams(location.search).has('debug')) {window.addEventListener('street-review-view',this.reviewView); this.debug = document.createElement('div'); this.debug.className = 'world-debug'; this.debug.setAttribute('aria-label', 'Renderer diagnostics'); container.append(this.debug); }
     this.frameId = requestAnimationFrame(this.frame);
   }
   private lighting() {
-    this.scene.background = new THREE.Color('#bd8b83'); this.scene.fog = new THREE.Fog('#a88885', 48, 135);
-    this.scene.add(new THREE.HemisphereLight('#a8b9e1', '#61534f', 1.55));
-    const sun = new THREE.DirectionalLight('#fac28f', 2.2); sun.position.set(-22, 20, -62); sun.castShadow = !this.options.mobile;
+    this.scene.background = new THREE.Color('#bd8b83'); this.scene.fog = new THREE.Fog('#b3a395', 60, 145);
+    this.scene.add(new THREE.HemisphereLight('#bfd0e5', '#827666', 1.9));
+    const sun = new THREE.DirectionalLight('#ffd5a0', 2.6); sun.position.set(-28, 28, -52); sun.castShadow = !this.options.mobile;
     sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 55, bottom: -55, near: 1, far: 150 });
     sun.target.position.set(0, 0, -26); sun.shadow.normalBias = .06; sun.shadow.bias = -.0002; this.scene.add(sun, sun.target);
     const sky = new THREE.Mesh(new THREE.SphereGeometry(145, 24, 12), new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false,
@@ -74,13 +82,19 @@ export class WorldEngine {
       fragmentShader: `varying vec3 vPosition; void main(){vec3 d=normalize(vPosition); float h=max(d.y,0.0); vec3 horizon=vec3(.83,.48,.34); vec3 middle=vec3(.46,.34,.48); vec3 top=vec3(.10,.14,.27); vec3 c=mix(horizon,middle,smoothstep(0.,.28,h)); c=mix(c,top,smoothstep(.18,.85,h)); float cloud=sin(d.x*24.+d.z*12.)*sin(d.z*33.-d.y*42.); c=mix(c,vec3(.69,.48,.47),smoothstep(.38,.85,cloud)*smoothstep(.02,.12,h)*(1.-smoothstep(.25,.5,h))*.45); gl_FragColor=vec4(c,1.);}` }));
     this.scene.add(sky);
   }
+  private reviewView = (event:Event) => {
+    // Five fixed, collision-clear eye-level review points. Development diagnostics only.
+    const views:Record<string,{x:number;z:number;yaw:number}>={spawn:STREET_SPAWN,station:{x:4.6,z:-4,yaw:Math.PI-.12},shops:{x:-4.8,z:-9,yaw:-.2},fort:{x:-5.1,z:-35,yaw:Math.PI/2},return:{x:4.7,z:-44,yaw:Math.PI+.16}};
+    const view=views[(event as CustomEvent<string>).detail];if(view){this.endRide();this.placeVisitor(view.x,view.z,view.yaw);this.updateNear();}
+  };
   setMode(mode: Mode) {
     if (mode !== 'world') { this.endRide(); this.unlock(); }
-    this.mode = mode; this.releaseInput(); this.accumulator = 0;
+    this.mode = mode; this.audio?.setActive(this.soundEnabled&&mode==='world'&&!this.paused); this.releaseInput(); this.accumulator = 0;
     if (mode === 'world') { this.updateCamera(); this.updateNear(); } else this.options.onNear(null);
     if (this.debug) this.debug.hidden = mode !== 'world';
   }
-  setPaused(paused: boolean) { this.paused = paused; this.pausedFrameDirty = true; this.releaseInput(); this.accumulator = 0; this.visitor.velocity.setZero(); if (paused) this.unlock(); }
+  setPaused(paused: boolean) { this.paused = paused; this.audio?.setActive(this.soundEnabled&&!paused&&this.mode==='world'&&!document.hidden); this.pausedFrameDirty = true; this.releaseInput(); this.accumulator = 0; this.visitor.velocity.setZero(); if (paused) this.unlock(); }
+  setSound(enabled:boolean) { this.soundEnabled=enabled; if(enabled&&!this.audio){try{this.audio=new StreetAudio();}catch{this.soundEnabled=false;}} this.audio?.setActive(enabled&&this.mode==='world'&&!this.paused&&!document.hidden); }
   setReducedMotion(reduced: boolean) { this.reducedMotion = reduced; }
   focusLandmark(_id: string) { /* Reading an overlay never changes the visitor's viewpoint. */ }
   travelTo(id: string) {
@@ -98,8 +112,7 @@ export class WorldEngine {
     this.ride = { ...idleRide(), phase: this.reducedMotion ? 'boarding' : 'hailing', kind, fare: this.reducedMotion ? storyFare(kind, 0) : 0 };
     this.taxi.visible = kind === 'taxi'; this.auto.visible = kind === 'auto'; this.transit.visible = true; this.queuedDestination = null;
     // Pull in from the same lane, parallel to the pavement. No vehicle crosses a building.
-    const x = this.visitor.position.x < 0 ? -2.8 : 2.8, z = THREE.MathUtils.clamp(this.visitor.position.z, -49, 11);
-    this.ridePath = [{ x, z: z + 8 }, { x, z }]; this.rideLength = routeLength(this.ridePath); this.pickupDistance = 0;
+    this.ridePath = streetPickupRoute({x:this.visitor.position.x,z:this.visitor.position.z}); this.rideLength = routeLength(this.ridePath); this.pickupDistance = 0; this.rideSpeed=0;
     const p = pointAtDistance(this.ridePath, this.reducedMotion ? this.rideLength : 0); this.transit.position.set(p.x, .02, p.z); this.transit.rotation.y = p.heading;
     this.options.onRide({ ...this.ride });
   }
@@ -120,35 +133,40 @@ export class WorldEngine {
     if (this.ride.phase === 'idle') return;
     const destination = this.ride.destination && streetStops[this.ride.destination];
     const phase = this.ride.phase;
-    this.ride = idleRide(); this.transit.visible = false;
+    this.ride = idleRide(); this.rideSpeed=0; this.transit.visible = false;
     if (phase === 'arrived' && destination) this.placeVisitor(destination.x, destination.z, destination.yaw);
     else if (phase !== 'hailing') this.placeVisitor(this.transit.position.x < 0 ? -4.9 : 4.9, this.transit.position.z, this.transit.rotation.y);
     this.options.onRide({ ...this.ride }); this.releaseInput(); this.updateNear();
   }
   private updateRide(delta: number) {
     if (this.ride.phase === 'hailing') {
-      this.pickupDistance = Math.min(this.rideLength, this.pickupDistance + delta * 4);
-      const p = pointAtDistance(this.ridePath, this.pickupDistance); this.transit.position.set(p.x, .02, p.z);
+      this.pickupDistance = Math.min(this.rideLength, this.pickupDistance + delta * Math.max(.6,Math.min(4,(this.rideLength-this.pickupDistance)*2,this.pickupDistance*2+1)));
+      const p = pointAtDistance(this.ridePath, this.pickupDistance); this.transit.position.set(p.x, .02, p.z);animateTransit(this.ride.kind==='taxi'?this.taxi:this.auto,this.pickupDistance);
       if (this.pickupDistance >= this.rideLength) {
         this.ride = { ...this.ride, phase: 'boarding', fare: storyFare(this.ride.kind, 0) }; this.options.onRide({ ...this.ride });
         if (this.queuedDestination) { const id = this.queuedDestination; this.queuedDestination = null; this.rideTo(id); }
       }
     } else if (this.ride.phase === 'riding') {
-      this.ride.elapsed += delta; this.ride.distance = Math.min(this.rideLength, this.ride.distance + delta * (this.ride.kind === 'auto' ? 4.2 : 5.2));
+      this.ride.elapsed += delta;
+      const target=Math.min(this.ride.kind==='auto'?4.2:5.2,Math.max(.65,(this.rideLength-this.ride.distance)*1.4));
+      this.rideSpeed+=(target-this.rideSpeed)*(1-Math.exp(-2*delta));
+      this.ride.distance = Math.min(this.rideLength, this.ride.distance + delta * this.rideSpeed);
       this.ride.fare = storyFare(this.ride.kind, this.ride.distance); this.ride.progress = this.rideLength ? this.ride.distance / this.rideLength : 1;
       const p = pointAtDistance(this.ridePath, this.ride.distance); this.transit.position.set(p.x, .02, p.z);
       const turn = Math.atan2(Math.sin(p.heading - this.transit.rotation.y), Math.cos(p.heading - this.transit.rotation.y));
       this.transit.rotation.y += turn * (1 - Math.exp(-6 * delta));
+      animateTransit(this.ride.kind==='taxi'?this.taxi:this.auto,this.ride.distance,turn);
+      this.transit.rotation.z=this.reducedMotion?0:Math.sin(this.ride.elapsed*9)*.0018+THREE.MathUtils.clamp(turn,-.3,.3)*.025;
       if (this.ride.distance >= this.rideLength) this.finishRide();
     }
   }
   private resize = () => {
-    const w = Math.max(this.container.clientWidth, 1), h = Math.max(this.container.clientHeight, 1); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.renderer.setSize(w, h, false);
+    const w = Math.max(this.container.clientWidth, 1), h = Math.max(this.container.clientHeight, 1); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,this.options.mobile?1.25:1.5)*this.quality.scale); this.renderer.setSize(w, h, false);
   };
   private releaseInput = () => { this.keys.clear(); this.touchKeys.clear(); this.dragging = null; };
   private unlock() { if (document.pointerLockElement === this.renderer.domElement) document.exitPointerLock(); }
   private lockChanged = () => { if (!document.pointerLockElement) this.releaseInput(); };
-  private visibilityChanged = () => { this.releaseInput(); this.lastTime = 0; this.accumulator = 0; };
+  private visibilityChanged = () => { this.audio?.setActive(this.soundEnabled&&!document.hidden&&!this.paused&&this.mode==='world'); this.releaseInput(); this.lastTime = 0; this.accumulator = 0; };
   private contextLost = (event: Event) => { event.preventDefault(); this.options.onError(new Error('WebGL context lost')); };
   private keyDown = (event: KeyboardEvent) => {
     if ((event.target as HTMLElement)?.closest('input, textarea, select, [contenteditable="true"]') || this.mode !== 'world' || this.paused) return;
@@ -195,7 +213,7 @@ export class WorldEngine {
     } else {
       const speed = Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z);
       const bob = this.reducedMotion || this.paused ? 0 : Math.sin(this.gait) * .012 * Math.min(speed / 2.7, 1);
-      this.camera.position.set(this.visitor.position.x, this.visitor.position.y + 1.32 + bob, this.visitor.position.z);
+      this.camera.position.set(this.visitor.position.x, this.visitor.position.y + 1.36 + bob, this.visitor.position.z);
       this.camera.rotation.set(this.pitch, this.yaw, 0);
     }
   }
@@ -227,23 +245,27 @@ export class WorldEngine {
           this.updateNear();
         }
       }
-      this.updateCamera(); this.street.update(this.time, this.reducedMotion); this.renderer.render(this.scene, this.camera);
+      this.updateCamera(); this.street.update(this.time, this.reducedMotion);
+      if(!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)){this.resize();this.street.setQuality(this.quality.low);this.renderer.shadowMap.enabled=!this.options.mobile&&!this.quality.low;this.renderer.shadowMap.needsUpdate=true;}
+      if(!this.reducedMotion&&!this.paused&&this.time-this.lastShadow>.2&&this.renderer.shadowMap.enabled){this.renderer.shadowMap.needsUpdate=true;this.lastShadow=this.time;}
+      this.audio?.update(this.ride.phase==='riding'?this.rideSpeed:Math.hypot(this.visitor.velocity.x,this.visitor.velocity.z),this.ride.phase!=='idle'&&this.ride.phase!=='hailing',this.ride.kind==='auto');
+      this.renderer.render(this.scene, this.camera);
       if (timestamp - this.lastHud > 125) {
-        if (this.debug) { const canvas = this.renderer.domElement; canvas.dataset.worldX = this.visitor.position.x.toFixed(3); canvas.dataset.worldZ = this.visitor.position.z.toFixed(3); canvas.dataset.eyeHeight = this.camera.position.y.toFixed(3); canvas.dataset.lookYaw = this.yaw.toFixed(3); canvas.dataset.cameraMode = this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? 'first-person' : 'passenger'; }
-        this.options.onSpeed(this.ride.phase === 'riding' ? (this.ride.kind === 'auto' ? 15.12 : 18.72) : Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z) * 3.6);
+        if (this.debug) { const canvas = this.renderer.domElement; canvas.dataset.worldX = this.visitor.position.x.toFixed(3); canvas.dataset.worldZ = this.visitor.position.z.toFixed(3); canvas.dataset.eyeHeight = this.camera.position.y.toFixed(3); canvas.dataset.lookYaw = this.yaw.toFixed(3); canvas.dataset.renderScale=this.quality.scale.toFixed(2); canvas.dataset.quality=this.quality.low?'low':'high'; canvas.dataset.cameraMode = this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? 'first-person' : 'passenger'; }
+        this.options.onSpeed(this.ride.phase === 'riding' ? this.rideSpeed * 3.6 : Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z) * 3.6);
         this.options.onPosition(this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? { x: this.visitor.position.x, z: this.visitor.position.z } : { x: this.transit.position.x, z: this.transit.position.z });
         if (this.ride.phase !== 'idle') this.options.onRide({ ...this.ride }); this.lastHud = timestamp;
       }
-      if (this.debug) { this.debugTime += elapsed; this.debugFrames++; if (this.debugTime > .75) { const info = this.renderer.info; this.debug.textContent = `${Math.round(this.debugFrames / this.debugTime)} fps · ${info.render.calls} draws · ${info.render.triangles} triangles · ${info.memory.textures} textures · eye ${this.camera.position.y.toFixed(2)}m`; this.debugTime = 0; this.debugFrames = 0; } }
+      if (this.debug) { this.debugTime += elapsed; this.debugFrames++; if (this.debugTime > .75) { const info = this.renderer.info; this.debug.textContent = `${(this.debugFrames / this.debugTime).toFixed(1)} fps · ${info.render.calls} draws · ${info.render.triangles} triangles · ${info.memory.textures} textures · ${info.programs?.length??0} shaders · ${Math.round(((performance as Performance & {memory?:{usedJSHeapSize:number}}).memory?.usedJSHeapSize??0)/1048576)} MB JS · scale ${this.quality.scale.toFixed(2)} · eye ${this.camera.position.y.toFixed(2)}m`; this.debugTime = 0; this.debugFrames = 0; } }
     } catch (error) { this.dispose(); this.options.onError(error); }
   };
   dispose() {
-    if (this.disposed) return; this.disposed = true; cancelAnimationFrame(this.frameId); this.resizeObserver.disconnect(); this.releaseInput(); this.unlock();
-    window.removeEventListener('keydown', this.keyDown); window.removeEventListener('keyup', this.keyUp); window.removeEventListener('blur', this.releaseInput);
+    if (this.disposed) return; this.disposed = true; cancelAnimationFrame(this.frameId); this.audio?.dispose(); this.resizeObserver.disconnect(); this.releaseInput(); this.unlock();
+    window.removeEventListener('street-review-view',this.reviewView);window.removeEventListener('keydown', this.keyDown); window.removeEventListener('keyup', this.keyUp); window.removeEventListener('blur', this.releaseInput);
     document.removeEventListener('visibilitychange', this.visibilityChanged); document.removeEventListener('pointerlockchange', this.lockChanged);
     const canvas = this.renderer.domElement; canvas.removeEventListener('pointerdown', this.pointerDown); window.removeEventListener('pointermove', this.pointerMove); window.removeEventListener('pointerup', this.pointerUp); canvas.removeEventListener('pointercancel', this.pointerUp); canvas.removeEventListener('webglcontextlost', this.contextLost);
     const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>();
-    this.scene.traverse(object => { const mesh = object as THREE.Mesh; if (mesh.geometry) geometries.add(mesh.geometry); if (mesh.material) for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) { materials.add(m); if ((m as THREE.MeshStandardMaterial).map) textures.add((m as THREE.MeshStandardMaterial).map!); } });
+    this.scene.traverse(object => { const mesh = object as THREE.Mesh; if (mesh.geometry) geometries.add(mesh.geometry); if (mesh.material) for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) { materials.add(m); for(const key of ['map','bumpMap','roughnessMap','normalMap'] as const)if((m as THREE.MeshStandardMaterial)[key])textures.add((m as THREE.MeshStandardMaterial)[key]!); } });
     geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); textures.forEach(t => t.dispose()); this.renderer.dispose(); canvas.remove(); this.debug?.remove();
   }
 }
