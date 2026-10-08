@@ -59,7 +59,7 @@ Quick View, project case studies, résumé, contact links, command palette and n
 
 ## Architecture and performance
 
-- `src/game/World/MumbaiStreet.ts`: authored street, open-door interior, original plaster/sign atlas, instanced façades/props/pedestrians and deterministic traffic.
+- `src/game/World/MumbaiStreet.ts`: authored street, open-door interior, original plaster/sign atlas, instanced façades/props, skinned pedestrians and authored crowd/traffic routes.
 - `src/game/World/streetLayout.ts`: human-scale stops, camera-relative movement and road waypoints.
 - `src/game/World/WalkingBody.ts`: upright collision volume, loaded with the world so Quick View stays independent of physics.
 - `src/core/WorldEngine.ts`: first-person physics body, pointer lock/drag/touch controls, fixed-step simulation, passenger camera, pickup, meter, overlay pause and disposal.
@@ -67,9 +67,9 @@ Quick View, project case studies, résumé, contact links, command palette and n
 - `src/ui/CityExperience.tsx`: directory, transport instruments, sourced content and accessible theatre.
 - `src/data/*.ts`: unchanged project/evidence sources; updated city names.
 
-One sunset shadow map is cached; mobile disables real-time shadows. Four local lights provide warm pools. Repeated geometry is instanced, signs share an atlas, transit parts are merged, and pixel ratio is capped. `/?debug#world` reports draw calls, triangles, textures and eye height. Static cached shadows do not follow moving pedestrians or traffic. No third-person or player-car mode is exposed.
+The directional shadow map refreshes at a bounded rate during motion and stays cached in reduced motion; mobile disables real-time shadows. Four local lights provide warm pools. Repeated geometry is instanced, signs share an atlas, transit parts are merged, and pixel ratio is capped. `/?debug#world` reports draw calls, triangles, textures and eye height. Reduced-motion views render on demand; full-motion shadows follow the moving crowd and traffic at the bounded refresh rate. No third-person or player-car mode is exposed.
 
-No audio is currently enabled. Real devices, hardware GPU performance and other browser engines need separate evaluation. The current street is a reviewable visual checkpoint, not a claim that the whole reference world has been recreated. See [docs/CITY-QA.md](docs/CITY-QA.md) for validation and captured evidence.
+City sound is optional and starts muted. Real devices, hardware GPU performance and other browser engines need separate evaluation. The current street is a reviewable visual checkpoint, not a claim that the whole reference world has been recreated. See [docs/CITY-QA.md](docs/CITY-QA.md) for validation and captured evidence.
 
 ## Deploy
 
@@ -82,3 +82,9 @@ The `feat/mumbai-visual-rebuild` revision upgrades this same street with four de
 See [reference audit](docs/GULMOHAR_REFERENCE_AUDIT.md) and [visual rebuild QA](docs/VISUAL-REBUILD-QA.md) for evidence and the expansion gate. The public reference could not be fetched through this workspace's network. This is still the CST/Fort slice; the seven other physical districts and a walk-in cinema remain future work.
 
 To reproduce the review captures, start Vite and run `node scripts/capture-street.mjs`. Set `CHROMIUM_PATH` when Chromium is installed elsewhere. `STREET_CAPTURE_URL` can select a different development-server address; the fixed review poses require Vite development mode.
+
+### CST–Fort production overhaul branch
+
+The isolated `feature/mumbai-production-overhaul` branch adds cached through-cut façade panels, a trusted BVH visibility/ground-query layer, original skinned people with continuous garments, Recast sidewalk/crossing navigation, curved lane traffic with yielding, and selectable High/Medium/Low rendering. Cannon movement and the existing portfolio/ride flows remain. Physical expansion stays gated on actual first-person art review and laptop GPU measurements.
+
+See `docs/MUMBAI_BASELINE_AUDIT.md`, `docs/SECURITY_DEPENDENCY_AUDIT.md`, `docs/VISUAL_QUALITY_REVIEW.md`, `docs/PERFORMANCE_REPORT.md` and `docs/FINAL_VERIFICATION.md`. Capture native comparisons against a running development server with `STREET_CAPTURE_DIR=docs/screenshots/production-overhaul/after STREET_CAPTURE_DETAILS=1 node scripts/capture-street.mjs`. `node scripts/profile-street.mjs` profiles authored crowd/traffic simulation on Node; it does not benchmark GPU/browser FPS.

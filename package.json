@@ -12,10 +12,16 @@
     "test:browser": "playwright test"
   },
   "dependencies": {
+    "@recast-navigation/core": "0.43.1",
+    "@recast-navigation/generators": "0.43.1",
+    "@recast-navigation/wasm": "0.43.1",
     "cannon-es": "^0.20.0",
+    "postprocessing": "6.39.5",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "three": "^0.180.0"
+    "three": "^0.180.0",
+    "three-bvh-csg": "0.0.18",
+    "three-mesh-bvh": "0.9.15"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

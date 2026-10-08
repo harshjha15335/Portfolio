@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { seededRandom } from './StreetArchitecture';
-export type Surface = 'plaster' | 'stone' | 'asphalt' | 'paving' | 'metal' | 'wood' | 'fabric' | 'glass' | 'solid' | 'glow';
+export type Surface = 'plaster' | 'stone' | 'asphalt' | 'paving' | 'metal' | 'wood' | 'fabric' | 'glass' | 'solid' | 'glow' | 'foliage';
 
 /** Small original, repeatable surface maps. No downloaded artwork. */
 export class StreetMaterials {
@@ -13,8 +13,9 @@ export class StreetMaterials {
     const key = `${surface}:${color}`;
     if (!this.materials.has(key)) {
       const map = this.maps.get(surface) ?? null;
-      const roughness = { plaster:.94, stone:.84, asphalt:.98, paving:.9, metal:.48, wood:.76, fabric:.96, glass:.22, solid:.8, glow:1 }[surface];
+      const roughness = { plaster:.94, stone:.84, asphalt:.98, paving:.9, metal:.48, wood:.76, fabric:.96, glass:.22, solid:.8, glow:1, foliage:.87 }[surface];
       const material = surface === 'glow' ? new THREE.MeshBasicMaterial({color}) : new THREE.MeshStandardMaterial({color, map, roughness, metalness:surface === 'metal' ? .35 : 0, bumpMap:map, bumpScale:surface === 'asphalt' ? .018 : surface === 'plaster' ? .008 : .012, envMapIntensity:surface === 'glass' ? .6 : .25});
+      if(surface==='foliage'&&material instanceof THREE.MeshStandardMaterial){material.side=THREE.DoubleSide;material.emissive.set(color);material.emissiveIntensity=.045;}
       material.userData.surface = surface; this.materials.set(key, material);
     }
     return this.materials.get(key)!;

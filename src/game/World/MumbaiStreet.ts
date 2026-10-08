@@ -4,7 +4,12 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createTransitModel, animateTransit } from './TransitModel';
 import { StreetMaterials, type Surface } from './StreetMaterials';
 import { facadeSpec, seededRandom } from './StreetArchitecture';
-import { pointAtDistance, routeLength } from './transit';
+import { FacadePanels } from './architecture/FacadePanels';
+import { SpatialIndex } from './spatial/SpatialIndex';
+import { createHuman } from './npc/NPCFactory';
+import { NavMeshManager, type Obstacle } from './navigation/NavMeshManager';
+import { RoadTraffic, pedestrianGreen } from './traffic/RoadTraffic';
+import type { CrowdAgent } from '@recast-navigation/core';
 
 type Triple = [number, number, number];
 export interface StreetInteraction { id: string; position: THREE.Vector3; label: string }
@@ -35,6 +40,20 @@ export class MumbaiStreet {
   private signIndex = 0;
   private signCanvas: HTMLCanvasElement;
   readonly facadeCount = 14;
+  private panels = new FacadePanels();
+  private colliderGeometry: THREE.BufferGeometry[] = [];
+  private obstacles: Obstacle[] = [];
+  spatial!: SpatialIndex;
+  private navigation: NavMeshManager | null = null;
+  private disposed = false;
+  private walkers: Array<{group:THREE.Group;agent?:CrowdAgent;target:number;wait:number}> = [];
+  private trafficSystem = new RoadTraffic();
+  private trafficVehicles: THREE.Group[] = [];
+  private previousTime = 0;
+  private viewPosition = new THREE.Vector3();
+  navigationStatus = 'loading';
+  npcUpdateMs = 0; trafficUpdateMs = 0;
+  private destinations = [{x:4.9,y:0,z:8},{x:5,y:0,z:-26},{x:4.8,y:0,z:-45},{x:-4.9,y:0,z:-43},{x:-4.8,y:0,z:-22},{x:-4.8,y:0,z:7}];
 
   constructor(private physics: CANNON.World) {
     this.signCanvas = document.createElement('canvas'); this.signCanvas.width = 2048; this.signCanvas.height = 2048;
@@ -42,6 +61,8 @@ export class MumbaiStreet {
     this.landscape();
     for (let i = 0; i < 7; i++) for (const side of [-1, 1]) this.facade(side, 4 - i * 9.5, i);
     this.station(); this.researchRoom(); this.streetDetails(); this.vegetation(); this.people(); this.traffic();
+    this.spatial = new SpatialIndex(this.colliderGeometry); this.colliderGeometry.forEach(g=>g.dispose()); this.colliderGeometry=[];
+    void NavMeshManager.create(this.obstacles).then(nav=>{if(this.disposed){nav.dispose();return;}this.navigation=nav;this.navigationStatus='ready';for(const [i,w] of this.walkers.entries()){w.agent=nav.add({x:w.group.position.x,y:0,z:w.group.position.z});w.target=i%this.destinations.length;w.agent.requestMoveTarget(this.destinations[w.target]);}}).catch(()=>{this.navigationStatus='unavailable';});
     this.signAtlas.needsUpdate = true; this.instanceStatics(); this.mergeSigns(); this.instancePedestrians();
   }
   private material(color: string, glow = false, wall = false, surface: Surface = 'solid') {
@@ -55,13 +76,17 @@ export class MumbaiStreet {
     if (solid) {
       parent.updateWorldMatrix(true, false); const p = mesh.getWorldPosition(new THREE.Vector3());
       const body = new CANNON.Body({ mass: 0, shape: new CANNON.Box(new CANNON.Vec3(size[0] / 2, size[1] / 2, size[2] / 2)), position: new CANNON.Vec3(p.x, p.y, p.z) });
-      const q = mesh.getWorldQuaternion(new THREE.Quaternion()); body.quaternion.set(q.x, q.y, q.z, q.w); this.physics.addBody(body);
+      const q = mesh.getWorldQuaternion(new THREE.Quaternion()); body.quaternion.set(q.x, q.y, q.z, q.w); this.physics.addBody(body); this.recordCollider(size,p,q);
     }
     return mesh;
   }
   private solidProxy(size:Triple,position:Triple,parent:THREE.Object3D) {
     parent.updateWorldMatrix(true,false);const p=new THREE.Vector3(...position).applyMatrix4(parent.matrixWorld),q=parent.getWorldQuaternion(new THREE.Quaternion());
-    const body=new CANNON.Body({mass:0,shape:new CANNON.Box(new CANNON.Vec3(size[0]/2,size[1]/2,size[2]/2)),position:new CANNON.Vec3(p.x,p.y,p.z)});body.quaternion.set(q.x,q.y,q.z,q.w);this.physics.addBody(body);
+    const body=new CANNON.Body({mass:0,shape:new CANNON.Box(new CANNON.Vec3(size[0]/2,size[1]/2,size[2]/2)),position:new CANNON.Vec3(p.x,p.y,p.z)});body.quaternion.set(q.x,q.y,q.z,q.w);this.physics.addBody(body);this.recordCollider(size,p,q);
+  }
+  private recordCollider(size:Triple,p:THREE.Vector3,q:THREE.Quaternion) {
+    const geometry=new THREE.BoxGeometry(...size).applyMatrix4(new THREE.Matrix4().compose(p,q,new THREE.Vector3(1,1,1)));this.colliderGeometry.push(geometry);
+    const bounds=new THREE.Box3().setFromBufferAttribute(geometry.attributes.position as THREE.BufferAttribute);if(bounds.min.y<1.8&&bounds.max.y>.2)this.obstacles.push({minX:bounds.min.x,maxX:bounds.max.x,minZ:bounds.min.z,maxZ:bounds.max.z});
   }
   private cylinder(radius: number, height: number, position: Triple, color: string, parent: THREE.Object3D = this.group, glow = false) { return this.shape(this.cylinderGeometry, [radius, height, radius], position, color, parent, glow); }
   private wire(a: THREE.Vector3, b: THREE.Vector3, width = .024, color = '#242635', parent: THREE.Object3D = this.group) {
@@ -88,8 +113,9 @@ export class MumbaiStreet {
   }
   private makeLeafCluster() {
     const random=seededRandom('leaf-cluster');const pieces:THREE.BufferGeometry[]=[];
-    for(let i=0;i<14;i++) {
-      const leaf=new THREE.SphereGeometry(1,4,2);leaf.scale(.12+random()*.08,.028,.055+random()*.05);leaf.rotateY(random()*Math.PI);leaf.rotateZ(random()*.8-.4);leaf.translate((random()-.5)*.9,(random()-.5)*.3,(random()-.5)*.9);pieces.push(leaf);
+    for(let i=0;i<20;i++) {
+      const leaf=new THREE.BufferGeometry();leaf.setAttribute('position',new THREE.Float32BufferAttribute([0,.025,0,-.055,0,-.06,0,0,-.18,.055,0,-.06,0,0,.085],3));leaf.setIndex([0,2,1,0,3,2,0,4,3,0,1,4]);leaf.computeVertexNormals();leaf.setAttribute('uv',new THREE.Float32BufferAttribute([.5,.5,0,.35,.5,0,1,.35,.5,1],2));
+      leaf.scale(.75+random()*.8,1,.75+random()*.8);leaf.rotateY(random()*Math.PI*2);leaf.rotateZ(random()*.6-.3);leaf.translate((random()-.5)*.95,(random()-.5)*.38,(random()-.5)*.95);pieces.push(leaf);
     }
     const merged=mergeGeometries(pieces)!;pieces.forEach(p=>p.dispose());return merged;
   }
@@ -99,6 +125,7 @@ export class MumbaiStreet {
   private landscape() {
     const ground = new CANNON.Body({ mass: 0, shape: new CANNON.Plane() }); ground.quaternion.setFromEuler(-Math.PI / 2, 0, 0); this.physics.addBody(ground);
     this.box([100, .1, 150], [0, -.1, -26], '#585963');
+    this.colliderGeometry.push(new THREE.BoxGeometry(100,.1,150).translate(0,-.05,-26));
     this.box([7.8, .04, 78], [0, -.02, -22], '#585b5d', false, this.group, false, false, 'asphalt');
     // Human-height physics floor stays flat; the pavement lip is deliberately low.
     for (const side of [-1, 1]) {
@@ -143,7 +170,13 @@ export class MumbaiStreet {
           frontageBox([3.35,1.95,.035],[x,1.25,-.55],'#756851',false,g,false,false,'wood');
           for(const shelf of [.5,1,1.5]){
             frontageBox([3.3,.07,.45],[x,shelf,-.22],'#9e8261',false,g,false,false,'wood');
-            for(let n=0;n<8;n++)frontageBox([.14+random()*.12,.15+random()*.14,.15],[x-1.38+n*.38,shelf+.12,-.16],['#ac9172','#808c70','#b07553','#bead83'][n%4]);
+            for(let n=0;n<8;n++){
+              const px=x-1.38+n*.38,tint=['#ac9172','#808c70','#b07553','#bead83'][n%4];
+              if(index===0||index===5){this.cylinder(.067,.18,[px,shelf+.13,-.18],tint,g);frontageBox([.16,.018,.16],[px,shelf+.23,-.18],'#c5bca6');}
+              else if(index===2||index===4){const book=frontageBox([.055,.23+random()*.1,.17],[px,shelf+.15,-.17],tint);book.rotation.z=random()*.12-.06;for(const dy of [-.06,.06])frontageBox([.057,.012,.012],[px,shelf+.15+dy,-.078],'#d0c4a5');}
+              else if(index===3){frontageBox([.29,.07,.22],[px,shelf+.06,-.16],tint,false,g,false,false,'fabric');frontageBox([.24,.06,.2],[px,shelf+.125,-.16],'#9a9f87',false,g,false,false,'fabric');}
+              else frontageBox([.15,.17,.16],[px,shelf+.12,-.16],tint);
+            }
           }
           frontageBox([2.85,.055,.09],[x,2.24,-.15],index%2?'#bfdbd1':'#e5bf7c',false,g,true);
           frontageBox([3.3,.54,.5],[x,.3,.13],'#867158',false,g,false,false,'wood');
@@ -165,18 +198,20 @@ export class MumbaiStreet {
     for(let floor=0;floor<spec.floors;floor++) {
       const y=4.55+floor*spec.floorHeight;
       // Spandrels and piers frame sunken glass. Thin shaded reveals bake recess occlusion.
-      frontageBox([width,spec.floorHeight-1.65,.6],[0,y-1.65/2-(spec.floorHeight-1.65)/2,-.43],color,false,g,false,true);
-      for(const x of [-4.05,-1.42,1.42,4.05])frontageBox([x===-4.05||x===4.05?.8:1.08,1.68,.62],[x,y,-.42],color,false,g,false,true);
+      // Cached through-cut wall panels expose continuous, physically deep reveals.
+      for(const x of [-2.8,0,2.8]){const panel=this.shape(this.panels.window(style),[1,1,1],[x,y,-.3],color,g,false,false,true,'plaster');panel.updateWorldMatrix(true,false);this.colliderGeometry.push(panel.geometry.clone().applyMatrix4(panel.matrixWorld));}
+      for(const x of [-4.27,4.27])frontageBox([.32,spec.floorHeight,.54],[x,y,-.3],color,false,g,false,true);
+      if(spec.floorHeight>2.55)frontageBox([width,spec.floorHeight-2.55,.54],[0,y+1.275+(spec.floorHeight-2.55)/2,-.3],color,false,g,false,true);
       for(const [column,x] of [-2.8,0,2.8].entries()) {
-        frontageBox([1.79,1.7,.12],[x,y,-.35],'#4d504c');
+        frontageBox([1.79,1.7,.12],[x,y,-.75],'#494b43');
         const lit=(floor+column+index+(side>0?1:0))%4===0;
-        frontageBox([1.42,1.4,.025],[x,y,-.29],lit?'#c3aa7f':'#536569',false,g,lit,false,'glass');
+        frontageBox([1.42,1.4,.025],[x,y,-.62],lit?'#c3aa7f':'#536569',false,g,lit,false,'glass');
         for(const sx of [-.84,.84])frontageBox([.09,1.73,.19],[x+sx,y,-.16],'#a6977e');
         frontageBox([1.8,.1,.29],[x,y-.87,-.13],'#b8aa92',false,g,false,false,'stone');
         frontageBox([1.79,.12,.21],[x,y+.88,-.17],'#b8aa92',false,g,false,false,'stone');
         frontageBox([.045,1.45,.045],[x,y,-.21],'#526560');
         frontageBox([1.42,.045,.05],[x,y+.1,-.2],'#526560');
-        if(lit) {frontageBox([.27,1.37,.035],[x-.48,y,-.24],'#8f8266');frontageBox([.2,1.37,.035],[x+.51,y,-.24],'#8f8266');}
+        if(lit) {frontageBox([.27,1.37,.035],[x-.48,y,-.59],'#8f8266');frontageBox([.2,1.37,.035],[x+.51,y,-.59],'#8f8266');}
         else if((column+floor+index)%3===0) for(const shutter of [-1,1]) {
           const sh=new THREE.Group();sh.position.set(x+shutter*.92,y,-.02);sh.rotation.y=shutter*.2;g.add(sh);
           frontageBox([.3,1.52,.07],[0,0,0],'#677c71',false,sh);for(let n=0;n<9;n++)frontageBox([.32,.03,.08],[0,-.61+n*.15,.04],'#84917b',false,sh);
@@ -266,6 +301,26 @@ export class MumbaiStreet {
     for(const side of [-1,1])for(let ring=1;ring<=3;ring++){
       const cy=1.78,cz=-3.2+side*.4;for(let n=0;n<20;n++){const point=(t:number)=>new THREE.Vector3(-4.016,cy+Math.sin(t)*ring*.13,cz+Math.cos(t)*ring*.22);this.wire(point(n/20*Math.PI*2),point((n+1)/20*Math.PI*2),.008,side>0?'#a16d50':'#527f80',g);}
     }
+    // Authored teaching exhibit: opposite point charges and sampled field directions.
+    // This is a schematic, not a claimed FFprime result or measured benchmark.
+    this.box([1.75,.08,.86],[-2.45,1.02,-4.5],'#b3b1a0',false,g,false,false,'stone');
+    for(const x of [-3.12,-1.78])this.box([.045,1,.56],[x,.5,-4.5],'#677168',false,g,false,false,'metal');
+    const diagram=new THREE.Group();diagram.position.set(-2.45,1.25,-4.5);g.add(diagram);
+    for(const side of [-1,1]){this.shape(this.sphereGeometry,[.075,.075,.075],[side*.32,0,0],side>0?'#b17855':'#5c8588',diagram);this.sign(diagram,side>0?'+q':'−q','',[side*.32,.17,.1],.23,'#b9b6a5','#394c4c');}
+    for(let ix=-3;ix<=3;ix++)for(let iz=-2;iz<=2;iz++){
+      const x=ix*.19,z=iz*.19;if(Math.hypot(x-.32,z)<.15||Math.hypot(x+.32,z)<.15)continue;
+      let ex=0,ez=0;for(const charge of [-1,1]){const dx=x-charge*.32,r=Math.max(.08,Math.hypot(dx,z)),scale=charge/(r*r*r);ex+=dx*scale;ez+=z*scale;}
+      const length=Math.hypot(ex,ez),a=new THREE.Vector3(x,0,z),b=new THREE.Vector3(x+ex/length*.075,.015,z+ez/length*.075);this.wire(a,b,.006,'#536d68',diagram);
+    }
+    this.sign(g,'POINT-CHARGE FIELD · SCHEMATIC','Read the interactive research terminal',[-2.45,1.65,-4.9],1.85,'#b4b09b','#394c49');
+    // Research-library shelves, journals, pin board and a glazed cabinet create purposeful room depth.
+    this.box([.4,2.05,2.6],[3.7,1.05,-3.1],'#81745f',true,g,false,false,'wood');
+    for(const y of [.35,.9,1.45,1.95]){
+      this.box([.5,.045,2.65],[3.6,y,-3.1],'#b2a185',false,g,false,false,'wood');
+      for(let n=0;n<10;n++){this.box([.31,.32,.09],[3.55,y+.18,-4.18+n*.23],['#87988c','#aa9271','#677e80'][n%3],false,g);this.box([.02,.018,.09],[3.385,y+.26,-4.18+n*.23],'#d3c7a9',false,g);}
+    }
+    this.box([1.4,.9,.04],[1.55,1.8,-6.29],'#a69070',false,g,false,false,'wood');
+    for(const x of [1.15,1.65]){this.box([.36,.52,.018],[x,1.83,-6.26],'#d6d1bb',false,g);for(let n=0;n<6;n++)this.box([.27,.013,.02],[x,1.97-n*.05,-6.247],'#75837b',false,g);}
     const notebook=this.box([.28,.02,.2],[.25,.874,-4.6],'#c1b28f',false,g);notebook.rotation.y=.2;
     this.box([.8,.09,.6],[2.7,.46,-4.4],'#6c7769',false,g);this.box([.8,.55,.08],[2.7,.75,-4.1],'#6c7769',false,g);
     for(const x of [2.4,3])this.box([.055,.45,.45],[x,.225,-4.4],'#58655b',false,g);
@@ -324,9 +379,9 @@ export class MumbaiStreet {
         const angle=branch/7*Math.PI*2,reach=1+random()*1.1;
         const start=new THREE.Vector3(x-.08,height-1.3,z),end=new THREE.Vector3(x+Math.cos(angle)*reach,height-.35+random()*.55,z+Math.sin(angle)*reach);
         this.wire(start,end,.037,'#7d7361');
-        for(let leaf=0;leaf<6;leaf++) {
+        for(let leaf=0;leaf<5;leaf++) {
           const position=end.clone().add(new THREE.Vector3((random()-.5)*1.35,(random()-.5)*.65,(random()-.5)*1.35));
-          const mesh=this.shape(this.leafGeometry,[1.5,1.5,1.5],position.toArray() as Triple,['#697e52','#829362','#526d50','#8a9865'][leaf%4]);mesh.rotation.y=random()*Math.PI;
+          const mesh=this.shape(this.leafGeometry,[1.65,1.65,1.65],position.toArray() as Triple,['#697e52','#829362','#526d50','#8a9865'][leaf%4],this.group,false,false,true,'foliage');mesh.rotation.y=random()*Math.PI;
           if((branch+leaf)%5===0)this.shape(this.sphereGeometry,[.10,.055,.10],position.toArray() as Triple,'#b87b50');
         }
       }
@@ -344,48 +399,10 @@ export class MumbaiStreet {
     this.box([.65, .05, .06], [0, 1, -.55], '#45494c', false, g);
   }
   private person(position: Triple, shirt: string, moving: boolean, seated=false) {
-    const g=new THREE.Group();g.position.set(...position);this.group.add(g);this.pedestrians.push(g);
-    const random=seededRandom(`person:${position.join(':')}`),height=.94+random()*.12;g.scale.setScalar(height);
-    const skin=['#a77c5e','#bc9374','#86644d','#c09c7b'][Math.floor(random()*4)];const pants=['#59615c','#52636a','#787164'][Math.floor(random()*3)];
-    const make=(geometry:THREE.BufferGeometry,size:Triple,p:Triple,color:string,parent:THREE.Object3D=g)=>this.shape(geometry,size,p,color,parent,false,false,false);
-    make(this.torsoGeometry,[1,.5,.7],[0,1.15,0],shirt);
-    make(this.sphereGeometry,[.145,.12,.105],[0,.91,0],pants);
-    make(this.cylinderGeometry,[.052,.1,.052],[0,1.45,0],skin);
-    make(this.sphereGeometry,[.105,.135,.102],[0,1.62,0],skin);
-    make(this.sphereGeometry,[.109,.055,.106],[0,1.721,.011],'#393a34');
-    make(this.sphereGeometry,[.02,.03,.026],[0,1.61,-.098],skin);
-    for(const side of [-1,1]){make(this.sphereGeometry,[.015,.026,.019],[side*.105,1.62,0],skin);make(this.sphereGeometry,[.007,.009,.004],[side*.034,1.642,-.096],'#4a4338');}
-    const hips:THREE.Group[]=[],knees:THREE.Group[]=[],shoulders:THREE.Group[]=[],elbows:THREE.Group[]=[];
-    for(const side of [-1,1]) {
-      const hip=new THREE.Group();hip.position.set(side*.095,.9,0);g.add(hip);hips.push(hip);
-      make(this.cylinderGeometry,[.068,.38,.068],[0,-.19,0],pants,hip);
-      make(this.sphereGeometry,[.073,.077,.074],[0,-.39,0],pants,hip);
-      const knee=new THREE.Group();knee.position.y=-.39;hip.add(knee);knees.push(knee);
-      make(this.cylinderGeometry,[.052,.39,.052],[0,-.195,0],pants,knee);
-      make(this.sphereGeometry,[.075,.048,.14],[0,-.43,-.045],'#343b38',knee);
-      const shoulder=new THREE.Group();shoulder.position.set(side*.18,1.37,0);g.add(shoulder);shoulders.push(shoulder);
-      make(this.sphereGeometry,[.081,.08,.082],[0,0,0],shirt,shoulder);
-      make(this.cylinderGeometry,[.052,.245,.052],[side*.015,-.12,0],shirt,shoulder);
-      const elbow=new THREE.Group();elbow.position.set(side*.015,-.245,0);shoulder.add(elbow);elbows.push(elbow);
-      make(this.sphereGeometry,[.052,.06,.052],[0,0,0],skin,elbow);
-      make(this.cylinderGeometry,[.039,.23,.039],[0,-.115,0],skin,elbow);
-      make(this.sphereGeometry,[.039,.059,.035],[0,-.27,0],skin,elbow);
-    }
-    if(seated){g.position.y-=.45;hips.forEach(h=>h.rotation.x=-Math.PI/2);knees.forEach(k=>k.rotation.x=Math.PI/2);}
-    if(!moving&&random()>.5) {shoulders[0].rotation.x=-.6;elbows[0].rotation.x=-.8;make(this.boxGeometry,[.06,.1,.008],[-.19,1.13,-.22],'#555e59');}
-    this.contact(0,0,.23,.15,g);
-    const speed=.7+random()*.32,phase=random()*Math.PI*2;
-    this.motion.push(time=>{
-      if(moving) {
-        // Continuous pavement back-and-forth; turn at endpoints without respawning in view.
-        const cycle=(time*speed+position[2]+60)%104,progress=cycle<52?cycle:104-cycle;
-        g.position.z=8-progress;const desired=cycle<52?0:Math.PI;
-        const turn=Math.atan2(Math.sin(desired-g.rotation.y),Math.cos(desired-g.rotation.y));g.rotation.y+=turn*.18;
-        const gait=time*speed*6+phase;g.position.y=Math.abs(Math.sin(gait))*.014;
-        for(let i=0;i<2;i++){const swing=Math.sin(gait+i*Math.PI);hips[i].rotation.x=swing*.34;knees[i].rotation.x=Math.max(0,-swing)*.52;shoulders[i].rotation.x=-swing*.24;elbows[i].rotation.x=-.12-Math.max(0,swing)*.12;}
-      } else {g.rotation.y=Math.sin(time*.35+phase)*.045; if(!seated){shoulders[1].rotation.z=Math.sin(time*.7+phase)*.035;elbows[1].rotation.x=-.18+Math.sin(time*.4+phase)*.07;}}
-    });
-    return g;
+    const human=createHuman(`person:${position.join(':')}`,shirt),g=human.group;g.position.set(...position);if(seated)g.position.y-=.45;this.group.add(g);this.pedestrians.push(g);this.contact(0,0,.23,.15,g);
+    if(moving)this.walkers.push({group:g,target:0,wait:0});
+    let lastAnimation=-1;
+    this.motion.push(time=>{const distance=g.position.distanceTo(this.viewPosition);human.mesh.visible=distance<48;if(distance>18&&time-lastAnimation<.1)return;lastAnimation=time;const velocity=this.walkers.find(w=>w.group===g)?.agent?.velocity();human.animate(time,moving&&Boolean(velocity&&Math.hypot(velocity.x,velocity.z)>.08),seated);});return g;
   }
   private people() {
     for(let i=0;i<10;i++)this.person([i%2?4.9:-4.9,0,7-i*6],['#8b968c','#9c8279','#788d80','#b0a081','#748b99'][i%5],true);
@@ -395,21 +412,10 @@ export class MumbaiStreet {
   setQuality(low:boolean) { this.pedestrians.forEach((p,i)=>{p.visible=!low||i<3||i%2===0;}); }
   private traffic() {
     for (const kind of ['taxi', 'auto'] as const) {
-      const vehicle = createTransitModel(kind); vehicle.position.set(kind === 'taxi' ? 2.1 : -2.1, .02, 5); vehicle.rotation.y = kind === 'auto' ? Math.PI : 0; this.group.add(vehicle);
-      this.interactions.push({ id: `hail-${kind}`, label: `Hail ${kind === 'taxi' ? 'kaali-peeli taxi' : 'auto'}`, position: new THREE.Vector3(vehicle.position.x, 1, vehicle.position.z) });
+      const vehicle = createTransitModel(kind); vehicle.position.set(kind === 'taxi' ? 7.4 : -7.4, .02, 12); vehicle.rotation.y = kind === 'auto' ? Math.PI : 0; this.group.add(vehicle);this.solidProxy([2,1.5,3.8],[0,.8,0],vehicle);
+      this.interactions.push({ id: `hail-${kind}`, label: `Hail ${kind === 'taxi' ? 'kaali-peeli taxi' : 'auto'}`, position: new THREE.Vector3(kind==='taxi'?6.1:-6.1, 1, vehicle.position.z) });
     }
-    const loop = [{ x: 1.75, z: 12 }, { x: 1.75, z: -52 }, { x: 0, z: -54 }, { x: -1.75, z: -52 }, { x: -1.75, z: 12 }, { x: 0, z: 14 }, { x: 1.75, z: 12 }];
-    const length = routeLength(loop);
-    for (let i = 0; i < 3; i++) {
-      const vehicle = createTransitModel(i === 1 ? 'auto' : 'taxi'); this.group.add(vehicle);
-      this.motion.push(time => {
-        // Shared phase maintains spacing. A pause at the zebra crossing acts as a signal.
-        const clock = Math.floor(time / 24) * 20 + Math.min(time % 24, 20);
-        const p = pointAtDistance(loop, (clock * 3 + i * length / 3) % length);
-        vehicle.position.set(p.x, .02, p.z);
-        const turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.rotation.y+=turn*.18;animateTransit(vehicle,clock*3,turn);
-      });
-    }
+    for (let i=0;i<3;i++){const vehicle=createTransitModel(i===1?'auto':'taxi');this.group.add(vehicle);this.trafficVehicles.push(vehicle);const pose=this.trafficSystem.pose(i);vehicle.position.set(pose.x,.02,pose.z);vehicle.rotation.y=pose.heading;}
   }
   private instanceStatics() {
     this.group.updateMatrixWorld(true);
@@ -443,7 +449,21 @@ export class MumbaiStreet {
       instance.castShadow = meshes[0].material!==this.contactMaterial; instance.receiveShadow = true; instance.frustumCulled = false; this.group.add(instance); this.dynamicBatches.push({ instance, meshes });
     }
   }
-  update(time: number, reduced: boolean) {
+  dispose(){this.disposed=true;this.navigation?.dispose();this.navigation=null;this.spatial.dispose();this.panels.dispose();}
+  update(time: number, reduced: boolean, viewPosition?:THREE.Vector3) {
+    if(viewPosition)this.viewPosition.copy(viewPosition);const delta=reduced?0:Math.min(.08,Math.max(0,time-this.previousTime));this.previousTime=time;
+    const start=performance.now();
+    if(this.navigation&&delta){
+      for(const w of this.walkers){if(!w.agent)continue;const p=w.agent.position(),v=w.agent.velocity();
+        if(Math.hypot(p.x-this.destinations[w.target].x,p.z-this.destinations[w.target].z)<.65){w.agent.resetMoveTarget();w.wait+=delta;if(w.wait>3+(w.target%3)){w.target=(w.target+1)%this.destinations.length;w.wait=0;w.agent.requestMoveTarget(this.destinations[w.target]);}}
+        const approaching=Math.abs(p.z+12)<2.8&&Math.abs(p.x)>3.9&&Math.abs(p.x)<4.8;
+        w.agent.maxSpeed=approaching&&!pedestrianGreen(time)?0:Math.hypot(p.x-this.viewPosition.x,p.z-this.viewPosition.z)<.75?0:1;
+        w.group.position.set(p.x,.04,p.z);if(Math.hypot(v.x,v.z)>.05){const yaw=Math.atan2(-v.x,-v.z),turn=Math.atan2(Math.sin(yaw-w.group.rotation.y),Math.cos(yaw-w.group.rotation.y));w.group.rotation.y+=turn*(1-Math.exp(-7*delta));}
+      }
+      this.navigation.crowd.update(1/30,delta,3);
+    }
+    this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...this.walkers.filter(w=>Math.abs(w.group.position.x)<3.9).map(w=>({x:w.group.position.x,z:w.group.position.z}))]);
+    this.trafficVehicles.forEach((vehicle,i)=>{const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y+=turn*(1-Math.exp(-8*delta));animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);});this.trafficUpdateMs=performance.now()-trafficStart;
     for (const animate of this.motion) animate(reduced ? 0 : time);
     this.group.updateMatrixWorld(true);
     for (const { instance, meshes } of this.dynamicBatches) { meshes.forEach((mesh, i) => { let visible=true; for(let p:THREE.Object3D|null=mesh.parent;p&&p!==this.group;p=p.parent)if(!p.visible)visible=false; instance.setMatrixAt(i,visible?mesh.matrixWorld:new THREE.Matrix4().makeScale(0,0,0)); }); instance.instanceMatrix.needsUpdate = true; }

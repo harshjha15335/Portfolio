@@ -14,6 +14,8 @@ interface WorldOptions {
 }
 import { AdaptiveQuality } from './AdaptiveQuality';
 import { StreetAudio } from './StreetAudio';
+import { StreetRenderer, type RenderPreset } from './StreetRenderer';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 type Mode = 'intro' | 'world' | 'quick';
 
 /** First-person visitor and passenger camera. No personal vehicle or chase camera. */
@@ -30,6 +32,9 @@ export class WorldEngine {
   private quality: AdaptiveQuality;
   private reviewQuality=import.meta.env.DEV&&new URLSearchParams(location.search).get('review')==='1';
   private lastShadow=0;
+  private rendering!:StreetRenderer;
+  private renderPreset:RenderPreset='medium';
+  private environmentTarget!:THREE.WebGLRenderTarget;
   private audio: StreetAudio | null=null;
   private soundEnabled=false;
   private rideSpeed=0;
@@ -43,12 +48,14 @@ export class WorldEngine {
   private ride = idleRide(); private ridePath: Point[] = []; private rideLength = 0;
   private pickupDistance = 0; private queuedDestination: string | null = null;
   private transit = new THREE.Group(); private taxi = createTransitModel('taxi'); private auto = createTransitModel('auto');
+  private lastRenderPosition=new THREE.Vector3(Infinity,Infinity,Infinity);
+  private lastRenderRotation=new THREE.Quaternion();
   private debug: HTMLElement | null = null; private debugTime = 0; private debugFrames = 0;
 
   constructor(private container: HTMLElement, private options: WorldOptions) {
     this.reducedMotion = options.reducedMotion; this.quality=new AdaptiveQuality(options.mobile);
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, options.mobile ? 1.25 : 1.5));
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, options.mobile ? 1.25 : 1.5));this.renderer.info.autoReset=false;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.12;
     this.renderer.shadowMap.enabled = !options.mobile; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; this.renderer.shadowMap.autoUpdate = false; this.renderer.shadowMap.needsUpdate = true;
@@ -56,9 +63,11 @@ export class WorldEngine {
     canvas.setAttribute('aria-label', 'First-person Mumbai street. WASD or arrows to walk, Shift for a brisk walk, E to interact. Click to look with the mouse. Escape releases the mouse.');
     canvas.tabIndex = 0; canvas.style.touchAction = 'none'; canvas.style.display = 'block'; container.appendChild(canvas);
     this.lighting();
+    const pmrem=new THREE.PMREMGenerator(this.renderer),room=new RoomEnvironment();this.environmentTarget=pmrem.fromScene(room,.04);this.scene.environment=this.environmentTarget.texture;this.scene.environmentIntensity=.22;room.dispose();pmrem.dispose();
+    this.rendering=new StreetRenderer(this.renderer,this.scene,this.camera);this.renderPreset=options.mobile?'low':'medium';this.rendering.setPreset(this.renderPreset);
     this.physics.broadphase = new CANNON.SAPBroadphase(this.physics); this.physics.allowSleep = true;
     this.physics.defaultContactMaterial.friction = 0; this.physics.defaultContactMaterial.restitution = 0;
-    this.street = new MumbaiStreet(this.physics); this.scene.add(this.street.group); this.street.setQuality(this.quality.low);
+    this.street = new MumbaiStreet(this.physics); this.scene.add(this.street.group); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;
     this.visitor = createVisitor(STREET_SPAWN.x, STREET_SPAWN.z);
     this.physics.addBody(this.visitor);
     this.transit.add(this.taxi, this.auto); this.transit.visible = false; this.scene.add(this.transit);
@@ -72,19 +81,19 @@ export class WorldEngine {
     this.frameId = requestAnimationFrame(this.frame);
   }
   private lighting() {
-    this.scene.background = new THREE.Color('#bd8b83'); this.scene.fog = new THREE.Fog('#b3a395', 60, 145);
-    this.scene.add(new THREE.HemisphereLight('#bfd0e5', '#827666', 1.9));
-    const sun = new THREE.DirectionalLight('#ffd5a0', 2.6); sun.position.set(-28, 28, -52); sun.castShadow = !this.options.mobile;
+    this.scene.background = new THREE.Color('#c5c3b7'); this.scene.fog = new THREE.Fog('#bdbbac', 65, 145);
+    this.scene.add(new THREE.HemisphereLight('#c1d1da', '#827666', 1.25));
+    const sun = new THREE.DirectionalLight('#ffdfb1', 3.0); sun.position.set(-28, 28, -52); sun.castShadow = !this.options.mobile;
     sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 55, bottom: -55, near: 1, far: 150 });
     sun.target.position.set(0, 0, -26); sun.shadow.normalBias = .06; sun.shadow.bias = -.0002; this.scene.add(sun, sun.target);
     const sky = new THREE.Mesh(new THREE.SphereGeometry(145, 24, 12), new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false,
       vertexShader: 'varying vec3 vPosition; void main(){vPosition=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-      fragmentShader: `varying vec3 vPosition; void main(){vec3 d=normalize(vPosition); float h=max(d.y,0.0); vec3 horizon=vec3(.83,.48,.34); vec3 middle=vec3(.46,.34,.48); vec3 top=vec3(.10,.14,.27); vec3 c=mix(horizon,middle,smoothstep(0.,.28,h)); c=mix(c,top,smoothstep(.18,.85,h)); float cloud=sin(d.x*24.+d.z*12.)*sin(d.z*33.-d.y*42.); c=mix(c,vec3(.69,.48,.47),smoothstep(.38,.85,cloud)*smoothstep(.02,.12,h)*(1.-smoothstep(.25,.5,h))*.45); gl_FragColor=vec4(c,1.);}` }));
+      fragmentShader: `varying vec3 vPosition; void main(){vec3 d=normalize(vPosition); float h=max(d.y,0.0); vec3 horizon=vec3(.78,.75,.66); vec3 middle=vec3(.55,.65,.68); vec3 top=vec3(.30,.46,.57); vec3 c=mix(horizon,middle,smoothstep(0.,.28,h)); c=mix(c,top,smoothstep(.18,.85,h)); float cloud=sin(d.x*24.+d.z*12.)*sin(d.z*33.-d.y*42.); c=mix(c,vec3(.79,.78,.72),smoothstep(.38,.85,cloud)*smoothstep(.02,.12,h)*(1.-smoothstep(.25,.5,h))*.45); gl_FragColor=vec4(c,1.);}` }));
     this.scene.add(sky);
   }
   private reviewView = (event:Event) => {
-    // Five fixed, collision-clear eye-level review points. Development diagnostics only.
-    const views:Record<string,{x:number;z:number;yaw:number}>={spawn:STREET_SPAWN,station:{x:4.6,z:-4,yaw:Math.PI-.12},shops:{x:-4.8,z:-9,yaw:-.2},fort:{x:-5.1,z:-35,yaw:Math.PI/2},return:{x:4.7,z:-44,yaw:Math.PI+.16}};
+    // Fixed, collision-clear eye-level review points. Development diagnostics only.
+    const views:Record<string,{x:number;z:number;yaw:number}>={spawn:STREET_SPAWN,station:{x:4.6,z:-4,yaw:Math.PI-.12},shops:{x:-4.8,z:-9,yaw:-.2},fort:{x:-5.1,z:-35,yaw:Math.PI/2},return:{x:4.7,z:-44,yaw:Math.PI+.16},npc:{x:5.6,z:6.8,yaw:Math.PI+.12},shop:{x:-5.7,z:-15,yaw:Math.PI/2},vegetation:{x:-4.8,z:-15,yaw:.38},junction:{x:4.8,z:-8,yaw:.7},institute:{x:-4.6,z:-30,yaw:.54}};
     const view=views[(event as CustomEvent<string>).detail];if(view){this.endRide();this.placeVisitor(view.x,view.z,view.yaw);this.updateNear();}
   };
   setMode(mode: Mode) {
@@ -95,7 +104,8 @@ export class WorldEngine {
   }
   setPaused(paused: boolean) { this.paused = paused; this.audio?.setActive(this.soundEnabled&&!paused&&this.mode==='world'&&!document.hidden); this.pausedFrameDirty = true; this.releaseInput(); this.accumulator = 0; this.visitor.velocity.setZero(); if (paused) this.unlock(); }
   setSound(enabled:boolean) { this.soundEnabled=enabled; if(enabled&&!this.audio){try{this.audio=new StreetAudio();}catch{this.soundEnabled=false;}} this.audio?.setActive(enabled&&this.mode==='world'&&!this.paused&&!document.hidden); }
-  setReducedMotion(reduced: boolean) { this.reducedMotion = reduced; }
+  setRenderPreset(preset:RenderPreset){this.renderPreset=preset;this.rendering.setPreset(this.quality.low?'low':preset);this.renderer.shadowMap.enabled=preset!=='low'&&!this.options.mobile&&!this.quality.low;this.renderer.shadowMap.needsUpdate=true;this.resize();this.pausedFrameDirty=true;}
+  setReducedMotion(reduced: boolean) { this.reducedMotion = reduced;this.pausedFrameDirty=true; }
   focusLandmark(_id: string) { /* Reading an overlay never changes the visitor's viewpoint. */ }
   travelTo(id: string) {
     const stop = streetStops[id]; if (!stop) { this.options.onSelect(id); return; }
@@ -161,7 +171,7 @@ export class WorldEngine {
     }
   }
   private resize = () => {
-    const w = Math.max(this.container.clientWidth, 1), h = Math.max(this.container.clientHeight, 1); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,this.options.mobile?1.25:1.5)*this.quality.scale); this.renderer.setSize(w, h, false);
+    const w = Math.max(this.container.clientWidth, 1), h = Math.max(this.container.clientHeight, 1); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,this.options.mobile?1.25:1.5)*this.quality.scale); this.renderer.setSize(w, h, false);this.rendering?.resize(w,h);this.pausedFrameDirty=true;
   };
   private releaseInput = () => { this.keys.clear(); this.touchKeys.clear(); this.dragging = null; };
   private unlock() { if (document.pointerLockElement === this.renderer.domElement) document.exitPointerLock(); }
@@ -201,7 +211,7 @@ export class WorldEngine {
     for (const target of this.street.interactions) {
       const direction = new THREE.Vector3(target.position.x - this.visitor.position.x, 0, target.position.z - this.visitor.position.z);
       const d = direction.length();
-      if (d < distance && (d < 1.5 || direction.normalize().dot(view) > .4)) { distance = d; next = target.id; }
+      if (d < distance && (d < 1.5 || direction.normalize().dot(view) > .4) && this.street.spatial.visible(new THREE.Vector3(this.visitor.position.x,1.4,this.visitor.position.z),target.position)) { distance = d; next = target.id; }
     }
     if (next !== this.nearest) { this.nearest = next; this.options.onNear(next); }
   }
@@ -222,7 +232,7 @@ export class WorldEngine {
     const elapsed = this.lastTime ? (timestamp - this.lastTime) / 1000 : 0; const delta = Math.min(elapsed, .08); this.lastTime = timestamp;
     if (document.hidden || this.mode !== 'world') return;
     if (this.paused && !this.pausedFrameDirty) return;
-    this.pausedFrameDirty = false;
+    const forceRender=this.pausedFrameDirty;this.pausedFrameDirty = false;
     try {
       if (!this.paused) {
         this.time += delta;
@@ -245,18 +255,19 @@ export class WorldEngine {
           this.updateNear();
         }
       }
-      this.updateCamera(); this.street.update(this.time, this.reducedMotion);
-      if(!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)){this.resize();this.street.setQuality(this.quality.low);this.renderer.shadowMap.enabled=!this.options.mobile&&!this.quality.low;this.renderer.shadowMap.needsUpdate=true;}
+      this.updateCamera(); this.street.update(this.time, this.reducedMotion,this.camera.position);
+      const needsRender=!this.reducedMotion||forceRender||this.camera.position.distanceToSquared(this.lastRenderPosition)>1e-8||this.camera.quaternion.angleTo(this.lastRenderRotation)>.0001||(this.renderer.shadowMap.enabled&&this.renderer.shadowMap.needsUpdate);
+      if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)){this.resize();this.street.setQuality(this.quality.low);this.rendering.setPreset(this.quality.low?'low':this.renderPreset);this.resize();this.renderer.shadowMap.enabled=!this.options.mobile&&!this.quality.low&&this.renderPreset!=='low';this.renderer.shadowMap.needsUpdate=true;}
       if(!this.reducedMotion&&!this.paused&&this.time-this.lastShadow>.2&&this.renderer.shadowMap.enabled){this.renderer.shadowMap.needsUpdate=true;this.lastShadow=this.time;}
       this.audio?.update(this.ride.phase==='riding'?this.rideSpeed:Math.hypot(this.visitor.velocity.x,this.visitor.velocity.z),this.ride.phase!=='idle'&&this.ride.phase!=='hailing',this.ride.kind==='auto');
-      this.renderer.render(this.scene, this.camera);
+      if(needsRender){this.renderer.info.reset();this.rendering.render(delta);this.lastRenderPosition.copy(this.camera.position);this.lastRenderRotation.copy(this.camera.quaternion);this.debugFrames++;}
       if (timestamp - this.lastHud > 125) {
-        if (this.debug) { const canvas = this.renderer.domElement; canvas.dataset.worldX = this.visitor.position.x.toFixed(3); canvas.dataset.worldZ = this.visitor.position.z.toFixed(3); canvas.dataset.eyeHeight = this.camera.position.y.toFixed(3); canvas.dataset.lookYaw = this.yaw.toFixed(3); canvas.dataset.renderScale=this.quality.scale.toFixed(2); canvas.dataset.quality=this.quality.low?'low':'high'; canvas.dataset.cameraMode = this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? 'first-person' : 'passenger'; }
+        if (this.debug) { const canvas = this.renderer.domElement; canvas.dataset.worldX = this.visitor.position.x.toFixed(3); canvas.dataset.worldZ = this.visitor.position.z.toFixed(3); canvas.dataset.eyeHeight = this.camera.position.y.toFixed(3); canvas.dataset.lookYaw = this.yaw.toFixed(3); canvas.dataset.renderScale=this.quality.scale.toFixed(2); canvas.dataset.quality=this.quality.low?'low':'high'; canvas.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';canvas.dataset.navigation=this.street.navigationStatus;canvas.dataset.npcUpdateMs=this.street.npcUpdateMs.toFixed(3);canvas.dataset.trafficUpdateMs=this.street.trafficUpdateMs.toFixed(3);canvas.dataset.renderPreset=this.renderPreset; canvas.dataset.cameraMode = this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? 'first-person' : 'passenger'; }
         this.options.onSpeed(this.ride.phase === 'riding' ? this.rideSpeed * 3.6 : Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z) * 3.6);
         this.options.onPosition(this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? { x: this.visitor.position.x, z: this.visitor.position.z } : { x: this.transit.position.x, z: this.transit.position.z });
         if (this.ride.phase !== 'idle') this.options.onRide({ ...this.ride }); this.lastHud = timestamp;
       }
-      if (this.debug) { this.debugTime += elapsed; this.debugFrames++; if (this.debugTime > .75) { const info = this.renderer.info; this.debug.textContent = `${(this.debugFrames / this.debugTime).toFixed(1)} fps · ${info.render.calls} draws · ${info.render.triangles} triangles · ${info.memory.textures} textures · ${info.programs?.length??0} shaders · ${Math.round(((performance as Performance & {memory?:{usedJSHeapSize:number}}).memory?.usedJSHeapSize??0)/1048576)} MB JS · scale ${this.quality.scale.toFixed(2)} · eye ${this.camera.position.y.toFixed(2)}m`; this.debugTime = 0; this.debugFrames = 0; } }
+      if (this.debug) { this.debugTime += elapsed; if (this.debugTime > .75) { const info = this.renderer.info; this.debug.textContent = `${this.debugFrames?`${(this.debugFrames / this.debugTime).toFixed(1)} fps`:'idle'} · ${info.render.calls} draws · ${info.render.triangles} triangles · ${info.memory.textures} textures · ${info.programs?.length??0} shaders · ${Math.round(((performance as Performance & {memory?:{usedJSHeapSize:number}}).memory?.usedJSHeapSize??0)/1048576)} MB JS · scale ${this.quality.scale.toFixed(2)} · eye ${this.camera.position.y.toFixed(2)}m`; this.debugTime = 0; this.debugFrames = 0; } }
     } catch (error) { this.dispose(); this.options.onError(error); }
   };
   dispose() {
@@ -264,8 +275,9 @@ export class WorldEngine {
     window.removeEventListener('street-review-view',this.reviewView);window.removeEventListener('keydown', this.keyDown); window.removeEventListener('keyup', this.keyUp); window.removeEventListener('blur', this.releaseInput);
     document.removeEventListener('visibilitychange', this.visibilityChanged); document.removeEventListener('pointerlockchange', this.lockChanged);
     const canvas = this.renderer.domElement; canvas.removeEventListener('pointerdown', this.pointerDown); window.removeEventListener('pointermove', this.pointerMove); window.removeEventListener('pointerup', this.pointerUp); canvas.removeEventListener('pointercancel', this.pointerUp); canvas.removeEventListener('webglcontextlost', this.contextLost);
-    const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>();
-    this.scene.traverse(object => { const mesh = object as THREE.Mesh; if (mesh.geometry) geometries.add(mesh.geometry); if (mesh.material) for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) { materials.add(m); for(const key of ['map','bumpMap','roughnessMap','normalMap'] as const)if((m as THREE.MeshStandardMaterial)[key])textures.add((m as THREE.MeshStandardMaterial)[key]!); } });
-    geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); textures.forEach(t => t.dispose()); this.renderer.dispose(); canvas.remove(); this.debug?.remove();
+    this.street.dispose();this.rendering.dispose();this.environmentTarget.dispose();
+    const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>(), skeletons = new Set<THREE.Skeleton>();
+    this.scene.traverse(object => { const mesh = object as THREE.SkinnedMesh; if (mesh.isSkinnedMesh) skeletons.add(mesh.skeleton); if (mesh.geometry) geometries.add(mesh.geometry); if (mesh.material) for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) { materials.add(m); for(const key of ['map','bumpMap','roughnessMap','normalMap'] as const)if((m as THREE.MeshStandardMaterial)[key])textures.add((m as THREE.MeshStandardMaterial)[key]!); } });
+    skeletons.forEach(s => s.dispose()); geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); textures.forEach(t => t.dispose()); this.renderer.dispose(); canvas.remove(); this.debug?.remove();
   }
 }
