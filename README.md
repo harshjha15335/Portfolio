@@ -2,6 +2,8 @@
 
 A first-person portfolio street inspired by the supplied Mumbai reel: tightly packed plaster façades, balconies, bilingual shop signs, overhead wires, glowing windows, pedestrians and kaali-peeli traffic at dusk. All geometry and textures are original procedural work.
 
+For the full current system description, scope, controls, architecture, test evidence and limitations, see [Current implementation](docs/CURRENT_IMPLEMENTATION.md).
+
 ## Vertical slice first
 
 The current 3D world is **one CST-to-Fort street**, with 14 façades, shopfronts, a station host, taxi/auto stands, traffic, pavement detail and an open Fort research room. It replaces the earlier aerial diorama and personal driving experience. The remaining seven districts have their existing HTML portfolio experiences in the directory; their streets and interiors have deliberately **not** been generated before this street receives visual review. Film City currently retains its accessible slideshow; a walk-in cinema is a later expansion.
