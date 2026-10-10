@@ -1,5 +1,7 @@
 # CST–Fort first-person art review
 
+This is the historical `c929257` review from 2026-10-08. The subsequent polish is recorded in [CST_FORT_POLISH.md](CST_FORT_POLISH.md).
+
 **Expansion gate: not approved.** Code/test success does not establish the requested final art standard or laptop performance. The new systems and captures are concrete reviewable improvements on the dedicated branch; they must not be advertised as a finished nine-district city.
 
 ## Evidence and comparison method

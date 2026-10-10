@@ -47,7 +47,7 @@ export class WorldEngine {
   private nearest: string | null = null;
   private ride = idleRide(); private ridePath: Point[] = []; private rideLength = 0;
   private pickupDistance = 0; private queuedDestination: string | null = null;
-  private transit = new THREE.Group(); private taxi = createTransitModel('taxi'); private auto = createTransitModel('auto');
+  private transit = new THREE.Group(); private taxi = createTransitModel('taxi','close'); private auto = createTransitModel('auto','close');
   private lastRenderPosition=new THREE.Vector3(Infinity,Infinity,Infinity);
   private lastRenderRotation=new THREE.Quaternion();
   private debug: HTMLElement | null = null; private debugTime = 0; private debugFrames = 0;
@@ -81,14 +81,14 @@ export class WorldEngine {
     this.frameId = requestAnimationFrame(this.frame);
   }
   private lighting() {
-    this.scene.background = new THREE.Color('#c5c3b7'); this.scene.fog = new THREE.Fog('#bdbbac', 65, 145);
-    this.scene.add(new THREE.HemisphereLight('#c1d1da', '#827666', 1.25));
-    const sun = new THREE.DirectionalLight('#ffdfb1', 3.0); sun.position.set(-28, 28, -52); sun.castShadow = !this.options.mobile;
+    this.scene.background = new THREE.Color('#c0b29b'); this.scene.fog = new THREE.Fog('#b9ad98', 65, 145);
+    this.scene.add(new THREE.HemisphereLight('#b7c8d0', '#80745f', 1.0));
+    const sun = new THREE.DirectionalLight('#ffd29a', 2.65); sun.position.set(-28, 23, -52); sun.castShadow = !this.options.mobile;
     sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 55, bottom: -55, near: 1, far: 150 });
     sun.target.position.set(0, 0, -26); sun.shadow.normalBias = .06; sun.shadow.bias = -.0002; this.scene.add(sun, sun.target);
     const sky = new THREE.Mesh(new THREE.SphereGeometry(145, 24, 12), new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false,
       vertexShader: 'varying vec3 vPosition; void main(){vPosition=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-      fragmentShader: `varying vec3 vPosition; void main(){vec3 d=normalize(vPosition); float h=max(d.y,0.0); vec3 horizon=vec3(.78,.75,.66); vec3 middle=vec3(.55,.65,.68); vec3 top=vec3(.30,.46,.57); vec3 c=mix(horizon,middle,smoothstep(0.,.28,h)); c=mix(c,top,smoothstep(.18,.85,h)); float cloud=sin(d.x*24.+d.z*12.)*sin(d.z*33.-d.y*42.); c=mix(c,vec3(.79,.78,.72),smoothstep(.38,.85,cloud)*smoothstep(.02,.12,h)*(1.-smoothstep(.25,.5,h))*.45); gl_FragColor=vec4(c,1.);}` }));
+      fragmentShader: `varying vec3 vPosition; void main(){vec3 d=normalize(vPosition); float h=max(d.y,0.0); vec3 horizon=vec3(.76,.69,.56); vec3 middle=vec3(.46,.56,.59); vec3 top=vec3(.27,.38,.47); vec3 c=mix(horizon,middle,smoothstep(0.,.28,h)); c=mix(c,top,smoothstep(.18,.85,h)); float cloud=sin(d.x*24.+d.z*12.)*sin(d.z*33.-d.y*42.); c=mix(c,vec3(.79,.76,.66),smoothstep(.38,.85,cloud)*smoothstep(.02,.12,h)*(1.-smoothstep(.25,.5,h))*.3); gl_FragColor=vec4(c,1.);}` }));
     this.scene.add(sky);
   }
   private reviewView = (event:Event) => {
@@ -217,7 +217,7 @@ export class WorldEngine {
   }
   private updateCamera() {
     if (this.ride.phase !== 'idle' && this.ride.phase !== 'hailing') {
-      const local = new THREE.Vector3(this.ride.kind === 'auto' ? .18 : .4, this.ride.kind === 'auto' ? 1.31 : 1.34, .48);
+      const local = new THREE.Vector3(this.ride.kind === 'auto' ? .34 : -.32, this.ride.kind === 'auto' ? 1.34 : 1.37, .63);
       local.applyAxisAngle(new THREE.Vector3(0, 1, 0), this.transit.rotation.y); this.camera.position.copy(this.transit.position).add(local);
       this.camera.rotation.set(this.ridePitch, this.transit.rotation.y + this.rideYaw, 0);
     } else {
@@ -277,7 +277,7 @@ export class WorldEngine {
     const canvas = this.renderer.domElement; canvas.removeEventListener('pointerdown', this.pointerDown); window.removeEventListener('pointermove', this.pointerMove); window.removeEventListener('pointerup', this.pointerUp); canvas.removeEventListener('pointercancel', this.pointerUp); canvas.removeEventListener('webglcontextlost', this.contextLost);
     this.street.dispose();this.rendering.dispose();this.environmentTarget.dispose();
     const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>(), skeletons = new Set<THREE.Skeleton>();
-    this.scene.traverse(object => { const mesh = object as THREE.SkinnedMesh; if (mesh.isSkinnedMesh) skeletons.add(mesh.skeleton); if (mesh.geometry) geometries.add(mesh.geometry); if (mesh.material) for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) { materials.add(m); for(const key of ['map','bumpMap','roughnessMap','normalMap'] as const)if((m as THREE.MeshStandardMaterial)[key])textures.add((m as THREE.MeshStandardMaterial)[key]!); } });
+    this.scene.traverse(object => { const mesh = object as THREE.SkinnedMesh; if (mesh.isSkinnedMesh) skeletons.add(mesh.skeleton); if (mesh.geometry) geometries.add(mesh.geometry); for(const g of (mesh.userData.lodGeometries??[]) as THREE.BufferGeometry[]) geometries.add(g); if (mesh.material) for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) { materials.add(m); for(const key of ['map','bumpMap','roughnessMap','normalMap'] as const)if((m as THREE.MeshStandardMaterial)[key])textures.add((m as THREE.MeshStandardMaterial)[key]!); } });
     skeletons.forEach(s => s.dispose()); geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); textures.forEach(t => t.dispose()); this.renderer.dispose(); canvas.remove(); this.debug?.remove();
   }
 }

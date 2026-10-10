@@ -2,8 +2,20 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import type { TransitKind } from './transit';
+import { createSeatedDriver } from './npc/NPCFactory';
 
 type V = [number, number, number];
+let upholsteryMap:THREE.CanvasTexture|undefined;
+function upholsteryTexture(){
+  // Geometry/physics tools can construct vehicles without a browser canvas.
+  if(typeof document==='undefined')return null;
+  if(upholsteryMap)return upholsteryMap;
+  const canvas=document.createElement('canvas');canvas.width=canvas.height=128;const ctx=canvas.getContext('2d')!;
+  ctx.fillStyle='#b8b4a9';ctx.fillRect(0,0,128,128);
+  for(let y=0;y<128;y+=2)for(let x=0;x<128;x+=2){const shade=135+((x*17+y*31)%47);ctx.fillStyle=`rgba(${shade},${shade},${shade-8},.24)`;ctx.fillRect(x,y,1,2);}
+  for(let x=0;x<128;x+=32){ctx.fillStyle='#615e4c28';ctx.fillRect(x,0,1,128);ctx.fillStyle='#e4dfca35';ctx.fillRect(x+2,0,1,128);}
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(2,2);upholsteryMap=texture;return texture;
+}
 /** Lofted original bodywork. Eight-sided rings give soft shoulders without external models. */
 function bodywork(rings: Array<[number, number, number, number]>) {
   const vertices:number[]=[], indices:number[]=[];
@@ -12,19 +24,18 @@ function bodywork(rings: Array<[number, number, number, number]>) {
   for(const row of [0,rings.length-1])for(let j=1;j<7;j++) { const a=row*8; if(row===0)indices.push(a,a+j,a+j+1);else indices.push(a,a+j+1,a+j); }
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));g.setIndex(indices);g.computeVertexNormals();return g;
 }
-export function createTransitModel(kind: TransitKind) {
+export function createTransitModel(kind: TransitKind,cabinDetail:'close'|'street'='street') {
   const group=new THREE.Group();group.name=`${kind}-original-bodywork`;
   const rounded=new RoundedBoxGeometry(1,1,1,1,.07);
   const yellow=new THREE.MeshStandardMaterial({color:'#c9a343',roughness:.38,metalness:.18});
   const black=new THREE.MeshStandardMaterial({color:'#24292c',roughness:.43,metalness:.18});
   const rubber=new THREE.MeshStandardMaterial({color:'#1c2022',roughness:.97});
-  const fabric=new THREE.MeshStandardMaterial({color:'#3e4142',roughness:.96});
+  const fabric=new THREE.MeshStandardMaterial({color:'#676c65',map:upholsteryTexture(),roughness:.96});
+  const thread=new THREE.MeshStandardMaterial({color:'#8c8979',roughness:.95});
   const metal=new THREE.MeshStandardMaterial({color:'#9b9d92',roughness:.38,metalness:.65});
   const glass=new THREE.MeshStandardMaterial({color:'#a5b8ae',roughness:.24,transparent:true,opacity:.16,depthWrite:false,side:THREE.DoubleSide});
   const lamp=new THREE.MeshStandardMaterial({color:'#fff1c8',emissive:'#e9bc6f',emissiveIntensity:.8,roughness:.3});
   const red=new THREE.MeshStandardMaterial({color:'#a63e2d',emissive:'#90321c',emissiveIntensity:.4,roughness:.4});
-  const skin=new THREE.MeshStandardMaterial({color:'#a17b5d',roughness:.95});
-  const shirt=new THREE.MeshStandardMaterial({color:'#879280',roughness:.92});
   const add=(geometry:THREE.BufferGeometry,position:V,material:THREE.Material,size:V=[1,1,1])=>{const m=new THREE.Mesh(geometry,material);m.position.set(...position);m.scale.set(...size);m.castShadow=true;m.receiveShadow=true;group.add(m);return m;};
   const part=(size:V,position:V,material:THREE.Material)=>add(rounded,position,material,size);
   const bar=(a:V,b:V,r:number,material:THREE.Material)=>{const av=new THREE.Vector3(...a),bv=new THREE.Vector3(...b);const m=add(new THREE.CylinderGeometry(r,r,av.distanceTo(bv),8),av.add(bv).multiplyScalar(.5).toArray() as V,material);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),new THREE.Vector3(...b).sub(new THREE.Vector3(...a)).normalize());return m;};
@@ -68,18 +79,65 @@ export function createTransitModel(kind: TransitKind) {
     for(const x of [-.5,.5])part([.09,.17,.04],[x,.61,1.18],red);
     part([1.18,.24,.28],[0,.67,.91],yellow);
   }
-  // Passenger seating and a non-block driver silhouette.
+  // Passenger cabin: stitched bench, bucket seats, instruments and working driving posture.
   part([auto?1.16:1.46,.13,.5],[0,.83,.59],fabric);part([auto?1.14:1.46,.38,.13],[0,1.01,.84],fabric);
   part([auto?1.06:1.48,.08,.3],[0,1.04,auto?-.62:-.69],black);
-  add(new THREE.CylinderGeometry(.16,.13,.4,10),[-.3,1.09,-.17],shirt,[1,1,.65]);
-  add(new THREE.SphereGeometry(.12,12,8),[-.3,1.42,-.17],skin,[1,1.2,.95]);
-  for(const x of [-.47,-.14])bar([x,1.22,-.16],[x,1.01,-.49],.04,shirt);
-  bar([-.48,1,-.47],[-.12,1,-.47],.022,black);
+  const driverX=auto?0:.34;
+  const driver=createSeatedDriver(`${kind}:driver`,cabinDetail);driver.position.set(driverX,-.29,auto?-.24:-.03);group.add(driver);
+  for(const x of auto?[0]:[-.36,.36]){
+    part([auto?.48:.49,.11,.44],[x,.59,auto?-.25:-.04],fabric);
+    const back=part([auto?.48:.49,.52,.10],[x,.9,auto?-.02:.19],fabric);back.rotation.x=-.12;
+    if(!auto)part([.23,.15,.11],[x,1.23,.22],fabric);
+    if(cabinDetail==='close'){
+      for(const side of [-1,1])bar([x+side*.20,.70,auto?.04:.26],[x+side*.17,1.11,auto?.05:.27],.0025,thread);
+      part([.28,.115,.019],[x,.84,auto?.054:.28],fabric);
+      bar([x-.13,.895,auto?.067:.292],[x+.13,.895,auto?.067:.292],.0025,thread);
+    }
+  }
+  if(cabinDetail==='close'){
+  // Upholstery seams and rear headrests are readable from the passenger camera.
+  for(const x of [-.43,0,.43]){
+    part([.008,.24,.008],[x,1.02,.765],metal);
+    if(!auto)part([.24,.15,.10],[x,1.29,.855],fabric);
+  }
+  for(const side of [-1,1]){
+    part([.035,.30,auto?.72:1.02],[side*(auto?.62:.82),.93,.46],fabric);
+    part([.055,.06,.24],[side*(auto?.60:.79),1.03,.46],black);
+    part([.015,.025,.09],[side*(auto?.59:.775),1.12,.44],metal);
+  }
+  if(auto){
+    bar([-.23,1.06,-.75],[.23,1.06,-.75],.016,metal);
+    for(const side of [-1,1])part([.13,.035,.035],[side*.23,1.06,-.75],rubber);
+    bar([0,.48,-.92],[0,1.06,-.75],.022,metal);
+  }else{
+    part([1.25,.018,1.08],[0,1.582,.13],fabric);
+    part([.15,.017,.065],[0,1.565,.42],lamp);
+    const wheel=add(new THREE.TorusGeometry(.195,.014,8,24),[driverX,1.07,-.53],black);wheel.rotation.x=-.36;
+    bar([driverX,.70,-.67],[driverX,1.07,-.53],.023,black);
+    for(const dx of [-.17,.17])bar([driverX,1.07,-.53],[driverX+dx,1.07,-.53],.009,metal);
+    part([.39,.14,.06],[driverX,1.12,-.70],fabric);
+    for(const dx of [-.105,.105]){
+      const dial=add(new THREE.CircleGeometry(.043,20),[driverX+dx,1.145,-.66],rubber);
+      const needle=part([.002,.057,.003],[driverX+dx+.008,1.148,-.655],metal);needle.rotation.z=.6;
+      for(const sy of [-.029,.029])part([.018,.003,.003],[driverX+dx,1.145+sy,-.655],metal);
+      dial.rotation.x=-.1;
+    }
+    for(const x of [-.57,-.11])for(let n=0;n<4;n++)part([.12,.009,.008],[x,1.105+n*.018,-.53],metal);
+    bar([-.04,.53,-.14],[-.04,.79,-.23],.015,metal);add(new THREE.SphereGeometry(.03,10,8),[-.04,.79,-.23],black);
+    part([.21,.075,.026],[0,1.5,-.50],black);part([.18,.05,.006],[0,1.5,-.48],metal);
+    bar([0,1.54,-.49],[0,1.61,-.48],.009,metal);
+    for(const side of [-1,1])bar([side*.18,1.065,-.91],[side*.38,1.19,-.82],.008,rubber);
+  }
+  }
   const meter=part([.18,.12,.065],[auto?.27:.35,1.12,auto?-.61:-.68],black);meter.name='physical-meter';part([.14,.06,.004],[auto?.27:.35,1.13,auto?-.65:-.72],lamp);
 
   // Merge static body panels by material; wheels remain independently articulated.
   const originals=new Set<THREE.BufferGeometry>();const buckets=new Map<THREE.Material,THREE.BufferGeometry[]>();group.updateMatrixWorld(true);
-  for(const child of [...group.children]){const m=child as THREE.Mesh;originals.add(m.geometry);const mat=m.material as THREE.Material;const geometries=buckets.get(mat)??[];const geometry=(m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone()).applyMatrix4(m.matrix);geometry.deleteAttribute('uv');geometries.push(geometry);buckets.set(mat,geometries);group.remove(m);}
+  for(const child of [...group.children]){const m=child as THREE.Mesh;originals.add(m.geometry);const mat=m.material as THREE.Material;const geometries=buckets.get(mat)??[];const geometry=(m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone()).applyMatrix4(m.matrix);
+    if((mat as THREE.MeshStandardMaterial).map){
+      if(!geometry.hasAttribute('uv')){const uv=[],p=geometry.attributes.position;for(let i=0;i<p.count;i++)uv.push(p.getX(i),p.getZ(i));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));}
+    }else geometry.deleteAttribute('uv');
+    geometries.push(geometry);buckets.set(mat,geometries);group.remove(m);}
   for(const [material,parts] of buckets){const mesh=new THREE.Mesh(mergeGeometries(parts)!,material);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);parts.forEach(p=>p.dispose());}
   originals.forEach(g=>g.dispose());
   const wheels:THREE.Group[]=[];
@@ -96,6 +154,7 @@ export function createTransitModel(kind: TransitKind) {
   wheels.forEach((wheel,i)=>{wheel.updateMatrix();wheelBatch.setMatrixAt(i,wheel.matrix);});group.userData.wheelBatch=wheelBatch;
   group.userData.wheels=wheels;group.userData.wheelRadius=auto?.255:.32;
   group.userData.lastPosition=new THREE.Vector3();group.userData.travel=0;
+  group.userData.cabinDetail=cabinDetail;
   return group;
 }
 export function animateTransit(model:THREE.Group,distance:number,steering=0) {

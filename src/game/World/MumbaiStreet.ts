@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { awningGeometry, patinaGeometry } from './architecture/StreetArt';
 import { createTransitModel, animateTransit } from './TransitModel';
 import { StreetMaterials, type Surface } from './StreetMaterials';
 import { facadeSpec, seededRandom } from './StreetArchitecture';
@@ -20,8 +22,13 @@ export class MumbaiStreet {
   readonly group = new THREE.Group();
   readonly interactions: StreetInteraction[] = [];
   private boxGeometry = new THREE.BoxGeometry(1, 1, 1);
+  private roundedGeometry = new RoundedBoxGeometry(1,1,1,2,.075);
+  private awnings=[0,1,2,3].map(awningGeometry);
+  private patina:THREE.Mesh[]=[];
+  private patinaMaterial=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.97,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
   private cylinderGeometry = new THREE.CylinderGeometry(1, 1, 1, 8);
   private sphereGeometry = new THREE.SphereGeometry(1, 8, 6);
+  private spectacleGeometry = new THREE.TorusGeometry(.031,.004,5,12);
   private materials = new Map<string, THREE.Material>();
   private statics: THREE.Mesh[] = [];
   private dynamicParts: THREE.Mesh[] = [];
@@ -63,7 +70,7 @@ export class MumbaiStreet {
     this.station(); this.researchRoom(); this.streetDetails(); this.vegetation(); this.people(); this.traffic();
     this.spatial = new SpatialIndex(this.colliderGeometry); this.colliderGeometry.forEach(g=>g.dispose()); this.colliderGeometry=[];
     void NavMeshManager.create(this.obstacles).then(nav=>{if(this.disposed){nav.dispose();return;}this.navigation=nav;this.navigationStatus='ready';for(const [i,w] of this.walkers.entries()){w.agent=nav.add({x:w.group.position.x,y:0,z:w.group.position.z});w.target=i%this.destinations.length;w.agent.requestMoveTarget(this.destinations[w.target]);}}).catch(()=>{this.navigationStatus='unavailable';});
-    this.signAtlas.needsUpdate = true; this.instanceStatics(); this.mergeSigns(); this.instancePedestrians();
+    this.signAtlas.needsUpdate = true; this.instanceStatics(); this.mergeSigns(); this.mergePatina(); this.instancePedestrians();
   }
   private material(color: string, glow = false, wall = false, surface: Surface = 'solid') {
     return this.surfaces.get(color, glow ? 'glow' : wall ? 'plaster' : surface);
@@ -112,12 +119,23 @@ export class MumbaiStreet {
     return new THREE.ExtrudeGeometry(shape,{depth:.14,bevelEnabled:false,curveSegments:12});
   }
   private makeLeafCluster() {
-    const random=seededRandom('leaf-cluster');const pieces:THREE.BufferGeometry[]=[];
-    for(let i=0;i<20;i++) {
-      const leaf=new THREE.BufferGeometry();leaf.setAttribute('position',new THREE.Float32BufferAttribute([0,.025,0,-.055,0,-.06,0,0,-.18,.055,0,-.06,0,0,.085],3));leaf.setIndex([0,2,1,0,3,2,0,4,3,0,1,4]);leaf.computeVertexNormals();leaf.setAttribute('uv',new THREE.Float32BufferAttribute([.5,.5,0,.35,.5,0,1,.35,.5,1],2));
-      leaf.scale(.75+random()*.8,1,.75+random()*.8);leaf.rotateY(random()*Math.PI*2);leaf.rotateZ(random()*.6-.3);leaf.translate((random()-.5)*.95,(random()-.5)*.38,(random()-.5)*.95);pieces.push(leaf);
+    const random=seededRandom('pinnate-gulmohar'),vertices:number[]=[],colors:number[]=[],indices:number[]=[];
+    const dark=new THREE.Color('#78915d'),light=new THREE.Color('#c0c99a');
+    const triangleLeaf=(x:number,z:number,side:number,angle:number)=>{
+      const points=[[0,0,0],[side*.044,-.006,-.019],[side*.13,.012,-.018],[side*.07,-.005,.025],[side*.026,0,.027]];
+      const n=vertices.length/3;
+      for(const [i,p] of points.entries()){const v=new THREE.Vector3(x+p[0],p[1],z+p[2]);v.applyAxisAngle(new THREE.Vector3(0,1,0),angle);vertices.push(v.x,v.y,v.z);const c=i===2?light:dark;colors.push(c.r,c.g,c.b);}
+      indices.push(n,n+2,n+1,n,n+3,n+2,n,n+4,n+3,n,n+1,n+4);
+    };
+    for(let frond=0;frond<2;frond++){
+      const angle=frond*Math.PI*.73+random()*.35;
+      for(let n=0;n<6;n++)for(const side of [-1,1])triangleLeaf(side*.007,-.30+n*.105,side,angle);
+      // A thin central rachis, included in the same foliage draw.
+      const start=vertices.length/3;
+      for(const [x,z] of [[-.005,-.36],[.005,-.36],[.004,.31],[-.004,.31]]){const v=new THREE.Vector3(x,0,z).applyAxisAngle(new THREE.Vector3(0,1,0),angle);vertices.push(v.x,v.y,v.z);colors.push(dark.r,dark.g,dark.b);}
+      indices.push(start,start+1,start+2,start,start+2,start+3);
     }
-    const merged=mergeGeometries(pieces)!;pieces.forEach(p=>p.dispose());return merged;
+    const geometry=new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(vertices,3)).setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry;
   }
   private contact(x:number,z:number,rx:number,rz:number,parent:THREE.Object3D=this.group) {
     const shadow=new THREE.Mesh(this.contactGeometry,this.contactMaterial);shadow.rotation.x=-Math.PI/2;shadow.position.set(x,.016,z);shadow.scale.set(rx,rz,1);parent.add(shadow);this.dynamicParts.push(shadow);
@@ -192,8 +210,10 @@ export class MumbaiStreet {
     frontageBox([width,.36,.7],[0,3.12,-.15],style==='heritage'?'#b8aa91':'#918c7d',false,g,false,false,'stone');
     this.sign(g,names[index][0],names[index][1],[0,2.83,.32],6.35,index%2?'#744d3c':'#35504b');
     if(!fort) {
-      const awning=frontageBox([7.65,.06,1.17],[0,2.37,.61],['#877866','#a18766','#637f77'][index%3],false,g,false,false,'fabric');awning.rotation.x=.14;
-      for(let x=-3.65;x<3.7;x+=.55)frontageBox([.25,.17,.04],[x,2.19,1.16],'#bcad92');
+      const awning=this.shape(this.awnings[(index+(side>0?1:0))%4],[1,1,1],[0,2.40,.61],'#ffffff',g,false,false,true,'fabric');
+      const cloth=awning.material as THREE.MeshStandardMaterial;cloth.vertexColors=true;cloth.side=THREE.DoubleSide;
+      for(let x=-3.65;x<3.7;x+=.55){const hem=frontageBox([.48,.095,.025],[x,2.19,1.19],index%2?'#61786b':'#b6a17d',false,g,false,false,'fabric');hem.rotation.z=Math.sin(x*13)*.035;}
+      this.shopDressing(g,index,side);
     }
     for(let floor=0;floor<spec.floors;floor++) {
       const y=4.55+floor*spec.floorHeight;
@@ -255,10 +275,69 @@ export class MumbaiStreet {
     const dish=this.shape(this.sphereGeometry,[.34,.12,.34],[-1.5,height+.9,-2],'#a2a49a',g);dish.rotation.x=.65;
     this.wire(new THREE.Vector3(-1.5,height,-2),new THREE.Vector3(-1.5,height+.8,-2),.025,'#67716b',g);
     this.sign(g,index%2?'EVENING CLASSES':'THE JOURNEY SO FAR','मुंबई',[3.78,1.62,-.005],.52,'#c2ad88','#454944').scale.y=2.7;
-    // Patched paint and faint damp along the skirting are geometry-level decals.
-    for(let n=0;n<4;n++)frontageBox([.23+random()*.7,.12+random()*.25,.015],[-3.7+random()*7.4,.18+random()*.14,-.08],'#6f776d');
+    // Local aging is aligned with piers and water paths, not scattered across windows.
+    if(!fort)for(const x of [-4.03,4.03])this.paintWear(g,[x,1.05,.065],.145,1.15,color,`${spec.seed}:damp:${x}`);
+    for(let floor=0;floor<spec.floors;floor++)for(const x of [-1.06,1.06])this.paintWear(g,[x,4.3+floor*spec.floorHeight,-.016],.19,.42,color,`${spec.seed}:pier:${floor}:${x}`);
+    if(index===0||index===2){const blade=this.sign(g,index===0?(side<0?'CHAI':'PAPERS'):(side<0?'BOOKS':'OPTICS'),'मुंबई',[3.5,3.45,.9],1.0,index%2?'#734d3c':'#3c5148');blade.rotation.y=Math.PI/2;this.wire(new THREE.Vector3(3.5,3.55,0),new THREE.Vector3(3.5,3.55,1.4),.021,'#5f675e',g);}
+  }
+  private paintWear(parent:THREE.Object3D,position:Triple,width:number,height:number,base:string,seed:string){
+    const geometry=patinaGeometry(width,height,seed),color=new THREE.Color(base).lerp(new THREE.Color('#555b4d'),.24),colors=[];
+    for(let i=0;i<geometry.attributes.position.count;i++)colors.push(color.r,color.g,color.b);
+    geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));const mesh=new THREE.Mesh(geometry,this.patinaMaterial);mesh.position.set(...position);mesh.receiveShadow=true;parent.add(mesh);this.patina.push(mesh);
+  }
+  private mergePatina(){
+    this.group.updateMatrixWorld(true);const pieces=this.patina.map(mesh=>{const g=mesh.geometry.clone().applyMatrix4(mesh.matrixWorld);mesh.removeFromParent();mesh.geometry.dispose();return g;});
+    const mesh=new THREE.Mesh(mergeGeometries(pieces)!,this.patinaMaterial);mesh.receiveShadow=true;this.group.add(mesh);pieces.forEach(g=>g.dispose());this.patina=[];
+  }
+  private shopDressing(g:THREE.Group,index:number,side:number){
+    const rounded=(size:Triple,p:Triple,color:string,surface:Surface='solid')=>this.shape(this.roundedGeometry,size,p,color,g,false,false,true,surface);
+    // Repair bench: housings, speaker grilles, tuning dials and tools.
+    if(index===1){for(const [n,x] of [-2.7,-1.2,1.6].entries()){
+      rounded([.54,.32,.20],[x,.87,.31],['#7f664d','#8b9585','#6f7976'][n],'wood');
+      for(let i=0;i<5;i++)this.box([.026,.20,.015],[x-.15+i*.045,.87,.423],'#373f3c',false,g);
+      this.shape(this.sphereGeometry,[.033,.033,.018],[x+.17,.81,.426],'#c2b79a',g);
+      this.box([.18,.055,.012],[x+.09,.96,.425],'#bfae86',false,g);
+      this.wire(new THREE.Vector3(x-.15,1.02,.32),new THREE.Vector3(x-.25,1.37,.32),.008,'#969b8a',g);
+    }}
+    // Books are stacked and opened at the stall, rather than all sharing one upright rhythm.
+    if(index===2&&side<0){for(let n=0;n<5;n++){
+      const p=this.box([.38,.04,.26],[-1.1+n*.48,.66+n%2*.04,.46],['#98836a','#75877c','#936d57'][n%3],false,g);p.rotation.y=(n%3-1)*.18;
+      this.box([.34,.021,.23],[-1.1+n*.48,.69+n%2*.04,.46],'#c8bea1',false,g);
+    }}
+    if(index===2&&side>0){for(let n=0;n<3;n++){
+      for(const dx of [-.043,.043]){const lens=this.shape(this.spectacleGeometry,[1,1,1],[-1+n*.35+dx,1.01,.30],'#746d55',g);lens.rotation.x=-.28;}
+      this.wire(new THREE.Vector3(-1+n*.35-.014,1.01,.30),new THREE.Vector3(-1+n*.35+.014,1.01,.30),.004,'#746d55',g);
+    }}
+    // Warm bakery display: rounded loaves and a shallow paper tray.
+    if(index===5&&side>0){rounded([1.5,.045,.43],[-1.7,.68,.40],'#ac9270','wood');for(let n=0;n<5;n++){
+      this.shape(this.sphereGeometry,[.13,.075,.20],[-2.28+n*.28,.75,.40],n%2?'#b69055':'#c6a36a',g);
+      for(let line=0;line<3;line++)this.box([.095,.008,.01],[-2.28+n*.28,.814,.33+line*.06],'#92704a',false,g);
+    }}
+    if(index===0&&side<0){
+      rounded([.65,.035,.42],[1.2,.66,.45],'#a3a28d','metal');
+      this.shape(this.sphereGeometry,[.115,.15,.115],[1.2,.835,.42],'#a9a58e',g,false,false,true,'metal');
+      this.cylinder(.085,.035,[1.2,.985,.42],'#b3ae94',g);
+      for(const x of [.92,1.48])this.cylinder(.037,.073,[x,.72,.48],'#bda88a',g);
+      const menu=this.sign(g,'CHAI · BUN MASKA','इरानी कैफ़े',[-3.76,1.66,.23],.48,'#b5a07d','#414b43');menu.scale.y=1.55;
+    }
   }
   private station() {
+    // Shallow open arcades frame the forecourt and replace the empty boundary-wall backdrop.
+    for(const side of [-1,1]){
+      const x=side*9.25;
+      this.box([5.8,.055,3.7],[x,.015,18.1],'#a79880',false,this.group,false,false,'paving');
+      this.box([5.8,3.5,.28],[x,1.75,19.7],'#aa9678',true,this.group,false,true);
+      this.box([5.8,.94,3.1],[x,3.95,18.25],'#ad9779',true,this.group,false,true);
+      for(const dx of [-2.9,-.97,.97,2.9])this.box([.22,3.5,.33],[x+dx,1.75,16.9],'#c1af90',true,this.group,false,false,'stone');
+      for(const dx of [-1.93,0,1.93]){
+        this.shape(this.archGeometry,[.87,.88,1],[x+dx,2.19,16.71],'#cbb797',this.group,false,false,true,'stone');
+        this.box([1.48,.055,.47],[x+dx,1.0,19.0],'#8b765b',false,this.group,false,false,'wood');
+        this.box([.43,.58,.08],[x+dx,1.52,19.35],'#43594d');
+        this.box([.28,.18,.02],[x+dx,1.59,19.29],'#b3a17d');
+      }
+      for(const y of [3.49,4.36])this.box([6.0,.085,.35],[x,y,16.74],'#c1ac8a',false,this.group,false,false,'stone');
+      const board=this.sign(this.group,side<0?'MUMBAI LOCAL · TICKETS':'CST · INFORMATION','मुंबई लोकल',[x,3.87,16.66],4.5,'#4d5c50','#e4d4ae');board.rotation.y=Math.PI;
+    }
     this.box([12,7,3],[0,3.5,18],'#b8a286',true,this.group,false,false,'stone');
     for(const x of [-4,-2,0,2,4]) {
       this.box([1.5,3.5,.05],[x,2.15,16.43],'#4e5f58');
@@ -286,6 +365,19 @@ export class MumbaiStreet {
     // The open research entrance is made from separate walls, never an invisible solid box.
     for (const x of [-3.1, 3.1]) this.box([2.5, 3.1, .3], [x, 1.55, -.08], '#78938d', true, g, false, true);
     this.box([2.9, .42, .35], [0, 2.95, -.08], '#78938d', true, g);
+    // A legible heritage doorway gives Fort its own street-level silhouette.
+    for(const side of [-1,1]){
+      this.box([.13,2.7,.18],[side*1.6,1.38,.17],'#bdad8e',false,g,false,false,'stone');
+      const door=new THREE.Group();door.position.set(side*1.51,.08,.01);door.rotation.y=side*Math.PI*.47;g.add(door);
+      this.box([.76,2.48,.065],[side*.38,1.24,0],'#49665c',false,door,false,false,'wood');
+      this.box([.60,1.56,.021],[side*.38,1.62,.043],'#66857b',false,door,false,false,'glass');
+      for(const x of [side*.1,side*.66])this.box([.022,2.30,.025],[x,1.26,.056],'#b7a686',false,door);
+      this.box([.075,.022,.035],[side*.64,1.09,.08],'#c0ac81',false,door,false,false,'metal');
+      this.cylinder(.14,.36,[side*2.15,.18,.34],'#a18568',g);
+      this.shape(this.leafGeometry,[.75,.8,.75],[side*2.15,.63,.34],'#758f64',g,false,false,true,'foliage');
+    }
+    this.shape(this.archGeometry,[1.70,.65,.7],[0,2.23,.14],'#c5b394',g,false,false,true,'stone');
+    this.sign(g,'RESEARCH · OPEN SOURCE','फोर्ट',[2.48,1.70,.12],.88,'#d0b994','#3c5147').scale.y=1.3;
     this.box([8.5, .035, 6.5], [0, .025, -3.3], '#aaa793', false, g, false, false, 'stone');
     this.box([8.5, 3, .3], [0, 1.5, -6.5], '#91a39a', true, g);
     for (const x of [-4.25, 4.25]) this.box([.3, 3, 6.5], [x, 1.5, -3.3], '#8b9d92', true, g);
@@ -349,7 +441,7 @@ export class MumbaiStreet {
       // Warm pools are translucent original geometry; no costly light per lamp.
       const pool = new THREE.Mesh(this.poolGeometry, new THREE.MeshBasicMaterial({ color: '#e8ae61', transparent: true, opacity: .07, depthWrite: false }));
       pool.rotation.x = -Math.PI / 2; pool.position.set(x - side * 1.4, .013, z); pool.material.userData.surface='pool';this.group.add(pool);this.statics.push(pool);
-      if (i < 3 && side === 1) { const light = new THREE.PointLight('#fbc487', 7, 10, 2); light.position.set(x - .7, 4.6, z); this.group.add(light); }
+      if (i < 3 && side === 1) { const light = new THREE.PointLight('#ffd198', 8, 7, 2);const shop=[[-7.25,1.9,4],[-7.25,1.9,-15],[7.25,1.9,-43.5]][i];light.position.set(...shop as Triple);this.group.add(light); }
       this.box([.5, .65, .5], [side * 6.2, .325, z - 4.5], '#465e56', true);
       this.cylinder(.23, .45, [side * 6.1, .23, z + 3], '#8c6551');
       this.shape(this.leafGeometry, [.55, .9, .55], [side * 6.1, .85, z + 3], '#698159');
@@ -402,7 +494,7 @@ export class MumbaiStreet {
     const human=createHuman(`person:${position.join(':')}`,shirt),g=human.group;g.position.set(...position);if(seated)g.position.y-=.45;this.group.add(g);this.pedestrians.push(g);this.contact(0,0,.23,.15,g);
     if(moving)this.walkers.push({group:g,target:0,wait:0});
     let lastAnimation=-1;
-    this.motion.push(time=>{const distance=g.position.distanceTo(this.viewPosition);human.mesh.visible=distance<48;if(distance>18&&time-lastAnimation<.1)return;lastAnimation=time;const velocity=this.walkers.find(w=>w.group===g)?.agent?.velocity();human.animate(time,moving&&Boolean(velocity&&Math.hypot(velocity.x,velocity.z)>.08),seated);});return g;
+    this.motion.push(time=>{const distance=g.position.distanceTo(this.viewPosition);human.mesh.visible=distance<48;human.setDetail(distance<10);if(distance>18&&time-lastAnimation<.1)return;lastAnimation=time;const velocity=this.walkers.find(w=>w.group===g)?.agent?.velocity();human.animate(time,moving&&Boolean(velocity&&Math.hypot(velocity.x,velocity.z)>.08),seated);});return g;
   }
   private people() {
     for(let i=0;i<10;i++)this.person([i%2?4.9:-4.9,0,7-i*6],['#8b968c','#9c8279','#788d80','#b0a081','#748b99'][i%5],true);

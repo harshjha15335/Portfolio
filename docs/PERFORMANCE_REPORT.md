@@ -25,3 +25,11 @@ Reduced-motion scenes render on demand after the initial frame. Static diagnosti
 Final on-demand captures may report a transient FPS value after a camera jump, or `idle` once the frame settles. Those transition-window numbers are not a continuous animation benchmark. Static geometry/draw/texture counters remain from the last submitted frame.
 
 Final static desktop maxima: 98 draws,224,050 submitted triangles,27 tracked textures,21 shader programs; every desktop pose retained full render scale and ready authored navigation. These meet the provisional Medium count ceiling. They do not establish the laptop frame-time or final-art gate.
+
+## 2026-10-10 polish
+
+The latest evidence is in CST_FORT_POLISH.md and screenshots/cst-fort-polish/. Two authored pedestrian geometry detail levels reuse the same skeleton; distant geometry has fewer radial segments and a lower-resolution garment surface. Drivers are static baked poses with no per-vehicle bone texture. Added cloth, patina and foliage stay batched; woven upholstery adds one shared128×128RGBA8 map (approximately85KiB including mipmaps). Current counts are checked in fresh native captures. The laptop GPU acceptance remains unverified.
+
+The initial polish capture exceeded the existing Medium ceiling (112 draws/265,676 triangles). It is retained as cst-fort-polish/iteration-3/. No budget increase is used to hide this result. Ambient vehicles now use lower-detail baked driver geometry and basic seating; close vehicle interiors remain in the boarded models.
+
+Final CST–Fort native desktop review: maximum 102 draws, 231,164 triangles, 28 textures and 24 shader programs at scale1.00. The return view exceeds the unchanged provisional 230,000 triangle ceiling by 1,164 (0.51%); this pass therefore does not claim the Medium budget gate is fully satisfied. CPU-only construction1486ms; street mean0.259ms/p950.283ms/p990.387ms. Counts and CPU timings are not hardware FPS measurements.

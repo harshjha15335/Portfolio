@@ -13,3 +13,5 @@ Renderer diagnostics aggregate all passes rather than resetting statistics per p
 Reduced-motion street rendering is on demand: camera movement, detail changes and dirty shadows request a frame. Input, physics and HUD updates continue. Idle frames are excluded from adaptive quality sampling, and diagnostics show `idle` rather than presenting animation-loop frequency as GPU FPS.
 
 World teardown explicitly disposes each distinct character skeleton and its GPU bone texture, alongside geometry, materials and image textures. Cached original garment geometry is bounded to one CPU source reused across worlds.
+
+The 2026-10-10 street polish retains this rendering pipeline and adds draped striped cloth, compound fronds, merged pier patina, warm shop lights, open station-side arcades and one shared woven upholstery map. Mapped vehicle panels retain their UVs through material batching; previously unmapped canopy geometry receives projected UVs. Original drivers are baked once from posed skins, and active pedestrians swap between two owned geometry detail levels. See CST_FORT_POLISH.md for verification and comparison evidence.

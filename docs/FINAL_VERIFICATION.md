@@ -1,5 +1,7 @@
 # Production-overhaul verification log
 
+Historical `c929257` / 2026-10-08 checkpoint. Current polish verification is in [CST_FORT_POLISH.md](CST_FORT_POLISH.md).
+
 Branch: `feature/mumbai-production-overhaul`; stable original checkpoint `233d3e6`. No production push or deployment is authorized by this prompt; neither has been performed.
 
 ## Baseline

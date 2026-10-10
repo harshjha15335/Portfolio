@@ -88,3 +88,7 @@ To reproduce the review captures, start Vite and run `node scripts/capture-stree
 The isolated `feature/mumbai-production-overhaul` branch adds cached through-cut façade panels, a trusted BVH visibility/ground-query layer, original skinned people with continuous garments, Recast sidewalk/crossing navigation, curved lane traffic with yielding, and selectable High/Medium/Low rendering. Cannon movement and the existing portfolio/ride flows remain. Physical expansion stays gated on actual first-person art review and laptop GPU measurements.
 
 See `docs/MUMBAI_BASELINE_AUDIT.md`, `docs/SECURITY_DEPENDENCY_AUDIT.md`, `docs/VISUAL_QUALITY_REVIEW.md`, `docs/PERFORMANCE_REPORT.md` and `docs/FINAL_VERIFICATION.md`. Capture native comparisons against a running development server with `STREET_CAPTURE_DIR=docs/screenshots/production-overhaul/after STREET_CAPTURE_DETAILS=1 node scripts/capture-street.mjs`. `node scripts/profile-street.mjs` profiles authored crowd/traffic simulation on Node; it does not benchmark GPU/browser FPS.
+
+### Street polish — 2026-10-10
+
+The CST–Fort pass adds shaped faces/hands, varied sleeves, two pedestrian geometry detail levels, baked seated drivers and detailed passenger cabins. Original draped awnings, shop-specific displays, projecting signs, compound foliage, restrained wear and warm shop lighting improve the same first-person street. No other physical district is expanded. See [polish review](docs/CST_FORT_POLISH.md) for comparison captures and verification.

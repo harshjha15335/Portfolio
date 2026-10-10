@@ -23,3 +23,9 @@ b2a071ba22fefd803f4e9d1f5c777dd79c62d191695586a1a73fd4d0ebd051c6  .agents/refere
 ```
 
 Runtime package license texts are preserved in public/THIRD_PARTY_NOTICES.txt for redistribution, including the reviewed additions and existing runtime libraries. Their package identities and digests remain in the lockfile.
+
+## 2026-10-10 original polish pass
+
+Added original face/ear/finger/collar profiles, two garment detail levels, seated driver baking, draped striped awnings, irregular pier weathering, compound tree fronds, shop display geometry and woven upholstery. No new runtime package, downloaded artwork or external model is shipped. The upholstery is a single reusable 128×128 original canvas map; driver geometry is baked from the original rig.
+
+Official publisher pages https://quaternius.com/packs/universalbasecharacters.html and https://quaternius.itch.io/universal-base-characters were reachable and inspected. The publisher lists CC0 and links the download. Anonymous retrieval identifies an external Drive download, which receives proxy403. No model archive was obtained or imported, so there is no fictitious model checksum or malware certification. The supplied local reel was re-inspected at the actual street/transport shots; no video frame is shipped.

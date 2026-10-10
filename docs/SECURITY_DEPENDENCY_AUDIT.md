@@ -15,3 +15,7 @@ A production CSP/header configuration is added for Vercel: same-origin scripts/a
 A clean, isolated `npm ci --ignore-scripts` of the final lockfile also passed (114 installed packages on this platform). It ran outside the checkout with checksums/TLS preserved and no lifecycle execution. Existing lock entries were compared structurally with `233d3e6`: zero changes; exactly six reviewed entries were added.
 
 The environment draft now lists the five required blocked domains (Quaternius site/itch page, live Gulmohar reference, Sigstore TUF metadata, GitHub API), preserving existing package-manager preset access. Saving the draft is not a runtime policy update or proof those requests work; source license/provenance and full signature-attestation access remain blocked until settings are applied and the requests succeed.
+
+## 2026-10-10 polish check
+
+No new dependency or installation in this pass. The current registry advisory audit reports zero known vulnerabilities. Character source licensing can now be read at the canonical publisher pages, but the linked external Drive archive remains unavailable; no archive extraction, scripts or unverified model import occurred. New materials and geometry are original project code. Existing runtime integrity/signature records remain applicable to the unchanged package lock.
