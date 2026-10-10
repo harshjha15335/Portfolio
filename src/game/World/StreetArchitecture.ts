@@ -11,7 +11,7 @@ const colors = ['#b9a48a', '#b5a18d', '#8b9c92', '#bd9989', '#c0b195', '#a39788'
 export function facadeSpec(side: number, index: number): FacadeSpec {
   const seed = `${side}:${index}`, random = seededRandom(seed);
   const style = styles[(index + (side > 0 ? 3 : 0)) % styles.length];
-  const floors = [3, 4, 2, 3, 4, 3, 2][index];
-  const floorHeight = style === 'heritage' ? 2.85 : 2.55;
+  const floors = (side<0?[2,4,2,3,4,2,3]:[4,2,3,2,3,4,2])[index];
+  const floorHeight = style === 'heritage' ? 2.85 : style==='art-deco'?2.65:2.55;
   return { style, floors, floorHeight, width: 8.65 + random() * .45, height: 3.2 + floors * floorHeight, color: colors[(index + (side > 0 ? 2 : 0)) % colors.length], setback: index === 4 && side < 0 ? 0 : random() * .25, seed };
 }

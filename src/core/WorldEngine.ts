@@ -1,3 +1,4 @@
+import {STREET_MOOD} from '../game/World/streetMood';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { createVisitor } from '../game/World/WalkingBody';
@@ -57,7 +58,7 @@ export class WorldEngine {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, options.mobile ? 1.25 : 1.5));this.renderer.info.autoReset=false;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.12;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.toneMappingExposure = STREET_MOOD.exposure;
     this.renderer.shadowMap.enabled = !options.mobile; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; this.renderer.shadowMap.autoUpdate = false; this.renderer.shadowMap.needsUpdate = true;
     const canvas = this.renderer.domElement;
     canvas.setAttribute('aria-label', 'First-person Mumbai street. WASD or arrows to walk, Shift for a brisk walk, E to interact. Click to look with the mouse. Escape releases the mouse.');
@@ -81,9 +82,9 @@ export class WorldEngine {
     this.frameId = requestAnimationFrame(this.frame);
   }
   private lighting() {
-    this.scene.background = new THREE.Color('#c0b29b'); this.scene.fog = new THREE.Fog('#b9ad98', 65, 145);
-    this.scene.add(new THREE.HemisphereLight('#b7c8d0', '#80745f', 1.0));
-    const sun = new THREE.DirectionalLight('#ffd29a', 2.65); sun.position.set(-28, 23, -52); sun.castShadow = !this.options.mobile;
+    this.scene.background = new THREE.Color('#c0b29b'); this.scene.fog = new THREE.Fog(STREET_MOOD.fogColor, STREET_MOOD.fogNear, STREET_MOOD.fogFar);
+    this.scene.add(new THREE.HemisphereLight(STREET_MOOD.skyColor, STREET_MOOD.groundColor, STREET_MOOD.hemisphereIntensity));
+    const sun = new THREE.DirectionalLight(STREET_MOOD.sunColor, STREET_MOOD.sunIntensity); sun.position.set(...STREET_MOOD.sunPosition); sun.castShadow = !this.options.mobile;
     sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 55, bottom: -55, near: 1, far: 150 });
     sun.target.position.set(0, 0, -26); sun.shadow.normalBias = .06; sun.shadow.bias = -.0002; this.scene.add(sun, sun.target);
     const sky = new THREE.Mesh(new THREE.SphereGeometry(145, 24, 12), new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false,
@@ -93,7 +94,7 @@ export class WorldEngine {
   }
   private reviewView = (event:Event) => {
     // Fixed, collision-clear eye-level review points. Development diagnostics only.
-    const views:Record<string,{x:number;z:number;yaw:number}>={spawn:STREET_SPAWN,station:{x:4.6,z:-4,yaw:Math.PI-.12},shops:{x:-4.8,z:-9,yaw:-.2},fort:{x:-5.1,z:-35,yaw:Math.PI/2},return:{x:4.7,z:-44,yaw:Math.PI+.16},npc:{x:5.6,z:6.8,yaw:Math.PI+.12},shop:{x:-5.7,z:-15,yaw:Math.PI/2},vegetation:{x:-4.8,z:-15,yaw:.38},junction:{x:4.8,z:-8,yaw:.7},institute:{x:-4.6,z:-30,yaw:.54}};
+    const views:Record<string,{x:number;z:number;yaw:number}>={'north-limit':{x:1.8,z:-59,yaw:-.08},'south-look':{x:14.5,z:15,yaw:Math.PI+.15},'side-gap':{x:5.4,z:-.7,yaw:-Math.PI/2},spawn:STREET_SPAWN,station:{x:4.6,z:-4,yaw:Math.PI-.12},shops:{x:-4.8,z:-9,yaw:-.2},fort:{x:-5.1,z:-35,yaw:Math.PI/2},return:{x:4.7,z:-44,yaw:Math.PI+.16},npc:{x:5.6,z:6.8,yaw:Math.PI+.12},shop:{x:-5.7,z:-15,yaw:Math.PI/2},vegetation:{x:-4.8,z:-15,yaw:.38},junction:{x:4.8,z:-8,yaw:.7},institute:{x:-4.6,z:-30,yaw:.54}};
     const view=views[(event as CustomEvent<string>).detail];if(view){this.endRide();this.placeVisitor(view.x,view.z,view.yaw);this.updateNear();}
   };
   setMode(mode: Mode) {

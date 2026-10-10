@@ -33,3 +33,11 @@ The latest evidence is in CST_FORT_POLISH.md and screenshots/cst-fort-polish/. T
 The initial polish capture exceeded the existing Medium ceiling (112 draws/265,676 triangles). It is retained as cst-fort-polish/iteration-3/. No budget increase is used to hide this result. Ambient vehicles now use lower-detail baked driver geometry and basic seating; close vehicle interiors remain in the boarded models.
 
 Final CST–Fort native desktop review: maximum 102 draws, 231,164 triangles, 28 textures and 24 shader programs at scale1.00. The return view exceeds the unchanged provisional 230,000 triangle ceiling by 1,164 (0.51%); this pass therefore does not claim the Medium budget gate is fully satisfied. CPU-only construction1486ms; street mean0.259ms/p950.283ms/p990.387ms. Counts and CPU timings are not hardware FPS measurements.
+
+## Art Production Sprint 1 — 2026-10-10
+
+Fresh identical-pose baseline versus final evidence: `screenshots/art-production-sprint-1/`. Ten measured walk/boundary camera poses match; full-scale Medium desktop maxima are101 draws,224,754 submitted triangles,28 tracked textures and24 shaders. This passes the unchanged110/230,000/32/26 provisional ceilings. The prior231,164 triangle overrun is removed by distant garment topology, shared through-window geometry, fewer repeated rail posts and two-triangle distant window faces, while new backdrop architecture is added. These are static cached-shadow counts; no complete High-pass budget profile or laptop GPU acceptance is inferred.
+
+Node CPU profile (779 samples, concurrent software-browser workload): construction1326ms; street mean0.547/p954.199/p994.442ms; crowd mean0.112/p950.100/p994.070ms; traffic mean0.064/p950.025/p990.099ms. The long-tail outliers are retained; this profile does not prove improved simulation stability. Hardware laptop FPS remains unmeasured.
+
+Final build: WorldEngine336.28KB raw/100.36KB gzip; Three583.86/148.83KB; lazy GLB library5.71/2.45KB, character1.44/0.75KB, GLTFLoader43.92/12.95KB. WASM remains726.36/217.70KB. The Three shared chunk grows because additional loader/animation exports are retained; separate lazy chunks do not eliminate that overhead. No downloaded asset payload or new package is added. See ART_PRODUCTION_SPRINT_1.md for visual review and full functional verification.

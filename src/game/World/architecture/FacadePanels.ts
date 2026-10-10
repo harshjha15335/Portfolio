@@ -4,7 +4,9 @@ import { Brush, Evaluator, SUBTRACTION } from 'three-bvh-csg';
 /** Cached, authored through-openings; never evaluates CSG in the animation loop. */
 export class FacadePanels {
   private cache = new Map<string, THREE.BufferGeometry>();
-  window(style: string) {
+  window(_style: string) {
+    // All current grammars share this opening topology; decoration varies outside the panel.
+    const style="shared-through-window";
     if (this.cache.has(style)) return this.cache.get(style)!;
     const wall = new Brush(new THREE.BoxGeometry(2.64, 2.55, .54));
     const opening = new Brush(new THREE.BoxGeometry(1.54, 1.65, 1.2));

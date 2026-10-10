@@ -94,3 +94,7 @@ See `docs/MUMBAI_BASELINE_AUDIT.md`, `docs/SECURITY_DEPENDENCY_AUDIT.md`, `docs/
 ### Street polish — 2026-10-10
 
 The CST–Fort pass adds shaped faces/hands, varied sleeves, two pedestrian geometry detail levels, baked seated drivers and detailed passenger cabins. Original draped awnings, shop-specific displays, projecting signs, compound foliage, restrained wear and warm shop lighting improve the same first-person street. No other physical district is expanded. See [polish review](docs/CST_FORT_POLISH.md) for comparison captures and verification.
+
+### CST–Fort Art Production Sprint 1
+
+`feature/cst-fort-art-production` reworks the same street with layered background continuations, varied heights/bays/rooflines, deeper shops and a broader CST-inspired Gothic station. A shared fixed17:40 mood aligns the HUD with golden-hour lighting. The existing Three.js stack now supports lazy verified GLBs and a station-character integration hook; no downloaded character is imported because the verified binary request is blocked. See [sprint visual review](docs/ART_PRODUCTION_SPRINT_1.md) and [asset pipeline](docs/GLB_ASSET_PIPELINE.md) for exact changes, matched native captures, performance evidence and unresolved acceptance work.

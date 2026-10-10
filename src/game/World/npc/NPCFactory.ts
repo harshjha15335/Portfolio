@@ -20,7 +20,7 @@ export function createHuman(seed:string,shirt:string,detail:'close'|'street'='cl
   const g=new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(vertices,3)).setAttribute('normal',new THREE.Float32BufferAttribute(normals,3)).setAttribute('color',new THREE.Float32BufferAttribute(colors,3)).setAttribute('uv',new THREE.Float32BufferAttribute(uv,2)).setAttribute('skinIndex',new THREE.Uint16BufferAttribute(indices,4)).setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));g.setIndex(tri);g.computeVertexNormals();pieces.push(g);
  };
  // Profiles include hem, waist, chest, sloping shoulders and collar rather than a cylinder torso.
- const clothing=clothingGeometry(detail==='close'?24:16).clone(),clothColor=new THREE.Color(shirt),clothColors=[];for(let i=0;i<clothing.attributes.position.count;i++)clothColors.push(clothColor.r,clothColor.g,clothColor.b);clothing.setAttribute('color',new THREE.Float32BufferAttribute(clothColors,3));pieces.push(clothing);
+ const clothing=clothingGeometry(detail==='close'?24:12).clone(),clothColor=new THREE.Color(shirt),clothColors=[];for(let i=0;i<clothing.attributes.position.count;i++)clothColors.push(clothColor.r,clothColor.g,clothColor.b);clothing.setAttribute('color',new THREE.Float32BufferAttribute(clothColors,3));pieces.push(clothing);
  loft([{y:1.44,x:.047,z:.045},{y:1.52,x:.046,z:.047}],skin,2);
  // Jaw, cheekbones and temples are distinct profiles; the chin is closed, not a balloon.
  loft([{y:1.52,x:.015,z:.028,cz:-.013},{y:1.55,x:.056,z:.055,cz:-.014},{y:1.59,x:.079,z:.071,cz:-.006},{y:1.64,x:.094,z:.079},{y:1.69,x:.089,z:.082},{y:1.745,x:.072,z:.072},{y:1.78,x:.032,z:.034},{y:1.785,x:.001,z:.001}],skin,3);

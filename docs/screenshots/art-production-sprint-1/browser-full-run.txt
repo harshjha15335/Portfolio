@@ -1,0 +1,114 @@
+
+> harsh-jha-world-portfolio@1.0.0 test:browser
+> playwright test --config playwright.cloud.config.ts --workers=1 --timeout=180000
+
+
+Running 35 tests using 1 worker
+
+  ✓   1 tests/browser.spec.ts:8:1 › intro enters a rendered world and supports menu and directory (1.3m)
+  ✓   2 tests/browser.spec.ts:33:1 › quick view exposes all projects, verifiable résumé and real code links (1.8s)
+  ✓   3 tests/browser.spec.ts:52:1 › deep links refresh, set project metadata, and close to quick view (1.9s)
+  ✓   4 tests/browser.spec.ts:63:1 › browser back and forward restore project overlays (1.1s)
+  ✓   5 tests/browser.spec.ts:73:1 › command palette searches technologies, executes keys, and has an empty state (1.5s)
+  ✓   6 tests/browser.spec.ts:90:1 › keyboard skip link and native modal contain focus (3.2s)
+  ✓   7 tests/browser.spec.ts:101:1 › four local demonstrations respond to input (3.0s)
+  ✓   8 tests/browser.spec.ts:118:1 › reduced motion follows system preference and user choice persists (4.7s)
+  ✓   9 tests/browser.spec.ts:131:1 › WebGL failure retains usable quick view and project navigation (1.0s)
+  ✓  10 tests/browser.spec.ts:144:1 › WebGL context loss switches a running world to accessible content (33.8s)
+  ✓  11 tests/browser.spec.ts:160:1 › quick view loads without 3D and hides a missing or invalid résumé (17.3s)
+  ✓  12 tests/browser.spec.ts:177:1 › first-person walking accelerates, stops, pauses in overlays, and resets at eye level (1.4m)
+  ✓  13 tests/browser.spec.ts:198:3 › mobile guided exploration › quick view, world, and case study fit a phone screen (31.6s)
+  ✘  14 tests/city.spec.ts:5:3 › taxi can be boarded, metered, routed and exited at its destination (1.0m)
+  ✓  15 tests/city.spec.ts:5:3 › auto can be boarded, metered, routed and exited at its destination (1.5m)
+  ✓  16 tests/city.spec.ts:26:1 › every stop has an accessible guide and meaningful sourced content (14.4s)
+  ✓  17 tests/city.spec.ts:44:1 › skill evidence opens the existing case study and theatre supports scene controls (20.2s)
+  ✓  18 tests/city.spec.ts:64:1 › reduced-motion transport arrives directly and can be reboarded (32.3s)
+  ✓  19 tests/city.spec.ts:77:1 › city content survives WebGL fallback on a phone and map labels fit (7.0s)
+  ✓  20 tests/city.spec.ts:91:1 › keyboard look changes walking direction and nearby E opens a guide (50.7s)
+  ✓  21 tests/city.spec.ts:100:1 › a moving ride can be exited and the next vehicle can be boarded (2.1m)
+  ✓  22 tests/city.spec.ts:113:1 › theatre autoplay advances and pause holds the current scene (2.2s)
+  ✓  23 tests/city.spec.ts:126:1 › drag-to-look remains usable when pointer lock is denied (1.1m)
+  ✓  24 tests/city.spec.ts:136:1 › phone directional controls move the first-person visitor (32.2s)
+  ✘  25 tests/city.spec.ts:147:1 › visitor walks through the research doorway and opens the physical FFprime terminal (51.8s)
+  ✓  26 tests/overhaul.spec.ts:3:1 › authored navigation loads and all street detail presets render without errors (38.0s)
+  ✓  27 tests/redesign.spec.ts:4:3 › street arrival keeps its primary actions in view at 1440px (3.2s)
+  ✓  28 tests/redesign.spec.ts:4:3 › street arrival keeps its primary actions in view at 1920px (4.8s)
+  ✓  29 tests/redesign.spec.ts:4:3 › street arrival keeps its primary actions in view at 390px (2.6s)
+  ✓  30 tests/redesign.spec.ts:24:1 › phone case-study spreads remain readable and restore keyboard focus with reduce motion (3.4s)
+  ✓  31 tests/redesign.spec.ts:24:1 › phone case-study spreads remain readable and restore keyboard focus with no-preference motion (3.8s)
+  ✓  32 tests/redesign.spec.ts:43:1 › short landscape arrival keeps both ways into the portfolio reachable (1.9s)
+  ✓  33 tests/redesign.spec.ts:51:1 › poster directory fast travel arrives at a working research landmark (28.9s)
+  ✓  34 tests/redesign.spec.ts:71:1 › city sound starts muted and its menu is reachable at 960px (28.3s)
+  ✓  35 tests/redesign.spec.ts:71:1 › city sound starts muted and its menu is reachable at 390px (12.4s)
+
+
+  1) tests/city.spec.ts:5:3 › taxi can be boarded, metered, routed and exited at its destination ───
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('region', { name: 'Portfolio Meter' })
+    Expected substring: "KAALI-PEELI"
+    Timeout: 12000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" getByRole('region', { name: 'Portfolio Meter' }) with timeout 12000ms
+      - waiting for getByRole('region', { name: 'Portfolio Meter' })
+
+
+      10 |     await page.getByRole('button', { name: `HAIL ${kind}` }).click();
+      11 |     const meter = page.getByRole('region', { name: 'Portfolio Meter' });
+    > 12 |     await expect(meter).toContainText(kind === 'TAXI' ? 'KAALI-PEELI' : 'AUTO RICKSHAW');
+         |                         ^
+      13 |     await expect(page.getByLabel('Ride destination')).toBeVisible();
+      14 |     const initial = await page.getByTestId('ride-fare').textContent();
+      15 |     await page.getByLabel('Ride destination').selectOption(kind === 'TAXI' ? 'fort' : 'cst');
+        at /workspace/Portfolio/tests/city.spec.ts:12:25
+
+    Error Context: test-results/city-taxi-can-be-boarded-m-bf779-d-exited-at-its-destination/error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/city-taxi-can-be-boarded-m-bf779-d-exited-at-its-destination/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/city-taxi-can-be-boarded-m-bf779-d-exited-at-its-destination/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/city.spec.ts:147:1 › visitor walks through the research doorway and opens the physical FFprime terminal
+
+    Error: expect(received).toBeLessThan(expected)
+
+    Expected: < -9.7
+    Received:   -8.362
+
+    Call Log:
+    - Timeout 12000ms exceeded while waiting on the predicate
+
+      150 |   await page.keyboard.press('m'); await page.getByRole('button',{name:'Travel to Fort Research Institute',exact:true}).click();
+      151 |   await expect(canvas).toHaveAttribute('data-world-z','-35.000');
+    > 152 |   await page.keyboard.down('w'); await expect.poll(async()=>Number(await canvas.getAttribute('data-world-x'))).toBeLessThan(-9.7); await page.keyboard.up('w');
+          |                                                                                                                ^
+      153 |   await expect(page.locator('.proximity-prompt')).toContainText('Read the FFprime research');
+      154 |   await page.keyboard.press('e'); await expect(page.getByRole('dialog',{name:'CASE STUDY / FFprime'})).toBeVisible();
+      155 | });
+        at /workspace/Portfolio/tests/city.spec.ts:152:112
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-visitor-walks-through-5dbe6-e-physical-FFprime-terminal/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/city-visitor-walks-through-5dbe6-e-physical-FFprime-terminal/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/city-visitor-walks-through-5dbe6-e-physical-FFprime-terminal/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/city-visitor-walks-through-5dbe6-e-physical-FFprime-terminal/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    tests/city.spec.ts:5:3 › taxi can be boarded, metered, routed and exited at its destination ────
+    tests/city.spec.ts:147:1 › visitor walks through the research doorway and opens the physical FFprime terminal
+  33 passed (16.0m)

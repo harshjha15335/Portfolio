@@ -15,3 +15,7 @@ Reduced-motion street rendering is on demand: camera movement, detail changes an
 World teardown explicitly disposes each distinct character skeleton and its GPU bone texture, alongside geometry, materials and image textures. Cached original garment geometry is bounded to one CPU source reused across worlds.
 
 The 2026-10-10 street polish retains this rendering pipeline and adds draped striped cloth, compound fronds, merged pier patina, warm shop lights, open station-side arcades and one shared woven upholstery map. Mapped vehicle panels retain their UVs through material batching; previously unmapped canopy geometry receives projected UVs. Original drivers are baked once from posed skins, and active pedestrians swap between two owned geometry detail levels. See CST_FORT_POLISH.md for verification and comparison evidence.
+
+## Art Production Sprint 1
+
+The current branch keeps render presets, exposure, reduced motion and the walking/transit camera contract. Shared `streetMood.ts` sets the fixed17:40 HUD/lighting state. Visible perimeter slabs are replaced by background context while their safety physics/BVH proxies remain. Identical through-cut window topology now shares one cached geometry across decorative grammars. Close people remain at garment resolution24; street-detail garments use12. A lazy `installStationCharacter` hook accepts verified assets through the GLB library, but no character descriptor is activated because binary acquisition is blocked. See ART_PRODUCTION_SPRINT_1.md and GLB_ASSET_PIPELINE.md.

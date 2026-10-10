@@ -19,3 +19,7 @@ The environment draft now lists the five required blocked domains (Quaternius si
 ## 2026-10-10 polish check
 
 No new dependency or installation in this pass. The current registry advisory audit reports zero known vulnerabilities. Character source licensing can now be read at the canonical publisher pages, but the linked external Drive archive remains unavailable; no archive extraction, scripts or unverified model import occurred. New materials and geometry are original project code. Existing runtime integrity/signature records remain applicable to the unchanged package lock.
+
+## Art Production Sprint 1 — 2026-10-10
+
+No dependency additions, installations or lockfile changes. The current advisory audit again reports zero known vulnerabilities. The lazy loader comes from the existing Three.js stack and accepts bounded, checksum-verified, same-origin self-contained GLB files; it does not introduce remote decoders or visitor upload/extraction. Candidate publisher licence checks and actual blocked binary retrieval are recorded in GLB_ASSET_PIPELINE.md. Licence verification is not a comprehensive exploit/malware certification.
