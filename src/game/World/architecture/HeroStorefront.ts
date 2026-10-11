@@ -77,7 +77,7 @@ export function createHeroStorefront(_surfaces:StreetMaterials){
  for(let n=0;n<18;n++)b([.022,.002,.12],[-3.65+n*.42,.10,.36],'#283d39','solid');
  const glass=batches.get('glass')??[];batches.delete('glass');
  const list=[...batches.values()].flat(),geometry=mergeGeometries(list)!;
- const material=new THREE.MeshStandardMaterial({map:atlas,vertexColors:true,roughness:1,metalness:1,side:THREE.DoubleSide});
+ const material=new THREE.MeshStandardMaterial({map:atlas,vertexColors:true,roughness:1,metalness:1,side:THREE.DoubleSide});material.userData.weather=.35;
  material.onBeforeCompile=shader=>{
   shader.vertexShader='attribute vec2 heroFinish; varying vec2 vHeroFinish;\n'+shader.vertexShader;
   shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvHeroFinish = heroFinish;');

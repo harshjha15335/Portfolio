@@ -27,3 +27,7 @@ The café uses one opaque baked geometry batch with per-vertex finish attributes
 ## Sprint 2.1 caster-aware submission
 
 Instanced batches preserve per-source caster flags with a casting prefix for the PCF depth pass and restore their full counts for the color/normal passes. Moving instances and wheel batches recompute conservative bounds; factory humanoids have validated fixed animation bounds. Opt-in public mesh shadow hooks separate shadow submissions from main-and-other work. No new shadow light, shadow cache texture or material program was introduced. See [performance review](ART_PRODUCTION_PERFORMANCE_REVIEW.md).
+
+## Golden-hour pass
+
+A low north-western sun with a light-space shadow box now covers the whole walkable street. `StreetAtmosphere.ts` adds one shared world-space weathering and sun-haze injection to every lit material, which keeps the program count unchanged, and a matching sun-glow sky. When directional shadows are off, sun and fill are rebalanced. See [GOLDEN_HOUR_PASS.md](GOLDEN_HOUR_PASS.md).

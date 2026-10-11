@@ -2,6 +2,7 @@ import {GPUFrameProfiler} from './GPUFrameProfiler';
 import {stationCharacter} from '../data/stationCharacter';
 import {walkingSimulationDelta} from './frameTiming';
 import {STREET_MOOD} from '../game/World/streetMood';
+import {applyStreetAtmosphere,createAtmosphereUniforms,createSkyMaterial,type AtmosphereUniforms} from '../game/World/StreetAtmosphere';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { createVisitor } from '../game/World/WalkingBody';
@@ -58,6 +59,9 @@ export class WorldEngine {
   private lastRenderPosition=new THREE.Vector3(Infinity,Infinity,Infinity);
   private lastRenderRotation=new THREE.Quaternion();
   private debug: HTMLElement | null = null; private debugTime = 0; private debugFrames = 0;
+  private atmosphere!: AtmosphereUniforms;
+  private sun = new THREE.DirectionalLight(STREET_MOOD.sunColor, STREET_MOOD.sunIntensity);
+  private fill = new THREE.HemisphereLight(STREET_MOOD.skyColor, STREET_MOOD.groundColor, STREET_MOOD.hemisphereIntensity);
 
   constructor(private container: HTMLElement, private options: WorldOptions) {
     this.reducedMotion = options.reducedMotion; this.quality=new AdaptiveQuality(options.mobile);
@@ -70,7 +74,7 @@ export class WorldEngine {
     canvas.setAttribute('aria-label', 'First-person Mumbai street. WASD or arrows to walk, Shift for a brisk walk, E to interact. Click to look with the mouse. Escape releases the mouse.');
     canvas.tabIndex = 0; canvas.style.touchAction = 'none'; canvas.style.display = 'block'; container.appendChild(canvas);
     this.lighting();
-    const pmrem=new THREE.PMREMGenerator(this.renderer),room=new RoomEnvironment();this.environmentTarget=pmrem.fromScene(room,.04);this.scene.environment=this.environmentTarget.texture;this.scene.environmentIntensity=.22;room.dispose();pmrem.dispose();
+    const pmrem=new THREE.PMREMGenerator(this.renderer),room=new RoomEnvironment();this.environmentTarget=pmrem.fromScene(room,.04);this.scene.environment=this.environmentTarget.texture;this.scene.environmentIntensity=.14;room.dispose();pmrem.dispose();
     this.rendering=new StreetRenderer(this.renderer,this.scene,this.camera,this.benchmarkEnabled);this.renderPreset=options.mobile?'low':'medium';this.rendering.setPreset(this.renderPreset);
     this.physics.broadphase = new CANNON.SAPBroadphase(this.physics); this.physics.allowSleep = true;
     this.physics.defaultContactMaterial.friction = 0; this.physics.defaultContactMaterial.restitution = 0;
@@ -87,6 +91,8 @@ export class WorldEngine {
     canvas.addEventListener('pointerdown', this.pointerDown); window.addEventListener('pointermove', this.pointerMove); window.addEventListener('pointerup', this.pointerUp); canvas.addEventListener('pointercancel', this.pointerUp);
     canvas.addEventListener('webglcontextlost', this.contextLost);
     if (import.meta.env.DEV && new URLSearchParams(location.search).has('debug')) {window.addEventListener('street-review-view',this.reviewView); this.debug = document.createElement('div'); this.debug.className = 'world-debug'; this.debug.setAttribute('aria-label', 'Renderer diagnostics'); container.append(this.debug); }
+    this.atmosphere.uShelterMin.value.copy(this.street.shelteredBounds.min);this.atmosphere.uShelterMax.value.copy(this.street.shelteredBounds.max);
+    applyStreetAtmosphere(this.scene,this.atmosphere);this.syncSunBalance();
     // Public Three API primes light state before the first shadow pass, avoiding
     // duplicate zero-light depth programs retained after the following lit pass.
     const warmup=new THREE.Group();this.scene.traverseVisible(object=>{if((object as THREE.Mesh).isMesh)warmup.add(object.clone(false));});
@@ -105,15 +111,18 @@ export class WorldEngine {
   };
   private lighting() {
     this.scene.background = new THREE.Color('#c0b29b'); this.scene.fog = new THREE.Fog(STREET_MOOD.fogColor, STREET_MOOD.fogNear, STREET_MOOD.fogFar);
-    this.scene.add(new THREE.HemisphereLight(STREET_MOOD.skyColor, STREET_MOOD.groundColor, STREET_MOOD.hemisphereIntensity));
-    const sun = new THREE.DirectionalLight(STREET_MOOD.sunColor, STREET_MOOD.sunIntensity); sun.position.set(...STREET_MOOD.sunPosition); sun.castShadow = !this.options.mobile;
-    sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -24, right: 24, top: 55, bottom: -55, near: 1, far: 150 });
-    sun.target.position.set(0, 0, -26); sun.shadow.normalBias = .06; sun.shadow.bias = -.0002; this.scene.add(sun, sun.target);
-    const sky = new THREE.Mesh(new THREE.SphereGeometry(145, 24, 12), new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false,
-      vertexShader: 'varying vec3 vPosition; void main(){vPosition=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-      fragmentShader: `varying vec3 vPosition; void main(){vec3 d=normalize(vPosition); float h=max(d.y,0.0); vec3 horizon=vec3(.76,.69,.56); vec3 middle=vec3(.46,.56,.59); vec3 top=vec3(.27,.38,.47); vec3 c=mix(horizon,middle,smoothstep(0.,.28,h)); c=mix(c,top,smoothstep(.18,.85,h)); float cloud=sin(d.x*24.+d.z*12.)*sin(d.z*33.-d.y*42.); c=mix(c,vec3(.79,.76,.66),smoothstep(.38,.85,cloud)*smoothstep(.02,.12,h)*(1.-smoothstep(.25,.5,h))*.3); gl_FragColor=vec4(c,1.);}` }));
+    this.scene.add(this.fill);
+    const sun = this.sun; sun.position.set(...STREET_MOOD.sunPosition); sun.castShadow = !this.options.mobile;
+    // Low north-western sun down the street axis. The frustum is sized in light space so the whole
+    // walkable street, from the station forecourt to the north limit, receives building shadows.
+    sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -52, right: 52, top: 41, bottom: -12, near: 1, far: 120 });
+    sun.target.position.set(...STREET_MOOD.sunTarget); sun.shadow.normalBias = .06; sun.shadow.bias = -.0002; this.scene.add(sun, sun.target);
+    this.atmosphere = createAtmosphereUniforms(sun.position, sun.target.position, STREET_MOOD.hazeColor);
+    const sky = new THREE.Mesh(new THREE.SphereGeometry(145, 24, 12), createSkyMaterial(this.atmosphere));
     this.scene.add(sky);
   }
+  /** Without directional shadows a low sun would flood the street; soften it and lift the sky fill. */
+  private syncSunBalance(){const shadows=this.renderer.shadowMap.enabled;this.sun.intensity=STREET_MOOD.sunIntensity*(shadows?1:STREET_MOOD.shadowlessSunScale);this.fill.intensity=STREET_MOOD.hemisphereIntensity*(shadows?1:STREET_MOOD.shadowlessFillScale);}
   private reviewView = (event:Event) => {
     // Fixed, collision-clear eye-level review points. Development diagnostics only.
     const views:Record<string,{x:number;z:number;yaw:number}>={'north-limit':{x:1.8,z:-59,yaw:-.08},'south-look':{x:14.5,z:15,yaw:Math.PI+.15},'side-gap':{x:5.4,z:-.7,yaw:-Math.PI/2},'hero-wide':{x:-2.5,z:4,yaw:Math.PI/2},hero:{x:-4.9,z:5.7,yaw:Math.PI/2},'fort-room':{x:-9.8,z:-33.6,yaw:Math.PI/2},spawn:STREET_SPAWN,station:{x:4.6,z:-4,yaw:Math.PI-.12},shops:{x:-4.8,z:-9,yaw:-.2},fort:{x:-5.1,z:-35,yaw:Math.PI/2},return:{x:4.7,z:-44,yaw:Math.PI+.16},npc:{x:5.6,z:6.8,yaw:Math.PI+.12},shop:{x:-5.7,z:-15,yaw:Math.PI/2},vegetation:{x:-4.8,z:-15,yaw:.38},junction:{x:4.8,z:-8,yaw:.7},institute:{x:-4.6,z:-30,yaw:.54}};
@@ -127,7 +136,7 @@ export class WorldEngine {
   }
   setPaused(paused: boolean) { this.paused = paused; this.audio?.setActive(this.soundEnabled&&!paused&&this.mode==='world'&&!document.hidden); this.pausedFrameDirty = true; this.releaseInput(); this.accumulator = 0; this.visitor.velocity.setZero(); if (paused) this.unlock(); }
   setSound(enabled:boolean) { this.soundEnabled=enabled; if(enabled&&!this.audio){try{this.audio=new StreetAudio();}catch{this.soundEnabled=false;}} this.audio?.setActive(enabled&&this.mode==='world'&&!this.paused&&!document.hidden); }
-  setRenderPreset(preset:RenderPreset){this.renderPreset=preset;this.rendering.setPreset(this.quality.low?'low':preset);this.renderer.shadowMap.enabled=preset!=='low'&&!this.options.mobile&&!this.quality.low;this.renderer.shadowMap.needsUpdate=true;this.resize();this.pausedFrameDirty=true;}
+  setRenderPreset(preset:RenderPreset){this.renderPreset=preset;this.rendering.setPreset(this.quality.low?'low':preset);this.renderer.shadowMap.enabled=preset!=='low'&&!this.options.mobile&&!this.quality.low;this.syncSunBalance();this.renderer.shadowMap.needsUpdate=true;this.resize();this.pausedFrameDirty=true;}
   setReducedMotion(reduced: boolean) { this.reducedMotion = reduced;this.pausedFrameDirty=true; }
   focusLandmark(_id: string) { /* Reading an overlay never changes the visitor's viewpoint. */ }
   travelTo(id: string) {
@@ -282,7 +291,7 @@ export class WorldEngine {
       }
       this.updateCamera(); this.street.update(this.time, this.reducedMotion,this.camera.position);
       const needsRender=!this.reducedMotion||forceRender||this.camera.position.distanceToSquared(this.lastRenderPosition)>1e-8||this.camera.quaternion.angleTo(this.lastRenderRotation)>.0001||(this.renderer.shadowMap.enabled&&this.renderer.shadowMap.needsUpdate);
-      if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)){this.resize();this.street.setQuality(this.quality.low);this.rendering.setPreset(this.quality.low?'low':this.renderPreset);this.resize();this.renderer.shadowMap.enabled=!this.options.mobile&&!this.quality.low&&this.renderPreset!=='low';this.renderer.shadowMap.needsUpdate=true;}
+      if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)){this.resize();this.street.setQuality(this.quality.low);this.rendering.setPreset(this.quality.low?'low':this.renderPreset);this.resize();this.renderer.shadowMap.enabled=!this.options.mobile&&!this.quality.low&&this.renderPreset!=='low';this.syncSunBalance();this.renderer.shadowMap.needsUpdate=true;}
       if(!this.reducedMotion&&!this.paused&&this.time-this.lastShadow>.2&&this.renderer.shadowMap.enabled){this.renderer.shadowMap.needsUpdate=true;this.lastShadow=this.time;}
       this.audio?.update(this.ride.phase==='riding'?this.rideSpeed:Math.hypot(this.visitor.velocity.x,this.visitor.velocity.z),this.ride.phase!=='idle'&&this.ride.phase!=='hailing',this.ride.kind==='auto');
       if(needsRender){this.renderer.info.reset();this.profiler?.beforeRender();const renderStart=performance.now();this.rendering.render(delta);this.profiler?.afterRender({frameMs:elapsed*1000,renderCpuMs:performance.now()-renderStart,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,geometries:this.renderer.info.memory.geometries,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,preset:this.renderPreset,phase:this.ride.phase,worldX:this.visitor.position.x,worldZ:this.visitor.position.z,walkingSimulatedMs:simulatedWalkingMs,shadowRefreshed:this.rendering.frameCost.shadowDraws>0,shadowDraws:this.rendering.frameCost.shadowDraws,shadowTriangles:this.rendering.frameCost.shadowTriangles,shadowDrawCpuMs:this.rendering.frameCost.shadowDrawCpuMs,mainAndOtherDraws:this.rendering.frameCost.mainAndOtherDraws,mainAndOtherTriangles:this.rendering.frameCost.mainAndOtherTriangles});this.lastRenderPosition.copy(this.camera.position);this.lastRenderRotation.copy(this.camera.quaternion);this.debugFrames++;}
