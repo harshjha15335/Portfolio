@@ -138,7 +138,7 @@ export function createTransitModel(kind: TransitKind,cabinDetail:'close'|'street
       if(!geometry.hasAttribute('uv')){const uv=[],p=geometry.attributes.position;for(let i=0;i<p.count;i++)uv.push(p.getX(i),p.getZ(i));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));}
     }else geometry.deleteAttribute('uv');
     geometries.push(geometry);buckets.set(mat,geometries);group.remove(m);}
-  for(const [material,parts] of buckets){const mesh=new THREE.Mesh(mergeGeometries(parts)!,material);mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);parts.forEach(p=>p.dispose());}
+  for(const [material,parts] of buckets){const mesh=new THREE.Mesh(mergeGeometries(parts)!,material);mesh.name=`${kind}:${cabinDetail}:${(material as THREE.MeshStandardMaterial).color.getHexString()}`;mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);parts.forEach(p=>p.dispose());}
   originals.forEach(g=>g.dispose());
   const wheels:THREE.Group[]=[];
   const radius=auto?.255:.32;
@@ -150,8 +150,8 @@ export function createTransitModel(kind: TransitKind,cabinDetail:'close'|'street
   for(const [x,z] of auto?[[0,-.94],[-.69,.78],[.69,.78]]:[[-.88,-1.13],[.88,-1.13],[-.88,1.12],[.88,1.12]]) {
     const wheel=new THREE.Group();wheel.position.set(x,radius,z);group.add(wheel);wheels.push(wheel);
   }
-  const wheelBatch=new THREE.InstancedMesh(wheelGeometry,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.75,metalness:.25}),wheels.length);wheelBatch.castShadow=true;wheelBatch.receiveShadow=true;wheelBatch.frustumCulled=false;group.add(wheelBatch);
-  wheels.forEach((wheel,i)=>{wheel.updateMatrix();wheelBatch.setMatrixAt(i,wheel.matrix);});group.userData.wheelBatch=wheelBatch;
+  const wheelBatch=new THREE.InstancedMesh(wheelGeometry,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.75,metalness:.25}),wheels.length);wheelBatch.castShadow=true;wheelBatch.receiveShadow=true;wheelBatch.frustumCulled=true;group.add(wheelBatch);
+  wheels.forEach((wheel,i)=>{wheel.updateMatrix();wheelBatch.setMatrixAt(i,wheel.matrix);});wheelBatch.computeBoundingSphere();group.userData.wheelBatch=wheelBatch;
   group.userData.wheels=wheels;group.userData.wheelRadius=auto?.255:.32;
   group.userData.lastPosition=new THREE.Vector3();group.userData.travel=0;
   group.userData.cabinDetail=cabinDetail;
@@ -160,5 +160,5 @@ export function createTransitModel(kind: TransitKind,cabinDetail:'close'|'street
 export function animateTransit(model:THREE.Group,distance:number,steering=0) {
   const wheels=model.userData.wheels as THREE.Group[];
   for(let i=0;i<wheels.length;i++){wheels[i].rotation.x=distance/model.userData.wheelRadius;wheels[i].rotation.y=i<(wheels.length===3?1:2)?THREE.MathUtils.clamp(steering,-.35,.35):0;wheels[i].updateMatrix();(model.userData.wheelBatch as THREE.InstancedMesh).setMatrixAt(i,wheels[i].matrix);}
-  (model.userData.wheelBatch as THREE.InstancedMesh).instanceMatrix.needsUpdate=true;
+  (model.userData.wheelBatch as THREE.InstancedMesh).instanceMatrix.needsUpdate=true;(model.userData.wheelBatch as THREE.InstancedMesh).computeBoundingSphere();
 }

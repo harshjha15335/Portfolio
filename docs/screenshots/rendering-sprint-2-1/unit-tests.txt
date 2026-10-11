@@ -1,0 +1,12 @@
+
+> harsh-jha-world-portfolio@1.0.0 test
+> vitest run
+
+
+ RUN  v4.1.11 /workspace/Portfolio
+
+
+ Test Files  14 passed (14)
+      Tests  78 passed (78)
+   Start at  05:59:04
+   Duration  5.10s (transform 1.18s, setup 0ms, import 2.40s, tests 8.15s, environment 2ms)

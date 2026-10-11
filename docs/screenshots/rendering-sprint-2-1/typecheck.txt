@@ -1,0 +1,3 @@
+
+> harsh-jha-world-portfolio@1.0.0 typecheck
+> tsc --noEmit

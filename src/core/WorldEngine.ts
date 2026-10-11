@@ -38,6 +38,7 @@ export class WorldEngine {
   private profiler:GPUFrameProfiler|null=null;
   private reviewQuality=(import.meta.env.DEV&&new URLSearchParams(location.search).get('review')==='1')||(this.benchmarkEnabled&&new URLSearchParams(location.search).get('fixedQuality')==='1');
   private lastShadow=0;
+ private inspectionFrozen=false;
   private rendering!:StreetRenderer;
   private renderPreset:RenderPreset='medium';
   private environmentTarget!:THREE.WebGLRenderTarget;
@@ -70,7 +71,7 @@ export class WorldEngine {
     canvas.tabIndex = 0; canvas.style.touchAction = 'none'; canvas.style.display = 'block'; container.appendChild(canvas);
     this.lighting();
     const pmrem=new THREE.PMREMGenerator(this.renderer),room=new RoomEnvironment();this.environmentTarget=pmrem.fromScene(room,.04);this.scene.environment=this.environmentTarget.texture;this.scene.environmentIntensity=.22;room.dispose();pmrem.dispose();
-    this.rendering=new StreetRenderer(this.renderer,this.scene,this.camera);this.renderPreset=options.mobile?'low':'medium';this.rendering.setPreset(this.renderPreset);
+    this.rendering=new StreetRenderer(this.renderer,this.scene,this.camera,this.benchmarkEnabled);this.renderPreset=options.mobile?'low':'medium';this.rendering.setPreset(this.renderPreset);
     this.physics.broadphase = new CANNON.SAPBroadphase(this.physics); this.physics.allowSleep = true;
     this.physics.defaultContactMaterial.friction = 0; this.physics.defaultContactMaterial.restitution = 0;
     this.street = new MumbaiStreet(this.physics); this.scene.add(this.street.group); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed)this.pausedFrameDirty=true;});
@@ -94,8 +95,11 @@ export class WorldEngine {
     this.frameId = requestAnimationFrame(this.frame);
   }
   private benchmarkCommand=(event:Event)=>{
-    const detail=(event as CustomEvent<{action:string;scenario:string;requestId:string}>).detail;
-    try{if(!this.profiler)throw new Error('Benchmark not enabled');if(detail.action==='begin'){if(this.reducedMotion||this.paused||this.mode!=='world')throw new Error('Benchmark requires visible world, continuous animation and no modal');this.profiler.begin(detail.scenario);}
+    const detail=(event as CustomEvent<{action:string;scenario:string;requestId:string;animationTime?:number}>).detail;
+    try{if(!this.profiler)throw new Error('Benchmark not enabled');
+      if(detail.action==='freeze'){this.inspectionFrozen=true;const end=Math.min(30,Math.max(0,detail.animationTime??8));for(let t=1/60;t<=end+1e-8;t+=1/60)this.street.update(t,false,this.camera.position);this.time=end;this.updateCamera();}
+      const compare=detail.action==='cached'||detail.action==='refresh';
+      if(compare){this.updateCamera();this.renderer.shadowMap.needsUpdate=detail.action==='refresh';this.renderer.info.reset();const start=performance.now();this.rendering.render(0);const result={kind:detail.action,renderCpuMs:performance.now()-start,total:{draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles},...this.rendering.frameCost,textures:this.renderer.info.memory.textures,programs:this.renderer.info.programs?.length??0,pose:{x:this.camera.position.x,y:this.camera.position.y,z:this.camera.position.z,yaw:this.yaw,pitch:this.pitch,animationTime:this.time},preset:this.renderPreset,scale:this.quality.scale,shadowMap:this.renderer.shadowMap.enabled,device:this.profiler.device};window.dispatchEvent(new CustomEvent('street-benchmark-result',{detail:{requestId:detail.requestId,result}}));return;}if(detail.action==='begin'){if(this.inspectionFrozen||this.reducedMotion||this.paused||this.mode!=='world')throw new Error('Benchmark requires visible world, continuous animation and no modal');this.profiler.begin(detail.scenario);}
       const result=detail.action==='finish'?this.profiler.finish():{ready:true,device:this.profiler.device,programVariants:this.profiler.programDiagnostics()};window.dispatchEvent(new CustomEvent('street-benchmark-result',{detail:{requestId:detail.requestId,result}}));
     }catch(error){window.dispatchEvent(new CustomEvent('street-benchmark-result',{detail:{requestId:detail.requestId,error:String(error)}}));}
   };
@@ -247,7 +251,7 @@ export class WorldEngine {
     }
   }
   private frame = (timestamp: number) => {
-    if (this.disposed) return; this.frameId = requestAnimationFrame(this.frame);
+    if (this.disposed) return; this.frameId = requestAnimationFrame(this.frame);if(this.inspectionFrozen)return;
     const elapsed = this.lastTime ? (timestamp - this.lastTime) / 1000 : 0; const delta = Math.min(elapsed, .08); this.lastTime = timestamp;
     if (document.hidden || this.mode !== 'world') return;
     if (this.paused && !this.pausedFrameDirty) return;
@@ -281,7 +285,7 @@ export class WorldEngine {
       if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)){this.resize();this.street.setQuality(this.quality.low);this.rendering.setPreset(this.quality.low?'low':this.renderPreset);this.resize();this.renderer.shadowMap.enabled=!this.options.mobile&&!this.quality.low&&this.renderPreset!=='low';this.renderer.shadowMap.needsUpdate=true;}
       if(!this.reducedMotion&&!this.paused&&this.time-this.lastShadow>.2&&this.renderer.shadowMap.enabled){this.renderer.shadowMap.needsUpdate=true;this.lastShadow=this.time;}
       this.audio?.update(this.ride.phase==='riding'?this.rideSpeed:Math.hypot(this.visitor.velocity.x,this.visitor.velocity.z),this.ride.phase!=='idle'&&this.ride.phase!=='hailing',this.ride.kind==='auto');
-      if(needsRender){this.renderer.info.reset();this.profiler?.beforeRender();const renderStart=performance.now();this.rendering.render(delta);this.profiler?.afterRender({frameMs:elapsed*1000,renderCpuMs:performance.now()-renderStart,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,geometries:this.renderer.info.memory.geometries,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,preset:this.renderPreset,phase:this.ride.phase,worldX:this.visitor.position.x,worldZ:this.visitor.position.z,walkingSimulatedMs:simulatedWalkingMs});this.lastRenderPosition.copy(this.camera.position);this.lastRenderRotation.copy(this.camera.quaternion);this.debugFrames++;}
+      if(needsRender){this.renderer.info.reset();this.profiler?.beforeRender();const renderStart=performance.now();this.rendering.render(delta);this.profiler?.afterRender({frameMs:elapsed*1000,renderCpuMs:performance.now()-renderStart,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,geometries:this.renderer.info.memory.geometries,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,preset:this.renderPreset,phase:this.ride.phase,worldX:this.visitor.position.x,worldZ:this.visitor.position.z,walkingSimulatedMs:simulatedWalkingMs,shadowRefreshed:this.rendering.frameCost.shadowDraws>0,shadowDraws:this.rendering.frameCost.shadowDraws,shadowTriangles:this.rendering.frameCost.shadowTriangles,shadowDrawCpuMs:this.rendering.frameCost.shadowDrawCpuMs,mainAndOtherDraws:this.rendering.frameCost.mainAndOtherDraws,mainAndOtherTriangles:this.rendering.frameCost.mainAndOtherTriangles});this.lastRenderPosition.copy(this.camera.position);this.lastRenderRotation.copy(this.camera.quaternion);this.debugFrames++;}
       if (timestamp - this.lastHud > 125) {
         if (this.benchmarkEnabled){this.renderer.domElement.dataset.benchmarkReady='true';this.renderer.domElement.dataset.ridePhase=this.ride.phase;this.renderer.domElement.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';}
         if (this.debug) { const canvas = this.renderer.domElement; canvas.dataset.worldX = this.visitor.position.x.toFixed(3); canvas.dataset.worldZ = this.visitor.position.z.toFixed(3); canvas.dataset.eyeHeight = this.camera.position.y.toFixed(3); canvas.dataset.lookYaw = this.yaw.toFixed(3); canvas.dataset.renderScale=this.quality.scale.toFixed(2); canvas.dataset.quality=this.quality.low?'low':'high'; canvas.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';canvas.dataset.navigation=this.street.navigationStatus;canvas.dataset.surfaceMaps=this.street.surfaceStatus;canvas.dataset.characterStatus=this.street.characterStatus;canvas.dataset.npcUpdateMs=this.street.npcUpdateMs.toFixed(3);canvas.dataset.trafficUpdateMs=this.street.trafficUpdateMs.toFixed(3);canvas.dataset.renderPreset=this.renderPreset; canvas.dataset.cameraMode = this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? 'first-person' : 'passenger'; }

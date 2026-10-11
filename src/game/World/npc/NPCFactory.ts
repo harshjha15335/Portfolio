@@ -55,7 +55,7 @@ export function createHuman(seed:string,shirt:string,detail:'close'|'street'='cl
  loft([{y:1.582,x:.006,z:.002,cz:-.076},{y:1.587,x:.022,z:.003,cz:-.077},{y:1.592,x:.009,z:.002,cz:-.076}], '#865e4b',3);
  loft([{y:1.588,x:.019,z:.001,cz:-.081},{y:1.5895,x:.018,z:.001,cz:-.081}], '#5a463b',3);
  const geometry=mergeGeometries(pieces)!;pieces.forEach(g=>g.dispose());
- const mesh=new THREE.SkinnedMesh(geometry,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.96,envMapIntensity:.18}));mesh.add(bones[0]);mesh.bind(new THREE.Skeleton(bones));mesh.castShadow=true;mesh.receiveShadow=true;mesh.frustumCulled=false;group.add(mesh);group.scale.setScalar(.94+random()*.1);
+ const mesh=new THREE.SkinnedMesh(geometry,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.96,envMapIntensity:.18}));mesh.add(bones[0]);mesh.bind(new THREE.Skeleton(bones));mesh.castShadow=true;mesh.receiveShadow=true;mesh.boundingSphere=new THREE.Sphere(new THREE.Vector3(0,.92,0),1.35);mesh.frustumCulled=true;group.add(mesh);group.scale.setScalar(.94+random()*.1);
  const phase=random()*6.28;
  let streetGeometry=geometry;
  if(detail==='close'){const street=createHuman(seed,shirt,'street');streetGeometry=street.mesh.geometry;(street.mesh.material as THREE.Material).dispose();street.mesh.skeleton.dispose();}

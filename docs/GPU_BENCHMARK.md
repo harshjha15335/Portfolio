@@ -42,3 +42,7 @@ node scripts/benchmark-gpu.mjs
 This shorter run exercises the harness; it is **not** laptop performance evidence. Do not use its frame-time percentiles to accept the art or infer GPU performance. Leave longer-run and representative device gates unresolved until hardware is available.
 
 `BENCHMARK_SHORT_RIDES=1` is rejected for hardware runs. It records short moving passenger samples and exits before arrival solely for software smoke checks. Such files use `-smoke` names and `completeRideRoutes:false`; they do not validate whole-route timing. At approximately6seconds per software frame, full route smoke tests are impractical. Tiny smoke sample counts cannot establish representative percentiles. The normal hardware protocol continues complete routes.
+
+## Sprint 2.1 pass categories
+
+Schema2 samples retain exact shadow draw/triangle counts from public mesh callbacks, main-and-other totals, refresh classification and shadow-draw CPU callback time. Reports separate cached and refreshed draw/triangle/CPU distributions and actual wall-time refresh frequency. GPU query samples, when supported, retain frame indices and refresh category; full-render GPU times are not isolated shadow-pass GPU estimates. High non-shadow counts include its normal and effect passes. Cached limits remain unchanged; a continuous refresh-frame budget requires hardware review. The1920×1080 real-hardware complete-route procedure above is unchanged. See [Sprint 2.1 review](ART_PRODUCTION_PERFORMANCE_REVIEW.md).

@@ -1,6 +1,7 @@
 import type {VerifiedGLB,GLBAssetLibrary} from './assets/GLBAssetLibrary';
 import type {GLBCharacter} from './assets/GLBCharacter';
 import * as THREE from 'three';
+import {casterPrefix,restrictInstanceShadows} from '../../core/ShadowInstances';
 import * as CANNON from 'cannon-es';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
@@ -625,10 +626,11 @@ export class MumbaiStreet {
       if (!bucket) { const material = source.clone(); material.color.set('#ffffff'); bucket = { geometry: mesh.geometry, material, meshes: [] }; buckets.set(key, bucket); }
       bucket.meshes.push(mesh);
     }
-    for (const { geometry, material, meshes } of buckets.values()) {
+    for (const { geometry, material, meshes:members } of buckets.values()) {
+      const {meshes,count}=casterPrefix(members);
       const instance = new THREE.InstancedMesh(geometry, material, meshes.length);
       meshes.forEach((mesh, i) => { instance.setMatrixAt(i, mesh.matrixWorld); instance.setColorAt(i, (mesh.material as THREE.MeshStandardMaterial).color); mesh.removeFromParent(); });
-      instance.castShadow = meshes.some(m => m.castShadow); instance.receiveShadow = true; instance.computeBoundingSphere(); this.group.add(instance);
+      instance.name=`static:${(material as THREE.MeshStandardMaterial).userData.surface??'solid'}:${geometry.type}`;restrictInstanceShadows(instance,count); instance.receiveShadow = true; instance.computeBoundingSphere(); this.group.add(instance);
     }
   }
   private mergeSigns() {
@@ -639,11 +641,12 @@ export class MumbaiStreet {
   private instancePedestrians() {
     const buckets = new Map<string, THREE.Mesh[]>();
     for (const mesh of this.dynamicParts) { const key=`${mesh.geometry.uuid}:${mesh.material===this.contactMaterial?'contact':'human'}`;const parts = buckets.get(key) ?? []; parts.push(mesh); buckets.set(key, parts); mesh.visible = false; }
-    for (const meshes of buckets.values()) {
+    for (const members of buckets.values()) {
+      const {meshes,count}=casterPrefix(members);
       const source=meshes[0].material as THREE.MeshStandardMaterial;const material=source.clone();material.color.set('#ffffff');
       const instance = new THREE.InstancedMesh(meshes[0].geometry, material, meshes.length);
       meshes.forEach((mesh, i) => instance.setColorAt(i, (mesh.material as THREE.MeshStandardMaterial).color));
-      instance.castShadow = meshes[0].material!==this.contactMaterial; instance.receiveShadow = true; instance.frustumCulled = false; this.group.add(instance); this.dynamicBatches.push({ instance, meshes });
+      restrictInstanceShadows(instance,count); instance.receiveShadow = true; instance.frustumCulled = true; this.group.add(instance); this.dynamicBatches.push({ instance, meshes });
     }
   }
   /** Called only by trusted application code once an individually verified asset is approved. */
@@ -673,6 +676,6 @@ export class MumbaiStreet {
     this.trafficVehicles.forEach((vehicle,i)=>{const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y+=turn*(1-Math.exp(-8*delta));animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);});this.trafficUpdateMs=performance.now()-trafficStart;
     for (const animate of this.motion) animate(reduced ? 0 : time);
     this.group.updateMatrixWorld(true);
-    for (const { instance, meshes } of this.dynamicBatches) { meshes.forEach((mesh, i) => { let visible=true; for(let p:THREE.Object3D|null=mesh.parent;p&&p!==this.group;p=p.parent)if(!p.visible)visible=false; instance.setMatrixAt(i,visible?mesh.matrixWorld:new THREE.Matrix4().makeScale(0,0,0)); }); instance.instanceMatrix.needsUpdate = true; }
+    for (const { instance, meshes } of this.dynamicBatches) { meshes.forEach((mesh, i) => { let visible=true; for(let p:THREE.Object3D|null=mesh.parent;p&&p!==this.group;p=p.parent)if(!p.visible)visible=false; instance.setMatrixAt(i,visible?mesh.matrixWorld:new THREE.Matrix4().makeScale(0,0,0)); }); instance.instanceMatrix.needsUpdate = true;instance.computeBoundingSphere(); }
   }
 }

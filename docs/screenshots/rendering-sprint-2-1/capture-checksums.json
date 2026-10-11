@@ -1,0 +1,290 @@
+{
+  "after/auto-cached.png": {
+    "bytes": 1210365,
+    "sha256": "24579fdc5580574ed0a34a642578b23aea875a2fbfa5260b11bc3cf67fab2dfa"
+  },
+  "after/auto-refresh.png": {
+    "bytes": 1210365,
+    "sha256": "24579fdc5580574ed0a34a642578b23aea875a2fbfa5260b11bc3cf67fab2dfa"
+  },
+  "after/fort-room-cached.png": {
+    "bytes": 448200,
+    "sha256": "3857c73416b0adb6919e519cd6d255a8891ec1530c84bea9c446428a12123647"
+  },
+  "after/fort-room-refresh.png": {
+    "bytes": 448200,
+    "sha256": "3857c73416b0adb6919e519cd6d255a8891ec1530c84bea9c446428a12123647"
+  },
+  "after/hero-wide-cached.png": {
+    "bytes": 1094665,
+    "sha256": "9b91b8b1442b739799534bfffb4c09478a9d66399916ac0b486562792bb12ab1"
+  },
+  "after/hero-wide-refresh.png": {
+    "bytes": 1094665,
+    "sha256": "9b91b8b1442b739799534bfffb4c09478a9d66399916ac0b486562792bb12ab1"
+  },
+  "after/junction-cached.png": {
+    "bytes": 1217856,
+    "sha256": "1837aef1607871c126dfff3160b8da2e638bc1f858b762811ab1c6dc7067559d"
+  },
+  "after/junction-refresh.png": {
+    "bytes": 1217856,
+    "sha256": "1837aef1607871c126dfff3160b8da2e638bc1f858b762811ab1c6dc7067559d"
+  },
+  "after/npc-cached.png": {
+    "bytes": 977931,
+    "sha256": "ab73d91a21200f131a39caa2882921b77456929018412b9790ee4840a8be9ace"
+  },
+  "after/npc-refresh.png": {
+    "bytes": 977931,
+    "sha256": "ab73d91a21200f131a39caa2882921b77456929018412b9790ee4840a8be9ace"
+  },
+  "after/return-cached.png": {
+    "bytes": 1171255,
+    "sha256": "8dafd2c81a5bc236bc80e4ae42696e7f8aa9d586cf0974ee358f5b81baa0fa29"
+  },
+  "after/return-refresh.png": {
+    "bytes": 1171255,
+    "sha256": "8dafd2c81a5bc236bc80e4ae42696e7f8aa9d586cf0974ee358f5b81baa0fa29"
+  },
+  "after/spawn-cached.png": {
+    "bytes": 1560793,
+    "sha256": "23127aa81a51d0597bd6d92456d3c43801a1bb06231cdccd816bd7a263bf73ff"
+  },
+  "after/spawn-refresh.png": {
+    "bytes": 1560793,
+    "sha256": "23127aa81a51d0597bd6d92456d3c43801a1bb06231cdccd816bd7a263bf73ff"
+  },
+  "after/station-cached.png": {
+    "bytes": 1333357,
+    "sha256": "be130546d2173c0f9ed940efb990ab5be87b82a307342ad5c157e513efe9c7ea"
+  },
+  "after/station-refresh.png": {
+    "bytes": 1333357,
+    "sha256": "be130546d2173c0f9ed940efb990ab5be87b82a307342ad5c157e513efe9c7ea"
+  },
+  "after/taxi-cached.png": {
+    "bytes": 931217,
+    "sha256": "6bd00c4d179152d534a9e8ecec6934e6601814e7def12040337d07dad4e7c4e6"
+  },
+  "after/taxi-refresh.png": {
+    "bytes": 931217,
+    "sha256": "6bd00c4d179152d534a9e8ecec6934e6601814e7def12040337d07dad4e7c4e6"
+  },
+  "before/auto-cached.png": {
+    "bytes": 1218581,
+    "sha256": "8d06195c5388d151b44c36a54472048e7759f0bef619feb23117a28d60453477"
+  },
+  "before/auto-refresh.png": {
+    "bytes": 1218581,
+    "sha256": "8d06195c5388d151b44c36a54472048e7759f0bef619feb23117a28d60453477"
+  },
+  "before/fort-room-cached.png": {
+    "bytes": 448200,
+    "sha256": "3857c73416b0adb6919e519cd6d255a8891ec1530c84bea9c446428a12123647"
+  },
+  "before/fort-room-refresh.png": {
+    "bytes": 448200,
+    "sha256": "3857c73416b0adb6919e519cd6d255a8891ec1530c84bea9c446428a12123647"
+  },
+  "before/hero-wide-cached.png": {
+    "bytes": 1094665,
+    "sha256": "9b91b8b1442b739799534bfffb4c09478a9d66399916ac0b486562792bb12ab1"
+  },
+  "before/hero-wide-refresh.png": {
+    "bytes": 1094665,
+    "sha256": "9b91b8b1442b739799534bfffb4c09478a9d66399916ac0b486562792bb12ab1"
+  },
+  "before/junction-cached.png": {
+    "bytes": 1217417,
+    "sha256": "beb73fc4dbf33aab789cbd869097764755045cf80e149c1d1fb33f91707d2a76"
+  },
+  "before/junction-refresh.png": {
+    "bytes": 1217417,
+    "sha256": "beb73fc4dbf33aab789cbd869097764755045cf80e149c1d1fb33f91707d2a76"
+  },
+  "before/npc-cached.png": {
+    "bytes": 977284,
+    "sha256": "31d7bf9e5b3d440378e3ff091813a025fe8d0d1586bddb92bd9939fc5637cd07"
+  },
+  "before/npc-refresh.png": {
+    "bytes": 977284,
+    "sha256": "31d7bf9e5b3d440378e3ff091813a025fe8d0d1586bddb92bd9939fc5637cd07"
+  },
+  "before/return-cached.png": {
+    "bytes": 1171314,
+    "sha256": "5ab86363f5e31cc01b04ce42fd9f555903e2f365325a01e7bc203a5e252c7f37"
+  },
+  "before/return-refresh.png": {
+    "bytes": 1171314,
+    "sha256": "5ab86363f5e31cc01b04ce42fd9f555903e2f365325a01e7bc203a5e252c7f37"
+  },
+  "before/spawn-cached.png": {
+    "bytes": 1551951,
+    "sha256": "bbc95259c1a0fe77c30884498f426f61e8a28a3a3ad6f0c185b760f4f4454d30"
+  },
+  "before/spawn-refresh.png": {
+    "bytes": 1551951,
+    "sha256": "bbc95259c1a0fe77c30884498f426f61e8a28a3a3ad6f0c185b760f4f4454d30"
+  },
+  "before/station-cached.png": {
+    "bytes": 1320330,
+    "sha256": "15466b7f56657703397000c0f3fb58723d7ee2f51952d500b0d263b1c9799162"
+  },
+  "before/station-refresh.png": {
+    "bytes": 1320330,
+    "sha256": "15466b7f56657703397000c0f3fb58723d7ee2f51952d500b0d263b1c9799162"
+  },
+  "before/taxi-cached.png": {
+    "bytes": 931537,
+    "sha256": "1a3e3de3f34eeb4e86c43a46856d5d378296ebd205e751abde0554e65c0c33b8"
+  },
+  "before/taxi-refresh.png": {
+    "bytes": 931537,
+    "sha256": "1a3e3de3f34eeb4e86c43a46856d5d378296ebd205e751abde0554e65c0c33b8"
+  },
+  "browser-suite/intro-desktop.png": {
+    "bytes": 282303,
+    "sha256": "e75d58e55e2c128b8190a5db744b3fa76ea4907f9ec06fc7c371a645bc90f22d"
+  },
+  "browser-suite/world-desktop.png": {
+    "bytes": 440693,
+    "sha256": "5af2d5cde811698709b1284aafb3a9b199d36804c36d7aaf1dc8b001c178507f"
+  },
+  "browser-suite/world-mobile.png": {
+    "bytes": 246344,
+    "sha256": "967aba518e702d4f216577b288403d6587e16d240a6c7aae8fe68bf5ee5504bd"
+  },
+  "static-after/1440-auto.png": {
+    "bytes": 768467,
+    "sha256": "42e1cad9f8edc9740a24c6e8935f194824670a771874216f0c556a6832df5bad"
+  },
+  "static-after/1440-fort-room.png": {
+    "bytes": 315835,
+    "sha256": "c963614e9a72dad2eed7ad77717958f638bc989149bd7401a0263690166f1ea9"
+  },
+  "static-after/1440-fort.png": {
+    "bytes": 523855,
+    "sha256": "ea865d1f8bb2d84844fa9215b351504a408cbde877e2cca50edf1c15ad52a1b7"
+  },
+  "static-after/1440-hero-wide.png": {
+    "bytes": 700641,
+    "sha256": "2af13921278b0ad3874d9b710da7731aa92ac9bdd93a0aa20332c2cb5aedd293"
+  },
+  "static-after/1440-hero.png": {
+    "bytes": 617996,
+    "sha256": "d22f34d55103682040aad4b3ddfc21ef814003f64f0d2e6361a97bffac7e26d5"
+  },
+  "static-after/1440-junction.png": {
+    "bytes": 897332,
+    "sha256": "d37acc5916def437fa29b9a5b6913a675a39a8ad63ea5550130a4d672f17c34a"
+  },
+  "static-after/1440-north-limit.png": {
+    "bytes": 626278,
+    "sha256": "de72710ca89fdc9a0f533e113d1130bf7c6e0051e6eecb56394617bd85351171"
+  },
+  "static-after/1440-npc.png": {
+    "bytes": 664019,
+    "sha256": "0a209ac18724bfe1cbeeafc6f47bdc81670c2e44872000548a1dfa6edeb93fbe"
+  },
+  "static-after/1440-return.png": {
+    "bytes": 789845,
+    "sha256": "c6321268ef8a5c6cd4e64c46f58a7a4364da63ad62d30df96e4aff1077d5b93d"
+  },
+  "static-after/1440-shops.png": {
+    "bytes": 890940,
+    "sha256": "e825f7fd98a54adde70c4053a854fadf84ea572698e236d7d666b5db32d5637e"
+  },
+  "static-after/1440-side-gap.png": {
+    "bytes": 422263,
+    "sha256": "d9bccd90ddbd0dd7a2114c39177ffc0f5afdff0b2ab5bc4edcbb0597f14500ec"
+  },
+  "static-after/1440-south-look.png": {
+    "bytes": 645293,
+    "sha256": "2fa4187d98d40c3a66c1f0eff523aa69f2f325d031e29b0e898e0df637a0443a"
+  },
+  "static-after/1440-spawn.png": {
+    "bytes": 1003959,
+    "sha256": "06ad0e2a5fde5fb0663cc83c9daf776e1e7a52536c8fac79ac0cb3ff5bfd5458"
+  },
+  "static-after/1440-station.png": {
+    "bytes": 881277,
+    "sha256": "92dfc859d6e66a20473f6df75ec416d612984c74477197bb9a2824ad5ed10cee"
+  },
+  "static-after/1440-taxi.png": {
+    "bytes": 610773,
+    "sha256": "3171253cae36ad11030cff4f350617f16634b1608f01392a39e6c37552075cbb"
+  },
+  "static-after/390-fallback-theatre.png": {
+    "bytes": 43507,
+    "sha256": "0a9f03bf28ce6ca753cc7491d904ca3e54f74326a46b5778e28d8a867dc50b13"
+  },
+  "static-after/390-mobile.png": {
+    "bytes": 255550,
+    "sha256": "e607f2c10ea749c8bd8eedefb5a372da3bd3880250bc1f7de803bbd0b246cefd"
+  },
+  "temporal-after/auto-cached.png": {
+    "bytes": 1209298,
+    "sha256": "6df50266c4b17f36d645a76ff84d4ca3f930316a91e66bfbdc5fc7ba46bdc558"
+  },
+  "temporal-after/auto-refresh.png": {
+    "bytes": 1209298,
+    "sha256": "6df50266c4b17f36d645a76ff84d4ca3f930316a91e66bfbdc5fc7ba46bdc558"
+  },
+  "temporal-after/hero-wide-cached.png": {
+    "bytes": 1094728,
+    "sha256": "bd8ad021351681c1f24a8b881c316bae1b5309268e106eff107f070eb1a184e9"
+  },
+  "temporal-after/hero-wide-refresh.png": {
+    "bytes": 1094728,
+    "sha256": "bd8ad021351681c1f24a8b881c316bae1b5309268e106eff107f070eb1a184e9"
+  },
+  "temporal-after/spawn-cached.png": {
+    "bytes": 1560705,
+    "sha256": "82f1bd2a5ffbeadc4f484b9a67afc85dbf33fe710aabf3acaa7e719c32a4254d"
+  },
+  "temporal-after/spawn-refresh.png": {
+    "bytes": 1560705,
+    "sha256": "82f1bd2a5ffbeadc4f484b9a67afc85dbf33fe710aabf3acaa7e719c32a4254d"
+  },
+  "temporal-after/taxi-cached.png": {
+    "bytes": 929411,
+    "sha256": "941f5fc2529f78a356c652c59475a3c2a0eafc5466704943d80ffd4a6bc1f14f"
+  },
+  "temporal-after/taxi-refresh.png": {
+    "bytes": 929411,
+    "sha256": "941f5fc2529f78a356c652c59475a3c2a0eafc5466704943d80ffd4a6bc1f14f"
+  },
+  "temporal-before/auto-cached.png": {
+    "bytes": 1217371,
+    "sha256": "8f3254b4d91bf3a2c24d4f0685251dd05514b25b4b53299da5ed9aae9a1d3318"
+  },
+  "temporal-before/auto-refresh.png": {
+    "bytes": 1217371,
+    "sha256": "8f3254b4d91bf3a2c24d4f0685251dd05514b25b4b53299da5ed9aae9a1d3318"
+  },
+  "temporal-before/hero-wide-cached.png": {
+    "bytes": 1094728,
+    "sha256": "bd8ad021351681c1f24a8b881c316bae1b5309268e106eff107f070eb1a184e9"
+  },
+  "temporal-before/hero-wide-refresh.png": {
+    "bytes": 1094728,
+    "sha256": "bd8ad021351681c1f24a8b881c316bae1b5309268e106eff107f070eb1a184e9"
+  },
+  "temporal-before/spawn-cached.png": {
+    "bytes": 1551801,
+    "sha256": "1c183f097f905dd6f51b432980bee9ce4d8170602c8b7db6c461ecc54cba2148"
+  },
+  "temporal-before/spawn-refresh.png": {
+    "bytes": 1551801,
+    "sha256": "1c183f097f905dd6f51b432980bee9ce4d8170602c8b7db6c461ecc54cba2148"
+  },
+  "temporal-before/taxi-cached.png": {
+    "bytes": 929689,
+    "sha256": "f911a0898f6fab4fbb5de15df7070b8346e150e1bf5592c379753b586c15692e"
+  },
+  "temporal-before/taxi-refresh.png": {
+    "bytes": 929689,
+    "sha256": "f911a0898f6fab4fbb5de15df7070b8346e150e1bf5592c379753b586c15692e"
+  }
+}

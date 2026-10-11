@@ -23,3 +23,7 @@ The current branch keeps render presets, exposure, reduced motion and the walkin
 ## Sprint 2 additions
 
 The café uses one opaque baked geometry batch with per-vertex finish attributes and a separate transparent glass batch. Original asphalt/plaster maps reuse shared texture objects after size/hash/dimension admission. Visible-mesh shader warm-up uses public Three.js compile with the existing scene light state. Optional GPU profiling runs only with `benchmark=1`; see [benchmark protocol](GPU_BENCHMARK.md).
+
+## Sprint 2.1 caster-aware submission
+
+Instanced batches preserve per-source caster flags with a casting prefix for the PCF depth pass and restore their full counts for the color/normal passes. Moving instances and wheel batches recompute conservative bounds; factory humanoids have validated fixed animation bounds. Opt-in public mesh shadow hooks separate shadow submissions from main-and-other work. No new shadow light, shadow cache texture or material program was introduced. See [performance review](ART_PRODUCTION_PERFORMANCE_REVIEW.md).

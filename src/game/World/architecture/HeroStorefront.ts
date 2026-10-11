@@ -86,7 +86,7 @@ export function createHeroStorefront(_surfaces:StreetMaterials){
   shader.fragmentShader=shader.fragmentShader.replace('#include <metalnessmap_fragment>','#include <metalnessmap_fragment>\nmetalnessFactor = vHeroFinish.y;');
  };
  material.customProgramCacheKey=()=> 'hero-finish-v1';
- const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=mesh.receiveShadow=true;group.add(mesh);list.forEach(g=>g.dispose());
+ const mesh=new THREE.Mesh(geometry,material);mesh.name='hero-storefront-opaque';mesh.castShadow=mesh.receiveShadow=true;group.add(mesh);list.forEach(g=>g.dispose());
  if(glass.length){const glassGeometry=mergeGeometries(glass)!;const glassMaterial=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.14,metalness:0,transparent:true,opacity:.18,depthWrite:false,side:THREE.DoubleSide});const pane=new THREE.Mesh(glassGeometry,glassMaterial);pane.receiveShadow=true;group.add(pane);glass.forEach(g=>g.dispose());}
  [box,sphere,cylinder,cup,kettle,jar,torus,loaf,flake,canopy].forEach(g=>g.dispose());
  return group;
