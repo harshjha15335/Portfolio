@@ -292,7 +292,7 @@ export class WorldEngine {
           this.updateNear();
         }
       }
-      this.updateCamera(); this.street.update(this.time, this.reducedMotion,this.camera.position);
+      this.updateCamera(); this.street.nearDetail=this.ride.phase==='idle'||this.ride.phase==='hailing'; this.street.update(this.time, this.reducedMotion,this.camera.position);
       const needsRender=!this.reducedMotion||forceRender||this.camera.position.distanceToSquared(this.lastRenderPosition)>1e-8||this.camera.quaternion.angleTo(this.lastRenderRotation)>.0001||(this.renderer.shadowMap.enabled&&this.renderer.shadowMap.needsUpdate);
       if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)){this.resize();this.street.setQuality(this.quality.low);this.rendering.setPreset(this.quality.low?'low':this.renderPreset);this.resize();this.renderer.shadowMap.enabled=!this.options.mobile&&!this.quality.low&&this.renderPreset!=='low';this.syncSunBalance();this.renderer.shadowMap.needsUpdate=true;}
       if(!this.reducedMotion&&!this.paused&&this.time-this.lastShadow>.2&&this.renderer.shadowMap.enabled){this.renderer.shadowMap.needsUpdate=true;this.lastShadow=this.time;}

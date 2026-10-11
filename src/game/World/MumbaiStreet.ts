@@ -36,6 +36,8 @@ export class MumbaiStreet {
   private patina:THREE.Mesh[]=[];
   /** Research-room interior, kept cleaner than the street by the atmosphere pass. */
   readonly shelteredBounds=new THREE.Box3();
+  /** False while riding: fine façade detail is skipped from a moving vehicle to keep ride frames in budget. */
+  nearDetail=true;
   /** Baked batches for parked two-wheelers, posters, coils, rubbish and roof tanks: one per street
    * third, so each can be frustum-culled when it is behind the visitor. */
   private propKits=[0,1,2].map(n=>new BakedKit(seededRandom(`street-props:${n}`)));
@@ -248,8 +250,8 @@ export class MumbaiStreet {
     // Radio House replaces the procedural upper storeys of this frontage with the authored benchmark.
     const benchmark=side<0&&index===1;
     if(benchmark){const radio=createBenchmarkFacade(spec);g.add(radio.group);g.updateWorldMatrix(true,false);const centre=g.localToWorld(radio.centre.clone()),detail=radio.detail;
-      // Near-detail LOD: railings, grille bars, plants and cables only draw within 22 m.
-      if(detail)this.motion.push(()=>{detail.visible=this.viewPosition.distanceToSquared(centre)<484;});this.sign(g,'RADIO HOUSE · 1938','रेडियो हाउस',radio.plaque.position,radio.plaque.width,'#cbbd9c','#4d4536');}
+      // Near-detail LOD: railings, grille bars, plants and cables only draw within 22 m, on foot.
+      if(detail)this.motion.push(()=>{detail.visible=this.nearDetail&&this.viewPosition.distanceToSquared(centre)<484;});this.sign(g,'RADIO HOUSE · 1938','रेडियो हाउस',radio.plaque.position,radio.plaque.width,'#cbbd9c','#4d4536');}
     // Rear mass provides simple collision. The visible face is built around actual window recesses.
     frontageBox([width,height-3.2,5.85],[0,3.2+(height-3.2)/2,-3.75],color,false,g,false,true);
     this.solidProxy([width,height-3.2,6.5],[0,3.2+(height-3.2)/2,-3.4],g);
