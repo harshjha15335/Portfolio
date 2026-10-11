@@ -84,6 +84,12 @@ Why: the base street already sat at exactly 32 textures and 26 programs, so any 
 
 Options if the budget can't move: drop the normal atlases (−4 textures, −1 to 2 programs); use one shared walker atlas sheet (needs a re-UV of six people); or limit the cast to the host, vendor and drivers. Frame time was not measured: SwiftShader runs at about 1 fps and says nothing about laptop GPUs, so a hardware profile is still needed.
 
+## Tests
+
+- `npx tsc --noEmit` clean; `npx vitest run` 87/87 (16 files), including `tests/street-cast.test.ts` (cast integrity and hashes, placements, admission gating, IK).
+- Browser suite (`playwright.cloud.config.ts`, SwiftShader): this branch 25 passed / 12 failed; untouched base `9fd9743` on the same machine 28 / 9. The three extra branch failures (quick view without 3D, auto boarding, drag-to-look) were re-run: quick view passed, and auto boarding and drag-to-look fail identically on the base when run alone. Every failure is the world canvas taking about 42 s to appear in this container (measured on both branches) against 12 s assertions, so none is attributed to the cast. A hardware run is still needed.
+- Vercel preview build for the PR succeeded.
+
 ## Completed, partial, blocked
 
 **Completed**
