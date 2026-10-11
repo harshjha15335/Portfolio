@@ -4,7 +4,8 @@ import original from './playwright.config';
 /** Linux/cloud override; keep the repository's Edge configuration available. */
 export default defineConfig({
   ...original,
-  timeout: 90_000,
+  // SwiftShader renders the passenger and arrival flows at about 1 fps; 120 s keeps headroom for slow software frames.
+  timeout: 120_000,
   use: {
     ...original.use,
     viewport: { width: 960, height: 640 },

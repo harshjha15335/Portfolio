@@ -35,6 +35,6 @@ The weathering adds fragment noise: about 8 value-noise lookups on near façades
 This pass changes light, air and surface tone. Geometry, people and vehicles are untouched, so the primitive silhouettes and mannequin crowd remain (plan P3–P5). Procedural weathering cannot follow real window or ledge positions, and its streaks are subtle beyond about 15 m. The darker near street suits the mood, but it should be checked on a real display. ## Verification
 
 - Unit tests: 81 pass, including 3 new atmosphere tests. Typecheck and production build pass.
-- Browser suite (`playwright.cloud.config.ts`, SwiftShader): **35 passed, 2 failed.**
+- Browser suite (`playwright.cloud.config.ts`, SwiftShader): 35 passed and 2 failed at 90 s. Both taxi/auto ride cases then pass at the 120 s timeout.
   - *A moving ride can be exited…* fails the same way on the untouched base `6216c5b`, so it is pre-existing.
-  - *Taxi can be boarded… exited at its destination* passes on the base in 78 s of its 90 s budget. On this branch it exceeds 90 s, because the software renderer is slower per frame. A manual run of the same steps completes and the guide dialog opens, so the failure is the timeout, not broken behaviour. It needs a decision: cheaper or optional weathering, or a longer timeout for the software config. It has not been papered over.
+  - *Taxi can be boarded… exited at its destination* passes on the base in 78 s of its 90 s budget. On this branch the slower software frames took it past 90 s. At Harsh's request, the software-only `playwright.cloud.config.ts` timeout is now 120 s; the Edge/GPU config is unchanged. With that change, taxi passes in 1.5 min and auto in 1.2 min.
