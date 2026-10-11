@@ -57,15 +57,16 @@ export function createBenchmarkFacade(spec:FacadeSpec):BenchmarkFacade {
    kit.box([w-.1,.05,.1],[0,h*.7,0],leaf,'wood','recess',[0,0,0],frame);
    kit.detail=true;for(const fx of [-.33,0,.33])kit.box([.024,h*.3-.08,.04],[fx*w,h*.85,0],leaf,'wood','recess',[0,0,0],frame);kit.detail=false;
    kit.box([w-.1,h*.3-.08,.01],[0,h*.85,-.01],'#9fb0ad','glass','none',[0,0,0],frame);
-   const lw=(w-.14)/2,lh=h*.7-.09,open=[0,.55,.95,0,.3][variant];
+   // Casement sashes are near detail: from across the street the frame and glass carry the read.
+   const lw=(w-.14)/2,lh=h*.7-.09,open=[0,.55,.95,0,.3][variant];kit.detail=true;
    for(const s of [-1,1]){
     const hinge=new THREE.Matrix4().makeTranslation(s*(w/2-.07),.06,0).multiply(new THREE.Matrix4().makeRotationY(s<0?open*(i?1:.6):-open*(i?.4:1)));
     const leafFrame=frame.clone().multiply(hinge),cxl=-s*lw/2;
     for(const e of [-1,1])kit.box([.045,lh,.05],[cxl+e*(lw/2-.022),lh/2,0],leaf,'wood','recess',[0,0,0],leafFrame);
-    for(const y of [.022,lh-.022])kit.box([lw,.045,.04],[cxl,y,0],leaf,'wood','recess',[0,0,0],leafFrame);
-    kit.detail=true;for(const y of [lh*.36,lh*.68])kit.box([lw,.022,.04],[cxl,y,0],leaf,'wood','recess',[0,0,0],leafFrame);kit.detail=false;
+    for(const y of [.022,lh-.022,lh*.36,lh*.68])kit.box([lw,y===.022||y>lh-.03?.045:.022,.04],[cxl,y,0],leaf,'wood','recess',[0,0,0],leafFrame);
     kit.box([lw-.05,lh-.05,.01],[cxl,lh/2,0],'#93a7a6','glass','none',[0,0,0],leafFrame);
    }
+   kit.detail=false;
    // Moulded sill with drip groove and a sloping concrete chajja on brackets.
    kit.bevel([w+.3,.08,.33],[cx,sill-.03,.1],TRIM,'stone',.025);kit.box([w+.24,.018,.02],[cx,sill-.085,.23],GRIME,'solid','none');
    kit.box([w+.6,.085,.64],[cx,head+.22,.28],CONCRETE,'stone','part',[.1,0,0]);
@@ -118,6 +119,7 @@ export function createBenchmarkFacade(spec:FacadeSpec):BenchmarkFacade {
   kit.box([door.w,.08,.13],[0,dh-.04,0],leaf,'wood','recess',[0,0,0],frame);
   kit.box([door.w-.12,.05,.1],[0,dh*.82,0],leaf,'wood','recess',[0,0,0],frame);kit.box([door.w-.12,dh*.18-.09,.01],[0,dh*.91,-.01],'#9fb0ad','glass','none',[0,0,0],frame);
   const dlw=(door.w-.16)/2,dlh=dh*.82-.06;
+  kit.detail=true;
   for(const s of [-1,1]){
    const swing=s<0?(floor%2?.85:0):(floor%2?0:.5);
    const leafFrame=frame.clone().multiply(new THREE.Matrix4().makeTranslation(s*(door.w/2-.08),.03,0).multiply(new THREE.Matrix4().makeRotationY(s<0?swing:-swing))),c=-s*dlw/2;
@@ -126,6 +128,7 @@ export function createBenchmarkFacade(spec:FacadeSpec):BenchmarkFacade {
    kit.box([dlw-.08,dlh*.38,.03],[c,dlh*.22,0],leaf,'wood','recess',[0,0,0],leafFrame);
    kit.box([dlw-.06,dlh*.55,.01],[c,dlh*.71,0],'#93a7a6','glass','none',[0,0,0],leafFrame);
   }
+  kit.detail=false;
   // Rounded Deco balcony: chamfered slab, three speed-line rails and posts.
   // The first floor keeps a shallow French balcony so it clears the shop board below.
   const BW=2.76,D=floor===0?.22:.95,R=floor===0?.08:.42,outline=new THREE.Shape();

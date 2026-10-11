@@ -98,7 +98,9 @@ export class MumbaiStreet {
     this.station(); this.researchRoom(); this.streetDetails(); this.vegetation(); this.people(); this.traffic();
     this.spatial = new SpatialIndex(this.colliderGeometry); this.colliderGeometry.forEach(g=>g.dispose()); this.colliderGeometry=[];
     void NavMeshManager.create(this.obstacles).then(nav=>{if(this.disposed){nav.dispose();return;}this.navigation=nav;this.navigationStatus='ready';for(const [i,w] of this.walkers.entries()){w.agent=nav.add({x:w.group.position.x,y:0,z:w.group.position.z});w.target=i%this.destinations.length;w.agent.requestMoveTarget(this.destinations[w.target]);}}).catch(()=>{this.navigationStatus='unavailable';});
-    this.propKits.forEach((kit,n)=>this.group.add(kit.build(`Street props ${n}`,.3).group));
+    // Props beyond ~30 m along the street are a few pixels each; whole thirds drop out by distance.
+    this.propKits.forEach((kit,n)=>{const props=kit.build(`Street props ${n}`,.3).group,[lo,hi]=[[-12,20],[-34,-12],[-70,-34]][n];this.group.add(props);
+      this.motion.push(()=>{const z=this.viewPosition.z;props.visible=Math.max(lo-z,z-hi,0)<30;});});
     this.signAtlas.needsUpdate = true; this.instanceStatics(); this.mergeSigns(); this.mergePatina(); this.instancePedestrians();
   }
   private material(color: string, glow = false, wall = false, surface: Surface = 'solid') {
