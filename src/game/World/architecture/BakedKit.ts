@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import type {Surface} from '../StreetMaterials';
 
 /**
@@ -85,7 +84,7 @@ export class BakedKit {
  /** Chamfered box at true size, so every edge catches a highlight instead of a razor corner. */
  bevel(size:Triple,position:Triple,color:string,surface:Surface='solid',radius=.025,occlusion:Occlusion='part',rotation:Triple=[0,0,0],frame?:THREE.Matrix4){
   const r=Math.min(radius,size[0]/2-.001,size[1]/2-.001,size[2]/2-.001),key=`${size.map(v=>v.toFixed(3)).join('|')}|${r.toFixed(3)}`;
-  if(!this.rounded.has(key))this.rounded.set(key,new RoundedBoxGeometry(size[0],size[1],size[2],1,r));
+  if(!this.rounded.has(key))this.rounded.set(key,chamferBox(size[0],size[1],size[2],r));
   this.add(this.rounded.get(key)!,BakedKit.matrix([1,1,1],position,rotation),color,surface,occlusion,frame);
  }
  /** A vertical run-off stain: dark at the source, fading into the wall colour below. */
@@ -111,4 +110,12 @@ export class BakedKit {
   this.rounded.forEach(g=>g.dispose());this.rounded.clear();this.unitBox.dispose();
   return {group,triangles,detail,detailTriangles};
  }
+}
+
+/** Box with 45° chamfers on every edge: an extruded, bevelled rectangle (about 28 triangles,
+ * against 108 for a one-segment RoundedBoxGeometry). UVs are flattened by `add`. */
+function chamferBox(w:number,h:number,d:number,r:number){
+ const shape=new THREE.Shape(),x=w/2-r,y=h/2-r;shape.moveTo(-x,-y);shape.lineTo(x,-y);shape.lineTo(x,y);shape.lineTo(-x,y);shape.lineTo(-x,-y);
+ const g=new THREE.ExtrudeGeometry(shape,{depth:Math.max(d-2*r,.001),bevelEnabled:true,bevelThickness:r,bevelSize:r,bevelSegments:1,curveSegments:1});
+ g.translate(0,0,-(d-2*r)/2);return g;
 }
