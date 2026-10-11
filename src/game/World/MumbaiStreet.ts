@@ -1,5 +1,7 @@
 import type {VerifiedGLB,GLBAssetLibrary} from './assets/GLBAssetLibrary';
 import type {GLBCharacter} from './assets/GLBCharacter';
+import {loadable,placementNoise,STANDING_CAST,WALKER_CAST,type CastMember} from './npc/cast';
+import {DriverRig} from './npc/DriverRig';
 import * as THREE from 'three';
 import {casterPrefix,restrictInstanceShadows} from '../../core/ShadowInstances';
 import * as CANNON from 'cannon-es';
@@ -14,7 +16,7 @@ import { StreetMaterials, type Surface } from './StreetMaterials';
 import { facadeSpec, seededRandom } from './StreetArchitecture';
 import { FacadePanels } from './architecture/FacadePanels';
 import { SpatialIndex } from './spatial/SpatialIndex';
-import { createHuman } from './npc/NPCFactory';
+import { createHuman, type Human } from './npc/NPCFactory';
 import { NavMeshManager, type Obstacle } from './navigation/NavMeshManager';
 import { RoadTraffic, pedestrianGreen } from './traffic/RoadTraffic';
 import type { CrowdAgent } from '@recast-navigation/core';
@@ -70,9 +72,14 @@ export class MumbaiStreet {
   private stationCharacter:GLBCharacter|null=null;
   private characterPreviewWalk=false;
   characterStatus='not-supplied';
+  /** Each street placement keeps its procedural figure until its licensed character has loaded. */
+  private castSlots:Array<{group:THREE.Group;human:Human;cast:string;moving:boolean;seated:boolean;seat:number;actor:GLBCharacter|null;pending:number}>=[];
+  private drivers:DriverRig[]=[];
+  castStatus='not-loaded';
   private walkers: Array<{group:THREE.Group;agent?:CrowdAgent;target:number;wait:number}> = [];
   private trafficSystem = new RoadTraffic();
   private trafficVehicles: THREE.Group[] = [];
+  private parkedVehicles: THREE.Group[] = [];
   private previousTime = 0;
   private viewPosition = new THREE.Vector3();
   get assetsReady(){return this.surfaces.ready;}
@@ -458,7 +465,7 @@ export class MumbaiStreet {
       const centre=new THREE.Vector3(x,6.0,17.99);
       for(const [angle,length] of [[40*Math.PI/30,.30],[((17+40/60)%12)*Math.PI/6,.22]])this.wire(centre,new THREE.Vector3(x-Math.sin(angle)*length,6+Math.cos(angle)*length,17.99),.012,'#514d42');
     }
-    this.stationHost=this.person([5.8,0,8.3],'#829382',false);
+    this.stationHost=this.person([5.8,0,8.3],'#829382',false,false,'host');
     this.interactions.push({id:'cst',position:new THREE.Vector3(5.8,1.45,8.3),label:'Talk to the station host'});
     const board=this.sign(this.group,'FORT ROAD →','फोर्ट',[6.3,2.9,7.8],1.2,'#3e5c51');board.rotation.y=-.1;
     // Arrival canopy, ribs and transport notice board.
@@ -531,7 +538,7 @@ export class MumbaiStreet {
       this.sign(g, x < 0 ? 'INSPECT THE FIELD' : 'FOLLOW THE SOURCE', x < 0 ? 'Interactive teaching exhibit' : 'Five reviewed contributions', [x, 1.25, -4.69], .9);
       this.box([.07, .3, .15], [x, .95, -4.75], '#283638', false, g);
     }
-    this.person([-5.9, 0, -35.8], '#718d86', false);
+    this.person([-5.9, 0, -35.8], '#718d86', false, false, 'office-woman');
     this.interactions.push({ id: 'fort', position: new THREE.Vector3(-5.9, 1.4, -35.8), label: 'Talk to the research fellow' });
     this.interactions.push({ id: 'ffprime', position: new THREE.Vector3(-11.8, 1.3, -34), label: 'Read the FFprime research' });
     const light = new THREE.PointLight('#ffe5ba', 10, 9, 2); light.position.set(-10, 2.5, -34); this.group.add(light);
@@ -567,7 +574,7 @@ export class MumbaiStreet {
     this.cylinder(.14, .25, [-5.6, 1.12, 3], '#adb0a4');
     for (let i = 0; i < 4; i++) this.cylinder(.045, .1, [-6.15 + i * .19, 1.05, 3.15], '#b19772');
     for (let i = 0; i < 3; i++) this.box([.55, .5, .55], [-6.4, .25 + i * .5, .8], '#7d664b', true);
-    this.person([-6.2, 0, 3.5], '#ac8b67', false);
+    this.person([-6.2, 0, 3.5], '#ac8b67', false, false, 'chai-vendor').rotation.y=-Math.PI/2;
     this.box([1.7, .13, .45], [5.9, .48, -16], '#715b48', true);
     for (const x of [5.25, 6.5]) this.box([.09, .48, .35], [x, .24, -16], '#3e4948');
   }
@@ -599,21 +606,29 @@ export class MumbaiStreet {
     this.box([.45, .6, .17], [0, .65, -.5], '#9e8b62', false, g);
     this.box([.65, .05, .06], [0, 1, -.55], '#45494c', false, g);
   }
-  private person(position: Triple, shirt: string, moving: boolean, seated=false) {
+  private person(position: Triple, shirt: string, moving: boolean, seated=false, cast='') {
     const human=createHuman(`person:${position.join(':')}`,shirt),g=human.group;g.position.set(...position);if(seated)g.position.y-=.45;this.group.add(g);this.pedestrians.push(g);this.contact(0,0,.23,.15,g);
     if(moving)this.walkers.push({group:g,target:0,wait:0});
+    const slot={group:g,human,cast,moving,seated,seat:seated?position[1]+.515:0,actor:null as GLBCharacter|null,pending:0};if(cast)this.castSlots.push(slot);
     let lastAnimation=-1;
-    this.motion.push(time=>{if(g===this.stationHost&&this.stationCharacter){human.mesh.visible=false;this.stationCharacter.update(time===0?0:Math.min(.08,Math.max(0,time-lastAnimation)),this.characterPreviewWalk);lastAnimation=time;return;}const distance=g.position.distanceTo(this.viewPosition);human.mesh.visible=distance<48;human.setDetail(distance<10);if(distance>18&&time-lastAnimation<.1)return;lastAnimation=time;const velocity=this.walkers.find(w=>w.group===g)?.agent?.velocity();human.animate(time,moving&&Boolean(velocity&&Math.hypot(velocity.x,velocity.z)>.08),seated);});return g;
+    this.motion.push(time=>{if(g===this.stationHost&&this.stationCharacter){human.mesh.visible=false;this.stationCharacter.update(time===0?0:Math.min(.08,Math.max(0,time-lastAnimation)),this.characterPreviewWalk);lastAnimation=time;return;}const distance=g.position.distanceTo(this.viewPosition);
+      const velocity=moving?this.walkers.find(w=>w.group===g)?.agent?.velocity():undefined,walking=moving&&Boolean(velocity&&Math.hypot(velocity.x,velocity.z)>.08);
+      if(slot.actor){
+        // Licensed characters: cull beyond 48 m, reduced mesh beyond 10 m, and 10 Hz animation beyond 18 m.
+        const actor=slot.actor;actor.root.visible=distance<48;actor.setDetail(distance<10);const delta=time===0?0:Math.min(.25,Math.max(0,time-lastAnimation));if(lastAnimation<0||time===0){lastAnimation=time;actor.update(0,walking);return;}
+        if(!actor.root.visible||distance>18&&delta<.1)return;lastAnimation=time;actor.update(delta,walking,velocity?Math.hypot(velocity.x,velocity.z):undefined);return;
+      }
+      human.mesh.visible=distance<48;human.setDetail(distance<10);if(distance>18&&time-lastAnimation<.1)return;lastAnimation=time;human.animate(time,walking,seated);});return g;
   }
   private people() {
-    for(let i=0;i<10;i++)this.person([i%2?4.9:-4.9,0,7-i*6],['#8b968c','#9c8279','#788d80','#b0a081','#748b99'][i%5],true);
-    for(const [x,z] of [[-6,-10],[6,-23],[-6,-43],[5.8,-46]])this.person([x,0,z],'#a38f78',false);
-    this.person([5.9,.03,-16],'#8a9b93',false,true);
+    for(let i=0;i<10;i++)this.person([i%2?4.9:-4.9,0,7-i*6],['#8b968c','#9c8279','#788d80','#b0a081','#748b99'][i%5],true,false,WALKER_CAST[i%WALKER_CAST.length]);
+    for(const [i,[x,z]] of [[-6,-10],[6,-23],[-6,-43],[5.8,-46]].entries())this.person([x,0,z],'#a38f78',false,false,STANDING_CAST[i]);
+    this.person([5.9,.03,-16],'#8a9b93',false,true,'student');
   }
   setQuality(low:boolean) { this.pedestrians.forEach((p,i)=>{p.visible=!low||i<3||i%2===0;}); }
   private traffic() {
     for (const kind of ['taxi', 'auto'] as const) {
-      const vehicle = createTransitModel(kind); vehicle.position.set(kind === 'taxi' ? 7.4 : -7.4, .02, 12); vehicle.rotation.y = kind === 'auto' ? Math.PI : 0; this.group.add(vehicle);this.solidProxy([2,1.5,3.8],[0,.8,0],vehicle);
+      const vehicle = createTransitModel(kind); vehicle.position.set(kind === 'taxi' ? 7.4 : -7.4, .02, 12); vehicle.rotation.y = kind === 'auto' ? Math.PI : 0; this.group.add(vehicle);this.parkedVehicles.push(vehicle);this.solidProxy([2,1.5,3.8],[0,.8,0],vehicle);
       this.interactions.push({ id: `hail-${kind}`, label: `Hail ${kind === 'taxi' ? 'kaali-peeli taxi' : 'auto'}`, position: new THREE.Vector3(kind==='taxi'?6.1:-6.1, 1, vehicle.position.z) });
     }
     for (let i=0;i<3;i++){const vehicle=createTransitModel(i===1?'auto':'taxi');this.group.add(vehicle);this.trafficVehicles.push(vehicle);const pose=this.trafficSystem.pose(i);vehicle.position.set(pose.x,.02,pose.z);vehicle.rotation.y=pose.heading;}
@@ -662,7 +677,44 @@ export class MumbaiStreet {
     if(this.disposed){lease.release();throw new Error('Street disposed during character load');}
     const actor=new GLBCharacter(lease);this.stationCharacter?.dispose();this.stationCharacter=actor;this.stationHost.add(actor.root);this.characterPreviewWalk=previewWalk;this.characterStatus='loaded-awaiting-rendered-review';
   }
-  dispose(){this.disposed=true;this.stationCharacter?.dispose();void this.assetLibrary?.dispose();this.surfaces.dispose();this.navigation?.dispose();this.navigation=null;this.spatial.dispose();this.panels.dispose();}
+  /** Replace each placement's procedural figure with its admitted licensed character. Failures keep the original figure. */
+  async installCast(cast:Record<string,CastMember>,preview=false){
+    if(this.disposed)throw new Error('Street unavailable');
+    const [{GLBAssetLibrary},{GLBCharacter}]=await Promise.all([import('./assets/GLBAssetLibrary'),import('./assets/GLBCharacter')]);
+    if(this.disposed)throw new Error('Street disposed during loader initialization');
+    this.assetLibrary??=new GLBAssetLibrary(window.location.origin,8*1024*1024,16);this.castStatus='loading';
+    const results=await Promise.allSettled(this.castSlots.map(async slot=>{
+      const member=cast[slot.cast];if(!loadable(member,preview)||slot.actor)return false;
+      const lease=await this.assetLibrary!.acquire(member.asset);if(this.disposed){lease.release();throw new Error('Street disposed during character load');}
+      const key=slot.group.position.toArray().join(':'),actor=new GLBCharacter(lease,{height:member.height*(.985+placementNoise(key)*.03),phase:placementNoise(`${key}:phase`),rate:.94+placementNoise(`${key}:rate`)*.12});
+      // Rocketbox characters face +Z; the street's figures and walkers face -Z.
+      actor.root.rotation.y=Math.PI;
+      if(slot.seated){slot.group.position.y=slot.seat-.515;actor.pose('Sit',0);actor.update(0,false);actor.seat(slot.seat-slot.group.position.y);}
+      else if(slot.group===this.stationHost&&actor.clips.includes('Talk'))actor.pose('Talk',0);
+      slot.group.add(actor.root);slot.actor=actor;this.retireHuman(slot.human);return true;
+    }));
+    const loaded=results.filter(r=>r.status==='fulfilled'&&r.value).length,failed=results.filter(r=>r.status==='rejected');
+    failed.forEach(r=>console.warn('Cast character failed; original figure retained',(r as PromiseRejectedResult).reason));
+    this.castStatus=failed.length?`partial:${loaded}/${this.castSlots.length}`:`loaded:${loaded}`;return loaded;
+  }
+  /** Seat licensed drivers in the given vehicles: live rigs for the boarded cabins, baked poses for traffic. */
+  async installDrivers(cast:Record<string,CastMember>,live:THREE.Group[],preview=false){
+    if(this.disposed)throw new Error('Street unavailable');
+    const {GLBAssetLibrary}=await import('./assets/GLBAssetLibrary'),{GLBCharacter}=await import('./assets/GLBCharacter');
+    this.assetLibrary??=new GLBAssetLibrary(window.location.origin,8*1024*1024,16);
+    const vehicles=[...this.parkedVehicles,...this.trafficVehicles].map(v=>({vehicle:v,live:false})).concat(live.map(v=>({vehicle:v,live:true})));
+    const results=await Promise.allSettled(vehicles.map(async({vehicle,live})=>{
+      const kind=vehicle.name.startsWith('auto')?'auto':'taxi',member=cast[kind==='auto'?'student':'taxi-driver'];if(!loadable(member,preview))return false;
+      const lease=await this.assetLibrary!.acquire(member.asset);if(this.disposed){lease.release();throw new Error('Street disposed during driver load');}
+      const rig=new DriverRig(new GLBCharacter(lease,{height:member.height,phase:placementNoise(vehicle.uuid)}),vehicle,kind,live);this.drivers.push(rig);return true;
+    }));
+    results.filter(r=>r.status==='rejected').forEach(r=>console.warn('Driver character failed; original driver retained',(r as PromiseRejectedResult).reason));
+    return results.filter(r=>r.status==='fulfilled'&&r.value).length;
+  }
+  /** Animate live drivers (only the boarded cabin's driver is live). */
+  updateDrivers(delta:number,steering:number){for(const d of this.drivers)if(d.live&&d.vehicle.visible)d.update(delta,steering);}
+  private retireHuman(human:Human){human.mesh.visible=false;human.mesh.removeFromParent();for(const g of new Set(human.mesh.userData.lodGeometries as THREE.BufferGeometry[]))g.dispose();(human.mesh.material as THREE.Material).dispose();human.mesh.skeleton.dispose();}
+  dispose(){this.disposed=true;this.castSlots.forEach(s=>s.actor?.dispose());this.drivers.forEach(d=>d.dispose());this.stationCharacter?.dispose();void this.assetLibrary?.dispose();this.surfaces.dispose();this.navigation?.dispose();this.navigation=null;this.spatial.dispose();this.panels.dispose();}
   update(time: number, reduced: boolean, viewPosition?:THREE.Vector3) {
     if(viewPosition)this.viewPosition.copy(viewPosition);const delta=reduced?0:Math.min(.08,Math.max(0,time-this.previousTime));this.previousTime=time;
     const start=performance.now();

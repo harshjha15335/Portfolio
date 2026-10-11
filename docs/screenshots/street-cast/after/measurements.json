@@ -1,0 +1,74 @@
+[
+ {
+  "view": "npc",
+  "draws": 48,
+  "triangles": 145748,
+  "textures": 40,
+  "programs": 34,
+  "cast": "loaded:18",
+  "note": "Transcribed from the capture log; JS heap ranged 192\u2013250 MB across views"
+ },
+ {
+  "view": "walkers",
+  "draws": 62,
+  "triangles": 184361,
+  "textures": 44,
+  "programs": 34,
+  "cast": "loaded:18",
+  "note": "Transcribed from the capture log; JS heap ranged 192\u2013250 MB across views"
+ },
+ {
+  "view": "chai",
+  "draws": 41,
+  "triangles": 165383,
+  "textures": 45,
+  "programs": 34,
+  "cast": "loaded:18",
+  "note": "Transcribed from the capture log; JS heap ranged 192\u2013250 MB across views"
+ },
+ {
+  "view": "bench",
+  "draws": 71,
+  "triangles": 197827,
+  "textures": 45,
+  "programs": 34,
+  "cast": "loaded:18",
+  "note": "Transcribed from the capture log; JS heap ranged 192\u2013250 MB across views"
+ },
+ {
+  "view": "station",
+  "draws": 65,
+  "triangles": 184723,
+  "textures": 45,
+  "programs": 34,
+  "cast": "loaded:18",
+  "note": "Transcribed from the capture log; JS heap ranged 192\u2013250 MB across views"
+ },
+ {
+  "view": "spawn",
+  "draws": 73,
+  "triangles": 204439,
+  "textures": 45,
+  "programs": 34,
+  "cast": "loaded:18",
+  "note": "Transcribed from the capture log; JS heap ranged 192\u2013250 MB across views"
+ },
+ {
+  "view": "taxi",
+  "draws": 44,
+  "triangles": 188383,
+  "textures": 46,
+  "programs": 34,
+  "cast": "loaded:18",
+  "note": "Transcribed from the capture log; JS heap ranged 192\u2013250 MB across views"
+ },
+ {
+  "view": "auto",
+  "draws": 42,
+  "triangles": 173723,
+  "textures": 47,
+  "programs": 34,
+  "cast": "loaded:18",
+  "note": "Transcribed from the capture log; JS heap ranged 192\u2013250 MB across views"
+ }
+]

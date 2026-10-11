@@ -1,3 +1,5 @@
+> **Update 11 October 2026:** the street cast now ships nine MIT Rocketbox people through `scripts/import-cast.mjs`, which reuses these admission checks per character. `import-character.mjs` now also accepts MIT. Atlases up to 2048×1024 and a `_LOD1` mesh (at most half the close triangles, counted separately) are admitted. See [STREET_CAST.md](STREET_CAST.md). The single station-host slot below is unchanged.
+
 # Verified local character admission — Sprint 2
 
 No character binary was supplied or acquired. `src/data/stationCharacter.ts` is deliberately null. The existing procedural station host is a temporary placeholder; **no NPC visual improvement is claimed**. The user explicitly directed development to continue without a new character and prohibited retrying the blocked binary.
