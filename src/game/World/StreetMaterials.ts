@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import provenance from '../../../public/surfaces/provenance.json';
 import { seededRandom } from './StreetArchitecture';
 export type Surface = 'plaster' | 'stone' | 'asphalt' | 'paving' | 'metal' | 'wood' | 'fabric' | 'glass' | 'solid' | 'glow' | 'foliage';
 
@@ -6,20 +7,38 @@ export type Surface = 'plaster' | 'stone' | 'asphalt' | 'paving' | 'metal' | 'wo
 export class StreetMaterials {
   private materials = new Map<string, THREE.Material>();
   private maps = new Map<Surface, THREE.CanvasTexture>();
+  private pbr = new Map<string,THREE.Texture>();
+  private abort = new AbortController();
+  private disposed=false;
+  readonly ready:Promise<void>;
+  status='loading';
   constructor() {
     for (const surface of ['plaster', 'stone', 'asphalt', 'paving', 'wood', 'fabric'] as Surface[]) this.maps.set(surface, this.texture(surface));
+    for(const surface of ['asphalt','plaster'] as Surface[])for(const channel of ['roughness','normal']){const pixel=channel==='normal'?[128,128,255,255]:[255,255,255,255];const c=document.createElement('canvas');c.width=c.height=1;const ctx=c.getContext('2d')!;ctx.fillStyle=`rgb(${pixel[0]},${pixel[1]},${pixel[2]})`;ctx.fillRect(0,0,1,1);const texture=new THREE.CanvasTexture(c);texture.needsUpdate=true;texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.copy(this.maps.get(surface)!.repeat);this.pbr.set(`${surface}:${channel}`,texture);}
+    this.ready=typeof location==='undefined'?Promise.resolve():this.loadMaps().then(()=>{this.status='verified';}).catch(error=>{if(!this.disposed){this.status='fallback';console.warn('Verified surface maps unavailable; original textures retained',error);}});
   }
   get(color: string, surface: Surface = 'solid') {
     const key = `${surface}:${color}`;
     if (!this.materials.has(key)) {
-      const map = this.maps.get(surface) ?? null;
+      const map = surface==='wood'?null:this.maps.get(surface) ?? null;
       const roughness = { plaster:.94, stone:.84, asphalt:.98, paving:.9, metal:.48, wood:.76, fabric:.96, glass:.22, solid:.8, glow:1, foliage:.87 }[surface];
-      const material = surface === 'glow' ? new THREE.MeshBasicMaterial({color}) : new THREE.MeshStandardMaterial({color, map, roughness, metalness:surface === 'metal' ? .35 : 0, bumpMap:map, bumpScale:surface === 'asphalt' ? .018 : surface === 'plaster' ? .008 : .012, envMapIntensity:surface === 'glass' ? .6 : .25});
+      const material = surface === 'glow' ? new THREE.MeshBasicMaterial({color}) : new THREE.MeshStandardMaterial({color, map, roughness, metalness:surface === 'metal' ? .35 : 0, normalMap:this.pbr.get(`${surface}:normal`)??null, normalScale:new THREE.Vector2(surface==='asphalt'?.42:.22,surface==='asphalt'?.42:.22),roughnessMap:this.pbr.get(`${surface}:roughness`)??null,bumpMap:this.pbr.has(`${surface}:normal`)?null:map, bumpScale:surface === 'asphalt' ? .018 : surface === 'plaster' ? .008 : .012, envMapIntensity:surface === 'glass' ? .6 : .25});
       if(surface==='foliage'&&material instanceof THREE.MeshStandardMaterial){material.side=THREE.DoubleSide;material.vertexColors=true;material.emissive.set(color);material.emissiveIntensity=.045;}
       material.userData.surface = surface; this.materials.set(key, material);
     }
     return this.materials.get(key)!;
   }
+  private async loadMaps(){
+    await Promise.all(provenance.files.map(async record=>{
+      const response=await fetch(`/surfaces/${record.file}`,{signal:this.abort.signal});if(!response.ok)throw new Error(`Surface fetch ${response.status}`);
+      const bytes=await response.arrayBuffer();if(bytes.byteLength!==record.bytes)throw new Error('Surface size mismatch');
+      const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(n=>n.toString(16).padStart(2,'0')).join('');if(digest!==record.sha256)throw new Error('Surface integrity mismatch');
+      const image=await createImageBitmap(new Blob([bytes],{type:'image/png'}),{imageOrientation:'flipY',colorSpaceConversion:'none'});if(this.disposed){image.close();return;}if(image.width!==256||image.height!==256){image.close();throw new Error('Unexpected surface dimensions');}
+      const texture=record.channel==='color'?this.maps.get(record.surface as Surface)!:this.pbr.get(`${record.surface}:${record.channel}`)!;
+      texture.image=image;texture.colorSpace=record.channel==='color'?THREE.SRGBColorSpace:THREE.NoColorSpace;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.magFilter=THREE.LinearFilter;texture.generateMipmaps=true;texture.anisotropy=4;texture.needsUpdate=true;
+    }));
+  }
+  dispose(){this.disposed=true;this.abort.abort();for(const texture of [...this.maps.values(),...this.pbr.values()]){texture.dispose();const image=texture.image as {close?:()=>void};image?.close?.();}this.materials.forEach(m=>m.dispose());}
   private texture(surface: Surface) {
     const c = document.createElement('canvas'); c.width = c.height = 256; const ctx = c.getContext('2d')!;
     const random = seededRandom(`material:${surface}`);

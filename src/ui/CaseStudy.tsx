@@ -1,3 +1,4 @@
+import {ResearchExhibition} from './ResearchExhibition';
 import type { Project } from '../data/projects';
 import { Annotation } from './Annotation';
 import { ProjectDemo } from './ProjectDemo';
@@ -10,6 +11,7 @@ export function CaseStudy({ project, world, onClose }: { project: Project; world
     <div className="case-heading"><div className="case-title-block"><p className="eyebrow">0{project.priority} / {project.category} · {project.year}</p><h1>{project.title}<span className="blue-period">.</span></h1><h2>{project.subtitle}</h2><Annotation mark="underline" /><p className="case-lead">{project.longDescription}</p></div>
       <div className="case-preview">{project.priority <= 4 ? <ProjectDemo project={project} /> : <ProjectGraphic project={project} />}<span className="caption">WORKING IDEAS / EXPLAINED IN THE OPEN</span></div>
     </div>
+    {project.id==='ffprime'&&<ResearchExhibition/>}
     {project.metrics.length > 0 && <div className="metrics">{project.metrics.map(metric => <div key={metric.label}><strong>{metric.value}</strong><span>{metric.label}</span>{metric.source && <a href={metric.source} target="_blank" rel="noreferrer">EVIDENCE ↗</a>}</div>)}</div>}
     <div className="case-narrative"><span className="case-margin-note">the engineering<br />behind the thing <Annotation mark="arrow" /></span><div className="case-grid"><section><span className="eyebrow">01 / THE PROBLEM</span><p>{project.problem}</p></section><section><span className="eyebrow">02 / WHAT I BUILT</span><p>{project.approach}</p></section><section><span className="eyebrow">03 / THE DIFFICULT PART</span><p>{project.challenges}</p></section><section><span className="eyebrow">04 / THE RESULT</span><p>{project.results}</p></section></div></div>
     <section className="ownership"><span className="eyebrow">MY CONTRIBUTION</span><p>{project.ownership}</p></section>

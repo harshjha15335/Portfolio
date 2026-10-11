@@ -17,3 +17,7 @@ Limitations: fixed authored obstacles, simple six-target routines, no dynamic na
 Ambient vehicles bake the street-detail driver surface. Boarded vehicles bake the close-detail driver and retain the detailed cabin. Neither variant uses a runtime traffic skeleton; tests also check that their exterior bounds match while ambient submitted geometry is substantially lower.
 
 Sprint 1 adds a lazy verified-GLB station-character hook. The current close-up host remains original procedural geometry because the actual individually licensed binary is proxy-blocked. See GLB_ASSET_PIPELINE.md; the loader tests are not a claimed imported NPC.
+
+## Sprint 2 character admission
+
+Navigation remains unchanged. No external character is installed. A verified local character can be staged for explicit Idle/Walk visual review using [the admission workflow](LOCAL_CHARACTER_IMPORT.md), before approval replaces the existing host.

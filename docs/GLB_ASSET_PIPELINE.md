@@ -44,3 +44,7 @@ Vite builds separate GLB library, character-controller and GLTFLoader chunks. Ex
 | Red Brick 03 / masonry material candidate | https://polyhaven.com/a/red_brick_03 ; Poly Haven catalogue | Individual page, author credit and licence unavailable here; **not individually verified** | Proxy HTTP 403. Texture candidate, not a heritage GLB. No download/import. |
 
 No verified, appropriate heritage-detail GLB was obtained. Original CST-inspired architectural geometry is used instead. A heritage model candidate must show individual authorship/licensing and actual source files before acceptance; the register deliberately contains no invented CST download, author or checksum.
+
+## Sprint 2 local admission
+
+The original lazy library is preserved. [Local admission](LOCAL_CHARACTER_IMPORT.md) adds a source-hash/licence review record, a stricter12,000-triangle/four-material humanoid inspection, content-hashed local copies and an explicit candidate/approved manifest. Candidates render only in opt-in development Idle/Walk previews. Approved assets need a non-null actual visual review. No descriptor/binary is supplied in Sprint 2 and the default manifest is null. Do not infer an installed NPC from this added workflow or its static/in-memory fixtures.

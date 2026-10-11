@@ -1,3 +1,6 @@
+import {GPUFrameProfiler} from './GPUFrameProfiler';
+import {stationCharacter} from '../data/stationCharacter';
+import {walkingSimulationDelta} from './frameTiming';
 import {STREET_MOOD} from '../game/World/streetMood';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
@@ -31,7 +34,9 @@ export class WorldEngine {
   private mode: Mode = 'intro'; private paused = false; private disposed = false;
   private reducedMotion: boolean;
   private quality: AdaptiveQuality;
-  private reviewQuality=import.meta.env.DEV&&new URLSearchParams(location.search).get('review')==='1';
+  private benchmarkEnabled=new URLSearchParams(location.search).get('benchmark')==='1';
+  private profiler:GPUFrameProfiler|null=null;
+  private reviewQuality=(import.meta.env.DEV&&new URLSearchParams(location.search).get('review')==='1')||(this.benchmarkEnabled&&new URLSearchParams(location.search).get('fixedQuality')==='1');
   private lastShadow=0;
   private rendering!:StreetRenderer;
   private renderPreset:RenderPreset='medium';
@@ -68,7 +73,9 @@ export class WorldEngine {
     this.rendering=new StreetRenderer(this.renderer,this.scene,this.camera);this.renderPreset=options.mobile?'low':'medium';this.rendering.setPreset(this.renderPreset);
     this.physics.broadphase = new CANNON.SAPBroadphase(this.physics); this.physics.allowSleep = true;
     this.physics.defaultContactMaterial.friction = 0; this.physics.defaultContactMaterial.restitution = 0;
-    this.street = new MumbaiStreet(this.physics); this.scene.add(this.street.group); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;
+    this.street = new MumbaiStreet(this.physics); this.scene.add(this.street.group); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed)this.pausedFrameDirty=true;});
+    const preview=import.meta.env.DEV?new URLSearchParams(location.search).get('characterPreview'):null;
+    if(stationCharacter&&(stationCharacter.status==='approved'&&stationCharacter.visualReview||preview==='idle'||preview==='walk'))void this.street.installStationCharacter(stationCharacter.asset,preview==='walk').then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}}).catch(error=>console.warn('Character admission failed; existing host retained',error));
     this.visitor = createVisitor(STREET_SPAWN.x, STREET_SPAWN.z);
     this.physics.addBody(this.visitor);
     this.transit.add(this.taxi, this.auto); this.transit.visible = false; this.scene.add(this.transit);
@@ -79,8 +86,19 @@ export class WorldEngine {
     canvas.addEventListener('pointerdown', this.pointerDown); window.addEventListener('pointermove', this.pointerMove); window.addEventListener('pointerup', this.pointerUp); canvas.addEventListener('pointercancel', this.pointerUp);
     canvas.addEventListener('webglcontextlost', this.contextLost);
     if (import.meta.env.DEV && new URLSearchParams(location.search).has('debug')) {window.addEventListener('street-review-view',this.reviewView); this.debug = document.createElement('div'); this.debug.className = 'world-debug'; this.debug.setAttribute('aria-label', 'Renderer diagnostics'); container.append(this.debug); }
+    // Public Three API primes light state before the first shadow pass, avoiding
+    // duplicate zero-light depth programs retained after the following lit pass.
+    const warmup=new THREE.Group();this.scene.traverseVisible(object=>{if((object as THREE.Mesh).isMesh)warmup.add(object.clone(false));});
+    this.renderer.compile(warmup,this.camera,this.scene);warmup.clear();
+    if(this.benchmarkEnabled){this.profiler=new GPUFrameProfiler(this.renderer);window.addEventListener('street-benchmark',this.benchmarkCommand);}
     this.frameId = requestAnimationFrame(this.frame);
   }
+  private benchmarkCommand=(event:Event)=>{
+    const detail=(event as CustomEvent<{action:string;scenario:string;requestId:string}>).detail;
+    try{if(!this.profiler)throw new Error('Benchmark not enabled');if(detail.action==='begin'){if(this.reducedMotion||this.paused||this.mode!=='world')throw new Error('Benchmark requires visible world, continuous animation and no modal');this.profiler.begin(detail.scenario);}
+      const result=detail.action==='finish'?this.profiler.finish():{ready:true,device:this.profiler.device,programVariants:this.profiler.programDiagnostics()};window.dispatchEvent(new CustomEvent('street-benchmark-result',{detail:{requestId:detail.requestId,result}}));
+    }catch(error){window.dispatchEvent(new CustomEvent('street-benchmark-result',{detail:{requestId:detail.requestId,error:String(error)}}));}
+  };
   private lighting() {
     this.scene.background = new THREE.Color('#c0b29b'); this.scene.fog = new THREE.Fog(STREET_MOOD.fogColor, STREET_MOOD.fogNear, STREET_MOOD.fogFar);
     this.scene.add(new THREE.HemisphereLight(STREET_MOOD.skyColor, STREET_MOOD.groundColor, STREET_MOOD.hemisphereIntensity));
@@ -94,7 +112,7 @@ export class WorldEngine {
   }
   private reviewView = (event:Event) => {
     // Fixed, collision-clear eye-level review points. Development diagnostics only.
-    const views:Record<string,{x:number;z:number;yaw:number}>={'north-limit':{x:1.8,z:-59,yaw:-.08},'south-look':{x:14.5,z:15,yaw:Math.PI+.15},'side-gap':{x:5.4,z:-.7,yaw:-Math.PI/2},spawn:STREET_SPAWN,station:{x:4.6,z:-4,yaw:Math.PI-.12},shops:{x:-4.8,z:-9,yaw:-.2},fort:{x:-5.1,z:-35,yaw:Math.PI/2},return:{x:4.7,z:-44,yaw:Math.PI+.16},npc:{x:5.6,z:6.8,yaw:Math.PI+.12},shop:{x:-5.7,z:-15,yaw:Math.PI/2},vegetation:{x:-4.8,z:-15,yaw:.38},junction:{x:4.8,z:-8,yaw:.7},institute:{x:-4.6,z:-30,yaw:.54}};
+    const views:Record<string,{x:number;z:number;yaw:number}>={'north-limit':{x:1.8,z:-59,yaw:-.08},'south-look':{x:14.5,z:15,yaw:Math.PI+.15},'side-gap':{x:5.4,z:-.7,yaw:-Math.PI/2},'hero-wide':{x:-2.5,z:4,yaw:Math.PI/2},hero:{x:-4.9,z:5.7,yaw:Math.PI/2},'fort-room':{x:-9.8,z:-33.6,yaw:Math.PI/2},spawn:STREET_SPAWN,station:{x:4.6,z:-4,yaw:Math.PI-.12},shops:{x:-4.8,z:-9,yaw:-.2},fort:{x:-5.1,z:-35,yaw:Math.PI/2},return:{x:4.7,z:-44,yaw:Math.PI+.16},npc:{x:5.6,z:6.8,yaw:Math.PI+.12},shop:{x:-5.7,z:-15,yaw:Math.PI/2},vegetation:{x:-4.8,z:-15,yaw:.38},junction:{x:4.8,z:-8,yaw:.7},institute:{x:-4.6,z:-30,yaw:.54}};
     const view=views[(event as CustomEvent<string>).detail];if(view){this.endRide();this.placeVisitor(view.x,view.z,view.yaw);this.updateNear();}
   };
   setMode(mode: Mode) {
@@ -234,6 +252,7 @@ export class WorldEngine {
     if (document.hidden || this.mode !== 'world') return;
     if (this.paused && !this.pausedFrameDirty) return;
     const forceRender=this.pausedFrameDirty;this.pausedFrameDirty = false;
+    let simulatedWalkingMs=0;
     try {
       if (!this.paused) {
         this.time += delta;
@@ -244,7 +263,8 @@ export class WorldEngine {
           const strafe = Number(held('d') || held('arrowright')) - Number(held('a') || held('arrowleft'));
           this.yaw += (Number(held(',')) - Number(held('.'))) * delta * 1.3;
           const velocity = walkingVelocity(forward, strafe, this.yaw, held('shift') ? 4 : 2.7);
-          this.accumulator += delta;
+          const physicsDelta=walkingSimulationDelta(elapsed);simulatedWalkingMs=physicsDelta*1000;
+          this.accumulator += physicsDelta;
           while (this.accumulator >= 1 / 60) {
             if (forward || strafe) this.visitor.wakeUp();
             const blend = 1 - Math.exp(-12 / 60);
@@ -252,7 +272,7 @@ export class WorldEngine {
             this.physics.step(1 / 60); this.accumulator -= 1 / 60;
           }
           if (this.visitor.position.y < -2) this.reset();
-          this.gait += Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z) * delta * 3;
+          this.gait += Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z) * physicsDelta * 3;
           this.updateNear();
         }
       }
@@ -261,9 +281,10 @@ export class WorldEngine {
       if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)){this.resize();this.street.setQuality(this.quality.low);this.rendering.setPreset(this.quality.low?'low':this.renderPreset);this.resize();this.renderer.shadowMap.enabled=!this.options.mobile&&!this.quality.low&&this.renderPreset!=='low';this.renderer.shadowMap.needsUpdate=true;}
       if(!this.reducedMotion&&!this.paused&&this.time-this.lastShadow>.2&&this.renderer.shadowMap.enabled){this.renderer.shadowMap.needsUpdate=true;this.lastShadow=this.time;}
       this.audio?.update(this.ride.phase==='riding'?this.rideSpeed:Math.hypot(this.visitor.velocity.x,this.visitor.velocity.z),this.ride.phase!=='idle'&&this.ride.phase!=='hailing',this.ride.kind==='auto');
-      if(needsRender){this.renderer.info.reset();this.rendering.render(delta);this.lastRenderPosition.copy(this.camera.position);this.lastRenderRotation.copy(this.camera.quaternion);this.debugFrames++;}
+      if(needsRender){this.renderer.info.reset();this.profiler?.beforeRender();const renderStart=performance.now();this.rendering.render(delta);this.profiler?.afterRender({frameMs:elapsed*1000,renderCpuMs:performance.now()-renderStart,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,geometries:this.renderer.info.memory.geometries,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,preset:this.renderPreset,phase:this.ride.phase,worldX:this.visitor.position.x,worldZ:this.visitor.position.z,walkingSimulatedMs:simulatedWalkingMs});this.lastRenderPosition.copy(this.camera.position);this.lastRenderRotation.copy(this.camera.quaternion);this.debugFrames++;}
       if (timestamp - this.lastHud > 125) {
-        if (this.debug) { const canvas = this.renderer.domElement; canvas.dataset.worldX = this.visitor.position.x.toFixed(3); canvas.dataset.worldZ = this.visitor.position.z.toFixed(3); canvas.dataset.eyeHeight = this.camera.position.y.toFixed(3); canvas.dataset.lookYaw = this.yaw.toFixed(3); canvas.dataset.renderScale=this.quality.scale.toFixed(2); canvas.dataset.quality=this.quality.low?'low':'high'; canvas.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';canvas.dataset.navigation=this.street.navigationStatus;canvas.dataset.npcUpdateMs=this.street.npcUpdateMs.toFixed(3);canvas.dataset.trafficUpdateMs=this.street.trafficUpdateMs.toFixed(3);canvas.dataset.renderPreset=this.renderPreset; canvas.dataset.cameraMode = this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? 'first-person' : 'passenger'; }
+        if (this.benchmarkEnabled){this.renderer.domElement.dataset.benchmarkReady='true';this.renderer.domElement.dataset.ridePhase=this.ride.phase;this.renderer.domElement.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';}
+        if (this.debug) { const canvas = this.renderer.domElement; canvas.dataset.worldX = this.visitor.position.x.toFixed(3); canvas.dataset.worldZ = this.visitor.position.z.toFixed(3); canvas.dataset.eyeHeight = this.camera.position.y.toFixed(3); canvas.dataset.lookYaw = this.yaw.toFixed(3); canvas.dataset.renderScale=this.quality.scale.toFixed(2); canvas.dataset.quality=this.quality.low?'low':'high'; canvas.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';canvas.dataset.navigation=this.street.navigationStatus;canvas.dataset.surfaceMaps=this.street.surfaceStatus;canvas.dataset.characterStatus=this.street.characterStatus;canvas.dataset.npcUpdateMs=this.street.npcUpdateMs.toFixed(3);canvas.dataset.trafficUpdateMs=this.street.trafficUpdateMs.toFixed(3);canvas.dataset.renderPreset=this.renderPreset; canvas.dataset.cameraMode = this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? 'first-person' : 'passenger'; }
         this.options.onSpeed(this.ride.phase === 'riding' ? this.rideSpeed * 3.6 : Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z) * 3.6);
         this.options.onPosition(this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? { x: this.visitor.position.x, z: this.visitor.position.z } : { x: this.transit.position.x, z: this.transit.position.z });
         if (this.ride.phase !== 'idle') this.options.onRide({ ...this.ride }); this.lastHud = timestamp;
@@ -276,7 +297,7 @@ export class WorldEngine {
     window.removeEventListener('street-review-view',this.reviewView);window.removeEventListener('keydown', this.keyDown); window.removeEventListener('keyup', this.keyUp); window.removeEventListener('blur', this.releaseInput);
     document.removeEventListener('visibilitychange', this.visibilityChanged); document.removeEventListener('pointerlockchange', this.lockChanged);
     const canvas = this.renderer.domElement; canvas.removeEventListener('pointerdown', this.pointerDown); window.removeEventListener('pointermove', this.pointerMove); window.removeEventListener('pointerup', this.pointerUp); canvas.removeEventListener('pointercancel', this.pointerUp); canvas.removeEventListener('webglcontextlost', this.contextLost);
-    this.street.dispose();this.rendering.dispose();this.environmentTarget.dispose();
+    window.removeEventListener('street-benchmark',this.benchmarkCommand);this.profiler?.dispose();this.street.dispose();this.rendering.dispose();this.environmentTarget.dispose();
     const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>(), skeletons = new Set<THREE.Skeleton>();
     this.scene.traverse(object => { const mesh = object as THREE.SkinnedMesh; if (mesh.isSkinnedMesh) skeletons.add(mesh.skeleton); if (mesh.geometry) geometries.add(mesh.geometry); for(const g of (mesh.userData.lodGeometries??[]) as THREE.BufferGeometry[]) geometries.add(g); if (mesh.material) for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) { materials.add(m); for(const key of ['map','bumpMap','roughnessMap','normalMap'] as const)if((m as THREE.MeshStandardMaterial)[key])textures.add((m as THREE.MeshStandardMaterial)[key]!); } });
     skeletons.forEach(s => s.dispose()); geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); textures.forEach(t => t.dispose()); this.renderer.dispose(); canvas.remove(); this.debug?.remove();

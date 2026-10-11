@@ -1,0 +1,53 @@
+{
+  "verifiedOn": "2026-10-10",
+  "upstream": "https://github.com/theochem/ffprime",
+  "report": "https://github.com/harshjha15335/gsoc-2026-final-report",
+  "pinnedCommit": "02ac79dcaa38b64b130999d42ea8de0033834167",
+  "pullRequests": [
+    {
+      "number": 13,
+      "title": "Add dipole and quadrupole electrostatic potential and field with unit tests",
+      "url": "https://github.com/theochem/ffprime/pull/13",
+      "mergedAt": "2026-06-12T19:01:52Z",
+      "commit": "111914fa3e9de6315ba075306d7bda85ab496e70",
+      "sourceSha256": "0c4a80e43c9b3cdb705385b5e998b78808f38993756956b1103c64075d5f4a9f"
+    },
+    {
+      "number": 14,
+      "title": "Add input validation and extend multipole tests",
+      "url": "https://github.com/theochem/ffprime/pull/14",
+      "mergedAt": "2026-06-23T14:34:39Z",
+      "commit": "d2e23b89fa690bb1ed0663e830968e6f1e71d830",
+      "sourceSha256": "d5ff6786aed7c91423a64936a5f13d3184de7fd0d340bc392cde6e152f201dc0"
+    },
+    {
+      "number": 15,
+      "title": "Add direct spherical dipole and quadrupole potential evaluation",
+      "url": "https://github.com/theochem/ffprime/pull/15",
+      "mergedAt": "2026-07-03T03:14:37Z",
+      "commit": "ab3557efd8b2f926cf8db7463fb99971c89326ff",
+      "sourceSha256": "b69715c79d5641eb7d80f36e16cddc9a496191bfe93a3c1890c85c8824013e04"
+    },
+    {
+      "number": 18,
+      "title": "Add MultipoleExpansion API for unified Cartesian and spherical multipole evaluation",
+      "url": "https://github.com/theochem/ffprime/pull/18",
+      "mergedAt": "2026-07-31T03:41:06Z",
+      "commit": "af62afa9e337d6e8675530042d032d49b15719eb",
+      "sourceSha256": "c93226cc7757371aa1aa997b0137df71bac4e9ffcb6f8380e9e92636625697ca"
+    },
+    {
+      "number": 19,
+      "title": "Add MBIS multipole electrostatics example notebooks",
+      "url": "https://github.com/theochem/ffprime/pull/19",
+      "mergedAt": "2026-08-24T15:23:25Z",
+      "commit": "02ac79dcaa38b64b130999d42ea8de0033834167",
+      "sourceSha256": "84f248855b9febfcd90118941fe32dc3741a8c51e6d972c6a86c1bb2f165790d"
+    }
+  ],
+  "formulaSource": {
+    "url": "https://github.com/theochem/ffprime/blob/02ac79dcaa38b64b130999d42ea8de0033834167/ffprime/electrostatics/cartesian.py",
+    "sha256": "0d896306d59b8342bf37aef39110188b7b819b98c701c6b63de04177e3e0d561"
+  },
+  "limitations": "Live API confirms five merged PRs. Final report still marks PR19 under review; report status is stale. No upstream scientific tests or molecular datasets were run by this portfolio sprint; no new speedup, accuracy or aggregate test-count claims."
+}

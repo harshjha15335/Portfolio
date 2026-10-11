@@ -98,3 +98,5 @@ The CST–Fort pass adds shaped faces/hands, varied sleeves, two pedestrian geom
 ### CST–Fort Art Production Sprint 1
 
 `feature/cst-fort-art-production` reworks the same street with layered background continuations, varied heights/bays/rooflines, deeper shops and a broader CST-inspired Gothic station. A shared fixed17:40 mood aligns the HUD with golden-hour lighting. The existing Three.js stack now supports lazy verified GLBs and a station-character integration hook; no downloaded character is imported because the verified binary request is blocked. See [sprint visual review](docs/ART_PRODUCTION_SPRINT_1.md) and [asset pipeline](docs/GLB_ASSET_PIPELINE.md) for exact changes, matched native captures, performance evidence and unresolved acceptance work.
+
+Sprint 2 implementation and remaining acceptance blockers: [art-production review](docs/ART_PRODUCTION_SPRINT_2.md), [benchmark protocol](docs/GPU_BENCHMARK.md), [local character admission](docs/LOCAL_CHARACTER_IMPORT.md).

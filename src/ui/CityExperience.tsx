@@ -4,6 +4,7 @@ import { experience, achievements } from '../data/experience';
 import { projects } from '../data/projects';
 import { portfolio } from '../data/portfolio';
 import { skills } from '../data/skills';
+import {ResearchExhibition} from './ResearchExhibition';
 import { Modal } from './Modal';
 import { streetStops } from '../game/World/streetLayout';
 import type { Point, RideStatus, TransitKind } from '../game/World/transit';
@@ -47,7 +48,7 @@ export function DistrictExperience({ district: d, reduced, resumeAvailable, onCl
     <div className="guide-dialogue"><div className="guide-avatar" aria-hidden="true">☻</div><div><span className="eyebrow">{d.guide}</span><p>“{d.greeting}”</p><div className="guide-actions"><button className="primary-button" onClick={() => setInside(true)}>{d.id === 'filmcity' ? 'TAKE A SEAT →' : 'SHOW ME AROUND →'}</button><button className="text-button" onClick={onQuick}>QUICK VIEW ↗</button></div></div></div>
     {inside && <div className="district-content">
       {d.id === 'cst' && <><h3>Welcome to Harsh’s city.</h3><p>{portfolio.tagline} {portfolio.education}. Expected graduation: {portfolio.graduation}.</p><div className="district-stop-list">{districts.filter(item => item.id !== 'cst').map(item => <button key={item.id} onClick={() => onDestination(item.id)}>{item.title}<span>↗</span></button>)}</div></>}
-      {d.id === 'fort' && <><h3>Scientific Python, developed upstream.</h3><p>{experience[0].description}</p><ul>{experience[0].highlights.map(h => <li key={h}>{h}</li>)}</ul><div className="district-metrics">{projects[0].metrics.map(m => <a key={m.label} href={m.source} target="_blank" rel="noreferrer"><strong>{m.value}</strong><span>{m.label} ↗</span></a>)}</div><button className="primary-button" onClick={() => onProject('ffprime')}>OPEN FFPRIME CASE STUDY ↗</button></>}
+      {d.id === 'fort' && <><ResearchExhibition/><h3>Scientific Python, developed upstream.</h3><p>{experience[0].description}</p><ul>{experience[0].highlights.map(h => <li key={h}>{h}</li>)}</ul><div className="district-metrics">{projects[0].metrics.map(m => <a key={m.label} href={m.source} target="_blank" rel="noreferrer"><strong>{m.value}</strong><span>{m.label} ↗</span></a>)}</div><button className="primary-button" onClick={() => onProject('ffprime')}>OPEN FFPRIME CASE STUDY ↗</button></>}
       {d.id === 'bkc' && <><span className="eyebrow">{experience[1].period} / {experience[1].organization}</span><h3>{experience[1].title}</h3><p>{experience[1].description}</p><ul>{experience[1].highlights.map(h => <li key={h}>{h}</li>)}</ul><div className="system-route"><span>POLICY</span><b>→</b><span>OAUTH2</span><b>→</b><span>SECURE ACCESS</span></div><a className="text-button" href={experience[1].source} target="_blank" rel="noreferrer">RÉSUMÉ SOURCE ↗</a></>}
       {d.id === 'andheri' && <SkillBazaar onProject={onProject} />}
       {d.id === 'powai' && <div className="district-projects">{projects.filter(p => p.id !== 'ffprime').map(p => <article key={p.id}><span className="eyebrow">{p.category}</span><h3>{p.title}</h3><p>{p.shortDescription}</p><p className="architecture-strip">{p.architecture.slice(0, 4).join(' → ')}</p><button className="primary-button" onClick={() => onProject(p.id)}>EXPLORE THE CASE STUDY ↗</button></article>)}</div>}

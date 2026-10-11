@@ -1,0 +1,18 @@
+walking {"count":5,"min":6033.100000000006,"mean":6136.420000000001,"p50":6049.800000000003,"p95":6299.800000000003,"p99":6299.800000000003,"max":6299.800000000003}
+npc-movement {"count":1,"min":6283.100000000006,"mean":6283.100000000006,"p50":6283.100000000006,"p95":6283.100000000006,"p99":6283.100000000006,"max":6283.100000000006}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.click: Timeout 120000ms exceeded.
+Call log:
+[2m  - waiting for getByRole('button', { name: 'HAIL TAXI', exact: true })[22m
+
+    at /workspace/Portfolio/scripts/benchmark-gpu.mjs:22:192 {
+  log: [
+    "  - waiting for getByRole('button', { name: 'HAIL TAXI', exact: true })"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.19.0

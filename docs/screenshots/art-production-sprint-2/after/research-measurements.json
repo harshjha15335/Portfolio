@@ -1,0 +1,29 @@
+[
+  {
+    "view": "research",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "scrollTop": 620,
+    "webgl": false
+  },
+  {
+    "view": "research-sources",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "scrollTop": 1000,
+    "webgl": false
+  },
+  {
+    "view": "research",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "scrollTop": 620,
+    "webgl": false
+  }
+]

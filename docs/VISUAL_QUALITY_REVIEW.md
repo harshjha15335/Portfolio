@@ -41,3 +41,7 @@ CST spawn/street, Fort street/doorway/frontage/interior, this street's shop/mark
 ## Decision
 
 Keep the validated systems and verified existing portfolio behavior. Do not expand to nine districts or deploy as a completed visual overhaul. The next art pass should address the documented close-up weaknesses after source access is available; laptop GPU traversal must then establish frame-time stability. The user’s desired reference-level finish is **still incomplete**, stated separately from build/test results.
+
+## Sprint 2 checkpoint
+
+See [Sprint 2 review](ART_PRODUCTION_SPRINT_2.md) for matched native captures, the authored café and interactive Fort exhibition. Realistic NPCs, scanned surface assets and representative laptop profiling remain acceptance blockers. Earlier sprint measurements remain historical.

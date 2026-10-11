@@ -41,3 +41,17 @@ Fresh identical-pose baseline versus final evidence: `screenshots/art-production
 Node CPU profile (779 samples, concurrent software-browser workload): construction1326ms; street mean0.547/p954.199/p994.442ms; crowd mean0.112/p950.100/p994.070ms; traffic mean0.064/p950.025/p990.099ms. The long-tail outliers are retained; this profile does not prove improved simulation stability. Hardware laptop FPS remains unmeasured.
 
 Final build: WorldEngine336.28KB raw/100.36KB gzip; Three583.86/148.83KB; lazy GLB library5.71/2.45KB, character1.44/0.75KB, GLTFLoader43.92/12.95KB. WASM remains726.36/217.70KB. The Three shared chunk grows because additional loader/animation exports are retained; separate lazy chunks do not eliminate that overhead. No downloaded asset payload or new package is added. See ART_PRODUCTION_SPRINT_1.md for visual review and full functional verification.
+
+## Sprint 2 checkpoint
+
+Review-scale1.00 Medium static walk/room views currently peak at102 draws,226,429 submitted triangles,32 textures and26 programs, against the unchanged110/230,000/32/26 ceilings. Verified passenger/static and final regression results are summarized in [the Sprint 2 review](ART_PRODUCTION_SPRINT_2.md). Texture/program headroom is zero; a future humanoid asset requires a fresh resource/count pass before approval. Normal/roughness maps are shared across the existing material clones; no texture is re-created per façade.
+
+Original hero props are transform-baked into one opaque surface batch with per-vertex roughness/metalness plus a transparent glass batch. A public Three `compile()` call warms only visible mesh descriptors against the real scene's light state; it avoids redundant zero-light shadow-depth variants and does not precompile invisible human contact proxies. No shader cache entry is manually deleted and no reported budget is raised. Early intermediate captures exceeded the shader ceiling and are retained as iterations, not substituted for final evidence.
+
+Walking now uses bounded250ms fixed-step catch-up, separate from the80ms visual interpolation budget. It still steps Cannon at60Hz, caps stalls and clears input/accumulation on pause/visibility change. This addresses slow software-frame walking, not a claimed GPU optimization. The unchanged doorway assertion must pass its original12second poll in browser evidence.
+
+See [GPU benchmark protocol](GPU_BENCHMARK.md) for1920×1080 continuous animation, real walking/crowd/transit/Fort scenarios, raw RAF/JS/GPU-query samples and device metadata. No real laptop measurement exists here. Software smoke output is labeled separately; unavailable GPU timer queries are never invented.
+
+The production1920×1080 continuous software walking smoke records an animated-shadow peak of146 draws /396,360 submitted triangles. That exceeds the existing110 /230,000 provisional ceilings and is an unresolved defect, despite the cached-shadow static captures fitting. No budget was raised. Software timing is not laptop evidence; see the Sprint 2 review and raw smoke reports.
+
+Final five-scenario production software smoke completed without page errors. Observed maximum:195draws /456,636triangles (auto passenger sample),32textures /26programs. Every scenario remained1920×1080, Medium/scale1.00, continuous, DPR1. Samples were only1–6 frames and rides were truncated smoke samples; this does not establish representative percentiles or full-route hardware performance. Raw evidence and exact scenario counts are linked in the Sprint 2 review.

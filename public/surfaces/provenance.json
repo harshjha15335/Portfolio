@@ -1,0 +1,69 @@
+{
+  "author": "Portfolio project \u2014 original texture generator",
+  "license": "CC0-1.0",
+  "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "source": "scripts/generate-surface-maps.py",
+  "modifications": "Original authored micro-surface studies; no third-party input, no photographs. 256px, RGB PNG, OpenGL normal convention.",
+  "files": [
+    {
+      "file": "asphalt-color.png",
+      "sha256": "34ff32fcbb2e512d5404c798ed10c8967e0e999a9b3d8e3a3f5cb7af778c07d7",
+      "bytes": 64852,
+      "width": 256,
+      "height": 256,
+      "colorSpace": "sRGB",
+      "channel": "color",
+      "surface": "asphalt"
+    },
+    {
+      "file": "asphalt-roughness.png",
+      "sha256": "2f61a1397a88c791cc8b61848fafc101b0ba78d2e78014cec4376127cfd055cc",
+      "bytes": 52593,
+      "width": 256,
+      "height": 256,
+      "colorSpace": "linear",
+      "channel": "roughness",
+      "surface": "asphalt"
+    },
+    {
+      "file": "asphalt-normal.png",
+      "sha256": "a5ee87cf8a0c29929bf34e280034684c0b06c19fbfe12ed6b0a38b07d30f845b",
+      "bytes": 142318,
+      "width": 256,
+      "height": 256,
+      "colorSpace": "linear",
+      "channel": "normal",
+      "surface": "asphalt"
+    },
+    {
+      "file": "plaster-color.png",
+      "sha256": "e91174d43dc59f5f7d1ee2a5bc58530032612913bf3cd5a1cb15cd4eac7d55c4",
+      "bytes": 45841,
+      "width": 256,
+      "height": 256,
+      "colorSpace": "sRGB",
+      "channel": "color",
+      "surface": "plaster"
+    },
+    {
+      "file": "plaster-roughness.png",
+      "sha256": "4f44f26ecd5f9e4ec149ac6815543642b1b15cc2e9a8444ee43a4cb7428ea279",
+      "bytes": 52861,
+      "width": 256,
+      "height": 256,
+      "colorSpace": "linear",
+      "channel": "roughness",
+      "surface": "plaster"
+    },
+    {
+      "file": "plaster-normal.png",
+      "sha256": "4ecc56b952312a92389d803083b23a103501acd027a13c971e02f87553d38539",
+      "bytes": 110618,
+      "width": 256,
+      "height": 256,
+      "colorSpace": "linear",
+      "channel": "normal",
+      "surface": "plaster"
+    }
+  ]
+}

@@ -23,3 +23,7 @@ No new dependency or installation in this pass. The current registry advisory au
 ## Art Production Sprint 1 — 2026-10-10
 
 No dependency additions, installations or lockfile changes. The current advisory audit again reports zero known vulnerabilities. The lazy loader comes from the existing Three.js stack and accepts bounded, checksum-verified, same-origin self-contained GLB files; it does not introduce remote decoders or visitor upload/extraction. Candidate publisher licence checks and actual blocked binary retrieval are recorded in GLB_ASSET_PIPELINE.md. Licence verification is not a comprehensive exploit/malware certification.
+
+## Sprint 2
+
+No package installation or dependency/lockfile change. `npm audit --json` reports zero known vulnerabilities on10October2026; that advisory result is not comprehensive exploit/malware certification. External binary denials are not bypassed. All bundled surface maps are original and checked against SHA-256 before runtime decoding. Local character admission requires explicit reviewed source/licence/hash metadata before copying and remains candidate-only until a rendered review; no publisher scripts are executed.

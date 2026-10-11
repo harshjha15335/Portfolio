@@ -6,7 +6,7 @@ import { MumbaiStreet } from '../src/game/World/MumbaiStreet';
 import { STREET_SPAWN, streetStops, streetRideRoute, streetPickupRoute, walkingVelocity } from '../src/game/World/streetLayout';
 import { pointAtDistance, routeLength } from '../src/game/World/transit';
 
-beforeEach(() => vi.stubGlobal('document', { createElement: () => ({ getContext: () => ({ fillRect() {}, strokeRect() {}, fillText() {} }) }) }));
+beforeEach(() => vi.stubGlobal('document', { createElement: () => ({ getContext: () => ({ fillRect() {}, strokeRect() {}, fillText() {},beginPath() {},moveTo() {},lineTo() {},stroke() {},ellipse() {},fill() {} }) }) }));
 afterEach(() => vi.unstubAllGlobals());
 describe('first-person street slice', () => {
   it('moves forward and strafes relative to the view without diagonal speed gain', () => {

@@ -1,0 +1,12 @@
+✔ reports static geometry, rig, texture and both clips without visual approval (3.350877ms)
+✔ rejects external images and oversized source files (0.981925ms)
+✔ rejects invalid weights/accessor bounds and unsupported decoders (1.966467ms)
+✔ rejects unrigged or missing/wrongly bound walking clips (1.094949ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 107.19078

@@ -19,3 +19,7 @@ The 2026-10-10 street polish retains this rendering pipeline and adds draped str
 ## Art Production Sprint 1
 
 The current branch keeps render presets, exposure, reduced motion and the walking/transit camera contract. Shared `streetMood.ts` sets the fixed17:40 HUD/lighting state. Visible perimeter slabs are replaced by background context while their safety physics/BVH proxies remain. Identical through-cut window topology now shares one cached geometry across decorative grammars. Close people remain at garment resolution24; street-detail garments use12. A lazy `installStationCharacter` hook accepts verified assets through the GLB library, but no character descriptor is activated because binary acquisition is blocked. See ART_PRODUCTION_SPRINT_1.md and GLB_ASSET_PIPELINE.md.
+
+## Sprint 2 additions
+
+The café uses one opaque baked geometry batch with per-vertex finish attributes and a separate transparent glass batch. Original asphalt/plaster maps reuse shared texture objects after size/hash/dimension admission. Visible-mesh shader warm-up uses public Three.js compile with the existing scene light state. Optional GPU profiling runs only with `benchmark=1`; see [benchmark protocol](GPU_BENCHMARK.md).

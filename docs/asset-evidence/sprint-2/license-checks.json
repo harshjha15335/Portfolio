@@ -1,0 +1,56 @@
+{
+  "verifiedOn": "2026-10-10",
+  "successfulDocuments": [
+    {
+      "url": "https://quaternius.com/packs/universalbasecharacters.html",
+      "status": 200,
+      "sha256": "6cf62d9cbf5f6ce39f58ec0954487d09d45dfae2140212535943e2dc51b345ee",
+      "bytes": 19963,
+      "kind": "catalogue/licence document only \u2014 no model binary"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/makehumancommunity/makehuman/master/LICENSE.md",
+      "status": 200,
+      "sha256": "edd99571ca62698f78c943fd4fffb159a413c315fa0d4819d3cec5cadaf8b4f1",
+      "bytes": 3598,
+      "kind": "catalogue/licence document only \u2014 no model binary",
+      "bundledDocument": "MakeHuman-LICENSE.md",
+      "bundledSha256": "9e714b52ed6724965c7b655c63fb4c08e86e6d6deaf3a6055a56cb0bda251382",
+      "formattingModification": "Setext title changed to ATX Markdown; trailing whitespace removed. License terms unchanged. Original response hash retained separately."
+    },
+    {
+      "url": "https://raw.githubusercontent.com/makehumancommunity/makehuman/master/LICENSE.ASSETS.md",
+      "status": 200,
+      "sha256": "f6089cba01cb570a24712b41ab8a586ccd3cc5ef53dc266ca50b95c288956d2c",
+      "bytes": 6962,
+      "kind": "catalogue/licence document only \u2014 no model binary"
+    }
+  ],
+  "blocked": [
+    {
+      "url": "https://helpx.adobe.com/creative-cloud/faq/mixamo-faq.html",
+      "result": "CONNECT proxy HTTP403; no licence/model/texture verified from this endpoint"
+    },
+    {
+      "url": "https://api.sketchfab.com/v3/search?type=models&q=realistic%20rigged%20human&downloadable=true&animated=true",
+      "result": "CONNECT proxy HTTP403; no licence/model/texture verified from this endpoint"
+    },
+    {
+      "url": "https://static.makehumancommunity.org/about/license.html",
+      "result": "CONNECT proxy HTTP403; no licence/model/texture verified from this endpoint"
+    },
+    {
+      "url": "https://api.ambientcg.com/v2/full_json?include=downloadData&id=Asphalt012,Plaster001,Metal032",
+      "result": "CONNECT proxy HTTP403; no licence/model/texture verified from this endpoint"
+    },
+    {
+      "url": "https://ambientcg.com/license",
+      "result": "CONNECT proxy HTTP403; no licence/model/texture verified from this endpoint"
+    },
+    {
+      "url": "https://api.polyhaven.com/files/asphalt_02",
+      "result": "CONNECT proxy HTTP403; no licence/model/texture verified from this endpoint"
+    }
+  ],
+  "binaryDownloads": []
+}
