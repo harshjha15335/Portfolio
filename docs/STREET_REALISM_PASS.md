@@ -115,7 +115,7 @@ This is a software CPU rasteriser at 1920×1080, not a GPU figure. A hardware la
   - two-wheeler size and cost
   - bounce direction and strength
 - `npm run build`: succeeds. The chunk-size warning is pre-existing.
-- Browser suite (`playwright.cloud.config.ts`): see the PR description for this run's result.
+- Browser suite (`playwright.cloud.config.ts`, SwiftShader): **37 of 37 passed** in 14.4 min, including taxi and auto boarding/metering/routing, reduced-motion transport, NPC guide, FFprime terminal, Quick View, WebGL-loss fallback, mobile controls and detail presets. "A moving ride can be exited…", which failed on the base run earlier, passed this time; that test is timing-sensitive under software rendering.
 
 ## Requirement status
 
@@ -132,5 +132,5 @@ This is a software CPU rasteriser at 1920×1080, not a GPU figure. A hardware la
 | Signs and posters | **Partial** (posters without typography) |
 | Shop displays, drains, kerbs, markings, vegetation | **Not changed in this pass** |
 | Rooftop AC units and water tanks | **Done** on the benchmark and front roofs |
-| Movement, NPCs, rides, destinations, exhibition, Quick View, mobile, accessibility, adaptive quality preserved | **Done**: unit tests pass, plus the browser suite result in the PR. Mobile and shadowless use the existing balance with the bounce scaled by 0.7. |
+| Movement, NPCs, rides, destinations, exhibition, Quick View, mobile, accessibility, adaptive quality preserved | **Done**: unit tests and the full browser suite (37/37) pass. Mobile and shadowless use the existing balance with the bounce scaled by 0.7. |
 | Budgets measured, not raised | **Done** |
