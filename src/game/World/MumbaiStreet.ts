@@ -31,7 +31,9 @@ export class MumbaiStreet {
   private roundedGeometry = new RoundedBoxGeometry(1,1,1,2,.075);
   private awnings=[0,1,2,3].map(awningGeometry);
   private patina:THREE.Mesh[]=[];
-  private patinaMaterial=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.97,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
+  /** Research-room interior, kept cleaner than the street by the atmosphere pass. */
+  readonly shelteredBounds=new THREE.Box3();
+  private patinaMaterial=Object.assign(new THREE.MeshStandardMaterial({vertexColors:true,roughness:.97,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}),{userData:{weather:.4}});
   private cylinderGeometry = new THREE.CylinderGeometry(1, 1, 1, 8);
   private sphereGeometry = new THREE.SphereGeometry(1, 8, 6);
   private spectacleGeometry = new THREE.TorusGeometry(.031,.004,5,12);
@@ -480,7 +482,8 @@ export class MumbaiStreet {
     }
     this.shape(this.archGeometry,[1.70,.65,.7],[0,2.23,.14],'#c5b394',g,false,false,true,'stone');
     this.sign(g,'RESEARCH · OPEN SOURCE','फोर्ट',[2.48,1.70,.12],.88,'#d0b994','#3c5147').scale.y=1.3;
-    this.box([8.5, .035, 6.5], [0, .025, -3.3], '#aaa793', false, g, false, false, 'stone');
+    const floor=this.box([8.5, .035, 6.5], [0, .025, -3.3], '#aaa793', false, g, false, false, 'stone');
+    g.updateMatrixWorld(true);this.shelteredBounds.setFromObject(floor);this.shelteredBounds.max.y=3.2;
     this.box([8.5, 3, .3], [0, 1.5, -6.5], '#c4c2a9', true, g);
     for (const x of [-4.25, 4.25]) this.box([.3, 3, 6.5], [x, 1.5, -3.3], '#bbc0ac', true, g);
     this.box([8.5, .12, 6.5], [0, 3.1, -3.3], '#6b7875', false, g);

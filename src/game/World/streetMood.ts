@@ -1,2 +1,2 @@
 /** One authored late-afternoon/evening state shared by HUD and renderer; not a live solar simulation. */
-export const STREET_MOOD={clock:'17:40',label:'MUMBAI · GOLDEN HOUR',sunColor:'#ffd0a0',sunIntensity:2.25,sunPosition:[-32,15,-55] as [number,number,number],skyColor:'#aec3cb',groundColor:'#877a68',hemisphereIntensity:1.15,fogColor:'#bcb4a6',fogNear:72,fogFar:175,exposure:1.12};
+export const STREET_MOOD={clock:'17:40',label:'MUMBAI · GOLDEN HOUR',sunColor:'#ffa86c',sunIntensity:4.4,sunPosition:[-39,13,-72] as [number,number,number],sunTarget:[0,0,-26] as [number,number,number],skyColor:'#6a8ec2',groundColor:'#4c4036',hemisphereIntensity:.8,fogColor:'#a9a59c',hazeColor:'#f2b682',fogNear:18,fogFar:150,exposure:1.3,shadowlessSunScale:.35,shadowlessFillScale:1.35};
