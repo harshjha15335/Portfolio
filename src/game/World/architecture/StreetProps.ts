@@ -8,16 +8,17 @@ import {BakedKit} from './BakedKit';
  */
 type Triple=[number,number,number];
 const M=BakedKit.matrix;
-const tyre=new THREE.TorusGeometry(1,.3,4,10),hub=new THREE.CylinderGeometry(1,1,1,6),drum=new THREE.CylinderGeometry(1,1,1,8),bag=new THREE.IcosahedronGeometry(1,1),coil=new THREE.TorusGeometry(1,.1,3,12);
+const tyre=new THREE.TorusGeometry(1,.3,3,9),hub=new THREE.CylinderGeometry(1,1,1,6),drum=new THREE.CylinderGeometry(1,1,1,8),bag=new THREE.IcosahedronGeometry(1,1),coil=new THREE.TorusGeometry(1,.1,3,12);
 const plane=new THREE.PlaneGeometry(1,1);
-const tank=new THREE.LatheGeometry([[0,0],[.5,0],[.56,.06],[.56,.3],[.53,.34],[.56,.38],[.56,.7],[.53,.74],[.56,.78],[.56,.94],[.42,1.05],[0,1.1]].map(([x,y])=>new THREE.Vector2(x,y)),12);
+const tank=new THREE.LatheGeometry([[0,0],[.5,0],[.56,.06],[.56,.3],[.53,.34],[.56,.38],[.56,.7],[.53,.74],[.56,.78],[.56,.94],[.42,1.05],[0,1.1]].map(([x,y])=>new THREE.Vector2(x,y)),9);
 
 export type TwoWheeler='scooter'|'motorcycle';
-/** Activa-style scooter or commuter motorcycle on its stand, under 850 triangles. */
+/** Activa-style scooter or commuter motorcycle on its stand, about 450 triangles. */
 export function twoWheeler(kit:BakedKit,x:number,z:number,yaw:number,kind:TwoWheeler,body:string){
  const frame=new THREE.Matrix4().compose(new THREE.Vector3(x,0,z),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,yaw,.06)),new THREE.Vector3(1,1,1));
  const part=(size:Triple,p:Triple,color:string,surface:'metal'|'solid'|'fabric'='solid',rot:Triple=[0,0,0])=>kit.box(size,p,color,surface,'none',rot,frame);
- const round=(size:Triple,p:Triple,color:string,r:number,surface:'metal'|'solid'='solid',rot:Triple=[0,0,0])=>kit.bevel(size,p,color,surface,r,'none',rot,frame);
+ // Only the main body shell is chamfered; small parts stay plain boxes to keep the prop cheap.
+ const round=(size:Triple,p:Triple,color:string,r:number,surface:'metal'|'solid'='solid',rot:Triple=[0,0,0],chamfer=false)=>chamfer?kit.bevel(size,p,color,surface,r,'none',rot,frame):kit.box(size,p,color,surface,'none',rot,frame);
  const r=kind==='scooter'?.2:.25,wz=kind==='scooter'?.6:.66,wy=r+.06;
  for(const s of [-1,1]){
   kit.add(tyre,M([r,r,r*1.15],[0,wy,s*wz],[0,Math.PI/2,0]),'#1b1d1e','solid','none',frame);
@@ -25,7 +26,7 @@ export function twoWheeler(kit:BakedKit,x:number,z:number,yaw:number,kind:TwoWhe
  }
  const mirror=(y:number,zz:number)=>{for(const s of [-1,1]){part([.012,.2,.012],[s*.25,y+.1,zz],'#2a2b2c','metal',[0,0,-s*.3]);part([.09,.06,.02],[s*.3,y+.2,zz],'#2a2b2c','metal');}};
  if(kind==='scooter'){
-  round([.4,.42,.74],[0,.56,-.3],body,.12,'metal');
+  round([.4,.42,.74],[0,.56,-.3],body,.12,'metal',[0,0,0],true);
   round([.44,.66,.11],[0,.64,.44],body,.05,'metal',[-.22,0,0]);
   part([.16,.13,.42],[0,.43,.6],body,'metal',[.25,0,0]);
   part([.36,.06,.5],[0,.31,.1],'#2a2c2c');
@@ -35,7 +36,7 @@ export function twoWheeler(kit:BakedKit,x:number,z:number,yaw:number,kind:TwoWhe
   part([.64,.034,.034],[0,1.07,.4],'#262728','metal');mirror(1.07,.38);
   part([.18,.05,.03],[0,.66,-.68],'#9b2a22');part([.18,.1,.012],[0,.5,-.68],'#e9e4d2');
  } else {
-  round([.3,.21,.46],[0,.84,.16],body,.08,'metal');
+  round([.3,.21,.46],[0,.84,.16],body,.08,'metal',[0,0,0],true);
   for(const s of [-1,1])part([.07,.18,.26],[s*.13,.66,-.12],body,'metal');
   part([.24,.25,.3],[0,.43,.1],'#3b3d3e','metal');for(let n=0;n<3;n++)part([.27,.018,.2],[0,.37+n*.06,.16],'#56595a','metal');
   kit.add(drum,M([.04,.8,.04],[.17,.33,-.27],[Math.PI/2-.08,0,0]),'#a3a39b','metal','none',frame);

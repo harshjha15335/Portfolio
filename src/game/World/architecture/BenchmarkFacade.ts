@@ -21,7 +21,7 @@ export function createBenchmarkFacade(spec:FacadeSpec):BenchmarkFacade {
  const W=spec.width,half=W/2,FH=spec.floorHeight,base=3.2,top=base+spec.floors*FH;
  const pick=<T,>(list:T[])=>list[Math.floor(random()*list.length)];
  const sphere=new THREE.IcosahedronGeometry(1,0),cylinder=new THREE.CylinderGeometry(1,1,1,8),pot=new THREE.CylinderGeometry(1,.72,1,8),ring=new THREE.TorusGeometry(1,.07,4,14);
- const tank=new THREE.LatheGeometry([[0,0],[.5,0],[.56,.06],[.56,.24],[.53,.28],[.56,.32],[.56,.56],[.53,.6],[.56,.64],[.56,.92],[.46,1.04],[.18,1.1],[0,1.1]].map(([x,y])=>new THREE.Vector2(x,y)),16);
+ const tank=new THREE.LatheGeometry([[0,0],[.5,0],[.56,.06],[.56,.24],[.53,.28],[.56,.32],[.56,.56],[.53,.6],[.56,.64],[.56,.92],[.46,1.04],[.18,1.1],[0,1.1]].map(([x,y])=>new THREE.Vector2(x,y)),10);
  const M=BakedKit.matrix;
 
  // Corner pilasters, Deco fins framing the balcony bay and the band over the shop.
@@ -68,7 +68,7 @@ export function createBenchmarkFacade(spec:FacadeSpec):BenchmarkFacade {
    }
    // Moulded sill with drip groove and a sloping concrete chajja on brackets.
    kit.bevel([w+.3,.08,.33],[cx,sill-.03,.1],TRIM,'stone',.025);kit.box([w+.24,.018,.02],[cx,sill-.085,.23],GRIME,'solid','none');
-   kit.bevel([w+.6,.085,.64],[cx,head+.22,.28],CONCRETE,'stone',.02,'part',[.1,0,0]);
+   kit.box([w+.6,.085,.64],[cx,head+.22,.28],CONCRETE,'stone','part',[.1,0,0]);
    for(const s of [-1,1])kit.box([.07,.2,.42],[cx+s*(w/2+.16),head+.08,.18],CONCRETE,'stone');
    kit.streak(cx-w/2-.2,head+.16,.9+random()*.8,.16,.006,GRIME,wall,.75);kit.streak(cx+w/2+.2,head+.16,.6+random()*.9,.13,.006,GRIME,wall,.65);
    kit.streak(cx+(random()-.5)*w*.6,sill-.08,.7+random()*.7,.22,.006,GRIME,wall,.6);
@@ -102,7 +102,7 @@ export function createBenchmarkFacade(spec:FacadeSpec):BenchmarkFacade {
    }
    if((floor+i)%3===1){
     // Split AC outdoor unit on brackets, refrigerant pipe and its drip stain.
-    const ay=sill-.42;kit.bevel([.8,.52,.28],[cx,ay,.24],'#d7d4c6','solid',.03);
+    const ay=sill-.42;kit.box([.8,.52,.28],[cx,ay,.24],'#d7d4c6','solid');
     kit.detail=true;kit.add(ring,M([.17,.17,.17],[cx-.12,ay,.385]),'#7f837d','metal','none');for(const r of [0,Math.PI/2])kit.box([.33,.016,.012],[cx-.12,ay,.385],'#7f837d','metal','none',[0,0,r+.4]);
     for(const s of [-1,1]){kit.box([.04,.04,.36],[cx+s*.3,ay-.28,.18],'#4b4f4b','metal','part');kit.box([.04,.3,.04],[cx+s*.3,ay-.15,.02],'#4b4f4b','metal','part',[.6,0,0]);}
     kit.add(cylinder,M([.012,.5,.012],[cx+.36,ay+.42,.12]),'#b07a52','metal','none');kit.detail=false;
@@ -177,7 +177,7 @@ export function createBenchmarkFacade(spec:FacadeSpec):BenchmarkFacade {
  }
  kit.detail=false;
  for(const x of [-2.2,1.4])kit.box([.05,.16,.4],[x,base+.32,.22],'#3a3d3a','metal','part');
- kit.bevel([.36,.46,.16],[half-.85,base+.55,.1],'#7d847c','metal',.02);
+ kit.box([.36,.46,.16],[half-.85,base+.55,.1],'#7d847c','metal');
 
  // Roof: Sintex tanks on an angle-iron stand, stair head-room with a door, TV mast.
  for(const [tx,tz,s] of [[2.2,-2.6,1],[3.3,-3.9,.85]] as const){
@@ -185,8 +185,8 @@ export function createBenchmarkFacade(spec:FacadeSpec):BenchmarkFacade {
   kit.box([.95*s,.05,.95*s],[tx,top+.69,tz],'#3b3e3a','metal','part');
   kit.add(tank,M([s,s,s],[tx,top+.72,tz]),'#1d2020','solid','none');kit.add(cylinder,M([.18*s,.08,.18*s],[tx,top+.72+1.12*s,tz]),'#2b2e2d','solid','none');
  }
- kit.bevel([2.3,2.45,2.5],[-2.5,top+1.3,-3.6],WALL,'plaster',.04);kit.bevel([2.5,.12,2.7],[-2.5,top+2.58,-3.6],BAND,'stone',.03);
- kit.box([.85,1.9,.04],[-2.2,top+1.05,-2.33],'#5b4632','wood','recess');kit.bevel([1.2,.06,.4],[-2.2,top+2.12,-2.18],CONCRETE,'stone',.015);
+ kit.box([2.3,2.45,2.5],[-2.5,top+1.3,-3.6],WALL,'plaster');kit.box([2.5,.12,2.7],[-2.5,top+2.58,-3.6],BAND,'stone');
+ kit.box([.85,1.9,.04],[-2.2,top+1.05,-2.33],'#5b4632','wood','recess');kit.box([1.2,.06,.4],[-2.2,top+2.12,-2.18],CONCRETE,'stone');
  kit.streak(-3.4,top+2.5,1.4,.3,-2.34,GRIME,WALL,.6);
  kit.detail=true;
  kit.add(cylinder,M([.025,2.6,.025],[-.6,top+1.4,-2.4]),'#6d716c','metal','none');

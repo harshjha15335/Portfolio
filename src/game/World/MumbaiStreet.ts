@@ -36,8 +36,10 @@ export class MumbaiStreet {
   private patina:THREE.Mesh[]=[];
   /** Research-room interior, kept cleaner than the street by the atmosphere pass. */
   readonly shelteredBounds=new THREE.Box3();
-  /** One baked batch for parked two-wheelers, posters, coils, rubbish and roof tanks. */
-  private props=new BakedKit(seededRandom('street-props'));
+  /** Baked batches for parked two-wheelers, posters, coils, rubbish and roof tanks: one per street
+   * third, so each can be frustum-culled when it is behind the visitor. */
+  private propKits=[0,1,2].map(n=>new BakedKit(seededRandom(`street-props:${n}`)));
+  private props(z:number){return this.propKits[z>-12?0:z>-34?1:2];}
   private patinaMaterial=Object.assign(new THREE.MeshStandardMaterial({vertexColors:true,roughness:.97,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}),{userData:{weather:.4}});
   private cylinderGeometry = new THREE.CylinderGeometry(1, 1, 1, 8);
   private sphereGeometry = new THREE.SphereGeometry(1, 8, 6);
@@ -94,7 +96,7 @@ export class MumbaiStreet {
     this.station(); this.researchRoom(); this.streetDetails(); this.vegetation(); this.people(); this.traffic();
     this.spatial = new SpatialIndex(this.colliderGeometry); this.colliderGeometry.forEach(g=>g.dispose()); this.colliderGeometry=[];
     void NavMeshManager.create(this.obstacles).then(nav=>{if(this.disposed){nav.dispose();return;}this.navigation=nav;this.navigationStatus='ready';for(const [i,w] of this.walkers.entries()){w.agent=nav.add({x:w.group.position.x,y:0,z:w.group.position.z});w.target=i%this.destinations.length;w.agent.requestMoveTarget(this.destinations[w.target]);}}).catch(()=>{this.navigationStatus='unavailable';});
-    const props=this.props.build('Street props',.3);this.group.add(props.group);
+    this.propKits.forEach((kit,n)=>this.group.add(kit.build(`Street props ${n}`,.3).group));
     this.signAtlas.needsUpdate = true; this.instanceStatics(); this.mergeSigns(); this.mergePatina(); this.instancePedestrians();
   }
   private material(color: string, glow = false, wall = false, surface: Surface = 'solid') {
@@ -246,8 +248,8 @@ export class MumbaiStreet {
     // Radio House replaces the procedural upper storeys of this frontage with the authored benchmark.
     const benchmark=side<0&&index===1;
     if(benchmark){const radio=createBenchmarkFacade(spec);g.add(radio.group);g.updateWorldMatrix(true,false);const centre=g.localToWorld(radio.centre.clone()),detail=radio.detail;
-      // Near-detail LOD: railings, grille bars, plants and cables only draw within 30 m.
-      if(detail)this.motion.push(()=>{detail.visible=this.viewPosition.distanceToSquared(centre)<900;});this.sign(g,'RADIO HOUSE · 1938','रेडियो हाउस',radio.plaque.position,radio.plaque.width,'#cbbd9c','#4d4536');}
+      // Near-detail LOD: railings, grille bars, plants and cables only draw within 22 m.
+      if(detail)this.motion.push(()=>{detail.visible=this.viewPosition.distanceToSquared(centre)<484;});this.sign(g,'RADIO HOUSE · 1938','रेडियो हाउस',radio.plaque.position,radio.plaque.width,'#cbbd9c','#4d4536');}
     // Rear mass provides simple collision. The visible face is built around actual window recesses.
     frontageBox([width,height-3.2,5.85],[0,3.2+(height-3.2)/2,-3.75],color,false,g,false,true);
     this.solidProxy([width,height-3.2,6.5],[0,3.2+(height-3.2)/2,-3.4],g);
@@ -277,7 +279,7 @@ export class MumbaiStreet {
         } else {
           frontageBox([3.4,2.18,.09],[x,1.19,-.12],'#8b8c87',false,g,false,false,'metal');
           // Bills pasted over the closed shutter, layered and torn.
-          g.updateWorldMatrix(true,false);posters(this.props,g.matrixWorld.clone().multiply(new THREE.Matrix4().makeTranslation(x+(x>0?-.35:.35),1.3,-.035)),1.5,.7,seededRandom(`${spec.seed}:posters:${x}`));
+          g.updateWorldMatrix(true,false);posters(this.props(z),g.matrixWorld.clone().multiply(new THREE.Matrix4().makeTranslation(x+(x>0?-.35:.35),1.3,-.035)),1.5,.7,seededRandom(`${spec.seed}:posters:${x}`));
           for(let y=.21;y<2.3;y+=.13)frontageBox([3.42,.035,.035],[x,y,-.06],'#636d6c',false,g);
         }
       }
@@ -365,7 +367,7 @@ export class MumbaiStreet {
     }
     if(!benchmark){
     // Front roofs seen down the street carry black Sintex tanks; further ones keep the cheap drum.
-    if(index<=2){g.updateWorldMatrix(true,false);roofTank(this.props,g.matrixWorld.clone().multiply(new THREE.Matrix4().makeTranslation(2,height+.09,-2.8)),1.15);}
+    if(index<=2){g.updateWorldMatrix(true,false);roofTank(this.props(z),g.matrixWorld.clone().multiply(new THREE.Matrix4().makeTranslation(2,height+.09,-2.8)),1.15);}
     else{this.cylinder(.68,1.05,[2,height+.75,-2.8],'#414a49',g);this.cylinder(.72,.09,[2,height+1.3,-2.8],'#333d3c',g);}
     this.wire(new THREE.Vector3(-3.9,1,-.03),new THREE.Vector3(-3.9,height+.55,-.03),.035,'#7c8176',g);
     this.wire(new THREE.Vector3(-3.9,1,-.03),new THREE.Vector3(-3.45,.24,.17),.035,'#7c8176',g);
@@ -579,14 +581,14 @@ export class MumbaiStreet {
       this.box([.5, .65, .5], [side * 6.2, .325, z - 4.5], '#465e56', true);
       this.cylinder(.23, .45, [side * 6.1, .23, z + 3], '#8c6551');
       this.shape(this.leafGeometry, [.55, .9, .55], [side * 6.1, .85, z + 3], '#698159');
-      if (i % 2 === 0) twoWheeler(this.props, side * 5.62, z - 5, side * .4, i===2?'motorcycle':'scooter', ['#7d1f25','#2c4a6b','#d6d3c7','#3b3f42','#9a8f78','#1f2224'][(i+(side>0?1:0))%6]);
+      if (i % 2 === 0) twoWheeler(this.props(z-5), side * 5.62, z - 5, side * .4, i===2?'motorcycle':'scooter', ['#7d1f25','#2c4a6b','#d6d3c7','#3b3f42','#9a8f78','#1f2224'][(i+(side>0?1:0))%6]);
       // Posters on the street face of each junction box, coils of spare cable on alternate poles.
-      posters(this.props,new THREE.Matrix4().compose(new THREE.Vector3(side*5.946,.38,z-4.5),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,-side*Math.PI/2,0)),new THREE.Vector3(1,1,1)),.44,.46,seededRandom(`box-posters:${side}:${i}`));
-      if (i % 2 === 1) cableCoil(this.props, x, 4.6, z, -side);
+      posters(this.props(z-4.5),new THREE.Matrix4().compose(new THREE.Vector3(side*5.946,.38,z-4.5),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,-side*Math.PI/2,0)),new THREE.Vector3(1,1,1)),.44,.46,seededRandom(`box-posters:${side}:${i}`));
+      if (i % 2 === 1) cableCoil(this.props(z), x, 4.6, z, -side);
     }
     // Parked between street furniture, angled to the kerb the way riders leave them.
-    for(const [x,z,yaw,kind,body] of [[5.62,-39,.45,'motorcycle','#8a1c1c'],[-5.62,-13.3,-.38,'scooter','#d6d3c7'],[-5.62,-27,-.42,'motorcycle','#2a3f63']] as Array<[number,number,number,TwoWheeler,string]>)twoWheeler(this.props,x,z,yaw,kind,body);
-    rubbish(this.props,6.3,-35.6,seededRandom('rubbish:a'));rubbish(this.props,-6.3,-22.6,seededRandom('rubbish:b'));
+    for(const [x,z,yaw,kind,body] of [[5.62,-39,.45,'motorcycle','#8a1c1c'],[-5.62,-13.3,-.38,'scooter','#d6d3c7'],[-5.62,-27,-.42,'motorcycle','#2a3f63']] as Array<[number,number,number,TwoWheeler,string]>)twoWheeler(this.props(z),x,z,yaw,kind,body);
+    rubbish(this.props(-35.6),6.3,-35.6,seededRandom('rubbish:a'));rubbish(this.props(-22.6),-6.3,-22.6,seededRandom('rubbish:b'));
     // Hanging cross-street service wires frame the view above eye level.
     for (const z of [-8, -30, -47]) for (let cable = 0; cable < 3; cable++) for (let n = 0; n < 10; n++) {
       const point = (t: number) => new THREE.Vector3(-7 + t * 14, 7.5 - Math.sin(t * Math.PI) * 1.2 + cable * .16, z + cable * .3);
