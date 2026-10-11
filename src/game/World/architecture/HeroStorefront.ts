@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import type {StreetMaterials, Surface} from '../StreetMaterials';
+import {bakedFinishMaterial,bakedGlassMaterial} from './BakedKit';
 
 /** Original authored Irani café frontage; local metres, +Z faces the pavement.
  * Bake individual prop transforms into surface batches, retaining their shapes/UVs.
  * Decoration stays behind the original collision plane. No new traversable shop.
  */
 export function createHeroStorefront(_surfaces:StreetMaterials){
- const atlas=surfaceAtlas();
  const group=new THREE.Group();group.name='Irani Chai · hero storefront';
  const batches=new Map<Surface,THREE.BufferGeometry[]>();
  const box=new THREE.BoxGeometry(1,1,1), sphere=new THREE.SphereGeometry(1,16,10);
@@ -77,31 +77,9 @@ export function createHeroStorefront(_surfaces:StreetMaterials){
  for(let n=0;n<18;n++)b([.022,.002,.12],[-3.65+n*.42,.10,.36],'#283d39','solid');
  const glass=batches.get('glass')??[];batches.delete('glass');
  const list=[...batches.values()].flat(),geometry=mergeGeometries(list)!;
- const material=new THREE.MeshStandardMaterial({map:atlas,vertexColors:true,roughness:1,metalness:1,side:THREE.DoubleSide});material.userData.weather=.35;
- material.onBeforeCompile=shader=>{
-  shader.vertexShader='attribute vec2 heroFinish; varying vec2 vHeroFinish;\n'+shader.vertexShader;
-  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvHeroFinish = heroFinish;');
-  shader.fragmentShader='varying vec2 vHeroFinish;\n'+shader.fragmentShader;
-  shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor = vHeroFinish.x;');
-  shader.fragmentShader=shader.fragmentShader.replace('#include <metalnessmap_fragment>','#include <metalnessmap_fragment>\nmetalnessFactor = vHeroFinish.y;');
- };
- material.customProgramCacheKey=()=> 'hero-finish-v1';
+ const material=bakedFinishMaterial(.35);
  const mesh=new THREE.Mesh(geometry,material);mesh.name='hero-storefront-opaque';mesh.castShadow=mesh.receiveShadow=true;group.add(mesh);list.forEach(g=>g.dispose());
- if(glass.length){const glassGeometry=mergeGeometries(glass)!;const glassMaterial=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.14,metalness:0,transparent:true,opacity:.18,depthWrite:false,side:THREE.DoubleSide});const pane=new THREE.Mesh(glassGeometry,glassMaterial);pane.receiveShadow=true;group.add(pane);glass.forEach(g=>g.dispose());}
+ if(glass.length){const glassGeometry=mergeGeometries(glass)!;const glassMaterial=bakedGlassMaterial();const pane=new THREE.Mesh(glassGeometry,glassMaterial);pane.receiveShadow=true;group.add(pane);glass.forEach(g=>g.dispose());}
  [box,sphere,cylinder,cup,kettle,jar,torus,loaf,flake,canopy].forEach(g=>g.dispose());
  return group;
-}
-
-/** Original small surface atlas: region-specific wear, no third-party images. */
-function surfaceAtlas(){
- const canvas=document.createElement('canvas');canvas.width=384;canvas.height=256;const c=canvas.getContext('2d')!;
- c.fillStyle='#f5f2e8';c.fillRect(0,0,384,256);
- let state=94623;const random=()=>{state=(state*1664525+1013904223)>>>0;return state/4294967296;};
- for(let region=0;region<6;region++){const x=region%3*128,y=Math.floor(region/3)*128;
-  for(let i=0;i<1300;i++){const alpha=region===3?0:region===0?.11:region===4?.06:.04;c.fillStyle=`rgba(87,82,67,${random()*alpha})`;c.fillRect(x+random()*128,y+random()*128,1+random()*2,region===0?9+random()*25:1+random()*3);}
-  if(region===1){c.strokeStyle='#8d897a10';for(let j=0;j<128;j+=3){c.beginPath();c.moveTo(x+j,y);c.lineTo(x+j,y+128);c.moveTo(x,y+j);c.lineTo(x+128,y+j);c.stroke();}}
-  if(region===2){c.strokeStyle='#928b761b';for(let j=0;j<18;j++){const yy=y+random()*128;c.beginPath();c.moveTo(x+random()*70,yy);c.lineTo(x+80+random()*40,yy+random()*2);c.stroke();}}
-  if(region===4){for(let i=0;i<6;i++){c.fillStyle='#93836314';c.beginPath();c.ellipse(x+random()*128,y+random()*128,6+random()*14,12+random()*23,random(),0,Math.PI*2);c.fill();}}
- }
- const t=new THREE.CanvasTexture(canvas);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t;
 }
