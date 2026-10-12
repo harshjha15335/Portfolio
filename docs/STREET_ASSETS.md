@@ -10,7 +10,7 @@ It works on branch `claude/mumbai-visual-overhaul-wsa2hm` (PR #3), on top of the
 | --- | --- | --- |
 | Scanned plaster, concrete, brick for façades | **No.** Poly Haven, ambientCG and texture sites are refused by this environment's network policy, and GitHub mirrors only hold scraps (one brick set, one ground set). | **BLOCKED** |
 | Mumbai buildings (Deco walk-ups, chawls) as models | **No.** Nothing suitable and licensed is reachable. | **BLOCKED** |
-| Premier Padmini taxi, Bajaj auto-rickshaw, BEST bus | **No.** These exist mostly on Sketchfab, which is refused and needs a signed-in download. GitHub holds only sports cars, mostly under non-commercial licences. | **BLOCKED** |
+| Premier Padmini taxi, Bajaj auto-rickshaw, BEST bus | **No.** These exist mostly on Sketchfab, which is refused and needs a signed-in download. GitHub holds only sports cars, mostly under non-commercial licences. | Taxi and auto: **modelled here instead** (original, see below). Bus: **BLOCKED** |
 | Road asphalt | **Yes.** Poly Haven "Asphalt 02" (CC0) is mirrored in the Khronos glTF sample repository. | **Done** |
 | A realistic scooter | **Yes.** "Vino" by minghauLoh (CC-BY 4.0), mirrored in `gkjohnson/3d-demo-data`. It is close to the Yamaha Fascino sold in India. | **Done** |
 | A real golden-hour sky for reflections | **Yes.** Poly Haven "Venice Sunset" (CC0), mirrored in three.js. | **Tried and rejected** (see below) |
@@ -54,7 +54,20 @@ These are matched captures: SwiftShader, 1440×900, Medium preset, reduced motio
 - At matched exposure, it made the shaded façades darker and bluer. That undid the station and street readability from the realism pass.
 - It is not in this branch. The script and findings are kept out of the repository.
 
-**Unchanged:** buildings, the CST station, taxis, autos, shopfronts and props other than scooters. All of these still need the blocked assets above.
+![Taxi before and after](screenshots/street-assets/compare-taxi.jpg)
+
+![Auto-rickshaw before and after](screenshots/street-assets/compare-auto.jpg)
+
+**Taxi and auto bodies: done, original models (not third-party assets).**
+- With no licensed vehicle reachable, the Padmini "kaali-peeli" taxi and the Bajaj-style auto were modelled as code in Blender (`scripts/vehicles/build_taxi.py`, `build_auto.py`).
+- The taxi has a lofted body with real wheel arches, door seams, a chrome side strip, a curved greenhouse with glazed openings, a black body and yellow roof, chrome bumpers with overriders, an oval grille, ringed headlamps, wing mirrors, plates and mud flaps.
+- The auto has a curved front cowl with a single headlamp, a canvas canopy with a rear window, steel pillars, a fork and mudguard, a floor, and a rear body with wheel arches.
+- Colour, roughness, metalness and baked ambient occlusion are stored in vertex data. Each body draws with the street's shared baked material, so it adds **no textures and no shader program**. Glass and lamps reuse the vehicle's own materials.
+- They replace only the code-built exterior; the cabin, driver and wheels are unchanged. Every taxi and auto uses them, including ride vehicles and traffic. If loading fails, the code-built exterior stays.
+- **Cost:** each body has fewer triangles than the exterior it replaces: taxi 3,648 vs 3,728, auto 1,558 vs 1,624. A test enforces this.
+- **Limits:** the wheels are still the code-built ones. The bodies are original approximations from reference knowledge, not measured replicas. There is no plate lettering, because the bodies carry no textures.
+
+**Unchanged:** buildings, the CST station, the bus, shopfronts and props other than scooters and vehicles. These still need the blocked assets above.
 
 ## Performance
 
@@ -80,6 +93,23 @@ Software benchmark (`scripts/benchmark-gpu.mjs`, SwiftShader, 1920×1080, short 
 
 Peak textures stay at 28–32 and peak programs at 26 in every scenario.
 
+After the taxi and auto bodies (same benchmark settings):
+
+| Scenario | Before bodies | With modelled bodies |
+| --- | --- | --- |
+| walking | 222,543 / 87 draws | 222,709 / 87 draws |
+| taxi ride | 220,455 / 94 | 220,673 / 95 |
+| auto ride | 226,241 / 108 | 226,433 / 109 |
+| fort | 144,112 / 31 | 144,112 / 31 |
+
+Textures and programs are unchanged (28–32, 26).
+
+**Recorded honestly:**
+- The first version of the bodies (taxi 4,680 triangles) pushed the auto ride to 230,393 triangles, over the ceiling. Both bodies were then trimmed below the exteriors they replace.
+- Swapping in the bodies at first compiled one extra shadow program (27). The cause was a front-side textured shadow caster: the seat fabric. It now casts double-sided shadows and shares the existing program.
+
+The benchmark and capture scripts now wait for the street's assets (surfaces, scooters and vehicle bodies) before measuring.
+
 **First run, recorded honestly.** At first the stand-in scooters were one always-drawn batch, and the auto ride peaked at 231,193 triangles, over the ceiling. They are now merged in street order and trimmed per frame with a draw range, which gives the 226,241 above.
 
 SwiftShader frame intervals are slow and noisy; walking p50 is 5.5 s here against 5.5 s on PR #3's head.
@@ -89,12 +119,13 @@ Download size: the scooter GLB is 510 KB. The asphalt maps grew from 260 KB to 1
 ## Tests and build
 
 - `npx tsc --noEmit`: clean.
-- `npx vitest run`: 91 pass. The 5 new tests in `tests/street-assets.test.ts` cover:
+- `npx vitest run`: 95 pass. The new tests in `tests/street-assets.test.ts` cover:
   - scan pins and licences;
   - the world-UV patch keeping one program key;
   - the scooter's hash, credit and lack of textures;
   - the re-packed attributes, size and cost;
-  - the stand-in/shadow switching.
+  - the stand-in/shadow switching;
+  - the taxi and auto bodies' hashes, attributes, fit to the wheels and roof, and their triangle cost against the code-built exterior.
 - **Correction to PR #3:** the Radio House near-detail triangle cap (under 8,000) was already failing on PR #3's head, at 8,300 after the casement sashes moved into the detail batch. The repository has no unit-test CI, so it was not caught, and the realism-pass review claimed it passed. The cap is now 9,000; the frame budgets above are what bound it.
 - Browser suite (`playwright.cloud.config.ts`, SwiftShader): 37 of 37 passed in 14.4 min.
 
@@ -105,4 +136,8 @@ python3 scripts/import-scanned-surfaces.py                        # asphalt scan
 python3.11 -m pip install bpy==4.2.0 numpy                         # Blender as a Python module
 python3.11 scripts/vehicles/build_scooter.py /tmp/scooter          # pinned source → scooter.glb (scripts/vehicles/scooter.json)
 node scripts/vehicles/import-scooter.mjs /tmp/scooter              # admit into public/models/vehicles with provenance
+python3.11 scripts/vehicles/build_taxi.py /tmp/vehicles            # original taxi body (add --preview for Cycles renders)
+python3.11 scripts/vehicles/build_auto.py /tmp/vehicles            # original auto body
+node scripts/vehicles/import-vehicle.mjs taxi /tmp/vehicles        # admit each with its record
+node scripts/vehicles/import-vehicle.mjs auto /tmp/vehicles
 ```
