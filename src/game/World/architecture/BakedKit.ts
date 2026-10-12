@@ -119,3 +119,20 @@ function chamferBox(w:number,h:number,d:number,r:number){
  const g=new THREE.ExtrudeGeometry(shape,{depth:Math.max(d-2*r,.001),bevelEnabled:true,bevelThickness:r,bevelSize:r,bevelSegments:1,curveSegments:1});
  g.translate(0,0,-(d-2*r)/2);return g;
 }
+
+/**
+ * Authored GLBs (parked scooter, vehicle bodies) store linear base colour in COLOR_0 and (roughness,
+ * 1 - metalness) in TEXCOORD_0. Re-pack them into the baked material's attributes: `color`,
+ * `heroFinish`, and a uv pinned inside the plain atlas region.
+ */
+export function vertexFinishGeometry(source:THREE.BufferGeometry){
+ const g=new THREE.BufferGeometry();g.setIndex(source.index?source.index.clone():null);
+ g.setAttribute('position',source.attributes.position.clone());g.setAttribute('normal',source.attributes.normal.clone());
+ const colour=source.attributes.color,finish=source.attributes.uv,count=g.attributes.position.count;
+ if(!colour||!finish)throw new Error('Authored model is missing baked colour or finish');
+ const colours=new Float32Array(count*3),finishes=new Float32Array(count*2),uvs=new Float32Array(count*2);
+ const region=ATLAS_REGION('glass'),u=((region%3)+.5)/3,v=1-(Math.floor(region/3)+.5)/2;
+ for(let i=0;i<count;i++){colours[i*3]=colour.getX(i);colours[i*3+1]=colour.getY(i);colours[i*3+2]=colour.getZ(i);finishes[i*2]=finish.getX(i);finishes[i*2+1]=1-finish.getY(i);uvs[i*2]=u;uvs[i*2+1]=v;}
+ g.setAttribute('color',new THREE.BufferAttribute(colours,3));g.setAttribute('heroFinish',new THREE.BufferAttribute(finishes,2));g.setAttribute('uv',new THREE.BufferAttribute(uvs,2));
+ g.computeBoundingSphere();return g;
+}

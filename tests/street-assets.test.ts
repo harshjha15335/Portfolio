@@ -4,6 +4,8 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import surfaces from '../public/surfaces/provenance.json';
 import {ParkedScooters,SCOOTER_ASSET,scooterGeometry} from '../src/game/World/architecture/ParkedScooters';
 import {validateGLB} from '../src/game/World/assets/GLBAssetLibrary';
+import {VEHICLE_BODIES,vehicleBodyParts} from '../src/game/World/AuthoredVehicles';
+import {createTransitModel} from '../src/game/World/TransitModel';
 import {seededRandom} from '../src/game/World/StreetArchitecture';
 import {createAtmosphereUniforms,patchMaterial} from '../src/game/World/StreetAtmosphere';
 
@@ -71,4 +73,31 @@ describe('authored parked scooter',()=>{
   expect(near.visible).toBe(false);expect((standIn.material as THREE.Material).colorWrite).toBe(true);
   scooters.dispose();
  });
+});
+
+describe('modelled taxi and auto bodies',()=>{
+ for(const kind of ['taxi','auto'] as const){
+  const record=VEHICLE_BODIES[kind],bytes=file(record.url);
+  it(`${kind}: pinned, original and carries no textures`,async()=>{
+   expect(bytes.length).toBe(record.bytes);expect(await sha(bytes)).toBe(record.sha256);
+   expect(record).toMatchObject({origin:'original',source:`scripts/vehicles/build_${kind}.py`});
+   const json=validateGLB(buffer(bytes));expect(json.images??[]).toHaveLength(0);expect(json.materials??[]).toHaveLength(0);
+  });
+  it(`${kind}: re-packs for the shared baked material and fits the wheels, cabin and roof`,async()=>{
+   const parts=vehicleBodyParts((await new GLTFLoader().parseAsync(buffer(bytes),'')).scene);
+   for(const name of ['color','heroFinish','uv','normal'])expect(parts.body.attributes[name]).toBeDefined();
+   const triangles=Object.values(parts).reduce((sum,g)=>sum+(g.index?.count??g.attributes.position.count)/3,0);
+   expect(triangles).toBe(record.triangles);
+   // Budget-neutral: never more than the code-built exterior it replaces.
+   let exterior=0;createTransitModel(kind).traverse(o=>{const mesh=o as THREE.Mesh;if(mesh.isMesh&&mesh.name.includes(':exterior:'))exterior+=(mesh.geometry.index?.count??mesh.geometry.attributes.position.count)/3;});
+   expect(exterior).toBeGreaterThan(1000);expect(triangles).toBeLessThanOrEqual(exterior);
+   parts.body.computeBoundingBox();const box=parts.body.boundingBox!;
+   // Front is -Z, like the code-built vehicle; the wheels (taxi radius .32 at z +-1.13, auto front at -.94) sit under the body.
+   if(kind==='taxi'){expect(box.min.z).toBeCloseTo(-2,1);expect(box.max.z).toBeCloseTo(1.98,1);expect(box.max.y).toBeCloseTo(1.71,1);expect(box.max.x).toBeLessThan(.95);}
+   else{expect(box.min.z).toBeLessThan(-1.2);expect(box.max.z).toBeGreaterThan(1.2);expect(box.max.y).toBeCloseTo(1.92,1);expect(box.max.x).toBeLessThan(.8);}
+   expect(box.min.y).toBeGreaterThan(.15);
+   let metal=0;const finish=parts.body.attributes.heroFinish;for(let i=0;i<finish.count;i++)if(finish.getY(i)>.5)metal++;expect(metal).toBeGreaterThan(0);
+   Object.values(parts).forEach(g=>g.dispose());
+  });
+ }
 });

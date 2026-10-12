@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import record from '../../../../public/models/vehicles/scooter.provenance.json';
 import {validateGLB} from '../assets/GLBAssetLibrary';
-import {ATLAS_REGION,BakedKit,bakedFinishMaterial} from './BakedKit';
+import {BakedKit,bakedFinishMaterial,vertexFinishGeometry} from './BakedKit';
 import {twoWheeler} from './StreetProps';
 
 export type ParkedScooter={x:number;z:number;yaw:number;body:string};
@@ -80,18 +80,5 @@ export class ParkedScooters {
  dispose(){this.abort.abort();this.standIn.geometry.dispose();this.standInMaterial.dispose();const shared=new Set(this.authored.map(m=>m.geometry));shared.forEach(g=>g.dispose());this.authored.forEach(m=>(m.material as THREE.Material).dispose());}
 }
 
-/**
- * The GLB stores linear base colour in COLOR_0 and (roughness, 1 - metalness) in TEXCOORD_0. Re-pack it
- * into the baked material's attributes: `color`, `heroFinish`, and a uv pinned inside the plain atlas region.
- */
-export function scooterGeometry(source:THREE.BufferGeometry){
- const g=new THREE.BufferGeometry();g.setIndex(source.index?source.index.clone():null);
- g.setAttribute('position',source.attributes.position.clone());g.setAttribute('normal',source.attributes.normal.clone());
- const colour=source.attributes.color,finish=source.attributes.uv,count=g.attributes.position.count;
- if(!colour||!finish)throw new Error('Scooter is missing baked colour or finish');
- const colours=new Float32Array(count*3),finishes=new Float32Array(count*2),uvs=new Float32Array(count*2);
- const region=ATLAS_REGION('glass'),u=((region%3)+.5)/3,v=1-(Math.floor(region/3)+.5)/2;
- for(let i=0;i<count;i++){colours[i*3]=colour.getX(i);colours[i*3+1]=colour.getY(i);colours[i*3+2]=colour.getZ(i);finishes[i*2]=finish.getX(i);finishes[i*2+1]=1-finish.getY(i);uvs[i*2]=u;uvs[i*2+1]=v;}
- g.setAttribute('color',new THREE.BufferAttribute(colours,3));g.setAttribute('heroFinish',new THREE.BufferAttribute(finishes,2));g.setAttribute('uv',new THREE.BufferAttribute(uvs,2));
- g.computeBoundingSphere();return g;
-}
+/** The scooter GLB uses the shared vertex-finish layout (see BakedKit's `vertexFinishGeometry`). */
+export const scooterGeometry=vertexFinishGeometry;

@@ -14,6 +14,7 @@ import {ParkedScooters,type ParkedScooter} from './architecture/ParkedScooters';
 import { pointedArchGeometry, heritageDomeGeometry } from './architecture/HeritageDetails';
 import { awningGeometry, patinaGeometry } from './architecture/StreetArt';
 import { createTransitModel, animateTransit } from './TransitModel';
+import { loadVehicleBody } from './AuthoredVehicles';
 import { StreetMaterials, type Surface } from './StreetMaterials';
 import { facadeSpec, seededRandom } from './StreetArchitecture';
 import { FacadePanels } from './architecture/FacadePanels';
@@ -90,7 +91,11 @@ export class MumbaiStreet {
   private trafficVehicles: THREE.Group[] = [];
   private previousTime = 0;
   private viewPosition = new THREE.Vector3();
-  get assetsReady(){return Promise.all([this.surfaces.ready,this.scootersReady]).then(()=>undefined);}
+  // Modelled taxi and auto bodies, shared with every vehicle of each kind (see TransitModel).
+  private vehicleBodiesReady=typeof location==='undefined'?Promise.resolve():Promise.allSettled((['taxi','auto'] as const).map(kind=>loadVehicleBody(kind,location.origin))).then(()=>undefined);
+  /** 'ready' once surface maps, scooters and vehicle bodies have loaded or fallen back. */
+  assetStatus:'loading'|'ready'='loading';
+  get assetsReady(){return Promise.all([this.surfaces.ready,this.scootersReady,this.vehicleBodiesReady]).then(()=>undefined);}
   get surfaceStatus(){return this.surfaces.status;}
   navigationStatus = 'loading';
   npcUpdateMs = 0; trafficUpdateMs = 0;
@@ -105,7 +110,7 @@ export class MumbaiStreet {
     this.spatial = new SpatialIndex(this.colliderGeometry); this.colliderGeometry.forEach(g=>g.dispose()); this.colliderGeometry=[];
     void NavMeshManager.create(this.obstacles).then(nav=>{if(this.disposed){nav.dispose();return;}this.navigation=nav;this.navigationStatus='ready';for(const [i,w] of this.walkers.entries()){w.agent=nav.add({x:w.group.position.x,y:0,z:w.group.position.z});w.target=i%this.destinations.length;w.agent.requestMoveTarget(this.destinations[w.target]);}}).catch(()=>{this.navigationStatus='unavailable';});
     const scooters=new ParkedScooters(this.scooterPlacements,seededRandom('parked-scooters'));this.scooters=scooters;this.group.add(scooters.group);
-    this.motion.push(()=>scooters.update(this.viewPosition,this.nearDetail));if(typeof location!=='undefined')this.scootersReady=scooters.load(location.origin);
+    this.motion.push(()=>scooters.update(this.viewPosition,this.nearDetail));if(typeof location!=='undefined')this.scootersReady=scooters.load(location.origin);void this.assetsReady.then(()=>{this.assetStatus='ready';});
     // Props beyond ~30 m along the street are a few pixels each; whole thirds drop out by distance.
     this.propKits.forEach((kit,n)=>{const props=kit.build(`Street props ${n}`,.3).group,[lo,hi]=[[-12,20],[-34,-12],[-70,-34]][n];this.group.add(props);
       this.motion.push(()=>{const z=this.viewPosition.z;props.visible=Math.max(lo-z,z-hi,0)<30;});});
