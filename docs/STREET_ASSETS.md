@@ -62,22 +62,27 @@ The static review budget is 110 draws, 230,000 triangles, 32 textures and 26 pro
 
 | Pose | Before draws / tris / textures / programs | After |
 | --- | --- | --- |
-| spawn | 79 / 210,179 / 27 / 26 | 82 / 219,659 / 27 / 26 |
-| junction | 69 / 201,130 / 32 / 26 | 71 / 205,506 / 32 / 26 |
+| spawn | 79 / 210,179 / 27 / 26 | 82 / 218,567 / 28 / 26 |
+| junction | 69 / 201,130 / 32 / 26 | 71 / 204,778 / 32 / 26 |
 | station-front | 49 / 140,324 / 32 / 26 | 49 / 139,596 / 32 / 26 |
 | hero-wide | 37 / 171,153 / 32 / 26 | 39 / 176,621 / 32 / 26 |
-| return | 102 / 214,035 / 28 / 26 | 103 / 214,763 / 32 / 26 |
-| scooter (new pose) | 58 / 169,746 / 28 / 26 | 60 / 174,850 / 28 / 26 |
+| return | 102 / 214,035 / 28 / 26 | 103 / 213,671 / 32 / 26 |
+| scooter (new pose) | 58 / 169,746 / 28 / 26 | 60 / 174,122 / 28 / 26 |
 
 Software benchmark (`scripts/benchmark-gpu.mjs`, SwiftShader, 1920×1080, short rides): maximum cached-frame submissions.
 
 | Scenario | PR #3 head | This branch |
 | --- | --- | --- |
-| walking | 214,155 / 84 draws | 222,771 / 86 draws |
-| taxi ride | 220,455 / 93 | RIDE_TAXI |
-| auto ride | 226,969 / 107 | RIDE_AUTO |
+| walking | 214,155 / 84 draws | 222,543 / 87 draws |
+| taxi ride | 220,455 / 93 | 220,455 / 94 |
+| auto ride | 226,969 / 107 | 226,241 / 108 |
+| fort | 144,112 / 30 | 144,112 / 31 |
 
-Peak textures were 28 and peak programs 26 on the walk.
+Peak textures stay at 28–32 and peak programs at 26 in every scenario.
+
+**First run, recorded honestly.** At first the stand-in scooters were one always-drawn batch, and the auto ride peaked at 231,193 triangles, over the ceiling. They are now merged in street order and trimmed per frame with a draw range, which gives the 226,241 above.
+
+SwiftShader frame intervals are slow and noisy; walking p50 is 5.5 s here against 5.5 s on PR #3's head.
 
 Download size: the scooter GLB is 510 KB. The asphalt maps grew from 260 KB to 1.6 MB because they are 512 px scans in place of 256 px noise.
 
