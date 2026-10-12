@@ -127,7 +127,7 @@ Download size: the scooter GLB is 510 KB. The asphalt maps grew from 260 KB to 1
   - the stand-in/shadow switching;
   - the taxi and auto bodies' hashes, attributes, fit to the wheels and roof, and their triangle cost against the code-built exterior.
 - **Correction to PR #3:** the Radio House near-detail triangle cap (under 8,000) was already failing on PR #3's head, at 8,300 after the casement sashes moved into the detail batch. The repository has no unit-test CI, so it was not caught, and the realism-pass review claimed it passed. The cap is now 9,000; the frame budgets above are what bound it.
-- Browser suite (`playwright.cloud.config.ts`, SwiftShader): 37 of 37 passed in 14.4 min.
+- Browser suite (`playwright.cloud.config.ts`, SwiftShader): 37 of 37 passed in 14.4 min before the vehicle bodies and 37 of 37 in 14.0 min with them. `npm run build` succeeds.
 
 ## Rebuilding
 
