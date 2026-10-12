@@ -3,7 +3,10 @@ import provenance from '../../../public/surfaces/provenance.json';
 import { seededRandom } from './StreetArchitecture';
 export type Surface = 'plaster' | 'stone' | 'asphalt' | 'paving' | 'metal' | 'wood' | 'fabric' | 'glass' | 'solid' | 'glow' | 'foliage';
 
-/** Small original, repeatable surface maps. No downloaded artwork. */
+/**
+ * Repeatable surface maps: small original canvas maps, upgraded at runtime to the verified files in
+ * public/surfaces (scanned CC0 asphalt, generated plaster; see provenance.json).
+ */
 export class StreetMaterials {
   private materials = new Map<string, THREE.Material>();
   private maps = new Map<Surface, THREE.CanvasTexture>();
@@ -24,6 +27,8 @@ export class StreetMaterials {
       const roughness = { plaster:.94, stone:.84, asphalt:.98, paving:.9, metal:.48, wood:.76, fabric:.96, glass:.22, solid:.8, glow:1, foliage:.87 }[surface];
       const material = surface === 'glow' ? new THREE.MeshBasicMaterial({color}) : new THREE.MeshStandardMaterial({color, map, roughness, metalness:surface === 'metal' ? .35 : 0, normalMap:this.pbr.get(`${surface}:normal`)??null, normalScale:new THREE.Vector2(surface==='asphalt'?.42:.22,surface==='asphalt'?.42:.22),roughnessMap:this.pbr.get(`${surface}:roughness`)??null,bumpMap:this.pbr.has(`${surface}:normal`)?null:map, bumpScale:surface === 'asphalt' ? .018 : surface === 'plaster' ? .008 : .012, envMapIntensity:surface === 'glass' ? .6 : .25});
       if(surface==='foliage'&&material instanceof THREE.MeshStandardMaterial){material.side=THREE.DoubleSide;material.vertexColors=true;material.emissive.set(color);material.emissiveIntensity=.045;}
+      // Scanned asphalt is mapped in world metres (one 3 m tile), so wide and narrow road boxes share its scale.
+      if(surface==='asphalt')material.userData.worldUv=1/3;
       material.userData.surface = surface; this.materials.set(key, material);
     }
     return this.materials.get(key)!;
@@ -33,7 +38,7 @@ export class StreetMaterials {
       const response=await fetch(`/surfaces/${record.file}`,{signal:this.abort.signal});if(!response.ok)throw new Error(`Surface fetch ${response.status}`);
       const bytes=await response.arrayBuffer();if(bytes.byteLength!==record.bytes)throw new Error('Surface size mismatch');
       const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(n=>n.toString(16).padStart(2,'0')).join('');if(digest!==record.sha256)throw new Error('Surface integrity mismatch');
-      const image=await createImageBitmap(new Blob([bytes],{type:'image/png'}),{imageOrientation:'flipY',colorSpaceConversion:'none'});if(this.disposed){image.close();return;}if(image.width!==256||image.height!==256){image.close();throw new Error('Unexpected surface dimensions');}
+      const image=await createImageBitmap(new Blob([bytes],{type:'image/png'}),{imageOrientation:'flipY',colorSpaceConversion:'none'});if(this.disposed){image.close();return;}if(image.width!==record.width||image.height!==record.height){image.close();throw new Error('Unexpected surface dimensions');}
       const texture=record.channel==='color'?this.maps.get(record.surface as Surface)!:this.pbr.get(`${record.surface}:${record.channel}`)!;
       texture.image=image;texture.colorSpace=record.channel==='color'?THREE.SRGBColorSpace:THREE.NoColorSpace;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.magFilter=THREE.LinearFilter;texture.generateMipmaps=true;texture.anisotropy=4;texture.needsUpdate=true;
     }));

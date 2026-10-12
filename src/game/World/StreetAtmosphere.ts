@@ -16,7 +16,7 @@ export function createAtmosphereUniforms(sunPosition:THREE.Vector3,target:THREE.
  return {uSunDir:{value:sunPosition.clone().sub(target).normalize()},uSunHaze:{value:new THREE.Color(haze)},uShelterMin:{value:new THREE.Vector3(1,1,1)},uShelterMax:{value:new THREE.Vector3(-1,-1,-1)}};
 }
 
-const VERTEX_HEAD='varying vec3 vWeatherPos;\nvarying vec3 vWeatherNormal;\n';
+const VERTEX_HEAD='uniform float uWorldUv;\nvarying vec3 vWeatherPos;\nvarying vec3 vWeatherNormal;\n';
 const VERTEX_BODY=`#include <worldpos_vertex>
 vec4 weatherWorld = vec4( transformed, 1.0 );
 vec3 weatherNormal = objectNormal;
@@ -30,7 +30,19 @@ vec3 weatherNormal = objectNormal;
 #endif
 weatherWorld = modelMatrix * weatherWorld;
 vWeatherPos = weatherWorld.xyz;
-vWeatherNormal = mat3( modelMatrix ) * weatherNormal;`;
+vWeatherNormal = mat3( modelMatrix ) * weatherNormal;
+// Ground maps in world metres when a material asks for it (uWorldUv = tiles per metre).
+if ( uWorldUv > 0.0 ) {
+ #ifdef USE_MAP
+ vMapUv = weatherWorld.xz * uWorldUv;
+ #endif
+ #ifdef USE_NORMALMAP
+ vNormalMapUv = weatherWorld.xz * uWorldUv;
+ #endif
+ #ifdef USE_ROUGHNESSMAP
+ vRoughnessMapUv = weatherWorld.xz * uWorldUv;
+ #endif
+}`;
 
 const FRAGMENT_HEAD=`uniform float uWeather;
 uniform vec3 uSunDir;
@@ -120,7 +132,7 @@ export function patchMaterial(material:THREE.MeshStandardMaterial,uniforms:Atmos
  const strength={value:weatherStrength(material)};
  material.onBeforeCompile=(shader,renderer)=>{
   previous(shader,renderer);
-  shader.uniforms.uWeather=strength;shader.uniforms.uSunDir=uniforms.uSunDir;shader.uniforms.uSunHaze=uniforms.uSunHaze;shader.uniforms.uShelterMin=uniforms.uShelterMin;shader.uniforms.uShelterMax=uniforms.uShelterMax;
+  shader.uniforms.uWeather=strength;shader.uniforms.uWorldUv={value:material.userData.worldUv??0};shader.uniforms.uSunDir=uniforms.uSunDir;shader.uniforms.uSunHaze=uniforms.uSunHaze;shader.uniforms.uShelterMin=uniforms.uShelterMin;shader.uniforms.uShelterMax=uniforms.uShelterMax;
   shader.vertexShader=VERTEX_HEAD+shader.vertexShader.replace('#include <worldpos_vertex>',VERTEX_BODY);
   shader.fragmentShader=FRAGMENT_HEAD+shader.fragmentShader.replace('#include <color_fragment>',FRAGMENT_COLOR).replace('#include <fog_fragment>',FRAGMENT_FOG);
  };

@@ -1,39 +1,72 @@
 {
-  "author": "Portfolio project \u2014 original texture generator",
+  "author": "Mixed: see each file",
   "license": "CC0-1.0",
   "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-  "source": "scripts/generate-surface-maps.py",
-  "modifications": "Original authored micro-surface studies; no third-party input, no photographs. 256px, RGB PNG, OpenGL normal convention.",
+  "source": "scripts/generate-surface-maps.py (generated), scripts/import-scanned-surfaces.py (scanned)",
+  "modifications": "Asphalt maps are a CC0 photographic scan (Poly Haven, Asphalt 02), 512 px; plaster maps are original generated studies, 256 px. See each file.",
   "files": [
     {
       "file": "asphalt-color.png",
-      "sha256": "34ff32fcbb2e512d5404c798ed10c8967e0e999a9b3d8e3a3f5cb7af778c07d7",
-      "bytes": 64852,
-      "width": 256,
-      "height": 256,
+      "sha256": "c60b938f5de66c4411c8993afc01f6b56c972d1aace4d8f86a3da488cc3e49d1",
+      "bytes": 648982,
+      "width": 512,
+      "height": 512,
       "colorSpace": "sRGB",
       "channel": "color",
-      "surface": "asphalt"
+      "surface": "asphalt",
+      "origin": "scanned",
+      "author": "Rob Tuytel (Poly Haven)",
+      "title": "Asphalt 02",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://polyhaven.com/a/asphalt_02",
+      "mirror": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/edc7c9e67c639d230715049ee31f9a96a6babbbe/Models/TrafficCone",
+      "licenseEvidence": "https://github.com/KhronosGroup/glTF-Sample-Assets/blob/edc7c9e67c639d230715049ee31f9a96a6babbbe/Models/TrafficCone/metadata.json",
+      "sourceFile": "asphalt_02_diff_1k.jpg",
+      "sourceSha256": "1aa5ce99f58a625c71d48cfc3e68b65ca85ccb00f39e045c0a928608a0ea25ed",
+      "modifications": "Resized to 512 px; mean matched to the generated asphalt map in linear light; contrast 85%."
     },
     {
       "file": "asphalt-roughness.png",
-      "sha256": "2f61a1397a88c791cc8b61848fafc101b0ba78d2e78014cec4376127cfd055cc",
-      "bytes": 52593,
-      "width": 256,
-      "height": 256,
+      "sha256": "107e3835913e8d6c6f042c91ec1ec8b48402153d37b71b6905747380f5cadd32",
+      "bytes": 286040,
+      "width": 512,
+      "height": 512,
       "colorSpace": "linear",
       "channel": "roughness",
-      "surface": "asphalt"
+      "surface": "asphalt",
+      "origin": "scanned",
+      "author": "Rob Tuytel (Poly Haven)",
+      "title": "Asphalt 02",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://polyhaven.com/a/asphalt_02",
+      "mirror": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/edc7c9e67c639d230715049ee31f9a96a6babbbe/Models/TrafficCone",
+      "licenseEvidence": "https://github.com/KhronosGroup/glTF-Sample-Assets/blob/edc7c9e67c639d230715049ee31f9a96a6babbbe/Models/TrafficCone/metadata.json",
+      "sourceFile": "asphalt_02_rough_1k.jpg",
+      "sourceSha256": "70ba3edc65525eb4dc366cf010ca7ae0bd34e0251ff0225c2dad627a873d0712",
+      "modifications": "Resized to 512 px."
     },
     {
       "file": "asphalt-normal.png",
-      "sha256": "a5ee87cf8a0c29929bf34e280034684c0b06c19fbfe12ed6b0a38b07d30f845b",
-      "bytes": 142318,
-      "width": 256,
-      "height": 256,
+      "sha256": "5f9c2e903dc01941f8b4a79578ec7c008bf2e87559710cc87812ff3552ef2943",
+      "bytes": 667442,
+      "width": 512,
+      "height": 512,
       "colorSpace": "linear",
       "channel": "normal",
-      "surface": "asphalt"
+      "surface": "asphalt",
+      "origin": "scanned",
+      "author": "Rob Tuytel (Poly Haven)",
+      "title": "Asphalt 02",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "https://polyhaven.com/a/asphalt_02",
+      "mirror": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/edc7c9e67c639d230715049ee31f9a96a6babbbe/Models/TrafficCone",
+      "licenseEvidence": "https://github.com/KhronosGroup/glTF-Sample-Assets/blob/edc7c9e67c639d230715049ee31f9a96a6babbbe/Models/TrafficCone/metadata.json",
+      "sourceFile": "asphalt_02_diff_1k.jpg",
+      "sourceSha256": "1aa5ce99f58a625c71d48cfc3e68b65ca85ccb00f39e045c0a928608a0ea25ed",
+      "modifications": "Derived from the scan luminance (high-pass height, OpenGL convention); the source has no normal map."
     },
     {
       "file": "plaster-color.png",
@@ -43,7 +76,8 @@
       "height": 256,
       "colorSpace": "sRGB",
       "channel": "color",
-      "surface": "plaster"
+      "surface": "plaster",
+      "origin": "generated"
     },
     {
       "file": "plaster-roughness.png",
@@ -53,7 +87,8 @@
       "height": 256,
       "colorSpace": "linear",
       "channel": "roughness",
-      "surface": "plaster"
+      "surface": "plaster",
+      "origin": "generated"
     },
     {
       "file": "plaster-normal.png",
@@ -63,7 +98,8 @@
       "height": 256,
       "colorSpace": "linear",
       "channel": "normal",
-      "surface": "plaster"
+      "surface": "plaster",
+      "origin": "generated"
     }
   ]
 }

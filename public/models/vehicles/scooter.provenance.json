@@ -1,0 +1,22 @@
+{
+  "id": "parked-scooter",
+  "url": "/models/vehicles/scooter.glb",
+  "sha256": "474686edf9145e45a67de1ecfc77dbfce84960a3ae9428891edc3cda6bfd37b3",
+  "bytes": 510432,
+  "triangles": 4376,
+  "sourceTriangles": 95583,
+  "size": [
+    0.715,
+    1.7,
+    1.221
+  ],
+  "title": "Vino",
+  "author": "minghauLoh",
+  "source": "https://sketchfab.com/3d-models/vino-2205f4e69bc64df3aab03c71ab9d7492",
+  "license": "CC-BY-4.0",
+  "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+  "credit": "This work is based on \"Vino\" (https://sketchfab.com/3d-models/vino-2205f4e69bc64df3aab03c71ab9d7492) by minghauLoh (https://sketchfab.com/minghau) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+  "mirror": "https://github.com/gkjohnson/3d-demo-data/tree/c82e657bdaf1748fa4edffd4858e41733ce1932e/models/vino-bike",
+  "licenseEvidence": "https://github.com/gkjohnson/3d-demo-data/blob/c82e657bdaf1748fa4edffd4858e41733ce1932e/models/vino-bike/license.txt",
+  "modifications": "Decal removed; decimated from 95583 to 4376 triangles per material; base colour, roughness and metalness re-sampled from the source textures into vertex data (COLOR_0, TEXCOORD_0 = roughness, 1 - metalness); textures dropped; scaled to 1.7 m, grounded and turned to face +Z. Built by scripts/vehicles/build_scooter.py."
+}

@@ -24,7 +24,8 @@ describe('Radio House benchmark façade',()=>{
  it('stays inside its triangle allowance and keeps decoration out of the carriageway',()=>{
   const spec=facadeSpec(-1,1),facade=createBenchmarkFacade(spec);
   expect(facade.triangles).toBeLessThan(12000);
-  expect(facade.detailTriangles).toBeLessThan(8000);
+  // Casement sashes moved into the near-detail batch (out of the always-drawn base), which put it just over 8k.
+  expect(facade.detailTriangles).toBeLessThan(9000);
   const bounds=new THREE.Box3().setFromObject(facade.group);
   // Local +Z faces the street: nothing may project much past the 1 m balcony line (pavement is 2.8 m).
   expect(bounds.max.z).toBeLessThan(1.1);

@@ -10,6 +10,7 @@ import {createHeroStorefront} from './architecture/HeroStorefront';
 import {createBenchmarkFacade} from './architecture/BenchmarkFacade';
 import {BakedKit} from './architecture/BakedKit';
 import {cableCoil,posters,roofTank,rubbish,twoWheeler,type TwoWheeler} from './architecture/StreetProps';
+import {ParkedScooters,type ParkedScooter} from './architecture/ParkedScooters';
 import { pointedArchGeometry, heritageDomeGeometry } from './architecture/HeritageDetails';
 import { awningGeometry, patinaGeometry } from './architecture/StreetArt';
 import { createTransitModel, animateTransit } from './TransitModel';
@@ -42,6 +43,11 @@ export class MumbaiStreet {
    * third, so each can be frustum-culled when it is behind the visitor. */
   private propKits=[0,1,2].map(n=>new BakedKit(seededRandom(`street-props:${n}`)));
   private props(z:number){return this.propKits[z>-12?0:z>-34?1:2];}
+  private scooterPlacements:ParkedScooter[]=[];
+  private scooters!:ParkedScooters;
+  private scootersReady:Promise<void>=Promise.resolve();
+  /** Scooters go to the authored-model set; motorcycles stay code-modelled in the prop batches. */
+  private parked(x:number,z:number,yaw:number,kind:TwoWheeler,body:string){if(kind==='scooter')this.scooterPlacements.push({x,z,yaw,body});else twoWheeler(this.props(z),x,z,yaw,kind,body);}
   private patinaMaterial=Object.assign(new THREE.MeshStandardMaterial({vertexColors:true,roughness:.97,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}),{userData:{weather:.4}});
   private cylinderGeometry = new THREE.CylinderGeometry(1, 1, 1, 8);
   private sphereGeometry = new THREE.SphereGeometry(1, 8, 6);
@@ -84,7 +90,7 @@ export class MumbaiStreet {
   private trafficVehicles: THREE.Group[] = [];
   private previousTime = 0;
   private viewPosition = new THREE.Vector3();
-  get assetsReady(){return this.surfaces.ready;}
+  get assetsReady(){return Promise.all([this.surfaces.ready,this.scootersReady]).then(()=>undefined);}
   get surfaceStatus(){return this.surfaces.status;}
   navigationStatus = 'loading';
   npcUpdateMs = 0; trafficUpdateMs = 0;
@@ -98,6 +104,8 @@ export class MumbaiStreet {
     this.station(); this.researchRoom(); this.streetDetails(); this.vegetation(); this.people(); this.traffic();
     this.spatial = new SpatialIndex(this.colliderGeometry); this.colliderGeometry.forEach(g=>g.dispose()); this.colliderGeometry=[];
     void NavMeshManager.create(this.obstacles).then(nav=>{if(this.disposed){nav.dispose();return;}this.navigation=nav;this.navigationStatus='ready';for(const [i,w] of this.walkers.entries()){w.agent=nav.add({x:w.group.position.x,y:0,z:w.group.position.z});w.target=i%this.destinations.length;w.agent.requestMoveTarget(this.destinations[w.target]);}}).catch(()=>{this.navigationStatus='unavailable';});
+    const scooters=new ParkedScooters(this.scooterPlacements,seededRandom('parked-scooters'));this.scooters=scooters;this.group.add(scooters.group);
+    this.motion.push(()=>scooters.update(this.viewPosition,this.nearDetail));if(typeof location!=='undefined')this.scootersReady=scooters.load(location.origin);
     // Props beyond ~30 m along the street are a few pixels each; whole thirds drop out by distance.
     this.propKits.forEach((kit,n)=>{const props=kit.build(`Street props ${n}`,.3).group,[lo,hi]=[[-12,20],[-34,-12],[-70,-34]][n];this.group.add(props);
       this.motion.push(()=>{const z=this.viewPosition.z;props.visible=Math.max(lo-z,z-hi,0)<30;});});
@@ -585,13 +593,13 @@ export class MumbaiStreet {
       this.box([.5, .65, .5], [side * 6.2, .325, z - 4.5], '#465e56', true);
       this.cylinder(.23, .45, [side * 6.1, .23, z + 3], '#8c6551');
       this.shape(this.leafGeometry, [.55, .9, .55], [side * 6.1, .85, z + 3], '#698159');
-      if (i % 2 === 0) twoWheeler(this.props(z-5), side * 5.62, z - 5, side * .4, i===2?'motorcycle':'scooter', ['#7d1f25','#2c4a6b','#d6d3c7','#3b3f42','#9a8f78','#1f2224'][(i+(side>0?1:0))%6]);
+      if (i % 2 === 0) this.parked(side * 5.62, z - 5, side * .4, i===2?'motorcycle':'scooter', ['#7d1f25','#2c4a6b','#d6d3c7','#3b3f42','#9a8f78','#1f2224'][(i+(side>0?1:0))%6]);
       // Posters on the street face of each junction box, coils of spare cable on alternate poles.
       posters(this.props(z-4.5),new THREE.Matrix4().compose(new THREE.Vector3(side*5.946,.38,z-4.5),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,-side*Math.PI/2,0)),new THREE.Vector3(1,1,1)),.44,.46,seededRandom(`box-posters:${side}:${i}`));
       if (i % 2 === 1) cableCoil(this.props(z), x, 4.6, z, -side);
     }
     // Parked between street furniture, angled to the kerb the way riders leave them.
-    for(const [x,z,yaw,kind,body] of [[5.62,-39,.45,'motorcycle','#8a1c1c'],[-5.62,-13.3,-.38,'scooter','#d6d3c7'],[-5.62,-27,-.42,'motorcycle','#2a3f63']] as Array<[number,number,number,TwoWheeler,string]>)twoWheeler(this.props(z),x,z,yaw,kind,body);
+    for(const [x,z,yaw,kind,body] of [[5.62,-39,.45,'motorcycle','#8a1c1c'],[-5.62,-13.3,-.38,'scooter','#d6d3c7'],[-5.62,-27,-.42,'motorcycle','#2a3f63']] as Array<[number,number,number,TwoWheeler,string]>)this.parked(x,z,yaw,kind,body);
     rubbish(this.props(-35.6),6.3,-35.6,seededRandom('rubbish:a'));rubbish(this.props(-22.6),-6.3,-22.6,seededRandom('rubbish:b'));
     // Hanging cross-street service wires frame the view above eye level.
     for (const z of [-8, -30, -47]) for (let cable = 0; cable < 3; cable++) for (let n = 0; n < 10; n++) {
@@ -691,7 +699,7 @@ export class MumbaiStreet {
     if(this.disposed){lease.release();throw new Error('Street disposed during character load');}
     const actor=new GLBCharacter(lease);this.stationCharacter?.dispose();this.stationCharacter=actor;this.stationHost.add(actor.root);this.characterPreviewWalk=previewWalk;this.characterStatus='loaded-awaiting-rendered-review';
   }
-  dispose(){this.disposed=true;this.stationCharacter?.dispose();void this.assetLibrary?.dispose();this.surfaces.dispose();this.navigation?.dispose();this.navigation=null;this.spatial.dispose();this.panels.dispose();}
+  dispose(){this.disposed=true;this.scooters.dispose();this.stationCharacter?.dispose();void this.assetLibrary?.dispose();this.surfaces.dispose();this.navigation?.dispose();this.navigation=null;this.spatial.dispose();this.panels.dispose();}
   update(time: number, reduced: boolean, viewPosition?:THREE.Vector3) {
     if(viewPosition)this.viewPosition.copy(viewPosition);const delta=reduced?0:Math.min(.08,Math.max(0,time-this.previousTime));this.previousTime=time;
     const start=performance.now();
