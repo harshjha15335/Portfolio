@@ -73,12 +73,12 @@ const andheri: DistrictSpec = {
   build(d) {
     const c = d.ctx, { kit } = c; let n = 0;
     const shops = (k: number) => Array.from({ length: k }, () => andheriShops[n++ % andheriShops.length]);
-    const block = (w: number, floors: number, style: 'concrete' | 'deco' = 'concrete') => ({ w, build: (c: Ctx) => { const H = midrise(c, { w, d: 12, floors, ground: 'shops', shops: shops(Math.max(2, Math.round(w / 3.6))), style }); for (let f = 0; f < Math.min(floors, 3); f++) sign(c, andheriShops[(n + f * 3) % andheriShops.length][0], w * .42, [(f % 2 ? 1 : -1) * w * .2, 4.9 + f * 3, .45], { bg: ['#c22f2f', '#1f5d9c', '#e0a72a', '#178a6b'][(n + f) % 4], fg: '#ffffff' }, [768, 128]); void H; } });
-    d.frontage(1, [block(11, 4), block(9, 3), block(13, 5), block(10, 3, 'deco'), block(12, 4), block(10, 4)]);
-    d.frontage(-1, [block(10, 3), block(12, 5), block(9, 4), block(14, 3), block(11, 4), block(10, 5)]);
-    // Gateway arch over the lane.
+    const block = (w: number, floors: number, style: 'concrete' | 'deco' = 'concrete') => ({ w, build: (c: Ctx) => { const H = midrise(c, { w, d: 12, floors, ground: 'shops', shops: shops(Math.max(2, Math.round(w / 3.6))), style }); for (let f = 0; f < Math.min(floors, 3); f++) sign(c, andheriShops[(n + f * 3) % andheriShops.length][0], w * .42, [(f % 2 ? 1 : -1) * w * .2, 4.9 + f * 3, .45], { bg: ['#c22f2f', '#1f5d9c', '#e0a72a', '#178a6b'][(n + f) % 4], fg: '#ffffff' }, [384, 96]); void H; } });
+    // Gateway arch over the lane (first, so its sign always gets atlas space).
     for (const s of [-1, 1]) { kit.wall([.8, 7.2, .8], [s * 6.1, 3.6, -3], '#c06a2e', 'plaster'); kit.box([1.1, .4, 1.1], [s * 6.1, 7.3, -3], '#e2b04a', 'stone'); }
     kit.box([13, 1.4, .6], [0, 6.6, -3], '#2a2f6a', 'plaster'); for (const s of [-1, 1]) sign(c, 'ANDHERI TECH BAZAAR', 11.6, [0, 6.6, -3 + s * .31], { bg: '#2a2f6a', fg: '#ffd35a', local: 'अंधेरी टेक बाज़ार · skills with receipts' }, [1024, 128], s < 0 ? Math.PI : 0);
+    d.frontage(1, [block(11, 4), block(9, 3), block(13, 5), block(10, 3, 'deco'), block(12, 4), block(10, 4)]);
+    d.frontage(-1, [block(10, 3), block(12, 5), block(9, 4), block(14, 3), block(11, 4), block(10, 5)]);
     // Pavement stalls under blue tarps, and the overhead tangle of cables.
     const goods = ['#1c1c1c', '#e8e8e2', '#d33b3b', '#2f7fd0', '#f0c43a', '#3caa5a'];
     const labels: Array<[string, string?]> = [['CHARGERS ₹99'], ['EARPHONES'], ['USB-C · HDMI'], ['SCREEN GUARD'], ['POWER BANK'], ['MOUSE · KEYBOARD']];
@@ -258,8 +258,8 @@ const filmcity: DistrictSpec = {
         sign(c, 'FILM CITY TALKIES', 14, [0, 3.6, 3.12], { bg: '#2b2220', fg: '#ffd56a', border: 'none', local: 'आज का शो · tonight: one engineering story' }, [1024, 128]);
         k.box([2.4, H - 3, .8], [7.5, (H + 3) / 2 + 1, .6], '#8a2f36', 'plaster'); sign(c, 'TALKIES', H - 5, [8.72, (H + 3) / 2 + 1, .6], { bg: '#8a2f36', fg: '#ffe6a6', border: 'none' }, [768, 160], Math.PI / 2);
         for (const x of [-9.6, 9.6]) { k.box([2.6, 3.6, .1], [x, 2.2, .3], '#222', 'solid'); }
-        sign(c, 'SCENE 1', 2.4, [-9.6, 2.2, .37], { draw: filmPoster('#3a1f4a', 'THE ROUTE', 'from student to builder', '#e05a3a') }, [512, 704]);
-        sign(c, 'SCENE 2', 2.4, [9.6, 2.2, .37], { draw: filmPoster('#173a4a', 'UPSTREAM', 'five pull requests, one summer', '#e0b03a') }, [512, 704]);
+        sign(c, 'SCENE 1', 2.4, [-9.6, 2.2, .37], { draw: filmPoster('#3a1f4a', 'THE ROUTE', 'from student to builder', '#e05a3a') }, [384, 528]);
+        sign(c, 'SCENE 2', 2.4, [9.6, 2.2, .37], { draw: filmPoster('#173a4a', 'UPSTREAM', 'five pull requests, one summer', '#e0b03a') }, [384, 528]);
       } },
       { w: 26, setback: 3, build: c => hangar(c, { w: 26, d: 30, h: 14, label: 'STAGE 3' }) },
       { w: 24, setback: 3, build: c => hangar(c, { w: 24, d: 30, h: 13, label: 'STAGE 7', color: '#bfb9a6' }) },

@@ -12,7 +12,7 @@ export interface SignStyle { bg?: string; fg?: string; border?: string; font?: s
  */
 export class SignAtlas {
   private canvas: HTMLCanvasElement; private ctx: CanvasRenderingContext2D; readonly texture: THREE.CanvasTexture;
-  private pieces: THREE.BufferGeometry[] = []; private x = 0; private y = 0; private row = 0;
+  private pieces: THREE.BufferGeometry[] = []; private shelves: Array<{ y: number; h: number; x: number }> = []; private next = 0;
   constructor(private size = 2048) {
     this.canvas = document.createElement('canvas'); this.canvas.width = this.canvas.height = size; this.ctx = this.canvas.getContext('2d')!;
     this.texture = new THREE.CanvasTexture(this.canvas); this.texture.colorSpace = THREE.SRGBColorSpace; this.texture.anisotropy = 4;
@@ -20,9 +20,13 @@ export class SignAtlas {
   /** Allocate a pixel region, paint it, and place a plane of `width` metres with the matching aspect. */
   add(text: string, width: number, matrix: THREE.Matrix4, style: SignStyle = {}, px: [number, number] = [512, 128]) {
     const [w, h] = px;
-    if (this.x + w > this.size) { this.x = 0; this.y += this.row; this.row = 0; }
-    if (this.y + h > this.size) return null;
-    const x = this.x, y = this.y; this.x += w; this.row = Math.max(this.row, h);
+    // Shelf packing: a sign joins the snuggest shelf that fits it, so short signs don't waste tall rows.
+    let shelf = this.shelves.filter(s => s.h >= h && s.h <= h * 1.5 && s.x + w <= this.size).sort((a, b) => a.h - b.h)[0];
+    if (!shelf) {
+      if (this.next + h > this.size) { if (import.meta.env?.DEV) console.warn(`[signs] atlas full after ${this.pieces.length} signs, dropped "${text}"`); return null; }
+      shelf = { y: this.next, h, x: 0 }; this.shelves.push(shelf); this.next += h;
+    }
+    const x = shelf.x, y = shelf.y; shelf.x += w;
     const ctx = this.ctx;
     if (style.draw) style.draw(ctx, x, y, w, h);
     else {

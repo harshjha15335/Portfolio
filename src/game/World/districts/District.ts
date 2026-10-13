@@ -81,7 +81,7 @@ export class District {
   }
   private guide() {
     // Beside the arrival point, towards the buildings, turned to greet the visitor.
-    const s = this.zone.stop, side = s.x < 0 ? -1 : 1, gx = s.x + side * .95, gz = s.z - 1.5;
+    const s = this.zone.stop, side = s.x < 0 ? -1 : 1, gx = s.x + side * 1.05, gz = s.z - 2.3;
     const guide = this.crowd.idle(this.spec.guideOutfit, [gx, .03, gz], 0, 'talk');
     guide.group.rotation.y = Math.atan2(gx - s.x, gz - s.z);
     this.interactions.push({ id: this.spec.id, label: `Talk to ${this.spec.guide}`, position: new THREE.Vector3(this.origin.x + gx, 1.45, gz) });

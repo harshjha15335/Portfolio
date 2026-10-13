@@ -66,7 +66,7 @@ export function shopRow(c: Ctx, w: number, names: Array<[string, string?]>, wall
     }
     for (const s of [-1, 1]) kit.box([.32, 3.4, .4], [cx + s * bw / 2, 1.7, 0], wall, 'plaster');
     const bg = pick(kit, SHOP_COLORS);
-    sign(c, en, bw - .35, [cx, o.signY ?? 3.0, .24], { bg, fg: '#f4e6c0', local }, [512, 128]);
+    sign(c, en, bw - .35, [cx, o.signY ?? 3.0, .24], { bg, fg: '#f4e6c0', local }, [384, 96]);
     if (o.awnings !== false && kit.rand() > .25) kit.shape('box', [bw - .3, .05, 1.2], [cx, 2.78, .65], pick(kit, ['#2c6f8f', '#b23a32', '#3d7a4f', '#c7892f', '#5a4a8a', '#2b5d9b']), 'fabric', [.28, 0, 0]);
   }
 }
@@ -212,7 +212,7 @@ export function stall(c: Ctx, x: number, z: number, rotationY: number, tarp: str
     kit.shape('box', [2.6, .04, 1.8], [0, 2.35, .1], tarp, 'fabric', [.12, 0, 0]);
     for (let i = 0; i < 30; i++) kit.shape(i % 3 ? 'sphere' : 'box', [.075, .06, .075], [-.95 + (i % 10) * .21, .9 + Math.floor(i / 10) * .05, -.38 + Math.floor(i / 10) * .3], pick(kit, goods));
     for (let i = 0; i < 5; i++) kit.box([.08, .4, .08], [-.9 + i * .45, 1.95, .55], pick(kit, goods), 'fabric');
-    if (label) sign(c, label, 1.9, [0, 2.15, .95], { bg: tarp, fg: '#fff3d6', local }, [512, 128], 0);
+    if (label) sign(c, label, 1.9, [0, 2.15, .95], { bg: tarp, fg: '#fff3d6', local }, [384, 96], 0);
   });
 }
 export function busStop(c: Ctx, x: number, z: number, rotationY: number, name: string) {

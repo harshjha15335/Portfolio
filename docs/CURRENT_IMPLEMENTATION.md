@@ -71,11 +71,13 @@ flowchart TD
 | `src/game/World/traffic/RoadTraffic.ts` | Persistent curve-based ambient traffic and yielding |
 | `src/game/World/spatial/SpatialIndex.ts` | Trusted static BVH queries |
 | `src/game/World/WalkingBody.ts` | Upright visitor collision body |
-| `src/game/World/TransitModel.ts`, `streetLayout.ts`, `transit.ts` | Taxi/auto geometry, active street routes and meter calculations |
+| `src/game/World/TransitModel.ts`, `streetLayout.ts`, `transit.ts` | Taxi/auto geometry, city zones, cross-district ride legs and meter calculations |
+| `src/game/World/districts/` | The seven walkable districts beyond CST–Fort (see `docs/CITY_DISTRICTS.md`) |
 | `src/data/` | Portfolio identity, projects, experience, skills and destination definitions |
 | `scripts/capture-street.mjs`, `profile-street.mjs` | Reproducible native captures and CPU-only simulation profile |
+| `scripts/capture-districts.mjs`, `ride-check.mjs` | District review captures with main-pass cost, and a browser ride check across districts |
 
-Older `Campus.ts`, `Vehicle/` and radial helpers in `transit.ts` remain in the repository. Their presence does not imply that the earlier personal-car or radial nine-district world is the active user experience. Current world construction uses `MumbaiStreet`; active passenger routes use `streetLayout.ts`.
+Older `Campus.ts`, `Vehicle/` and radial helpers in `transit.ts` remain in the repository. Their presence does not imply that the earlier personal-car or radial nine-district world is the active user experience. Current world construction uses `MumbaiStreet` for CST–Fort and `districts/CityDistricts` for the other seven stops; active passenger routes use `streetLayout.ts`.
 
 ## 3. Entry, routes and UI lifecycle
 
