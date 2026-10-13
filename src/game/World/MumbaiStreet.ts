@@ -394,7 +394,7 @@ export class MumbaiStreet {
     this.sign(g,index%2?'EVENING CLASSES':'THE JOURNEY SO FAR','मुंबई',[3.78,1.62,-.005],.52,'#c2ad88','#454944').scale.y=2.7;
     // Local aging is aligned with piers and water paths, not scattered across windows.
     if(!fort)for(const x of [-4.03,4.03])this.paintWear(g,[x,1.05,.065],.145,1.15,color,`${spec.seed}:damp:${x}`);
-    if(!benchmark)for(let floor=0;floor<spec.floors;floor++)for(const x of [-1.06,1.06])this.paintWear(g,[x,4.3+floor*spec.floorHeight,-.016],.19,.42,color,`${spec.seed}:pier:${floor}:${x}`);
+    // Run-off streaks take over from the small per-storey pier patches, at about the same triangle cost.
     if(!benchmark)this.runoff(g,spec);
     if(index===0||index===2){const blade=this.sign(g,index===0?(side<0?'CHAI':'PAPERS'):(side<0?'BOOKS':'OPTICS'),'मुंबई',[3.5,3.45,.9],1.0,index%2?'#734d3c':'#3c5148');blade.rotation.y=Math.PI/2;this.wire(new THREE.Vector3(3.5,3.55,0),new THREE.Vector3(3.5,3.55,1.4),.021,'#5f675e',g);}
   }

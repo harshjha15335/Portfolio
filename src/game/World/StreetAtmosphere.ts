@@ -59,7 +59,6 @@ float weatherNoise( vec2 p ) {
  vec2 i = floor( p ), f = fract( p ), u = f * f * ( 3.0 - 2.0 * f );
  return mix( mix( weatherHash( i ), weatherHash( i + vec2( 1.0, 0.0 ) ), u.x ), mix( weatherHash( i + vec2( 0.0, 1.0 ) ), weatherHash( i + vec2( 1.0, 1.0 ) ), u.x ), u.y );
 }
-float weatherFbm( vec2 p ) { return 0.5 * weatherNoise( p ) + 0.3 * weatherNoise( p * 2.03 + 7.1 ) + 0.2 * weatherNoise( p * 4.11 + 3.3 ); }
 // Wall-plane coordinates in metres: horizontal distance along the façade, and height.
 vec2 weatherWall( vec3 wp, vec3 wn ) { return vec2( abs( wn.x ) > abs( wn.z ) ? wp.z : wp.x, wp.y ); }
 `;
@@ -82,7 +81,7 @@ if ( weatherAmount > 0.001 ) {
   float patches = 0.65 * weatherNoise( wall * 0.22 + wp.xz * 0.03 ) + 0.35 * weatherNoise( wall * 0.61 + 17.1 );
   aged *= mix( 1.0, 0.6 + 0.75 * patches, vertical );
   // Patchy repaint: some areas keep a fresher, warmer coat, others fade toward chalky grey.
-  float repaint = smoothstep( 0.45, 0.7, weatherFbm( wall * 0.35 + 41.0 ) );
+  float repaint = smoothstep( 0.5, 0.75, weatherNoise( wall * 0.35 + 41.0 ) );
   aged = mix( aged, mix( vec3( luma * 1.08 ), base * vec3( 1.06, 1.02, 0.95 ), 0.55 ), repaint * 0.45 * vertical );
   // Fine detail fades into the haze anyway; skip it for distant pixels.
   if ( distance( wp, cameraPosition ) < 55.0 ) {
@@ -96,7 +95,7 @@ if ( weatherAmount > 0.001 ) {
    float splash = ( 1.0 - smoothstep( 0.0, baseHeight, wp.y ) ) * vertical;
    aged = mix( aged, aged * vec3( 0.36, 0.31, 0.25 ), splash * 0.8 );
    // Plaster grain and trowel marks, strongest close up; mirrors the relief in the normal.
-   float grain = weatherFbm( wall * 9.0 ) - 0.5;
+   float grain = weatherNoise( wall * 9.0 ) - 0.5;
    aged *= 1.0 + grain * 0.32 * vertical * ( 1.0 - smoothstep( 12.0, 30.0, distance( wp, cameraPosition ) ) );
    // Monsoon run-off: long vertical tide marks that start at a random storey line and fade downward.
    float runCol = smoothstep( 0.58, 0.9, weatherNoise( vec2( along * 2.1 + 5.0, 0.0 ) ) );
@@ -124,7 +123,7 @@ if ( uWeather > 0.001 ) {
  vec3 rn = normalize( vWeatherNormal );
  float reliefFade = ( 1.0 - smoothstep( 10.0, 25.0, distance( vWeatherPos, cameraPosition ) ) ) * ( 1.0 - smoothstep( 0.35, 0.8, abs( rn.y ) ) );
  vec2 rw = weatherWall( vWeatherPos, rn );
- float relief = ( 0.0016 * weatherFbm( rw * 22.0 ) + 0.004 * weatherFbm( rw * 2.6 + 5.0 ) ) * uWeather * reliefFade;
+ float relief = ( 0.0014 * weatherNoise( rw * 22.0 ) + 0.0009 * weatherNoise( rw * 53.0 + 2.0 ) + 0.004 * weatherNoise( rw * 2.6 + 5.0 ) ) * uWeather * reliefFade;
  vec3 rdx = dFdx( - vViewPosition ), rdy = dFdy( - vViewPosition );
  vec3 r1 = cross( rdy, normal ), r2 = cross( normal, rdx );
  float rdet = dot( rdx, r1 );
