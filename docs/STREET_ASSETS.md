@@ -110,6 +110,8 @@ Harsh asked for "a GTA kind of feel" because the street "looks like krunker". On
 
 Each skinned person adds one bone texture, which is why textures rise with the crowd.
 
+High software benchmark (`BENCHMARK_PRESET=high`, same settings as above), peak cached frame: walking 564,905 triangles / 265 draws; NPC movement 565,753 / 269; taxi ride 583,041 / 280; auto ride 563,901 / 276; Fort 300,263 / 67. Peak textures were 55–63 and peak programs 53–54. **Every scenario is within the High budget.** Frame intervals (SwiftShader, p50) are 6.8 s walking, against 7.4 s on Medium in the façade run. SwiftShader timings are too noisy to compare presets.
+
 **Limits:** the extra people are the same procedural figures as the rest of the street; the Rocketbox cast is on its own branch. The road is one short loop, so "busy" here means more cars on it, not more lanes or streets. That belongs to the city-expansion work.
 
 ## Performance
