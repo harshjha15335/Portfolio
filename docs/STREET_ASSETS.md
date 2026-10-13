@@ -88,6 +88,30 @@ Harsh asked for the buildings to look realistic. GitHub was searched for an open
 
 **Limits:** these are still generated surfaces, not photographs of Mumbai walls. The streaks follow the shared window grid, so Radio House (authored separately) has none. Geometry, colours and signage are unchanged. Real scans would replace the generated maps one for one once the sites are allowed.
 
+### Busier street on the High preset (13 October 2026)
+
+Harsh asked for "a GTA kind of feel" because the street "looks like krunker". On the budget question, he chose to add a **High preset**: Medium keeps today's budgets, and High may spend more on crowds and traffic.
+
+- **High only:** 16 more walkers on the pavements, with their own crowd agents. Seven more people stand at shop counters and the chai stall. Three more vehicles join the road loop (two taxis, one auto), spaced between the existing three.
+- **Medium and Low:** the extra people and cars are hidden and parked, and out of the crowd simulation. Medium captures are identical to before, to the triangle (spawn 80 / 218,091; junction 71 / 204,718; return 103 / 213,657).
+- **Painted and metal parts** on every preset now use the same cement-render maps as the walls, in world metres, instead of flat colour. They use the same textures and program, so no budget changes.
+
+![Medium and High at the junction](screenshots/street-assets/compare-high-junction.jpg)
+![Medium and High at spawn](screenshots/street-assets/compare-high-spawn.jpg)
+![Medium and High on the return walk](screenshots/street-assets/compare-high-return.jpg)
+
+**High preset budget (new, set with Harsh's approval):** 300 draws, 600,000 triangles, 64 textures and 60 programs. High already cost about twice Medium before this pass, because its SSAO renders a normal pass of the whole scene. It measured 142–202 draws, 408,851–435,105 triangles, 35–40 textures and 53–54 programs. The extra crowd and traffic are drawn twice for the same reason.
+
+| Review pose (High) | Before | With crowd and traffic |
+| --- | --- | --- |
+| spawn | 159 / 435,105 / 35 / 53 | 252 / 552,833 / 53 / 53 |
+| junction | 142 / 408,851 / 40 / 53 | 212 / 503,003 / 63 / 53 |
+| return | 202 / 425,937 / 40 / 54 | 276 / 533,505 / 63 / 54 |
+
+Each skinned person adds one bone texture, which is why textures rise with the crowd.
+
+**Limits:** the extra people are the same procedural figures as the rest of the street; the Rocketbox cast is on its own branch. The road is one short loop, so "busy" here means more cars on it, not more lanes or streets. That belongs to the city-expansion work.
+
 ## Performance
 
 The static review budget is 110 draws, 230,000 triangles, 32 textures and 26 programs. **No budget was raised.**
@@ -153,7 +177,7 @@ Download size: the scooter GLB is 510 KB. The asphalt maps grew from 260 KB to 1
 ## Tests and build
 
 - `npx tsc --noEmit`: clean.
-- `npx vitest run`: 97 pass (95 before the façade pass; it added the wall-mapping and run-off tests). The new tests in `tests/street-assets.test.ts` cover:
+- `npx vitest run`: 99 pass (95 before the façade pass; it added the wall-mapping and run-off tests, and the High pass added dense-traffic and dense-street tests). The new tests in `tests/street-assets.test.ts` cover:
   - scan pins and licences;
   - the world-UV patch keeping one program key;
   - the scooter's hash, credit and lack of textures;

@@ -87,7 +87,10 @@ export class MumbaiStreet {
   private characterPreviewWalk=false;
   characterStatus='not-supplied';
   private walkers: Array<{group:THREE.Group;agent?:CrowdAgent;target:number;wait:number}> = [];
-  private trafficSystem = new RoadTraffic();
+  private trafficSystem = new RoadTraffic(3,3);
+  /** High preset only: extra walkers and traffic. Hidden and inert on Medium/Low, so their budgets are untouched. */
+  private dense=Object.assign(new THREE.Group(),{name:'dense-street',visible:false});
+  private denseWalkers: Array<{group:THREE.Group;agent?:CrowdAgent;target:number;wait:number}> = [];
   private trafficVehicles: THREE.Group[] = [];
   private previousTime = 0;
   private viewPosition = new THREE.Vector3();
@@ -106,9 +109,9 @@ export class MumbaiStreet {
     this.signAtlas = new THREE.CanvasTexture(this.signCanvas); this.signAtlas.colorSpace = THREE.SRGBColorSpace;
     this.landscape();
     for (let i = 0; i < 7; i++) for (const side of [-1, 1]) this.facade(side, 4 - i * 9.5, i);
-    this.station(); this.researchRoom(); this.streetDetails(); this.vegetation(); this.people(); this.traffic();
+    this.station(); this.researchRoom(); this.streetDetails(); this.vegetation(); this.people(); this.traffic(); this.densePeople(); this.group.add(this.dense);
     this.spatial = new SpatialIndex(this.colliderGeometry); this.colliderGeometry.forEach(g=>g.dispose()); this.colliderGeometry=[];
-    void NavMeshManager.create(this.obstacles).then(nav=>{if(this.disposed){nav.dispose();return;}this.navigation=nav;this.navigationStatus='ready';for(const [i,w] of this.walkers.entries()){w.agent=nav.add({x:w.group.position.x,y:0,z:w.group.position.z});w.target=i%this.destinations.length;w.agent.requestMoveTarget(this.destinations[w.target]);}}).catch(()=>{this.navigationStatus='unavailable';});
+    void NavMeshManager.create(this.obstacles).then(nav=>{if(this.disposed){nav.dispose();return;}this.navigation=nav;this.navigationStatus='ready';for(const [i,w] of this.walkers.entries()){w.agent=nav.add({x:w.group.position.x,y:0,z:w.group.position.z});w.target=i%this.destinations.length;w.agent.requestMoveTarget(this.destinations[w.target]);}if(this.dense.visible)this.joinDenseCrowd();}).catch(()=>{this.navigationStatus='unavailable';});
     const scooters=new ParkedScooters(this.scooterPlacements,seededRandom('parked-scooters'));this.scooters=scooters;this.group.add(scooters.group);
     this.motion.push(()=>scooters.update(this.viewPosition,this.nearDetail));if(typeof location!=='undefined')this.scootersReady=scooters.load(location.origin);void this.assetsReady.then(()=>{this.assetStatus='ready';});
     // Props beyond ~30 m along the street are a few pixels each; whole thirds drop out by distance.
@@ -666,13 +669,31 @@ export class MumbaiStreet {
     for(const [x,z] of [[-6,-10],[6,-23],[-6,-43],[5.8,-46]])this.person([x,0,z],'#a38f78',false);
     this.person([5.9,.03,-16],'#8a9b93',false,true);
   }
+  /** Extra pavement life for the High preset; no contact patches, so nothing joins the shared instanced batches. */
+  private densePeople(){
+    const random=seededRandom('dense-people'),shirts=['#c8b37f','#6f8fa6','#a8584b','#e0ddd2','#4f6b57','#b98a5a','#7b6f9c','#d4c7a1'];
+    for(let i=0;i<16;i++){const g=this.densePerson([(i%2?1:-1)*(i%4<2?5.6:6.2),.04,6-i*3.4-random()*1.5],shirts[i%shirts.length],true);this.denseWalkers.push({group:g,target:0,wait:0});}
+    // Knots of people standing at shop counters and the chai stall.
+    for(const [x,z,yaw] of [[-5.3,2.2,1.4],[-5.5,1.5,1.9],[5.4,-6.5,-1.5],[-5.4,-18.8,1.3],[5.5,-29,-1.7],[5.3,-29.7,-1.2],[-5.4,-47,1.6]]){const g=this.densePerson([x,0,z],shirts[Math.floor(random()*shirts.length)],false);g.rotation.y=yaw;}
+  }
+  private densePerson(position:Triple,shirt:string,moving:boolean){
+    const human=createHuman(`dense:${position.join(':')}`,shirt),g=human.group;g.position.set(...position);this.dense.add(g);let lastAnimation=-1;
+    this.motion.push(time=>{if(!this.dense.visible)return;const distance=g.position.distanceTo(this.viewPosition);human.mesh.visible=distance<48;human.setDetail(distance<10);if(distance>18&&time-lastAnimation<.1)return;lastAnimation=time;const velocity=this.denseWalkers.find(w=>w.group===g)?.agent?.velocity();human.animate(time,moving&&Boolean(velocity&&Math.hypot(velocity.x,velocity.z)>.08));});
+    return g;
+  }
+  private joinDenseCrowd(){if(!this.navigation)return;for(const [i,w] of this.denseWalkers.entries()){if(w.agent)continue;w.agent=this.navigation.add({x:w.group.position.x,y:0,z:w.group.position.z});w.target=(i*2+1)%this.destinations.length;w.agent.requestMoveTarget(this.destinations[w.target]);}}
+  /** High preset turns on the extra crowd and traffic; other presets leave them hidden, parked and out of the crowd. */
+  setDensity(dense:boolean){
+    if(this.dense.visible===dense)return;this.dense.visible=dense;this.trafficSystem.active=dense?this.trafficSystem.agents.length:3;
+    if(dense)this.joinDenseCrowd();else for(const w of this.denseWalkers)if(w.agent){this.navigation?.crowd.removeAgent(w.agent);w.agent=undefined;}
+  }
   setQuality(low:boolean) { this.pedestrians.forEach((p,i)=>{p.visible=!low||i<3||i%2===0;}); }
   private traffic() {
     for (const kind of ['taxi', 'auto'] as const) {
       const vehicle = createTransitModel(kind); vehicle.position.set(kind === 'taxi' ? 7.4 : -7.4, .02, 12); vehicle.rotation.y = kind === 'auto' ? Math.PI : 0; this.group.add(vehicle);this.solidProxy([2,1.5,3.8],[0,.8,0],vehicle);
       this.interactions.push({ id: `hail-${kind}`, label: `Hail ${kind === 'taxi' ? 'kaali-peeli taxi' : 'auto'}`, position: new THREE.Vector3(kind==='taxi'?6.1:-6.1, 1, vehicle.position.z) });
     }
-    for (let i=0;i<3;i++){const vehicle=createTransitModel(i===1?'auto':'taxi');this.group.add(vehicle);this.trafficVehicles.push(vehicle);const pose=this.trafficSystem.pose(i);vehicle.position.set(pose.x,.02,pose.z);vehicle.rotation.y=pose.heading;}
+    for (let i=0;i<this.trafficSystem.agents.length;i++){const vehicle=createTransitModel(i===1||i===4?'auto':'taxi');(i<3?this.group:this.dense).add(vehicle);this.trafficVehicles.push(vehicle);const pose=this.trafficSystem.pose(i);vehicle.position.set(pose.x,.02,pose.z);vehicle.rotation.y=pose.heading;}
   }
   private instanceStatics() {
     this.group.updateMatrixWorld(true);
@@ -723,7 +744,7 @@ export class MumbaiStreet {
     if(viewPosition)this.viewPosition.copy(viewPosition);const delta=reduced?0:Math.min(.08,Math.max(0,time-this.previousTime));this.previousTime=time;
     const start=performance.now();
     if(this.navigation&&delta){
-      for(const w of this.walkers){if(!w.agent)continue;const p=w.agent.position(),v=w.agent.velocity();
+      for(const w of [...this.walkers,...this.denseWalkers]){if(!w.agent)continue;const p=w.agent.position(),v=w.agent.velocity();
         if(Math.hypot(p.x-this.destinations[w.target].x,p.z-this.destinations[w.target].z)<.65){w.agent.resetMoveTarget();w.wait+=delta;if(w.wait>3+(w.target%3)){w.target=(w.target+1)%this.destinations.length;w.wait=0;w.agent.requestMoveTarget(this.destinations[w.target]);}}
         const approaching=Math.abs(p.z+12)<2.8&&Math.abs(p.x)>3.9&&Math.abs(p.x)<4.8;
         w.agent.maxSpeed=approaching&&!pedestrianGreen(time)?0:Math.hypot(p.x-this.viewPosition.x,p.z-this.viewPosition.z)<.75?0:1;
@@ -731,8 +752,8 @@ export class MumbaiStreet {
       }
       this.navigation.crowd.update(1/30,delta,3);
     }
-    this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...this.walkers.filter(w=>Math.abs(w.group.position.x)<3.9).map(w=>({x:w.group.position.x,z:w.group.position.z}))]);
-    this.trafficVehicles.forEach((vehicle,i)=>{const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y+=turn*(1-Math.exp(-8*delta));animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);});this.trafficUpdateMs=performance.now()-trafficStart;
+    this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...[...this.walkers,...this.denseWalkers].filter(w=>w.agent&&Math.abs(w.group.position.x)<3.9).map(w=>({x:w.group.position.x,z:w.group.position.z}))]);
+    this.trafficVehicles.forEach((vehicle,i)=>{if(i>=this.trafficSystem.active)return;const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y+=turn*(1-Math.exp(-8*delta));animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);});this.trafficUpdateMs=performance.now()-trafficStart;
     for (const animate of this.motion) animate(reduced ? 0 : time);
     this.group.updateMatrixWorld(true);
     for (const { instance, meshes } of this.dynamicBatches) { meshes.forEach((mesh, i) => { let visible=true; for(let p:THREE.Object3D|null=mesh.parent;p&&p!==this.group;p=p.parent)if(!p.visible)visible=false; instance.setMatrixAt(i,visible?mesh.matrixWorld:new THREE.Matrix4().makeScale(0,0,0)); }); instance.instanceMatrix.needsUpdate = true;instance.computeBoundingSphere(); }

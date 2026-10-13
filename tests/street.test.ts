@@ -21,6 +21,12 @@ describe('first-person street slice', () => {
     expect(street.interactions.map(p=>p.id)).toEqual(['cst','fort','ffprime','hail-taxi','hail-auto']);
     expect(street.interactions.every(p=>p.position.y>=1 && p.position.y<1.7)).toBe(true);
   });
+  it('keeps the High-preset crowd and traffic hidden and out of the Medium frame until density is switched on',()=>{
+    const street=new MumbaiStreet(new CANNON.World());const dense=street.group.getObjectByName('dense-street')!;
+    const count=()=>{let people=0,cars=0;dense.traverse(o=>{if((o as THREE.SkinnedMesh).isSkinnedMesh)people++;if(o.name.endsWith('-original-bodywork'))cars++;});return {people,cars};};
+    expect(dense.visible).toBe(false);expect(count()).toEqual({people:23,cars:3});
+    street.setDensity(true);expect(dense.visible).toBe(true);street.setDensity(false);expect(dense.visible).toBe(false);
+  });
   it('keeps elevated shop stock and facade modules attached to buildings and out of the carriageway',()=>{
     const street=new MumbaiStreet(new CANNON.World());street.update(0,true);const misplaced:number[][]=[];
     street.group.traverse(object=>{
