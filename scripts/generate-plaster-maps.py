@@ -1,4 +1,7 @@
-"""Original painted cement-render study for the street façades: tileable 1024 px maps covering 2 m of wall.
+"""SUPERSEDED (13 October 2026): the shipped plaster maps are now the Poly Haven scan from
+scripts/import-scanned-surfaces.py. Kept for reference; its PNG output is not listed in provenance.json.
+
+Original painted cement-render study for the street façades: tileable 1024 px maps covering 2 m of wall.
 
 No photographs or downloaded artwork; every feature is generated here from seeded noise:
 float-trowel undulation and sand grain, aggregate pits, hairline shrinkage cracks, patched repairs,

@@ -88,6 +88,37 @@ Harsh asked for the buildings to look realistic. GitHub was searched for an open
 
 **Limits:** these are still generated surfaces, not photographs of Mumbai walls. The streaks follow the shared window grid, so Radio House (authored separately) has none. Geometry, colours and signage are unchanged. Real scans would replace the generated maps one for one once the sites are allowed.
 
+## Scanned surfaces (13 October 2026)
+
+Harsh allowed `polyhaven.com`, `dl.polyhaven.org`, `ambientcg.com` and `upload.wikimedia.org`. Poly Haven files now download. ambientCG search works, but its downloads redirect to `acg-download.struffelproductions.com`, which is still refused, so nothing came from ambientCG. `api.polyhaven.com` is also refused; assets were found by name on `dl.polyhaven.org` and their licence, author and real-world size read from each `polyhaven.com/a/<asset>` page.
+
+| Surface | Scan (all CC0, Poly Haven) | Maps | Tile |
+| --- | --- | --- | --- |
+| Building render (walls, painted and metal parts) | Plaster Grey 04, Rob Tuytel | colour, roughness, normal, 1,024 px | 1.5 m |
+| Stone (CST piers, arches, cornices, sills) | Sandstone Blocks 08, Rob Tuytel | colour with AO baked in, 1,024 px | 1.8 m (courses about 36 cm) |
+| Footpaths and forecourts | Concrete Pavers (interlocking "I" blocks), Amal Kumar | colour with AO baked in, 1,024 px | 1.92 m |
+| Road | Asphalt 02, Rob Tuytel | colour, roughness, and now its **scanned** normal map, 512 px | 3 m |
+
+Each replaces the maps its surface already had, one for one, so **textures, programs, draws and triangles are unchanged at every pose** (spawn 80 / 218,091 / 27 / 26; junction 71 / 204,718 / 32 / 26; return 103 / 213,657 / 32 / 26). Stone and paving only have a colour slot, so their ambient occlusion is multiplied into the colour and the colour doubles as the bump map. Colour is tone-matched in linear light to the map it replaces, so every per-material tint keeps its brightness and hue. Files are JPEG; the whole set is 2.1 MB, down from 3.7 MB.
+
+**Bug fixed on the way: larger maps never reached the GPU.** A texture already uploaded at its canvas size has fixed storage, and swapping in a larger image failed with a GL "offset overflows texture dimensions" error. PR #3's head logs this twice: the 1,024 px generated plaster colour and the 512 px asphalt colour were not actually shown; the 256 px canvas stand-ins were. `StreetMaterials` now disposes the GPU texture before the swap, and the warning is gone. The shared weathering patch also moves the bump map onto world-metre UVs, so stone joints in the bump line up with the colour.
+
+![Junction](screenshots/scanned-textures/compare-junction.jpg)
+![Footpath close-up](screenshots/scanned-textures/crop-pavement.jpg)
+![Café frontage](screenshots/scanned-textures/compare-hero-wide.jpg)
+![Main street](screenshots/scanned-textures/compare-spawn.jpg)
+![Buildings close-up](screenshots/scanned-textures/crop-spawn-left.jpg)
+![Benchmark frontage](screenshots/scanned-textures/compare-benchmark-close.jpg)
+![Station front](screenshots/scanned-textures/compare-station-front.jpg)
+![Return](screenshots/scanned-textures/compare-return.jpg)
+
+**Limits:**
+- The CST station still reads much as before: most of its visible front is the default painted surface, not `stone`, and Radio House draws from the BakedKit atlas, which this pass does not touch.
+- Rust, corrugated sheet, rolling shutters and brick have no texture slot inside the 32-texture ceiling, so none were added. The High preset is the place for them.
+- Plaster repeats every 1.5 m; the shader's building-scale staining hides most of it, but a long blank wall can show it.
+
+Rebuild: `python3 scripts/import-scanned-surfaces.py` (downloads, checks pins, writes maps and provenance).
+
 ## Performance
 
 The static review budget is 110 draws, 230,000 triangles, 32 textures and 26 programs. **No budget was raised.**
@@ -166,8 +197,7 @@ Download size: the scooter GLB is 510 KB. The asphalt maps grew from 260 KB to 1
 ## Rebuilding
 
 ```sh
-python3 scripts/import-scanned-surfaces.py                        # asphalt scan (pinned in scripts/scanned-surfaces.lock.json)
-python3 scripts/generate-plaster-maps.py                          # original 1,024 px cement-render maps (numpy, Pillow)
+python3 scripts/import-scanned-surfaces.py                        # Poly Haven scans (pinned in scripts/scanned-surfaces.lock.json)
 python3.11 -m pip install bpy==4.2.0 numpy                         # Blender as a Python module
 python3.11 scripts/vehicles/build_scooter.py /tmp/scooter          # pinned source → scooter.glb (scripts/vehicles/scooter.json)
 node scripts/vehicles/import-scooter.mjs /tmp/scooter              # admit into public/models/vehicles with provenance

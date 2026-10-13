@@ -1,7 +1,15 @@
 {
-  "commit": "edc7c9e67c639d230715049ee31f9a96a6babbbe",
+  "base": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/{asset}/{file}",
   "files": {
     "asphalt_02_diff_1k.jpg": "1aa5ce99f58a625c71d48cfc3e68b65ca85ccb00f39e045c0a928608a0ea25ed",
-    "asphalt_02_rough_1k.jpg": "70ba3edc65525eb4dc366cf010ca7ae0bd34e0251ff0225c2dad627a873d0712"
+    "asphalt_02_rough_1k.jpg": "70ba3edc65525eb4dc366cf010ca7ae0bd34e0251ff0225c2dad627a873d0712",
+    "asphalt_02_nor_gl_1k.jpg": "42a1c381b53204e83a982db2864479a30bc127bbdeebb1006f8ee51bff099df3",
+    "plaster_grey_04_diff_1k.jpg": "e78df7d6e762fe767634278e14316564e0d4510031986239458994ec9fc5410d",
+    "plaster_grey_04_rough_1k.jpg": "0d8cc6216ac3dc9dc4339cb17a08d249f7341961f432ae1451c35cdff222869b",
+    "plaster_grey_04_nor_gl_1k.jpg": "9d0eb5299f797c07eb841737eb7164755a2c8a2363540e175a76188a2aa5a2dc",
+    "sandstone_blocks_08_diff_1k.jpg": "0cac65461ba33003b8a27b03c2b87f3393a824a9a98036c4c8de6182a1449369",
+    "sandstone_blocks_08_ao_1k.jpg": "7d6ab7fd45598cca3742687c7acf886f3e496794d9eb53b6a46660ccaefed6d0",
+    "concrete_pavers_diff_1k.jpg": "eea1fb8b498154754f4961ce0792092ef56cadc3d210becbb0dc3bf6c96c261d",
+    "concrete_pavers_ao_1k.jpg": "ac8532b06220e331667048aebc7787e504660695f62fd399db276b0419a89195"
   }
 }

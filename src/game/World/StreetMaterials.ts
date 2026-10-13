@@ -5,7 +5,7 @@ export type Surface = 'plaster' | 'stone' | 'asphalt' | 'paving' | 'metal' | 'wo
 
 /**
  * Repeatable surface maps: small original canvas maps, upgraded at runtime to the verified files in
- * public/surfaces (scanned CC0 asphalt, generated plaster; see provenance.json).
+ * public/surfaces (CC0 Poly Haven scans of asphalt, plaster, sandstone and pavers; see provenance.json).
  */
 export class StreetMaterials {
   private materials = new Map<string, THREE.Material>();
@@ -32,10 +32,12 @@ export class StreetMaterials {
       if(surface==='foliage'&&material instanceof THREE.MeshStandardMaterial){material.side=THREE.DoubleSide;material.vertexColors=true;material.emissive.set(color);material.emissiveIntensity=.045;}
       // Scanned asphalt is mapped in world metres (one 3 m tile), so wide and narrow road boxes share its scale.
       if(surface==='asphalt')material.userData.worldUv=1/3;
-      // Generated cement render covers 2 m per tile on every wall face (see scripts/generate-plaster-maps.py).
-      if(maps==='plaster')material.userData.wallUv=1/2;
-      // Stone courses (every 32 px of the 256 px study) land about 30 cm apart on every face.
-      if(surface==='stone')material.userData.wallUv=.4;
+      // Scanned render covers 1.5 m per tile on every wall face (tileMetres in provenance.json).
+      if(maps==='plaster')material.userData.wallUv=1/1.5;
+      // Sandstone ashlar: five courses per 1.8 m tile, so courses land about 36 cm apart on every face.
+      if(surface==='stone')material.userData.wallUv=1/1.8;
+      // Interlocking concrete pavers on footpaths, laid flat in world metres (one 1.92 m tile).
+      if(surface==='paving')material.userData.worldUv=1/1.92;
       material.userData.surface = surface; this.materials.set(key, material);
     }
     return this.materials.get(key)!;
@@ -45,9 +47,11 @@ export class StreetMaterials {
       const response=await fetch(`/surfaces/${record.file}`,{signal:this.abort.signal});if(!response.ok)throw new Error(`Surface fetch ${response.status}`);
       const bytes=await response.arrayBuffer();if(bytes.byteLength!==record.bytes)throw new Error('Surface size mismatch');
       const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(n=>n.toString(16).padStart(2,'0')).join('');if(digest!==record.sha256)throw new Error('Surface integrity mismatch');
-      const image=await createImageBitmap(new Blob([bytes],{type:'image/png'}),{imageOrientation:'flipY',colorSpaceConversion:'none'});if(this.disposed){image.close();return;}if(image.width!==record.width||image.height!==record.height){image.close();throw new Error('Unexpected surface dimensions');}
+      const image=await createImageBitmap(new Blob([bytes],{type:record.file.endsWith('.png')?'image/png':'image/jpeg'}),{imageOrientation:'flipY',colorSpaceConversion:'none'});if(this.disposed){image.close();return;}if(image.width!==record.width||image.height!==record.height){image.close();throw new Error('Unexpected surface dimensions');}
       const texture=record.channel==='color'?this.maps.get(record.surface as Surface)!:this.pbr.get(`${record.surface}:${record.channel}`)!;
-      texture.image=image;texture.colorSpace=record.channel==='color'?THREE.SRGBColorSpace:THREE.NoColorSpace;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.magFilter=THREE.LinearFilter;texture.generateMipmaps=true;texture.anisotropy=4;texture.needsUpdate=true;
+      // A texture already on the GPU has immutable storage at its old size, so a larger image must
+      // reallocate it: without dispose() the upload fails (GL "offset overflows") and the old map stays.
+      texture.dispose();texture.image=image;texture.colorSpace=record.channel==='color'?THREE.SRGBColorSpace:THREE.NoColorSpace;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.magFilter=THREE.LinearFilter;texture.generateMipmaps=true;texture.anisotropy=4;texture.needsUpdate=true;
     }));
   }
   dispose(){this.disposed=true;this.abort.abort();for(const texture of [...this.maps.values(),...this.pbr.values()]){texture.dispose();const image=texture.image as {close?:()=>void};image?.close?.();}this.materials.forEach(m=>m.dispose());}
