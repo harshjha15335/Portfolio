@@ -12,6 +12,8 @@ import { idleRide, pointAtDistance, routeLength, storyFare, type Point, type Rid
 import { STREET_SPAWN, streetStops, streetPickupRoute, walkingVelocity, cityRideLegs, cityZones, zoneIndexAt, districtViews } from '../game/World/streetLayout';
 import { CityDistricts } from '../game/World/districts/CityDistricts';
 import { setCityDensity } from '../game/World/districts/District';
+import { createFortRoadTraffic } from '../game/World/districts/FortRoadTraffic';
+import type { LaneTraffic } from '../game/World/districts/DistrictSystems';
 import { districts as directory } from '../data/city';
 
 interface WorldOptions {
@@ -34,7 +36,7 @@ export class WorldEngine {
   private physics = new CANNON.World({ gravity: new CANNON.Vec3(0, -19, 0) });
   private visitor: CANNON.Body;
   private street: MumbaiStreet;
-  private city!: CityDistricts;
+  private city!: CityDistricts; private fortTraffic!: LaneTraffic;
   /** Index into cityZones of the district being drawn; 0 is CST–Fort. */
   private zone = 0;
   private sky!: THREE.Mesh;
@@ -89,7 +91,7 @@ export class WorldEngine {
     this.street = new MumbaiStreet(this.physics); this.scene.add(this.street.group);
     // Districts are built on first need and receive the same weathering/haze patch as the street.
     setCityDensity(this.renderPreset);
-    this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed)this.pausedFrameDirty=true;});
+    this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.fortTraffic = createFortRoadTraffic(); applyStreetAtmosphere(this.fortTraffic.group, this.atmosphere); this.scene.add(this.fortTraffic.group); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed)this.pausedFrameDirty=true;});
     const preview=import.meta.env.DEV?new URLSearchParams(location.search).get('characterPreview'):null;
     if(stationCharacter&&(stationCharacter.status==='approved'&&stationCharacter.visualReview||preview==='idle'||preview==='walk'))void this.street.installStationCharacter(stationCharacter.asset,preview==='walk').then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}}).catch(error=>console.warn('Character admission failed; existing host retained',error));
     this.visitor = createVisitor(STREET_SPAWN.x, STREET_SPAWN.z);
@@ -191,10 +193,15 @@ export class WorldEngine {
   private syncZone(x: number) {
     const index = zoneIndexAt(x); if (index === this.zone && (index === 0 || this.city.get(index)?.group.visible)) return;
     this.zone = index; const ox = cityZones[index].originX;
-    this.street.group.visible = index === 0; this.city.activate(index);
+    this.street.group.visible = index === 0; this.fortTraffic.group.visible = index === 0; this.city.activate(index);
     this.sun.position.set(STREET_MOOD.sunPosition[0] + ox, STREET_MOOD.sunPosition[1], STREET_MOOD.sunPosition[2]);
     this.sun.target.position.set(STREET_MOOD.sunTarget[0] + ox, STREET_MOOD.sunTarget[1], STREET_MOOD.sunTarget[2]); this.sun.target.updateMatrixWorld();
     this.sky.position.x = ox; this.renderer.shadowMap.needsUpdate = true; this.pausedFrameDirty = true;
+  }
+  private fortPrevious = 0;
+  private updateFortTraffic(others: THREE.Vector3[]) {
+    const delta = this.reducedMotion ? 0 : Math.min(.08, Math.max(0, this.time - this.fortPrevious)); this.fortPrevious = this.time;
+    this.fortTraffic.update(this.time, delta, [this.camera.position, ...this.street.trafficPositions, ...others]);
   }
   private get district() { return this.zone ? this.city.get(this.zone) : null; }
   private finishRide() {
@@ -328,7 +335,9 @@ export class WorldEngine {
         }
       }
       this.syncZone(this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? this.visitor.position.x : this.transit.position.x);
-      this.updateCamera(); if (this.zone === 0) this.street.update(this.time, this.reducedMotion,this.camera.position); else this.district?.update(this.time, this.reducedMotion, this.camera.position);
+      this.updateCamera(); const others = this.transit.visible ? [this.transit.position] : [];
+      if (this.zone === 0) { this.street.extraTrafficObstacles = this.fortTraffic.positions.map(p => ({ x: p.x, z: p.z })); this.street.update(this.time, this.reducedMotion,this.camera.position); this.updateFortTraffic(others); }
+      else this.district?.update(this.time, this.reducedMotion, this.camera.position, others);
       const needsRender=!this.reducedMotion||forceRender||this.camera.position.distanceToSquared(this.lastRenderPosition)>1e-8||this.camera.quaternion.angleTo(this.lastRenderRotation)>.0001||(this.renderer.shadowMap.enabled&&this.renderer.shadowMap.needsUpdate);
       if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)){this.resize();this.street.setQuality(this.quality.low);this.rendering.setPreset(this.quality.low?'low':this.renderPreset);this.resize();this.renderer.shadowMap.enabled=!this.options.mobile&&!this.quality.low&&this.renderPreset!=='low';this.syncSunBalance();this.renderer.shadowMap.needsUpdate=true;}
       if(!this.reducedMotion&&!this.paused&&this.time-this.lastShadow>.2&&this.renderer.shadowMap.enabled){this.renderer.shadowMap.needsUpdate=true;this.lastShadow=this.time;}
@@ -349,7 +358,7 @@ export class WorldEngine {
     window.removeEventListener('street-review-view',this.reviewView);window.removeEventListener('keydown', this.keyDown); window.removeEventListener('keyup', this.keyUp); window.removeEventListener('blur', this.releaseInput);
     document.removeEventListener('visibilitychange', this.visibilityChanged); document.removeEventListener('pointerlockchange', this.lockChanged);
     const canvas = this.renderer.domElement; canvas.removeEventListener('pointerdown', this.pointerDown); window.removeEventListener('pointermove', this.pointerMove); window.removeEventListener('pointerup', this.pointerUp); canvas.removeEventListener('pointercancel', this.pointerUp); canvas.removeEventListener('webglcontextlost', this.contextLost);
-    window.removeEventListener('street-benchmark',this.benchmarkCommand);this.profiler?.dispose();this.street.dispose();this.city.dispose();this.rendering.dispose();this.environmentTarget.dispose();
+    window.removeEventListener('street-benchmark',this.benchmarkCommand);this.profiler?.dispose();this.street.dispose();this.city.dispose();this.fortTraffic.group.traverse(o=>{const m=o as THREE.Mesh;if(!m.isMesh)return;for(const g of new Set([m.geometry,...((m.userData.lodGeometries??[]) as THREE.BufferGeometry[])]))g.dispose();});this.rendering.dispose();this.environmentTarget.dispose();
     const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>(), skeletons = new Set<THREE.Skeleton>();
     this.scene.traverse(object => { const mesh = object as THREE.SkinnedMesh; if (mesh.isSkinnedMesh) skeletons.add(mesh.skeleton); if (mesh.geometry) geometries.add(mesh.geometry); for(const g of (mesh.userData.lodGeometries??[]) as THREE.BufferGeometry[]) geometries.add(g); if (mesh.material) for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) { materials.add(m); for(const key of ['map','bumpMap','roughnessMap','normalMap'] as const)if((m as THREE.MeshStandardMaterial)[key])textures.add((m as THREE.MeshStandardMaterial)[key]!); } });
     skeletons.forEach(s => s.dispose()); geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); textures.forEach(t => t.dispose()); this.renderer.dispose(); canvas.remove(); this.debug?.remove();

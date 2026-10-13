@@ -73,6 +73,8 @@ export function cityRideLegs(start: Point, destination: string): Point[][] {
 
 /** Development review poses inside the districts (local x/z, offset by each district origin). */
 const localViews: Record<string, Point & { yaw: number }> = {
+  'cst-traffic': { x: 4.7, z: -24, yaw: .22 }, 'cst-traffic-south': { x: -4.7, z: -44, yaw: Math.PI - .22 },
+  'worli-traffic': { x: 4.7, z: -26, yaw: .2 }, 'dadar-traffic': { x: 4.7, z: -34, yaw: .2 },
   'bkc-boulevard': { x: -4.6, z: 16, yaw: -.16 }, 'bkc-plaza': { x: 8.6, z: -26, yaw: .35 },
   'andheri-lane': { x: -4.6, z: 13, yaw: -.12 }, 'andheri-stalls': { x: 4.7, z: -20, yaw: .3 },
   'powai-lake': { x: -9, z: 4, yaw: .9 }, 'powai-towers': { x: -6, z: 14, yaw: -.35 },

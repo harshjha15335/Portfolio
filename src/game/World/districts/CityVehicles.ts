@@ -28,19 +28,28 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
   const r = seededRandom(`vehicle:${seed}`), m = new ColorMesh(lite), pick = <T,>(l: T[]) => l[Math.floor(r() * l.length)];
   switch (kind) {
     case 'bus': {
-      const red = '#b0261d', cream = '#e8dcc2', L = 10.2;
-      m.rounded([2.5, 1.95, L], [0, 1.33, 0], red); m.rounded([2.48, 1.85, L - .25], [0, 3.28, .1], red);
-      m.box([2.54, .16, L - .1], [0, 2.32, 0], cream); m.rounded([2.42, .14, L - .4], [0, 4.24, .1], cream);
-      for (const y of [1.72, 3.32]) for (const s of [-1, 1]) {
-        m.box([.04, .78, L - 1.6], [s * 1.255, y, .45], glass);
-        for (let z = -L / 2 + 1.3; z < L / 2 - .2; z += 1.12) m.box([.06, .8, .1], [s * 1.26, y, z], red);
+      // BEST: most are the red double-decker; some are the newer single-deck red AC buses.
+      const red = '#b3241b', deep = '#8c1a14', cream = '#ece2c8', L = 10.2, double = r() < .65;
+      m.rounded([2.5, 1.95, L], [0, 1.33, 0], red);
+      if (double) { m.rounded([2.48, 1.86, L - .2], [0, 3.28, .08], red); m.box([2.53, .2, L - .06], [0, 2.32, 0], cream); m.rounded([2.4, .16, L - .5], [0, 4.25, .1], deep); }
+      else { m.rounded([2.48, .85, L - .1], [0, 2.62, 0], red); m.rounded([2.3, .22, L * .5], [0, 3.12, .8], '#cfcfca'); for (let i = 0; i < 6; i++) m.box([.12, .03, L * .45], [-.7 + i * .28, 3.25, .8], '#8d8f8c'); }
+      m.box([2.54, .26, L - .3], [0, .5, 0], '#2a2a2a');
+      // Window bands: individual panes between red pillars, the driver's cab glass, and the open door.
+      for (const y of double ? [1.78, 3.36] : [2.0]) for (const sd of [-1, 1]) {
+        const h = double ? .78 : 1.05; m.box([.04, h, L - 1.5], [sd * 1.256, y, .4], glass);
+        for (let z = -L / 2 + 1.3; z < L / 2 - .2; z += 1.12) m.box([.07, h + .04, .12], [sd * 1.262, y, z], red);
+        m.box([.05, .05, L - 1.5], [sd * 1.262, y + h / 2 + .03, .4], cream);
       }
-      m.box([2.2, .9, .05], [0, 1.85, -L / 2 - .01], glass); m.box([2.2, .75, .05], [0, 3.35, -L / 2 + .12], glass);
-      m.box([1.7, .26, .06], [0, 4.0, -L / 2 + .1], '#e4b13d'); m.box([1.2, .12, .07], [0, 4.0, -L / 2 + .08], '#3b2a12');
-      m.box([.9, 1.95, .05], [-1.26, 1.25, -L / 2 + 1.3], '#2a2f30'); m.box([.05, 1.95, .9], [-1.26, 1.25, L / 2 - 1.4], '#2a2f30');
-      for (const s of [-1, 1]) { m.box([.28, .18, .05], [s * .9, .75, -L / 2 - .02], lamp); m.box([.25, .2, .05], [s * .95, .8, L / 2 + .02], tail); }
-      m.box([2.4, .32, .2], [0, .48, -L / 2 - .05], '#2b2b2b'); m.box([.6, .12, .05], [0, .55, -L / 2 - .16], '#f2efe6');
-      for (const z of [-L / 2 + 1.8, L / 2 - 2.2]) for (const s of [-1, 1]) m.wheel(.5, .34, [s * 1.08, .5, z]);
+      m.box([2.24, 1.05, .05], [0, 1.9, -L / 2 - .01], glass, [-.06, 0, 0]); if (double) m.box([2.2, .78, .05], [0, 3.36, -L / 2 + .1], glass);
+      m.box([.06, 1.0, .05], [0, 1.9, -L / 2 - .03], red);
+      // Destination board: amber route number and destination on black.
+      const boardY = double ? 2.82 : 2.72; m.box([2.0, .32, .07], [0, boardY, -L / 2 + .02], '#151515'); m.box([.42, .2, .08], [-.72, boardY, -L / 2 + .015], '#f0a32a'); m.box([1.2, .14, .08], [.25, boardY, -L / 2 + .015], '#e8962a');
+      m.box([.9, 1.95, .05], [-1.26, 1.25, -L / 2 + 1.35], '#1f2324'); m.box([.05, 1.95, .95], [-1.262, 1.25, L / 2 - 1.5], '#1f2324');
+      for (const sd of [-1, 1]) { m.rod([sd * 1.24, 2.25, -L / 2 + .2], [sd * 1.5, 2.1, -L / 2 - .2], .02, '#2a2a2a'); m.box([.08, .32, .2], [sd * 1.52, 1.95, -L / 2 - .22], '#202224'); }
+      for (const sd of [-1, 1]) { m.box([.3, .18, .05], [sd * .9, .78, -L / 2 - .03], lamp); m.box([.22, .32, .05], [sd * .98, .95, L / 2 + .02], tail); m.box([.08, .08, .04], [sd * 1.12, .62, -L / 2 - .03], '#e8a33a'); }
+      m.box([2.46, .34, .22], [0, .5, -L / 2 - .06], '#262626'); m.box([.6, .14, .05], [0, .55, -L / 2 - .18], '#f2efe6');
+      m.box([1.6, .6, .05], [0, 1.0, L / 2 + .02], '#3d3d3b'); for (let i = 0; i < 5; i++) m.box([1.5, .04, .06], [0, .8 + i * .1, L / 2 + .04], '#222');
+      for (const z of [-L / 2 + 1.9, L / 2 - 2.3]) { m.shape('tyre', [.6, 2.52, .6], [0, .5, z], '#121314', [0, 0, Math.PI / 2]); for (const sd of [-1, 1]) m.wheel(.5, .3, [sd * 1.1, .5, z], tyre, '#8d8f8a'); }
       if (rider) addDriver(m, `${seed}:bus`, .65, .25, -L / 2 + 1.0); break;
     }
     case 'hatch': case 'sedan': case 'suv': case 'taxi': {

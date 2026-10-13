@@ -164,9 +164,9 @@ export class District {
       }
       // Two-wheelers parked nose-in at the kerb, in clusters.
       const kinds = ['bike', 'bike', 'cycle', 'bike'] as const;
-      for (let z = 10 - r() * 4; z > -58; z -= 9 + r() * 7) {
+      for (let z = 10 - r() * 4; z > -58; z -= 14 + r() * 8) {
         if (!this.clearOf(side * 3.4, z) || !this.clearOf(side * 3.4, z - 4)) continue;
-        const count = 3 + Math.floor(r() * 4);
+        const count = 3 + Math.floor(r() * 3);
         for (let i = 0; i < count; i++) this.parkedLite(kinds[Math.floor(r() * kinds.length)], side * 3.35, z - i * .85, side > 0 ? -Math.PI / 2 + (r() - .5) * .2 : Math.PI / 2 + (r() - .5) * .2);
         this.kit.solid([1.6, 1.2, count * .85], [side * 3.35, .6, z - (count - 1) * .85 / 2]);
       }
@@ -185,11 +185,11 @@ export class District {
     mesh.name = 'district:parked'; mesh.castShadow = mesh.receiveShadow = true; this.group.add(mesh);
   }
   setActive(active: boolean) { this.group.visible = active; }
-  update(time: number, reduced: boolean, view: THREE.Vector3) {
+  update(time: number, reduced: boolean, view: THREE.Vector3, others: THREE.Vector3[] = []) {
     const delta = reduced ? 0 : Math.min(.08, Math.max(0, time - this.previous)); this.previous = time;
     const local = view.clone().sub(this.origin);
     this.crowd.update(reduced ? 0 : time, delta, local);
-    this.traffic.update(time, delta, [local]);
+    this.traffic.update(time, delta, [local, ...others.map(o => o.clone().sub(this.origin))]);
     if (!reduced) for (const w of this.waters) w.update(time);
     for (const m of this.motion) m(reduced ? 0 : time, delta);
   }

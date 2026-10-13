@@ -143,6 +143,15 @@ interface Agent { mesh: THREE.Mesh; kind: CityVehicleKind; lane: number; s: numb
  */
 export class LaneTraffic {
   readonly group = new THREE.Group(); private lanes: Array<{ curve: THREE.CatmullRomCurve3; length: number }> = []; private agents: Agent[] = [];
+  private stops: Array<{ lane: number; s: number; active: (time: number) => boolean }> = [];
+  /** A stop line on a lane at local `z`, held while `active(time)` (a pedestrian green). */
+  stopLine(lane: number, z: number, active: (time: number) => boolean) {
+    const { curve, length } = this.lanes[lane]; let best = 0, bestGap = Infinity;
+    for (let i = 0; i <= 400; i++) { const gap = Math.abs(curve.getPointAt(i / 400).z - z); if (gap < bestGap) { bestGap = gap; best = i / 400; } }
+    this.stops.push({ lane, s: best * length, active });
+  }
+  /** Positions of the vehicles currently on the road (for other traffic to queue behind). */
+  get positions() { return this.agents.filter(a => a.active && a.mesh.visible).map(a => a.mesh.position); }
   lane(points: V3[]) { const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)), false, 'centripetal'); this.lanes.push({ curve, length: curve.getLength() }); return this.lanes.length - 1; }
   vehicle(lane: number, kind: CityVehicleKind, at: number, seed: string, parked = false) {
     const mesh = createCityVehicleLod(kind, seed); this.group.add(mesh);
@@ -167,11 +176,13 @@ export class LaneTraffic {
       let target = a.max, gap = Infinity;
       for (const b of this.agents) if (b !== a && b.lane === a.lane && b.active && b.s > a.s) gap = Math.min(gap, b.s - a.s - (a.length + b.length) / 2);
       target = Math.min(target, Math.max(0, (gap - 2.2) * .9));
+      for (const stop of this.stops) if (stop.lane === a.lane && stop.active(time)) { const toLine = stop.s - a.s - a.length / 2; if (toLine > -.3 && toLine < 14) target = Math.min(target, Math.max(0, toLine * .8)); }
       const f = new THREE.Vector3(-Math.sin(a.mesh.rotation.y), 0, -Math.cos(a.mesh.rotation.y));
-      for (const o of obstacles) {
-        const rel = o.clone().setY(0).sub(a.mesh.position.clone().setY(0)), ahead = rel.dot(f), side = Math.abs(rel.x * f.z - rel.z * f.x);
-        if (ahead > 0 && ahead < a.length / 2 + 9 && side < 1.5) target = Math.min(target, Math.max(0, (ahead - a.length / 2 - 1.6) * .9));
-      }
+      obstacles.forEach((o, k) => {
+        // The first obstacle is the visitor; the rest are other vehicles, which need their own half-length of room.
+        const rel = o.clone().setY(0).sub(a.mesh.position.clone().setY(0)), ahead = rel.dot(f), side = Math.abs(rel.x * f.z - rel.z * f.x), room = k === 0 ? 1.6 : 3.8;
+        if (ahead > 0 && ahead < a.length / 2 + room + 8 && side < 1.5) target = Math.min(target, Math.max(0, (ahead - a.length / 2 - room) * .9));
+      });
       const rate = target < a.speed ? 6 : 1.4; a.speed += THREE.MathUtils.clamp(target - a.speed, -rate * delta, rate * delta);
       a.s += a.speed * delta;
       if (a.s >= lane.length) { a.active = false; a.mesh.visible = false; continue; }

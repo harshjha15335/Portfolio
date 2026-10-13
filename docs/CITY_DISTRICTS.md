@@ -75,6 +75,16 @@ All are inside the street's 110-draw / 230k-triangle budget. Texture counts (84�
 the street's 32: each skinned person carries its own bone texture, so the count tracks the crowd.
 Programs are 35–39 because `renderer.info.programs` keeps the CST street's compiled programs.
 
+### Cars and BEST buses
+
+* Every district's traffic list mixes private cars (hatchbacks, sedans, SUVs) with BEST buses. Two
+  thirds of buses are the red double-decker; the rest are the newer single-deck AC bus.
+* CST–Fort gets through traffic of cars and buses (`FortRoadTraffic.ts`) on the street's own two
+  lanes. It stops for the pedestrian green at the zebra. It queues behind the street's taxi/auto loop,
+  and the loop queues behind it through `MumbaiStreet.extraTrafficObstacles`. It is held to
+  about 0.35× the district density, because the CST street was already close to its triangle budget
+  (229.6k at `cst-traffic-south`).
+
 ## Review
 
 ```sh

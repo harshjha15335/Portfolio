@@ -68,8 +68,8 @@ const bkc: DistrictSpec = {
 /* ============================================================ ANDHERI */
 const andheriShops: Array<[string, string?]> = [['MOBILE REPAIR', 'मोबाइल रिपेयर'], ['LAPTOP SERVICE', 'लैपटॉप'], ['COMPUTER PARTS', 'कंप्यूटर'], ['GPU · RAM · SSD'], ['ARDUINO · RASPBERRY PI'], ['CABLES & CHARGERS', 'केबल'], ['PYTHON · C++ BOOKS', 'किताबें'], ['CCTV & NETWORKING'], ['RECHARGE · SIM', 'रिचार्ज'], ['SOLDERING · CHIPS'], ['PRINTER INK · TONER'], ['REACT · NODE CLASSES'], ['GAMING ZONE'], ['PHONE COVERS', 'कवर'], ['UPS · INVERTER'], ['TYPESCRIPT TUITIONS']];
 const andheri: DistrictSpec = {
-  id: 'andheri', guide: 'the bazaar curator', guideOutfit: 'vendor', crowd: .75,
-  traffic: ['auto', 'bike', 'auto', 'cart', 'tempo', 'taxi', 'auto', 'bike', 'hatch', 'cycle', 'auto', 'bike', 'auto', 'suv'],
+  id: 'andheri', guide: 'the bazaar curator', guideOutfit: 'vendor', crowd: .62,
+  traffic: ['auto', 'bike', 'sedan', 'cart', 'bus', 'taxi', 'auto', 'hatch', 'bike', 'suv', 'auto', 'sedan'],
   build(d) {
     const c = d.ctx, { kit } = c; let n = 0;
     const shops = (k: number) => Array.from({ length: k }, () => andheriShops[n++ % andheriShops.length]);
@@ -127,7 +127,7 @@ const powai: DistrictSpec = {
 /* ============================================================ DADAR */
 const dadar: DistrictSpec = {
   id: 'dadar', guide: 'the platform announcer', guideOutfit: 'kurta',
-  traffic: ['bus', 'taxi', 'hatch', 'taxi', 'tempo', 'bike', 'sedan', 'taxi', 'cycle', 'bus', 'taxi', 'bike'],
+  traffic: ['bus', 'taxi', 'hatch', 'sedan', 'tempo', 'bike', 'sedan', 'taxi', 'suv', 'bus', 'hatch', 'bike'],
   build(d) {
     const c = d.ctx, { kit } = c;
     const chawlShops: Array<[string, string?]> = [['VADA PAV CENTRE', 'वडा पाव'], ['STATIONERY · NOTEBOOKS', 'वह्या'], ['CHEMIST', 'औषधे'], ['TAILOR', 'शिंपी'], ['SWEETS · MITHAI', 'मिठाई'], ['KIRANA', 'किराणा'], ['XEROX · PRINTS'], ['BHAJI PAV', 'भाजी']];
@@ -211,7 +211,7 @@ const worli: DistrictSpec = {
 /* ============================================================ JUHU */
 const juhu: DistrictSpec = {
   id: 'juhu', guide: 'the studio neighbour', guideOutfit: 'kurta', west: 'open', westLimit: 37.5, skyline: 'east',
-  traffic: ['suv', 'sedan', 'auto', 'bike', 'taxi', 'hatch', 'auto', 'suv', 'bike', 'sedan', 'auto', 'hatch'],
+  traffic: ['suv', 'sedan', 'auto', 'bus', 'taxi', 'hatch', 'sedan', 'suv', 'bike', 'sedan', 'auto', 'hatch'],
   build(d) {
     const c = d.ctx, { kit } = c;
     kit.box([2.9, .08, 290], [-5.35, .02, -22], '#aea493', 'paving'); for (let z = 118; z > -160; z -= 1.7) kit.box([.24, .14, 1.6], [-3.98, .06, z], '#2f2e2b');
@@ -243,7 +243,7 @@ const juhu: DistrictSpec = {
 /* ============================================================ FILM CITY */
 const filmcity: DistrictSpec = {
   id: 'filmcity', guide: 'the projectionist', guideOutfit: 'shirt', palette: ['#c9c2b0', '#b8b29e', '#d0c4ad'],
-  traffic: ['suv', 'tempo', 'bike', 'auto', 'hatch', 'sedan', 'tempo', 'suv', 'bike', 'cart'],
+  traffic: ['suv', 'bus', 'sedan', 'auto', 'hatch', 'sedan', 'tempo', 'suv', 'bike', 'hatch'],
   build(d) {
     const c = d.ctx, { kit } = c;
     // Gate arch at the studio entrance.

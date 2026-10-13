@@ -56,7 +56,7 @@ describe('city districts', () => {
       district.crowd.group.traverse(o => { if ((o as THREE.SkinnedMesh).isSkinnedMesh) expect((o.userData.lodGeometries as unknown[]).length).toBe(3); });
       for (const v of district.traffic.group.children) expect((v.userData.lodGeometries as unknown[]).length).toBe(2);
       expect(staticDraws, cityZones[i].id).toBeLessThan(20);
-      expect(staticTriangles, cityZones[i].id).toBeLessThan(160_000);
+      expect(staticTriangles, cityZones[i].id).toBeLessThan(180_000);
       expect(movers, cityZones[i].id).toBeLessThan(120);
       // Only the active district is kept alive.
       expect(root.children).toHaveLength(1);

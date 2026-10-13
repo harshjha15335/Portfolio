@@ -73,6 +73,10 @@ export class MumbaiStreet {
   private walkers: Array<{group:THREE.Group;agent?:CrowdAgent;target:number;wait:number}> = [];
   private trafficSystem = new RoadTraffic();
   private trafficVehicles: THREE.Group[] = [];
+  /** Through traffic driven outside the street (cars, BEST buses) that the loop taxis must queue behind. */
+  extraTrafficObstacles: Array<{ x: number; z: number }> = [];
+  /** Where the street's own taxis and autos are, so through traffic can queue behind them. */
+  get trafficPositions() { return this.trafficVehicles.map(v => v.position); }
   private previousTime = 0;
   private viewPosition = new THREE.Vector3();
   /** Shared verified surface materials; the other districts clone these. */
@@ -677,7 +681,7 @@ export class MumbaiStreet {
       }
       this.navigation.crowd.update(1/30,delta,3);
     }
-    this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...this.walkers.filter(w=>Math.abs(w.group.position.x)<3.9).map(w=>({x:w.group.position.x,z:w.group.position.z}))]);
+    this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...this.walkers.filter(w=>Math.abs(w.group.position.x)<3.9).map(w=>({x:w.group.position.x,z:w.group.position.z})),...this.extraTrafficObstacles]);
     this.trafficVehicles.forEach((vehicle,i)=>{const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y+=turn*(1-Math.exp(-8*delta));animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);});this.trafficUpdateMs=performance.now()-trafficStart;
     for (const animate of this.motion) animate(reduced ? 0 : time);
     this.group.updateMatrixWorld(true);

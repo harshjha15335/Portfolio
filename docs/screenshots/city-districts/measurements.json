@@ -1,162 +1,32 @@
 [
  {
-  "view": "bkc",
+  "view": "cst-traffic-south",
   "main": {
-   "draws": 81,
-   "triangles": 169910,
-   "textures": 96,
-   "programs": 35
+   "draws": 104,
+   "triangles": 229565,
+   "textures": 30,
+   "programs": 26
   },
-  "debug": "idle · 173 draws · 384398 triangles · 96 textures · 35 shaders · 393 MB JS · scale 1.00 · eye 1.68m"
+  "debug": "idle · 104 draws · 229565 triangles · 30 textures · 26 shaders · 151 MB JS · scale 1.00 · eye 1.68m"
  },
  {
-  "view": "bkc-boulevard",
+  "view": "cst-traffic",
   "main": {
-   "draws": 96,
-   "triangles": 173918,
-   "textures": 96,
-   "programs": 35
+   "draws": 58,
+   "triangles": 179032,
+   "textures": 32,
+   "programs": 26
   },
-  "debug": "idle · 81 draws · 169910 triangles · 96 textures · 35 shaders · 350 MB JS · scale 1.00 · eye 1.68m"
+  "debug": "idle · 104 draws · 229565 triangles · 30 textures · 26 shaders · 154 MB JS · scale 1.00 · eye 1.68m"
  },
  {
-  "view": "andheri",
+  "view": "spawn",
   "main": {
    "draws": 77,
-   "triangles": 220840,
-   "textures": 87,
-   "programs": 37
+   "triangles": 204417,
+   "textures": 32,
+   "programs": 26
   },
-  "debug": "0.9 fps · 77 draws · 220840 triangles · 87 textures · 37 shaders · 559 MB JS · scale 1.00 · eye 1.68m"
- },
- {
-  "view": "andheri-lane",
-  "main": {
-   "draws": 85,
-   "triangles": 219752,
-   "textures": 87,
-   "programs": 37
-  },
-  "debug": "idle · 77 draws · 220840 triangles · 87 textures · 37 shaders · 334 MB JS · scale 1.00 · eye 1.68m"
- },
- {
-  "view": "powai",
-  "main": {
-   "draws": 66,
-   "triangles": 126410,
-   "textures": 79,
-   "programs": 38
-  },
-  "debug": "0.8 fps · 66 draws · 126410 triangles · 79 textures · 38 shaders · 501 MB JS · scale 1.00 · eye 1.68m"
- },
- {
-  "view": "powai-lake",
-  "main": {
-   "draws": 22,
-   "triangles": 96330,
-   "textures": 79,
-   "programs": 38
-  },
-  "debug": "1.5 fps · 22 draws · 96330 triangles · 79 textures · 38 shaders · 307 MB JS · scale 1.00 · eye 1.68m"
- },
- {
-  "view": "dadar",
-  "main": {
-   "draws": 89,
-   "triangles": 196350,
-   "textures": 101,
-   "programs": 38
-  },
-  "debug": "0.8 fps · 89 draws · 196350 triangles · 101 textures · 38 shaders · 552 MB JS · scale 1.00 · eye 1.68m"
- },
- {
-  "view": "dadar-station",
-  "main": {
-   "draws": 96,
-   "triangles": 199918,
-   "textures": 101,
-   "programs": 38
-  },
-  "debug": "1.1 fps · 96 draws · 199918 triangles · 101 textures · 38 shaders · 375 MB JS · scale 1.00 · eye 1.68m"
- },
- {
-  "view": "dadar-maidan",
-  "main": {
-   "draws": 38,
-   "triangles": 178150,
-   "textures": 101,
-   "programs": 38
-  },
-  "debug": "1.5 fps · 38 draws · 178150 triangles · 101 textures · 38 shaders · 376 MB JS · scale 1.00 · eye 1.68m"
- },
- {
-  "view": "worli",
-  "main": {
-   "draws": 84,
-   "triangles": 181454,
-   "textures": 99,
-   "programs": 38
-  },
-  "debug": "0.8 fps · 84 draws · 181454 triangles · 99 textures · 38 shaders · 603 MB JS · scale 1.00 · eye 1.68m"
- },
- {
-  "view": "worli-seawall",
-  "main": {
-   "draws": 78,
-   "triangles": 185914,
-   "textures": 99,
-   "programs": 38
-  },
-  "debug": "1.6 fps · 78 draws · 185914 triangles · 99 textures · 38 shaders · 373 MB JS · scale 1.00 · eye 1.68m"
- },
- {
-  "view": "juhu",
-  "main": {
-   "draws": 66,
-   "triangles": 111084,
-   "textures": 93,
-   "programs": 39
-  },
-  "debug": "0.9 fps · 66 draws · 111084 triangles · 93 textures · 39 shaders · 579 MB JS · scale 1.00 · eye 1.68m"
- },
- {
-  "view": "juhu-beach",
-  "main": {
-   "draws": 74,
-   "triangles": 126488,
-   "textures": 93,
-   "programs": 39
-  },
-  "debug": "1.7 fps · 74 draws · 126488 triangles · 93 textures · 39 shaders · 354 MB JS · scale 1.00 · eye 1.68m"
- },
- {
-  "view": "filmcity",
-  "main": {
-   "draws": 81,
-   "triangles": 175026,
-   "textures": 84,
-   "programs": 37
-  },
-  "debug": "0.9 fps · 81 draws · 175026 triangles · 84 textures · 37 shaders · 551 MB JS · scale 1.00 · eye 1.68m"
- },
- {
-  "view": "filmcity-lot",
-  "main": {
-   "draws": 81,
-   "triangles": 176122,
-   "textures": 87,
-   "programs": 37
-  },
-  "debug": "idle · 81 draws · 175026 triangles · 84 textures · 37 shaders · 340 MB JS · scale 1.00 · eye 1.68m"
- },
- {
-  "view": "filmcity-shoot",
-  "main": {
-   "draws": 24,
-   "triangles": 146618,
-   "textures": 87,
-   "programs": 37
-  },
-  "debug": "1.7 fps · 24 draws · 146618 triangles · 87 textures · 37 shaders · 341 MB JS · scale 1.00 · eye 1.68m"
+  "debug": "idle · 58 draws · 179032 triangles · 32 textures · 26 shaders · 146 MB JS · scale 1.00 · eye 1.68m"
  }
 ]

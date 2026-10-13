@@ -16,7 +16,7 @@ const unit = {
   rim: new THREE.CylinderGeometry(1, 1, 1, 14),
 };
 /** Cheaper stand-ins for the distant version of a vehicle or prop. */
-const liteUnit: Record<UnitShape, THREE.BufferGeometry> = { ...unit, rounded: unit.box, cylinder: unit.cylinderLow, tyre: new THREE.CylinderGeometry(1, 1, 1, 12), rim: unit.cylinderLow, sphere: new THREE.SphereGeometry(1, 6, 4), cone: new THREE.ConeGeometry(1, 1, 5) };
+const liteUnit: Record<UnitShape, THREE.BufferGeometry> = { ...unit, rounded: new RoundedBoxGeometry(1, 1, 1, 1, .1), cylinder: unit.cylinderLow, tyre: new THREE.CylinderGeometry(1, 1, 1, 12), rim: new THREE.CylinderGeometry(1, 1, 1, 9), sphere: new THREE.SphereGeometry(1, 6, 4), cone: new THREE.ConeGeometry(1, 1, 5) };
 export type UnitShape = keyof typeof unit;
 const tapers = new Map<string, THREE.BufferGeometry>();
 
@@ -69,11 +69,10 @@ export class ColorMesh {
   rounded(size: V3, position: V3, color: string | THREE.Color, rotation: V3 = [0, 0, 0]) { return this.shape('rounded', size, position, color, rotation); }
   /** A wheel or drum lying across X. */
   wheel(radius: number, width: number, position: V3, color = '#1d2021', hub = '#8b8d86') {
-    // Round tyre with a darker sidewall band, a pressed rim and a small hub cap.
+    // Round tyre, a pressed rim and a small hub cap.
     this.shape('tyre', [radius, width, radius], position, color, [0, 0, Math.PI / 2]);
-    this.shape('tyre', [radius * .86, width * 1.04, radius * .86], position, '#262829', [0, 0, Math.PI / 2]);
     this.shape('rim', [radius * .6, width * 1.08, radius * .6], position, hub, [0, 0, Math.PI / 2]);
-    this.shape('rim', [radius * .2, width * 1.14, radius * .2], position, '#c9cbc6', [0, 0, Math.PI / 2]);
+    this.shape('cylinderLow', [radius * .2, width * 1.14, radius * .2], position, '#c9cbc6', [0, 0, Math.PI / 2]);
   }
   /** A thin rod between two points. */
   rod(a: V3, b: V3, radius: number, color: string) {
