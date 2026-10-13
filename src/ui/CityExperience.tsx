@@ -6,7 +6,7 @@ import { portfolio } from '../data/portfolio';
 import { skills } from '../data/skills';
 import {ResearchExhibition} from './ResearchExhibition';
 import { Modal } from './Modal';
-import { streetStops } from '../game/World/streetLayout';
+import { streetStops, zoneAt } from '../game/World/streetLayout';
 import type { Point, RideStatus, TransitKind } from '../game/World/transit';
 
 export function CityMap({ position, canRide, onTravel, onOpen, onRide, onClose }: {
@@ -16,15 +16,15 @@ export function CityMap({ position, canRide, onTravel, onOpen, onRide, onClose }
 }) {
   const [kind, setKind] = useState<TransitKind>('taxi');
   return <Modal title="MUMBAI CITY DIRECTORY" onClose={onClose} className="city-map-modal">
-    <div className="city-map-heading"><span className="eyebrow">CST → FORT / CITY DIRECTORY</span><h2>Where to, boss?</h2><p>Walk Fort Road or catch a ride between CST and Fort. Browse every portfolio stop in the directory.</p></div>
+    <div className="city-map-heading"><span className="eyebrow">{zoneAt(position.x).label} / CITY DIRECTORY</span><h2>Where to, boss?</h2><p>Every stop is a street you can walk. Flag a kaali-peeli or an auto and watch the meter, or jump straight there.</p></div>
     <div className="city-map-layout"><div className="city-map-graphic" aria-label="Stylized city map with current position">
       <svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" className="map-land"/><path d="M23 16 V76 H50 V36 H77 V76" className="map-loop"/><path d="M5 0V100" stroke="#5c99a8" strokeWidth="15"/></svg>
       <span className="map-sea-label">FORT ROAD<br />CST ↔ RESEARCH INSTITUTE</span>
       {districts.map((d, i) => <button className="city-map-stop" style={{ left: `${[23,23,23,50,50,50,77,77,77][i]}%`, top: `${[16,46,76,76,56,36,36,56,76][i]}%`, background: d.color }} key={d.id} aria-label={`Explore ${d.title}`} onClick={() => onOpen(d.id)}><b>{String(i + 1).padStart(2, '0')}</b><span>{d.shortName}</span></button>)}
-      <span className="map-you" style={{ left: '23%', top: `${16 + Math.max(0,Math.min(1,(10-position.z)/45))*30}%` }} aria-label="Your current position">●<small>YOU ARE HERE</small></span>
+      <span className="map-you" style={zoneAt(position.x).id === 'cst' ? { left: '23%', top: `${16 + Math.max(0,Math.min(1,(10-position.z)/45))*30}%` } : { left: `${[23,23,23,50,50,50,77,77,77][districts.findIndex(d => d.id === zoneAt(position.x).id)]}%`, top: `${[16,46,76,76,56,36,36,56,76][districts.findIndex(d => d.id === zoneAt(position.x).id)] - 7}%` }} aria-label="Your current position">●<small>YOU ARE HERE</small></span>
     </div><div className="city-directory"><div className="transport-choice" aria-label="Ride type"><button aria-pressed={kind === 'taxi'} onClick={() => setKind('taxi')}>KAALI-PEELI</button><button aria-pressed={kind === 'auto'} onClick={() => setKind('auto')}>AUTO</button></div>
       {districts.map((d, i) => <article key={d.id}><button onClick={() => onOpen(d.id)}><span className="district-number" style={{ color: d.color }}>{String(i + 1).padStart(2, '0')}</span><span><strong>{d.title}</strong><small>{d.descriptor}</small></span></button><div><button disabled={!canRide || !streetStops[d.id]} aria-label={`Ride to ${d.title}`} onClick={() => onRide(kind, d.id)}>RIDE ↗</button><button aria-label={`Travel to ${d.title}`} onClick={() => onTravel(d.id)}>GO →</button></div></article>)}
-      <p className="caption">CST + FORT: WALK OR RIDE · OTHER STOPS: OPEN PORTFOLIO</p></div></div>
+      <p className="caption">EVERY STOP: WALK, RIDE OR JUMP · TALK TO THE GUIDE FOR THE PORTFOLIO</p></div></div>
   </Modal>;
 }
 

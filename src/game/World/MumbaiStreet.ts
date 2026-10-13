@@ -75,6 +75,8 @@ export class MumbaiStreet {
   private trafficVehicles: THREE.Group[] = [];
   private previousTime = 0;
   private viewPosition = new THREE.Vector3();
+  /** Shared verified surface materials; the other districts clone these. */
+  get surfaceLibrary(){return this.surfaces;}
   get assetsReady(){return this.surfaces.ready;}
   get surfaceStatus(){return this.surfaces.status;}
   navigationStatus = 'loading';
