@@ -68,7 +68,7 @@ const bkc: DistrictSpec = {
 /* ============================================================ ANDHERI */
 const andheriShops: Array<[string, string?]> = [['MOBILE REPAIR', 'मोबाइल रिपेयर'], ['LAPTOP SERVICE', 'लैपटॉप'], ['COMPUTER PARTS', 'कंप्यूटर'], ['GPU · RAM · SSD'], ['ARDUINO · RASPBERRY PI'], ['CABLES & CHARGERS', 'केबल'], ['PYTHON · C++ BOOKS', 'किताबें'], ['CCTV & NETWORKING'], ['RECHARGE · SIM', 'रिचार्ज'], ['SOLDERING · CHIPS'], ['PRINTER INK · TONER'], ['REACT · NODE CLASSES'], ['GAMING ZONE'], ['PHONE COVERS', 'कवर'], ['UPS · INVERTER'], ['TYPESCRIPT TUITIONS']];
 const andheri: DistrictSpec = {
-  id: 'andheri', guide: 'the bazaar curator', guideOutfit: 'vendor',
+  id: 'andheri', guide: 'the bazaar curator', guideOutfit: 'vendor', crowd: .75,
   traffic: ['auto', 'bike', 'auto', 'cart', 'tempo', 'taxi', 'auto', 'bike', 'hatch', 'cycle', 'auto', 'bike', 'auto', 'suv'],
   build(d) {
     const c = d.ctx, { kit } = c; let n = 0;

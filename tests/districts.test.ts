@@ -7,7 +7,7 @@ import { districts } from '../src/data/city';
 import { routeLength } from '../src/game/World/transit';
 import * as THREE from 'three';
 
-const ctx = new Proxy({}, { get: (target: Record<string, unknown>, key: string) => key in target ? target[key] : () => {}, set: (target, key: string, value) => { target[key] = value; return true; } });
+const ctx: Record<string, unknown> = new Proxy({}, { get: (target: Record<string, unknown>, key: string) => key in target ? target[key] : () => ctx, set: (target, key: string, value) => { target[key] = value; return true; } });
 beforeEach(() => vi.stubGlobal('document', { createElement: () => ({ getContext: () => ctx }) }));
 afterEach(() => vi.unstubAllGlobals());
 
@@ -46,10 +46,18 @@ describe('city districts', () => {
     for (let i = 1; i < cityZones.length; i++) {
       const district = city.activate(i)!;
       expect(district.interactions.map(p => p.id)).toContain(cityZones[i].id);
-      let draws = 0, triangles = 0;
-      district.group.traverse(o => { const m = o as THREE.Mesh; if (!m.isMesh) return; draws++; const g = m.geometry; triangles += (g.index ? g.index.count : g.getAttribute('position').count) / 3; });
-      expect(draws, cityZones[i].id).toBeLessThan(110);
-      expect(triangles, cityZones[i].id).toBeLessThan(400_000);
+      // Static architecture merges to a handful of draws; people and vehicles carry a far LOD.
+      let staticDraws = 0, staticTriangles = 0, movers = 0;
+      district.group.traverse(o => {
+        const m = o as THREE.Mesh; if (!m.isMesh) return;
+        if (m.name.startsWith('district:')) { staticDraws++; const g = m.geometry; staticTriangles += (g.index ? g.index.count : g.getAttribute('position').count) / 3; }
+        else movers++;
+      });
+      district.crowd.group.traverse(o => { if ((o as THREE.SkinnedMesh).isSkinnedMesh) expect((o.userData.lodGeometries as unknown[]).length).toBe(3); });
+      for (const v of district.traffic.group.children) expect((v.userData.lodGeometries as unknown[]).length).toBe(2);
+      expect(staticDraws, cityZones[i].id).toBeLessThan(20);
+      expect(staticTriangles, cityZones[i].id).toBeLessThan(160_000);
+      expect(movers, cityZones[i].id).toBeLessThan(120);
       // Only the active district is kept alive.
       expect(root.children).toHaveLength(1);
     }

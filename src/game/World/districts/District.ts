@@ -6,10 +6,20 @@ import { SpatialIndex } from '../spatial/SpatialIndex';
 import type { CityZone } from '../streetLayout';
 import { DistrictKit } from './DistrictKit';
 import { Crowd, LaneTraffic, SignAtlas, Water } from './DistrictSystems';
-import { backdropBlock, streetLight, PASTELS, type Ctx } from './buildings';
+import { backdropBlock, constructionSite, rooftop, skylineCrown, streetClutter, streetLight, PASTELS, type Ctx } from './buildings';
 import type { Outfit } from './CityFolk';
 import { createCityVehicle, VEHICLE_LENGTH, type CityVehicleKind } from './CityVehicles';
 import { paintMaterial, type V3 } from './ColorMesh';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+/**
+ * How full the districts are, set from the graphics preset before a district is built
+ * (a district already built keeps its crowd until it is rebuilt on the next visit).
+ */
+export const cityDensity = { crowd: 1.6, traffic: 1.7 };
+export function setCityDensity(preset: 'low' | 'medium' | 'high') {
+  Object.assign(cityDensity, preset === 'low' ? { crowd: .9, traffic: 1 } : preset === 'high' ? { crowd: 2.6, traffic: 2.4 } : { crowd: 1.6, traffic: 1.7 });
+}
 
 export interface FrontageItem { w: number; setback?: number; gap?: number; build: (c: Ctx) => void }
 export interface DistrictSpec {
@@ -20,6 +30,8 @@ export interface DistrictSpec {
   /** Walkable limit on that side (default 19.5 m from the road centre). */
   westLimit?: number; eastLimit?: number;
   traffic: CityVehicleKind[];
+  /** Scales this district's share of the crowd (the bazaar is already packed with stalls). */
+  crowd?: number;
   build: (d: District) => void;
 }
 
@@ -40,7 +52,7 @@ export class District {
   constructor(private physics: CANNON.World, surfaces: StreetMaterials, readonly zone: CityZone, readonly spec: DistrictSpec) {
     const started = performance.now(); this.origin = new THREE.Vector3(zone.originX, 0, 0); this.group.position.copy(this.origin); this.group.name = `district:${spec.id}`;
     this.kit = new DistrictKit(this.origin, physics, surfaces, spec.id); this.ctx = { kit: this.kit, signs: this.signs };
-    this.street(); spec.build(this); this.guide(); this.populateTraffic();
+    this.street(); spec.build(this); this.guide(); this.populateTraffic(); this.streetLife();
     this.kit.build(); this.kit.group.children.slice().forEach(m => { this.group.add(m); m.position.set(0, 0, 0); });
     const signs = this.signs.build(); if (signs) this.group.add(signs);
     this.group.add(this.crowd.group, this.traffic.group); for (const w of this.waters) this.group.add(w.mesh);
@@ -61,6 +73,7 @@ export class District {
       for (let z = 118; z > -160; z -= 1.7) kit.box([.24, .14, 1.6], [side * 3.98, .06, z], Math.floor(z / 1.7) % 2 ? '#c7a84f' : '#2f2e2b');
       for (let z = 10; z > -60; z -= 16) streetLight(c, side * 6.4, z, side);
       for (let z = 9; z > -60; z -= 4.5) kit.box([.65, .015, .45], [side * 3.45, .005, z], '#2a2e33', 'metal');
+      streetClutter(c, side, this.zone.stop);
     }
     // The walkable envelope. Invisible; the road visibly continues past it.
     for (const side of [-1, 1]) kit.solid([1, 4, 86], [side * ((side < 0 ? this.spec.westLimit : this.spec.eastLimit) ?? 19.5), 2, -22]);
@@ -70,14 +83,24 @@ export class District {
       if ((side < 0 ? this.spec.west : this.spec.east) === 'open') continue;
       for (const [z0, z1] of [[21, 118], [-66, -160]]) for (let z = z0; z0 > 0 ? z < z1 : z > z1; z += (z0 > 0 ? 1 : -1) * 15) {
         const h = 10 + Math.abs(Math.sin(z * 1.7 + side)) * 16, w = 13.5;
-        kit.frame([side * (8.5 + (Math.abs(z) % 3)), 0, z + (z0 > 0 ? 7 : -7)], side > 0 ? -Math.PI / 2 : Math.PI / 2, () => backdropBlock(c, w, h, 12, palette[Math.abs(Math.round(z)) % palette.length]));
+        kit.frame([side * (8.5 + (Math.abs(z) % 3)), 0, z + (z0 > 0 ? 7 : -7)], side > 0 ? -Math.PI / 2 : Math.PI / 2, () => { backdropBlock(c, w, h, 12, palette[Math.abs(Math.round(z)) % palette.length]); rooftop(c, w, h, 12); });
       }
     }
-    for (let i = 0; i < 30; i++) {
-      const a = i * Math.PI / 15, x = Math.sin(a) * 125, z = -22 + Math.cos(a) * 125;
+    // Skyline: a ring of mid-rises, slab blocks and the odd tall tower with a crown or a crane.
+    const tones = ['#9ba69e', '#afb1a2', '#97a4a0', '#a99c8c', '#b8ad9b', '#8f9aa3'];
+    for (let i = 0; i < 34; i++) {
+      const a = i * Math.PI * 2 / 34 + (this.kit.rand() - .5) * .05, ring = 118 + (i % 3) * 14, x = Math.sin(a) * ring, z = -22 + Math.cos(a) * ring;
       if (this.spec.skyline === 'east' && x < 10) continue;
-      kit.frame([x, 0, z], a + Math.PI, () => backdropBlock(c, 24, 18 + (i % 5) * 5, 12, ['#9ba69e', '#afb1a2', '#97a4a0', '#a99c8c'][i % 4]));
+      const pickType = this.kit.rand(), tone = tones[i % tones.length];
+      kit.frame([x, 0, z], a + Math.PI, () => {
+        if (pickType < .28) { const h = 55 + this.kit.rand() * 45; backdropBlock(c, 16, h, 16, tone); skylineCrown(c, 16, h, this.kit.rand()); }
+        else if (pickType < .5) backdropBlock(c, 34, 24 + this.kit.rand() * 10, 12, tone);
+        else { const h = 18 + (i % 5) * 5; backdropBlock(c, 24, h, 12, tone); rooftop(c, 24, h, 12); }
+      });
     }
+    // A tower going up somewhere on the horizon, with its crane.
+    const ca = (this.spec.skyline === 'east' ? .6 : -.9) + this.kit.rand() * .4;
+    kit.frame([Math.sin(ca) * 132, 0, -22 + Math.cos(ca) * 132], ca + Math.PI, () => constructionSite(c));
   }
   private guide() {
     // Beside the arrival point, towards the buildings, turned to greet the visitor.
@@ -87,7 +110,7 @@ export class District {
     this.interactions.push({ id: this.spec.id, label: `Talk to ${this.spec.guide}`, position: new THREE.Vector3(this.origin.x + gx, 1.45, gz) });
   }
   private populateTraffic() {
-    const kinds = this.spec.traffic, north = this.traffic.lane([[1.6, 0, 120], [1.6, 0, -160]]), south = this.traffic.lane([[-1.6, 0, -160], [-1.6, 0, 120]]);
+    const n = Math.round(this.spec.traffic.length * cityDensity.traffic), kinds = Array.from({ length: n }, (_, i) => this.spec.traffic[(i * 7) % this.spec.traffic.length]), north = this.traffic.lane([[1.6, 0, 120], [1.6, 0, -160]]), south = this.traffic.lane([[-1.6, 0, -160], [-1.6, 0, 120]]);
     kinds.forEach((kind, i) => this.traffic.vehicle(i % 2 ? south : north, kind, ((i >> 1) + (i % 2) * .5) / Math.ceil(kinds.length / 2), `${this.spec.id}:${i}`));
   }
   /* --------- helpers used by district builders --------- */
@@ -103,14 +126,63 @@ export class District {
   }
   /** A parked vehicle: static, solid, no driver unless asked. */
   parked(kind: CityVehicleKind, x: number, z: number, yaw: number, rider = false) {
-    const mesh = createCityVehicle(kind, `${this.spec.id}:parked:${x}:${z}`, rider); mesh.position.set(x, .02, z); mesh.rotation.y = yaw; this.group.add(mesh);
+    const mesh = createCityVehicle(kind, `${this.spec.id}:parked:${x}:${z}`, rider); mesh.position.set(x, .02, z); mesh.rotation.y = yaw; mesh.updateMatrix();
+    this.parkedParts.push(mesh.geometry.applyMatrix4(mesh.matrix));
     const length = VEHICLE_LENGTH[kind], width = kind === 'bus' ? 2.5 : kind === 'bike' || kind === 'cycle' ? .7 : 1.7;
-    this.kit.solid([width, 1.4, length], [x, .7, z], yaw); return mesh;
+    this.kit.solid([width, 1.4, length], [x, .7, z], yaw);
   }
   water(width: number, depth: number, center: V3, color: string, amplitude?: number) { const w = new Water(width, depth, center, color, amplitude); this.waters.push(w); return w; }
   animate(step: (time: number, delta: number) => void) { this.motion.push(step); }
-  walkers(outfits: Outfit[], lanes: number[], z0 = 12, z1 = -56, speed = 1.05) {
+  private mix: Outfit[] = [];
+  walkers(base: Outfit[], lanes: number[], z0 = 12, z1 = -56, speed = 1.05) {
+    this.mix.push(...base);
+    const outfits = Array.from({ length: Math.round(base.length * cityDensity.crowd * (this.spec.crowd ?? 1)) }, (_, i) => base[(i * 5) % base.length]);
     outfits.forEach((o, i) => { const x = lanes[i % lanes.length] + ((i * 37) % 7 - 3) * .08; this.crowd.walker(o, [[x, .03, z0], [x, .03, z1]], speed * (.85 + ((i * 13) % 5) * .07), ((i * 29) % 17) / 17); });
+  }
+  /** Is a pavement spot clear of the stop, the guide and the zebra crossing? */
+  private clearOf(x: number, z: number) {
+    const s = this.zone.stop; return Math.hypot(x - s.x, z - s.z) > 6 && Math.abs(z + 12) > 3;
+  }
+  /**
+   * The life between the authored set pieces: knots of people chatting on the pavements and
+   * rows of parked two-wheelers along the kerb, scaled by `cityDensity`.
+   */
+  private streetLife() {
+    const r = () => this.kit.rand(), mix = this.mix.length ? this.mix : ['shirt', 'office', 'sari', 'kurta'] as Outfit[];
+    for (const side of [-1, 1]) {
+      if ((side < 0 ? this.spec.west : this.spec.east) === 'open') continue;
+      // Knots of two or three people facing each other.
+      const knots = Math.round(4 * cityDensity.crowd * (this.spec.crowd ?? 1));
+      for (let k = 0; k < knots; k++) {
+        const z = 8 - (k + .3 + r() * .4) * (64 / knots), x = side * (5.9 + r() * .5); if (!this.clearOf(x, z)) continue;
+        const size = 2 + (r() > .6 ? 1 : 0);
+        for (let i = 0; i < size; i++) {
+          const a = i / size * Math.PI * 2 + r(), px = x + Math.cos(a) * .42, pz = z + Math.sin(a) * .42;
+          const p = this.crowd.idle(mix[Math.floor(r() * mix.length)], [px, .03, pz], 0, r() > .5 ? 'talk' : 'stand');
+          p.group.rotation.y = Math.atan2(px - x, pz - z) + Math.PI;
+        }
+      }
+      // Two-wheelers parked nose-in at the kerb, in clusters.
+      const kinds = ['bike', 'bike', 'cycle', 'bike'] as const;
+      for (let z = 10 - r() * 4; z > -58; z -= 9 + r() * 7) {
+        if (!this.clearOf(side * 3.4, z) || !this.clearOf(side * 3.4, z - 4)) continue;
+        const count = 3 + Math.floor(r() * 4);
+        for (let i = 0; i < count; i++) this.parkedLite(kinds[Math.floor(r() * kinds.length)], side * 3.35, z - i * .85, side > 0 ? -Math.PI / 2 + (r() - .5) * .2 : Math.PI / 2 + (r() - .5) * .2);
+        this.kit.solid([1.6, 1.2, count * .85], [side * 3.35, .6, z - (count - 1) * .85 / 2]);
+      }
+    }
+    this.flushParked();
+  }
+  private parkedParts: THREE.BufferGeometry[] = [];
+  /** Queue a static vehicle into the district's single merged parked-vehicle mesh. */
+  parkedLite(kind: CityVehicleKind, x: number, z: number, yaw: number) {
+    const mesh = createCityVehicle(kind, `${this.spec.id}:row:${x}:${z.toFixed(2)}`, false, true);
+    mesh.position.set(x, .02, z); mesh.rotation.y = yaw; mesh.updateMatrix(); this.parkedParts.push(mesh.geometry.applyMatrix4(mesh.matrix));
+  }
+  private flushParked() {
+    if (!this.parkedParts.length) return;
+    const mesh = new THREE.Mesh(mergeGeometries(this.parkedParts)!, paintMaterial()); this.parkedParts.forEach(g => g.dispose()); this.parkedParts = [];
+    mesh.name = 'district:parked'; mesh.castShadow = mesh.receiveShadow = true; this.group.add(mesh);
   }
   setActive(active: boolean) { this.group.visible = active; }
   update(time: number, reduced: boolean, view: THREE.Vector3) {

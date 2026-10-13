@@ -11,6 +11,7 @@ import { createTransitModel, animateTransit } from '../game/World/TransitModel';
 import { idleRide, pointAtDistance, routeLength, storyFare, type Point, type RideStatus, type TransitKind } from '../game/World/transit';
 import { STREET_SPAWN, streetStops, streetPickupRoute, walkingVelocity, cityRideLegs, cityZones, zoneIndexAt, districtViews } from '../game/World/streetLayout';
 import { CityDistricts } from '../game/World/districts/CityDistricts';
+import { setCityDensity } from '../game/World/districts/District';
 import { districts as directory } from '../data/city';
 
 interface WorldOptions {
@@ -87,6 +88,7 @@ export class WorldEngine {
     this.physics.defaultContactMaterial.friction = 0; this.physics.defaultContactMaterial.restitution = 0;
     this.street = new MumbaiStreet(this.physics); this.scene.add(this.street.group);
     // Districts are built on first need and receive the same weathering/haze patch as the street.
+    setCityDensity(this.renderPreset);
     this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed)this.pausedFrameDirty=true;});
     const preview=import.meta.env.DEV?new URLSearchParams(location.search).get('characterPreview'):null;
     if(stationCharacter&&(stationCharacter.status==='approved'&&stationCharacter.visualReview||preview==='idle'||preview==='walk'))void this.street.installStationCharacter(stationCharacter.asset,preview==='walk').then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}}).catch(error=>console.warn('Character admission failed; existing host retained',error));
@@ -145,7 +147,7 @@ export class WorldEngine {
   }
   setPaused(paused: boolean) { this.paused = paused; this.audio?.setActive(this.soundEnabled&&!paused&&this.mode==='world'&&!document.hidden); this.pausedFrameDirty = true; this.releaseInput(); this.accumulator = 0; this.visitor.velocity.setZero(); if (paused) this.unlock(); }
   setSound(enabled:boolean) { this.soundEnabled=enabled; if(enabled&&!this.audio){try{this.audio=new StreetAudio();}catch{this.soundEnabled=false;}} this.audio?.setActive(enabled&&this.mode==='world'&&!this.paused&&!document.hidden); }
-  setRenderPreset(preset:RenderPreset){this.renderPreset=preset;this.rendering.setPreset(this.quality.low?'low':preset);this.renderer.shadowMap.enabled=preset!=='low'&&!this.options.mobile&&!this.quality.low;this.syncSunBalance();this.renderer.shadowMap.needsUpdate=true;this.resize();this.pausedFrameDirty=true;}
+  setRenderPreset(preset:RenderPreset){this.renderPreset=preset;setCityDensity(preset);this.rendering.setPreset(this.quality.low?'low':preset);this.renderer.shadowMap.enabled=preset!=='low'&&!this.options.mobile&&!this.quality.low;this.syncSunBalance();this.renderer.shadowMap.needsUpdate=true;this.resize();this.pausedFrameDirty=true;}
   setReducedMotion(reduced: boolean) { this.reducedMotion = reduced;this.pausedFrameDirty=true; }
   focusLandmark(_id: string) { /* Reading an overlay never changes the visitor's viewpoint. */ }
   travelTo(id: string) {

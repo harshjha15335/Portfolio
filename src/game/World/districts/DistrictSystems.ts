@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createCityPerson, type CityPerson, type Outfit } from './CityFolk';
-import { createCityVehicle, VEHICLE_LENGTH, VEHICLE_SPEED, type CityVehicleKind } from './CityVehicles';
+import { VEHICLE_LENGTH, VEHICLE_SPEED, type CityVehicleKind, createCityVehicleLod, setVehicleDetail } from './CityVehicles';
 import type { V3 } from './ColorMesh';
 
 /* ------------------------------------------------------------------ signs */
@@ -108,7 +108,11 @@ export class Crowd {
         w.s += w.dir * w.speed * delta;
         if (w.s > w.total || w.s < 0) { if (w.loop) w.s = (w.s + w.total) % w.total; else { w.dir *= -1; w.s = THREE.MathUtils.clamp(w.s, 0, w.total); w.pause = 1 + (w.total % 3); } }
       }
-      this.place(w); this.lod(w.person, time, w.pause <= 0 && !blocked, false, view);
+      this.place(w);
+      // Step around the visitor instead of walking through them.
+      const gap = Math.hypot(view.x - g.position.x, view.z - g.position.z);
+      if (gap < 1.6) { const ax = g.position.x - view.x, az = g.position.z - view.z, n = Math.max(gap, .01); g.position.x += ax / n * (1.6 - gap); g.position.z += az / n * (1.6 - gap); }
+      this.lod(w.person, time, w.pause <= 0 && !blocked, false, view);
     }
     for (const i of this.idlers) {
       const g = i.person.group; if (!this.lod(i.person, time, false, i.act === 'sit', view)) continue;
@@ -122,7 +126,7 @@ export class Crowd {
   }
   /** Distance LOD; returns whether the person should animate this frame. */
   private lod(p: CityPerson, time: number, walking: boolean, seated: boolean, view: THREE.Vector3) {
-    const d = p.group.position.distanceTo(view); p.human.mesh.visible = d < 58; p.setDetail(d < 9);
+    const d = p.group.position.distanceTo(view); p.human.mesh.visible = d < 70; p.setLevel(d < 9 ? 0 : d < 20 ? 1 : 2);
     if (!p.human.mesh.visible) return false;
     if (d > 22 && (this.frame + p.group.id) % 3) return false;
     p.animate(time, walking, seated); return true;
@@ -141,7 +145,7 @@ export class LaneTraffic {
   readonly group = new THREE.Group(); private lanes: Array<{ curve: THREE.CatmullRomCurve3; length: number }> = []; private agents: Agent[] = [];
   lane(points: V3[]) { const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)), false, 'centripetal'); this.lanes.push({ curve, length: curve.getLength() }); return this.lanes.length - 1; }
   vehicle(lane: number, kind: CityVehicleKind, at: number, seed: string, parked = false) {
-    const mesh = createCityVehicle(kind, seed); this.group.add(mesh);
+    const mesh = createCityVehicleLod(kind, seed); this.group.add(mesh);
     const a: Agent = { mesh, kind, lane, s: at * this.lanes[lane].length, speed: 0, max: parked ? 0 : VEHICLE_SPEED[kind] * (.85 + (seed.length % 5) * .06), length: VEHICLE_LENGTH[kind], active: true };
     this.agents.push(a); this.pose(a, 1); return mesh;
   }
@@ -151,7 +155,9 @@ export class LaneTraffic {
     a.mesh.rotation.y += turn * blend;
   }
   update(time: number, delta: number, obstacles: THREE.Vector3[]) {
+    const view = obstacles[0];
     for (const a of this.agents) {
+      if (view) setVehicleDetail(a.mesh as THREE.Mesh, a.mesh.position.distanceToSquared(view) < 32 * 32);
       if (!a.max) continue;
       const lane = this.lanes[a.lane];
       if (!a.active) {

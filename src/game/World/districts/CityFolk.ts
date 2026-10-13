@@ -9,7 +9,9 @@ import { seededRandom } from '../StreetArchitecture';
  * bones and merged into the body mesh, so each person stays one draw.
  */
 export type Outfit = 'shirt' | 'office' | 'sari' | 'salwar' | 'kurta' | 'school' | 'worker' | 'dabbawala' | 'koli' | 'jogger' | 'elder' | 'vendor';
-export interface CityPerson { group: THREE.Group; human: Human; outfit: Outfit; animate: (time: number, walking: boolean, seated?: boolean) => void; setDetail: (close: boolean) => void }
+export interface CityPerson { group: THREE.Group; human: Human; outfit: Outfit; animate: (time: number, walking: boolean, seated?: boolean) => void; setDetail: (close: boolean) => void;
+  /** 0 close, 1 street, 2 far (a ~300-triangle body on the same bones). */
+  setLevel: (level: 0 | 1 | 2) => void }
 
 // Bone indices from createHuman: 0 pelvis, 1 spine, 2 neck, 3 head; hips 4/7, knees 5/8; shoulders 10/13, elbows 11/14.
 const PANTS = ['#495459', '#64695d', '#756b60'], HAIR = ['#292922', '#514337'];
@@ -99,8 +101,10 @@ export function createCityPerson(seed: string, outfit: Outfit, scale = 1): CityP
   };
   const close = dress(closeBase, spec.garments), street = dress(streetBase, far.garments);
   closeBase.dispose(); if (streetBase !== closeBase) streetBase.dispose();
-  human.mesh.geometry = close; human.mesh.userData.lodGeometries = [close, street];
+  const distant = farBody(human, close, outfit, spec.top, spec.bottom, spec.hair ?? HAIR[0]);
+  human.mesh.geometry = close; human.mesh.userData.lodGeometries = [close, street, distant];
   human.setDetail = (near: boolean) => { human.mesh.geometry = near ? close : street; };
+  const levels = [close, street, distant], setLevel = (level: 0 | 1 | 2) => { human.mesh.geometry = levels[level]; };
   human.group.scale.multiplyScalar(scale);
   const b = human.bones;
   const animate = (time: number, walking: boolean, seated = false) => {
@@ -110,5 +114,46 @@ export function createCityPerson(seed: string, outfit: Outfit, scale = 1): CityP
     else if (spec.pose === 'phone') { b[13].rotation.set(-.35, 0, .1); b[14].rotation.set(-2.2, 0, .3); }
     else if (spec.pose === 'hands-behind') { for (const [s, i] of [[-1, 10], [1, 13]]) { b[i].rotation.set(.45, 0, -s * .2); b[i + 1].rotation.set(.9, 0, 0); } }
   };
-  return { group: human.group, human, outfit, animate, setDetail: human.setDetail };
+  return { group: human.group, human, outfit, animate, setDetail: human.setDetail, setLevel };
+}
+
+/**
+ * The distant body: tapered five-sided limbs, torso and head skinned rigidly to the same bones,
+ * in the outfit's colours. Past ~20 m it reads the same as the full body for a sixth of the cost.
+ */
+function farBody(human: Human, close: THREE.BufferGeometry, outfit: Outfit, top: string, bottom: string, hair: string) {
+  const bind = human.mesh.skeleton.boneInverses.map(m => new THREE.Vector3().setFromMatrixPosition(m.clone().invert()));
+  // Skin tone from the close body's head vertices.
+  const index = close.getAttribute('skinIndex'), color = close.getAttribute('color'); let skin = new THREE.Color('#8a5a40');
+  for (let i = 0; i < index.count; i++) if (index.getX(i) === 3 && close.getAttribute('skinWeight').getX(i) > .99) { skin = new THREE.Color(color.getX(i), color.getY(i), color.getZ(i)); break; }
+  const parts: THREE.BufferGeometry[] = [];
+  const limb = (a: THREE.Vector3, b: THREE.Vector3, ra: number, rb: number, tint: THREE.Color | string, bone: number, sides = 5) => {
+    const length = a.distanceTo(b), g = new THREE.CylinderGeometry(rb, ra, length, sides, 1, false).toNonIndexed();
+    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize()));
+    g.translate((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
+    const n = g.getAttribute('position').count, c = new THREE.Color(tint), colors = new Float32Array(n * 3), si = new Uint16Array(n * 4), sw = new Float32Array(n * 4);
+    for (let i = 0; i < n; i++) { colors.set([c.r, c.g, c.b], i * 3); si[i * 4] = bone; sw[i * 4] = 1; }
+    g.setAttribute('color', new THREE.BufferAttribute(colors, 3)); g.setAttribute('skinIndex', new THREE.BufferAttribute(si, 4)); g.setAttribute('skinWeight', new THREE.BufferAttribute(sw, 4));
+    parts.push(g);
+  };
+  const up = (v: THREE.Vector3, dy: number) => v.clone().setY(v.y + dy);
+  const [pelvis, , neck, head] = bind, long = outfit === 'sari' || outfit === 'salwar' || outfit === 'kurta';
+  for (const [hip, knee, ankle, shoulder, elbow, wrist] of [[4, 5, 6, 10, 11, 12], [7, 8, 9, 13, 14, 15]].map(l => l.map(i => bind[i]))) {
+    const side = hip === bind[4] ? 0 : 1;
+    limb(hip, knee, .085, .065, bottom, 4 + side * 3); limb(knee, ankle, .062, .048, bottom, 5 + side * 3);
+    limb(up(ankle, -.02), up(ankle, -.06).setZ(ankle.z + .13), .05, .045, '#2a2622', 6 + side * 3, 4);
+    limb(shoulder, elbow, .058, .05, top, 10 + side * 3); limb(elbow, wrist, .046, .04, outfit === 'office' || outfit === 'kurta' || outfit === 'elder' ? top : skin, 11 + side * 3);
+    limb(wrist, up(wrist, -.09), .038, .03, skin, 12 + side * 3, 4);
+  }
+  limb(up(pelvis, -.08), up(pelvis, .12), .16, .17, bottom, 0, 6);
+  limb(up(pelvis, .1), up(neck, -.06), .17, .2, top, 1, 6);
+  limb(up(neck, -.08), up(neck, .06), .055, .05, skin, 2, 5);
+  limb(up(head, -.02), up(head, .19), .085, .09, skin, 3, 6);
+  limb(up(head, .14), up(head, .25), .1, .02, hair, 3, 6);
+  // Long garments: a sari or kameez flares from the waist past the knee.
+  if (long) limb(up(pelvis, .05), up(bind[5], outfit === 'sari' ? -.38 : -.05), .18, outfit === 'sari' ? .25 : .22, outfit === 'salwar' || outfit === 'kurta' ? top : top, 0, 7);
+  const merged = mergeGeometries(parts)!; parts.forEach(g => g.dispose()); merged.computeVertexNormals();
+  // Keep the attribute set identical to the full body (uv may be sampled by the shared material).
+  for (const [name, attribute] of Object.entries(close.attributes)) if (!merged.hasAttribute(name)) merged.setAttribute(name, new THREE.BufferAttribute(new (attribute.array.constructor as Float32ArrayConstructor)(merged.getAttribute('position').count * attribute.itemSize), attribute.itemSize));
+  return merged;
 }

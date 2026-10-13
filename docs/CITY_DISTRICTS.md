@@ -41,22 +41,39 @@ original Fort Road street (`MumbaiStreet`). The other seven are separate walkabl
 * `LaneTraffic` runs BEST buses, hatchbacks, sedans, SUVs, kaali-peeli taxis, autos, bikes, cycles,
   tempos and handcarts on two lanes, yielding to the visitor and the ride camera.
 
-Main-pass cost at each district's stop (SwiftShader, 1440×900, cached shadow map, from
+### Realism and density pass
+
+* `FacadeTexture` paints one shared 1024² apartment façade (frames, grills, curtains, box ACs, chajjas,
+  run-off). Background blocks and the skyline use it, tinted per building by vertex colour.
+* `DistrictKit` subdivides big walls and bakes contact shadow at wall bases, shade under ledges and
+  large grime blotches into vertex colours.
+* The skyline mixes mid-rises, slab blocks and 55–100 m towers with crowns, and every district has a
+  tower under construction with its crane. Blocks carry water tanks, stair heads, dishes and masts.
+* `streetClutter` lines each kerb with utility poles and sagging cable bundles, transformers, bins,
+  rubbish bags, a paan kiosk and crates. `District.streetLife` adds chatting knots of people and
+  rows of parked scooters and motorcycles (merged into one draw).
+* Density follows the graphics preset through `setCityDensity`: crowd ×0.9 / 1.6 / 2.6 and traffic
+  ×1 / 1.7 / 2.4 for Low / Medium / High, relative to the authored lists. A district keeps its
+  density until it is rebuilt on the next visit.
+* LOD keeps that affordable: people switch to a ~300-triangle body on the same bones past 20 m,
+  and traffic switches to a low-segment vehicle past 32 m.
+
+Main-pass cost at each district's stop on Medium (SwiftShader, 1440×900, cached shadow map, from
 `scripts/capture-districts.mjs`):
 
 | District | Draws | Triangles |
 | --- | --- | --- |
-| BKC | 39 | 116k |
-| Andheri | 57 | 221k |
-| Powai | 37 | 105k |
-| Dadar | 49 | 148k |
-| Worli (sea wall) | 54 | 182k |
-| Juhu (beach) | 51 | 140k |
-| Film City | 40 | 111k |
+| BKC | 81 | 170k |
+| Andheri | 77 | 221k |
+| Powai | 66 | 126k |
+| Dadar | 89 | 196k |
+| Worli | 84 | 181k |
+| Juhu | 66 | 111k |
+| Film City | 81 | 175k |
 
-All are inside the street's 110-draw / 230k-triangle budget. Texture and program counts are higher
-than the street's ceilings (47–69 textures, 34–39 programs) because each skinned person carries a bone
-texture and `renderer.info.programs` keeps the CST street's compiled programs after leaving it.
+All are inside the street's 110-draw / 230k-triangle budget. Texture counts (84–104) are well above
+the street's 32: each skinned person carries its own bone texture, so the count tracks the crowd.
+Programs are 35–39 because `renderer.info.programs` keeps the CST street's compiled programs.
 
 ## Review
 

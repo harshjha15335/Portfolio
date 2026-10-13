@@ -210,7 +210,7 @@ export function stall(c: Ctx, x: number, z: number, rotationY: number, tarp: str
     kit.box([2.2, .85, 1.1], [0, .42, 0], '#7d5e40', 'wood'); kit.solid([2.2, 1, 1.1], [0, .5, 0]);
     for (const sx of [-1.05, 1.05]) for (const sz of [-.5, .5]) kit.rod([sx, 0, sz], [sx, 2.3, sz], .03, '#5b5b55');
     kit.shape('box', [2.6, .04, 1.8], [0, 2.35, .1], tarp, 'fabric', [.12, 0, 0]);
-    for (let i = 0; i < 30; i++) kit.shape(i % 3 ? 'sphere' : 'box', [.075, .06, .075], [-.95 + (i % 10) * .21, .9 + Math.floor(i / 10) * .05, -.38 + Math.floor(i / 10) * .3], pick(kit, goods));
+    for (let i = 0; i < 20; i++) kit.shape(i % 3 ? 'cylinderLow' : 'box', [.075, .06, .075], [-.95 + (i % 10) * .21, .9 + Math.floor(i / 10) * .05, -.38 + Math.floor(i / 10) * .3], pick(kit, goods));
     for (let i = 0; i < 5; i++) kit.box([.08, .4, .08], [-.9 + i * .45, 1.95, .55], pick(kit, goods), 'fabric');
     if (label) sign(c, label, 1.9, [0, 2.15, .95], { bg: tarp, fg: '#fff3d6', local }, [384, 96], 0);
   });
@@ -241,7 +241,67 @@ export function tetrapods(c: Ctx, x0: number, x1: number, z0: number, z1: number
 }
 /** A generic distant block for skylines and side-street closures. */
 export function backdropBlock(c: Ctx, w: number, h: number, d: number, color: string, faceWindows = true) {
-  const { kit } = c; kit.box([w, h, d], [0, h / 2, -d / 2], color, 'plaster');
+  const { kit } = c; kit.box([w, h, d], [0, h / 2, -d / 2], color, faceWindows ? 'facade' : 'plaster');
   kit.box([w + .2, .25, d + .2], [0, h + .12, -d / 2], shade(color, .85), 'stone');
-  if (faceWindows) for (let y = 4.4; y < h - 1; y += 3) { kit.box([w - 1, 1.2, .05], [0, y, .02], '#3c4a4e', 'glass'); kit.box([w, .14, .2], [0, y - .8, .08], shade(color, 1.08), 'stone'); }
+}
+
+/* --------------------------------------------------------------- skyline and street clutter */
+/** Rooftop life on a block: Sintex water tanks, a stair head, dish antennas and a cell mast. */
+export function rooftop(c: Ctx, w: number, h: number, d: number) {
+  const { kit } = c, r = () => kit.rand();
+  const tanks = 1 + Math.floor(r() * 3);
+  for (let i = 0; i < tanks; i++) { const x = -w / 2 + 1.5 + r() * (w - 3), z = -1.5 - r() * (d - 3); kit.cylinder(.6, 1.2, [x, h + .6, z], '#1f2120', 'solid'); kit.cylinder(.64, .1, [x, h + 1.22, z], '#2b2d2c', 'solid'); }
+  kit.box([2.6, 2.4, 2.8], [w * .25 * (r() > .5 ? 1 : -1), h + 1.2, -d * .5], '#b3a893', 'plaster');
+  if (r() > .55) { const x = (r() - .5) * w * .6; kit.rod([x, h, -2], [x, h + 7, -2], .07, '#8c8f8a'); for (let k = 0; k < 3; k++) kit.box([.25, .9, .12], [x + (k - 1) * .35, h + 6.2, -1.85], '#d9dbd6', 'metal'); }
+  if (r() > .5) for (let k = 0; k < 2; k++) kit.shape('sphere', [.4, .14, .4], [(r() - .5) * w * .7, h + .5, -1 - r() * 3], '#cfd0cb', 'metal', [.7, 0, 0]);
+}
+/** A crown for a tall tower: setback cap, mechanical floors and a lit band. */
+export function skylineCrown(c: Ctx, w: number, h: number, seed: number) {
+  const { kit } = c;
+  kit.box([w * .7, 4, w * .7], [0, h + 2, -w / 2], '#b9b4a8', 'plaster');
+  kit.box([w * .72, .5, w * .72], [0, h + 3.6, -w / 2], '#d9c48a', 'glow');
+  if (seed > .5) kit.rod([0, h + 4, -w / 2], [0, h + 14, -w / 2], .12, '#9a9c96');
+  else kit.box([w * .4, 3, w * .4], [0, h + 5.5, -w / 2], '#a8a397', 'plaster');
+}
+/** A tower under construction: bare floor slabs, columns and a luffing tower crane. */
+export function constructionSite(c: Ctx) {
+  const { kit } = c, floors = 14, w = 18;
+  for (let f = 0; f <= floors; f++) kit.box([w, .4, w], [0, f * 3.2, -w / 2], '#a9a69d', 'stone');
+  for (const x of [-w / 2 + .5, 0, w / 2 - .5]) for (const z of [-.5, -w / 2, -w + .5]) kit.box([.6, floors * 3.2, .6], [x, floors * 1.6, z], '#9d9a90', 'stone');
+  kit.box([w * .6, 2.6, .1], [0, floors * 3.2 - 1.6, .1], '#2f6c3d', 'fabric');
+  const mx = w / 2 + 3, top = floors * 3.2 + 22;
+  for (const sx of [-.8, .8]) for (const sz of [-.8, .8]) kit.rod([mx + sx, 0, -6 + sz], [mx + sx, top, -6 + sz], .08, '#d9a21f');
+  for (let y = 4; y < top; y += 4) kit.rod([mx - .8, y, -6.8], [mx + .8, y + 4, -5.2], .04, '#d9a21f');
+  kit.box([42, 1.2, 1.2], [mx - 9, top + .6, -6], '#e0aa25', 'metal'); kit.box([4, 2.2, 2.4], [mx + 9, top - .6, -6], '#5c5f5b', 'metal');
+  kit.rod([mx - 26, top + .4, -6], [mx - 26, top - 18, -6], .03, '#2b2b2b');
+}
+/**
+ * Everyday kerb furniture along one side: wooden utility poles with sagging cable bundles,
+ * transformer boxes, municipal bins, rubbish bags, a paan-beedi kiosk and loose crates.
+ */
+export function streetClutter(c: Ctx, side: number, stop: { x: number; z: number }) {
+  const { kit } = c, r = () => kit.rand(), near = (z: number) => Math.abs(z - stop.z) < 5 && Math.sign(stop.x) === side;
+  for (let z = 6 - r() * 4; z > -58; z -= 18 + r() * 6) {
+    if (near(z)) continue;
+    const x = side * 4.25;
+    kit.cylinder(.11, 8.5, [x, 4.25, z], '#5a4c3e', 'wood', true); kit.solid([.3, 3, .3], [x, 1.5, z]);
+    kit.box([1.2, .08, .08], [x, 7.6, z], '#4a3e33', 'wood'); kit.box([.9, .08, .08], [x, 7.1, z], '#4a3e33', 'wood');
+    // Cables: some cross the road, some run back to the building, all sag.
+    for (let k = 0; k < 4; k++) {
+      const y = 6.9 + k * .22, to: V3 = k % 2 ? [-side * 4.25, y - .3, z - 2 - k] : [side * 7.2, y - 1.2 - k * .2, z + (k - 1.5) * 1.5];
+      const mid: V3 = [(x + to[0]) / 2, y - .55 - r() * .4, (z + to[2]) / 2];
+      kit.rod([x, y, z], mid, .012, '#1d1e1e'); kit.rod(mid, to, .012, '#1d1e1e');
+    }
+    if (r() > .55) { kit.box([.9, 1.1, .7], [x, 4.6, z + .5], '#7c817a', 'metal'); kit.cylinder(.08, .6, [x, 5.4, z + .5], '#3a3d3a', 'metal', true); }
+    if (r() > .4) { kit.solid([.55, .9, .55], [side * 4.3, .45, z - 1.4]); kit.box([.55, .85, .55], [side * 4.3, .43, z - 1.4], r() > .5 ? '#2f6a8f' : '#3d7a45', 'solid'); kit.box([.6, .06, .6], [side * 4.3, .88, z - 1.4], '#26292a', 'solid'); }
+    if (r() > .5) for (let k = 0; k < 3; k++) kit.shape('cylinderLow', [.24, .3, .24], [side * (4.15 + r() * .1), .18, z - 2.2 - k * .35], '#1c1d1d', 'solid');
+  }
+  // A paan-beedi kiosk and a few crates by a shopfront.
+  const kz = -26 - r() * 18;
+  if (!near(kz)) kit.frame([side * 6.4, 0, kz], side > 0 ? -Math.PI / 2 : Math.PI / 2, () => {
+    kit.box([1.4, 1.1, .9], [0, .55, 0], '#6d4f36', 'wood'); kit.solid([1.4, 1.1, .9], [0, .55, 0]); kit.box([1.5, .9, .05], [0, 1.6, -.4], '#2d2a26', 'solid');
+    kit.box([1.6, .06, 1.1], [0, 2.1, .05], '#b8342a', 'fabric'); for (let i = 0; i < 8; i++) kit.box([.06, .2 + r() * .1, .03], [-.6 + i * .17, 1.35, .44], pick(kit, ['#e4c04a', '#d9452f', '#3a7dc4', '#f2f0e8']), 'fabric');
+    kit.box([.1, .1, .1], [.5, 1.2, .48], '#ffd27a', 'glow');
+  });
+  for (let i = 0; i < 3; i++) { const z = -8 - r() * 44; if (!near(z)) kit.box([.5, .32, .38], [side * (6.2 + r() * .3), .16 + (i % 2) * .32, z], pick(kit, ['#8f6b45', '#a37d50', '#6f8a9a']), 'wood', r()); }
 }
