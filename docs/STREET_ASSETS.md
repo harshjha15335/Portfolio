@@ -77,8 +77,8 @@ Harsh asked for the buildings to look realistic. GitHub was searched for an open
 
 - **Cement-render maps, original:** `scripts/generate-plaster-maps.py` replaces the 256 px noise plaster set (colour, roughness, normal) with a tileable 1,024 px study of painted cement render. It has float-trowel undulation, sand grain, aggregate pits, hairline cracks, patched repairs, and flaking paint over grey cement, with dirt held in the cracks. It is generated from seeded noise; no photographs or third-party input. It replaces three textures one for one, so the texture count is unchanged.
 - **Wall maps in real metres:** plaster and stone were mapped on each box's own UVs, so every wall stretched them differently and the detail washed out. They now tile in world metres on each face's plane: plaster every 2 m, stone courses about 30 cm apart. This uses the same shared shader patch as the asphalt (`uWallUv`), so the program count is unchanged.
-- **Shader ageing:** the same patch adds procedural plaster relief to the shading normal within 25 m, plus fine grain, patchy repaint and long monsoon tide marks. It applies to every lit street material by uniform strength; people, vehicles and glass stay at zero.
-- **Rain run-off:** tapered streaks hang under every window sill and run down the solid piers from each parapet. They are dark where water leaves the ledge and fade toward the wall colour. They merge into the existing damp-patina mesh, so they add **no draw call**: about 880 triangles across the street, two per streak.
+- **Shader ageing:** the same patch adds procedural plaster relief to the shading normal within 25 m, plus fine grain, patchy repaint and long monsoon tide marks. It uses seven value-noise lookups per pixel. It applies to every lit street material by uniform strength; people, vehicles and glass stay at zero.
+- **Rain run-off:** tapered streaks hang under every window sill and run down the solid piers from each parapet. They are dark where water leaves the ledge and fade toward the wall colour. They merge into the existing damp-patina mesh, so they add **no draw call**. They replace the small per-storey pier patches, which cost a similar number of triangles, so every frame now submits about 54 fewer triangles than before.
 - **Station:** grey-blue basalt courses band the buff sandstone front, as on the Indo-Gothic original, and its stone now shows coursing at a true scale.
 
 ![Junction before and after](screenshots/street-assets/compare-walls-junction.jpg)
@@ -123,6 +123,21 @@ After the taxi and auto bodies (same benchmark settings):
 
 Textures and programs are unchanged (28–32, 26).
 
+After the façade surfaces (13 October; same benchmark settings):
+
+| Scenario | With modelled bodies | With façade surfaces |
+| --- | --- | --- |
+| walking | 222,709 / 87 draws | 222,873 / 87 draws |
+| taxi ride | 220,673 / 95 | 220,837 / 95 |
+| auto ride | 226,433 / 109 | **230,821** / 109 |
+| fort | 144,112 / 31 | 144,276 / 31 |
+
+Textures and programs are unchanged (28–32, 26). That run included a few more streaks than the final version, so it was 164 triangles over the earlier numbers. The streaks were then trimmed; matched review captures now read 54 triangles *below* the earlier ones at every pose (spawn 218,091 vs 218,145; junction 204,718 vs 204,772; station-front 181,591 vs 181,645; return 213,657 vs 213,711).
+
+**Recorded honestly: the auto ride is over the ceiling at the sampled moment.** The short software ride captures only one or two cached frames. Each lands wherever the auto has reached by then, and the heavier wall shading slows SwiftShader frames (walking p50 5.5 s → 7.4 s). The first façade run read 231,541 and the second 230,821. The façade pass changes any frame by at most +164 triangles, and now by −54, so the same frame on the earlier code would also be above 230,000. **The overrun is a pre-existing peak on the auto route that this sampling exposed, not new geometry.** It needs fixing before merge, by trimming what the ride sees around that point; this pass does not raise the ceiling.
+
+Download size: the plaster maps grew from 209 KB to 2.2 MB (1,024 px in place of 256 px).
+
 **Recorded honestly:**
 - The first version of the bodies (taxi 4,680 triangles) pushed the auto ride to 230,393 triangles, over the ceiling. Both bodies were then trimmed below the exteriors they replace.
 - Swapping in the bodies at first compiled one extra shadow program (27). The cause was a front-side textured shadow caster: the seat fabric. It now casts double-sided shadows and shares the existing program.
@@ -138,7 +153,7 @@ Download size: the scooter GLB is 510 KB. The asphalt maps grew from 260 KB to 1
 ## Tests and build
 
 - `npx tsc --noEmit`: clean.
-- `npx vitest run`: 95 pass. The new tests in `tests/street-assets.test.ts` cover:
+- `npx vitest run`: 97 pass (95 before the façade pass; it added the wall-mapping and run-off tests). The new tests in `tests/street-assets.test.ts` cover:
   - scan pins and licences;
   - the world-UV patch keeping one program key;
   - the scooter's hash, credit and lack of textures;

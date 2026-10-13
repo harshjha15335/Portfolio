@@ -408,7 +408,7 @@ export class MumbaiStreet {
     const random=seededRandom(`${spec.seed}:runoff`),spans:Array<[number,number,number,number]>=[];
     for(let floor=0;floor<spec.floors;floor++){
       const sill=4.55+floor*spec.floorHeight-.95,room=floor===0?.28:spec.floorHeight-2.0;
-      for(const x of [-2.8,0,2.8])for(let n=0,count=2+Math.floor(random()*3);n<count;n++)spans.push([x+(random()-.5)*1.4,sill,Math.min(room,.18+random()*.55),.05+random()*.16]);
+      for(const x of [-2.8,0,2.8])for(let n=0,count=1+Math.floor(random()*3);n<count;n++)spans.push([x+(random()-.5)*1.4,sill,Math.min(room,.18+random()*.55),.05+random()*.16]);
     }
     // Parapet run-off falls the full height of the solid piers between window bays.
     for(const x of [-4.2,-1.1,1.1,4.2])for(let n=0,count=1+Math.floor(random()*3);n<count;n++)spans.push([x+(random()-.5)*.25,spec.height+.02,.8+random()*(spec.height-4.2),.06+random()*.14]);
