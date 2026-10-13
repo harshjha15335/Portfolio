@@ -12,7 +12,7 @@ import {BakedKit} from './architecture/BakedKit';
 import {cableCoil,posters,roofTank,rubbish,twoWheeler,type TwoWheeler} from './architecture/StreetProps';
 import {ParkedScooters,type ParkedScooter} from './architecture/ParkedScooters';
 import { pointedArchGeometry, heritageDomeGeometry } from './architecture/HeritageDetails';
-import { awningGeometry, patinaGeometry } from './architecture/StreetArt';
+import { awningGeometry, patinaGeometry, runoffGeometry } from './architecture/StreetArt';
 import { createTransitModel, animateTransit } from './TransitModel';
 import { loadVehicleBody } from './AuthoredVehicles';
 import { StreetMaterials, type Surface } from './StreetMaterials';
@@ -395,12 +395,24 @@ export class MumbaiStreet {
     // Local aging is aligned with piers and water paths, not scattered across windows.
     if(!fort)for(const x of [-4.03,4.03])this.paintWear(g,[x,1.05,.065],.145,1.15,color,`${spec.seed}:damp:${x}`);
     if(!benchmark)for(let floor=0;floor<spec.floors;floor++)for(const x of [-1.06,1.06])this.paintWear(g,[x,4.3+floor*spec.floorHeight,-.016],.19,.42,color,`${spec.seed}:pier:${floor}:${x}`);
+    if(!benchmark)this.runoff(g,spec);
     if(index===0||index===2){const blade=this.sign(g,index===0?(side<0?'CHAI':'PAPERS'):(side<0?'BOOKS':'OPTICS'),'मुंबई',[3.5,3.45,.9],1.0,index%2?'#734d3c':'#3c5148');blade.rotation.y=Math.PI/2;this.wire(new THREE.Vector3(3.5,3.55,0),new THREE.Vector3(3.5,3.55,1.4),.021,'#5f675e',g);}
   }
   private paintWear(parent:THREE.Object3D,position:Triple,width:number,height:number,base:string,seed:string){
     const geometry=patinaGeometry(width,height,seed),color=new THREE.Color(base).lerp(new THREE.Color('#555b4d'),.24),colors=[];
     for(let i=0;i<geometry.attributes.position.count;i++)colors.push(color.r,color.g,color.b);
     geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));const mesh=new THREE.Mesh(geometry,this.patinaMaterial);mesh.position.set(...position);mesh.receiveShadow=true;parent.add(mesh);this.patina.push(mesh);
+  }
+  /** Streaks where rain leaves each sill and the parapet, on the wall plane; merged with the patina. */
+  private runoff(parent:THREE.Object3D,spec:ReturnType<typeof facadeSpec>){
+    const random=seededRandom(`${spec.seed}:runoff`),spans:Array<[number,number,number,number]>=[];
+    for(let floor=0;floor<spec.floors;floor++){
+      const sill=4.55+floor*spec.floorHeight-.95,room=floor===0?.28:spec.floorHeight-2.0;
+      for(const x of [-2.8,0,2.8])for(let n=0,count=2+Math.floor(random()*3);n<count;n++)spans.push([x+(random()-.5)*1.4,sill,Math.min(room,.18+random()*.55),.05+random()*.16]);
+    }
+    // Parapet run-off falls the full height of the solid piers between window bays.
+    for(const x of [-4.2,-1.1,1.1,4.2])for(let n=0,count=1+Math.floor(random()*3);n<count;n++)spans.push([x+(random()-.5)*.25,spec.height+.02,.8+random()*(spec.height-4.2),.06+random()*.14]);
+    const mesh=new THREE.Mesh(runoffGeometry(spans,new THREE.Color(spec.color),new THREE.Color('#23241f')),this.patinaMaterial);mesh.position.z=-.024;mesh.receiveShadow=true;parent.add(mesh);this.patina.push(mesh);
   }
   private mergePatina(){
     this.group.updateMatrixWorld(true);const pieces=this.patina.map(mesh=>{const g=mesh.geometry.clone().applyMatrix4(mesh.matrixWorld);mesh.removeFromParent();mesh.geometry.dispose();return g;});
@@ -473,6 +485,8 @@ export class MumbaiStreet {
       this.box([1.7,.12,.48],[x,3.55,18.16],'#8f7e65',false,this.group,false,false,'stone');
     }
     for(const y of [3.58,6.66,6.9])this.box([24,.13,.52],[0,y,18.22],'#cfb994',false,this.group,false,false,'stone');
+    // Polychrome masonry: grey-blue basalt courses banding the buff sandstone, as on the Indo-Gothic original.
+    for(const y of [.32,2.92,4.02,5.86])this.box([23.6,.24,.05],[0,y,18.47],'#5b6461',false,this.group,false,false,'stone');
     for(const x of [-8,8]){const roof=this.shape(this.hippedRoof,[6.0,1.95,4.8],[x,7.87,21.3],'#686e69',this.group,false,false,true,'metal');roof.rotation.y=Math.PI/4;}
     this.box([4.6,3.5,4.6],[0,8.55,21.4],'#b29a76',false,this.group,false,false,'stone');
     this.cylinder(2.47,.28,[0,10.30,21.4],'#d0b68e');

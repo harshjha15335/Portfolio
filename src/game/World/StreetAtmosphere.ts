@@ -8,7 +8,7 @@ import * as THREE from 'three';
  * uniform (people, vehicles and glass stay at zero). No textures are allocated.
  */
 const STRENGTH:Record<string,number>={plaster:1,stone:.85,paving:.75,asphalt:.8,solid:.55,wood:.5,metal:.4,fabric:.25,pool:0,glass:0,foliage:0};
-export const WEATHER_CACHE_KEY='street-weather-v1';
+export const WEATHER_CACHE_KEY='street-weather-v2';
 
 export type AtmosphereUniforms={uSunDir:{value:THREE.Vector3};uSunHaze:{value:THREE.Color};uShelterMin:{value:THREE.Vector3};uShelterMax:{value:THREE.Vector3}};
 export function createAtmosphereUniforms(sunPosition:THREE.Vector3,target:THREE.Vector3,haze:string):AtmosphereUniforms{
@@ -16,7 +16,7 @@ export function createAtmosphereUniforms(sunPosition:THREE.Vector3,target:THREE.
  return {uSunDir:{value:sunPosition.clone().sub(target).normalize()},uSunHaze:{value:new THREE.Color(haze)},uShelterMin:{value:new THREE.Vector3(1,1,1)},uShelterMax:{value:new THREE.Vector3(-1,-1,-1)}};
 }
 
-const VERTEX_HEAD='uniform float uWorldUv;\nvarying vec3 vWeatherPos;\nvarying vec3 vWeatherNormal;\n';
+const VERTEX_HEAD='uniform float uWorldUv;\nuniform float uWallUv;\nvarying vec3 vWeatherPos;\nvarying vec3 vWeatherNormal;\n';
 const VERTEX_BODY=`#include <worldpos_vertex>
 vec4 weatherWorld = vec4( transformed, 1.0 );
 vec3 weatherNormal = objectNormal;
@@ -31,16 +31,19 @@ vec3 weatherNormal = objectNormal;
 weatherWorld = modelMatrix * weatherWorld;
 vWeatherPos = weatherWorld.xyz;
 vWeatherNormal = mat3( modelMatrix ) * weatherNormal;
-// Ground maps in world metres when a material asks for it (uWorldUv = tiles per metre).
-if ( uWorldUv > 0.0 ) {
+// Maps in world metres when a material asks for it: uWorldUv lays them flat (ground), uWallUv on
+// each face's own plane, so stretched boxes all share one texel scale (tiles per metre).
+if ( uWorldUv > 0.0 || uWallUv > 0.0 ) {
+ vec3 mapNormal = normalize( vWeatherNormal );
+ vec2 worldUv = uWorldUv > 0.0 ? weatherWorld.xz * uWorldUv : ( abs( mapNormal.y ) > 0.7 ? weatherWorld.xz : vec2( abs( mapNormal.x ) > abs( mapNormal.z ) ? weatherWorld.z : weatherWorld.x, weatherWorld.y ) ) * uWallUv;
  #ifdef USE_MAP
- vMapUv = weatherWorld.xz * uWorldUv;
+ vMapUv = worldUv;
  #endif
  #ifdef USE_NORMALMAP
- vNormalMapUv = weatherWorld.xz * uWorldUv;
+ vNormalMapUv = worldUv;
  #endif
  #ifdef USE_ROUGHNESSMAP
- vRoughnessMapUv = weatherWorld.xz * uWorldUv;
+ vRoughnessMapUv = worldUv;
  #endif
 }`;
 
@@ -56,6 +59,9 @@ float weatherNoise( vec2 p ) {
  vec2 i = floor( p ), f = fract( p ), u = f * f * ( 3.0 - 2.0 * f );
  return mix( mix( weatherHash( i ), weatherHash( i + vec2( 1.0, 0.0 ) ), u.x ), mix( weatherHash( i + vec2( 0.0, 1.0 ) ), weatherHash( i + vec2( 1.0, 1.0 ) ), u.x ), u.y );
 }
+float weatherFbm( vec2 p ) { return 0.5 * weatherNoise( p ) + 0.3 * weatherNoise( p * 2.03 + 7.1 ) + 0.2 * weatherNoise( p * 4.11 + 3.3 ); }
+// Wall-plane coordinates in metres: horizontal distance along the façade, and height.
+vec2 weatherWall( vec3 wp, vec3 wn ) { return vec2( abs( wn.x ) > abs( wn.z ) ? wp.z : wp.x, wp.y ); }
 `;
 
 // Vertical façades: soot/rain streaks, damp splash band at the base, patchy repaint
@@ -72,9 +78,12 @@ if ( weatherAmount > 0.001 ) {
  float vertical = 1.0 - smoothstep( 0.35, 0.8, abs( wn.y ) );
  if ( vertical > 0.01 ) {
   float along = abs( wn.x ) > abs( wn.z ) ? wp.z : wp.x;
-  vec2 wall = vec2( along, wp.y );
+  vec2 wall = weatherWall( wp, wn );
   float patches = 0.65 * weatherNoise( wall * 0.22 + wp.xz * 0.03 ) + 0.35 * weatherNoise( wall * 0.61 + 17.1 );
   aged *= mix( 1.0, 0.6 + 0.75 * patches, vertical );
+  // Patchy repaint: some areas keep a fresher, warmer coat, others fade toward chalky grey.
+  float repaint = smoothstep( 0.45, 0.7, weatherFbm( wall * 0.35 + 41.0 ) );
+  aged = mix( aged, mix( vec3( luma * 1.08 ), base * vec3( 1.06, 1.02, 0.95 ), 0.55 ), repaint * 0.45 * vertical );
   // Fine detail fades into the haze anyway; skip it for distant pixels.
   if ( distance( wp, cameraPosition ) < 55.0 ) {
    float mould = smoothstep( 0.55, 0.85, weatherNoise( vec2( along * 0.5 + 11.0, wp.y * 0.35 ) ) );
@@ -86,6 +95,14 @@ if ( weatherAmount > 0.001 ) {
    float baseHeight = 0.7 + 1.5 * weatherNoise( vec2( along * 0.55, 3.1 ) );
    float splash = ( 1.0 - smoothstep( 0.0, baseHeight, wp.y ) ) * vertical;
    aged = mix( aged, aged * vec3( 0.36, 0.31, 0.25 ), splash * 0.8 );
+   // Plaster grain and trowel marks, strongest close up; mirrors the relief in the normal.
+   float grain = weatherFbm( wall * 9.0 ) - 0.5;
+   aged *= 1.0 + grain * 0.32 * vertical * ( 1.0 - smoothstep( 12.0, 30.0, distance( wp, cameraPosition ) ) );
+   // Monsoon run-off: long vertical tide marks that start at a random storey line and fade downward.
+   float runCol = smoothstep( 0.58, 0.9, weatherNoise( vec2( along * 2.1 + 5.0, 0.0 ) ) );
+   float runTop = 3.0 + 9.0 * weatherNoise( vec2( along * 1.3 + 9.0, 2.0 ) );
+   float run = runCol * smoothstep( runTop, runTop - 0.4, wp.y ) * smoothstep( runTop - 6.0, runTop - 1.0, wp.y );
+   aged = mix( aged, aged * vec3( 0.42, 0.41, 0.38 ), run * 0.8 * vertical );
   }
  } else if ( wn.y > 0.7 ) {
   if ( wp.y > 0.6 ) {
@@ -98,6 +115,21 @@ if ( weatherAmount > 0.001 ) {
   }
  }
  diffuseColor.rgb = mix( base, aged, weatherAmount );
+}`;
+
+// Procedural relief: plaster grain and coarse render undulation, perturbing the normal the same
+// way three's bump map does, but from world-space noise (no texture). Fades out by 25 m.
+const FRAGMENT_NORMAL=`#include <normal_fragment_maps>
+if ( uWeather > 0.001 ) {
+ vec3 rn = normalize( vWeatherNormal );
+ float reliefFade = ( 1.0 - smoothstep( 10.0, 25.0, distance( vWeatherPos, cameraPosition ) ) ) * ( 1.0 - smoothstep( 0.35, 0.8, abs( rn.y ) ) );
+ vec2 rw = weatherWall( vWeatherPos, rn );
+ float relief = ( 0.0016 * weatherFbm( rw * 22.0 ) + 0.004 * weatherFbm( rw * 2.6 + 5.0 ) ) * uWeather * reliefFade;
+ vec3 rdx = dFdx( - vViewPosition ), rdy = dFdy( - vViewPosition );
+ vec3 r1 = cross( rdy, normal ), r2 = cross( normal, rdx );
+ float rdet = dot( rdx, r1 );
+ vec3 rgrad = sign( rdet ) * ( dFdx( relief ) * r1 + dFdy( relief ) * r2 );
+ normal = normalize( abs( rdet ) * normal - rgrad );
 }`;
 
 // Linear distance fog, thinner with height and tinted toward the low sun.
@@ -132,9 +164,9 @@ export function patchMaterial(material:THREE.MeshStandardMaterial,uniforms:Atmos
  const strength={value:weatherStrength(material)};
  material.onBeforeCompile=(shader,renderer)=>{
   previous(shader,renderer);
-  shader.uniforms.uWeather=strength;shader.uniforms.uWorldUv={value:material.userData.worldUv??0};shader.uniforms.uSunDir=uniforms.uSunDir;shader.uniforms.uSunHaze=uniforms.uSunHaze;shader.uniforms.uShelterMin=uniforms.uShelterMin;shader.uniforms.uShelterMax=uniforms.uShelterMax;
+  shader.uniforms.uWeather=strength;shader.uniforms.uWorldUv={value:material.userData.worldUv??0};shader.uniforms.uWallUv={value:material.userData.wallUv??0};shader.uniforms.uSunDir=uniforms.uSunDir;shader.uniforms.uSunHaze=uniforms.uSunHaze;shader.uniforms.uShelterMin=uniforms.uShelterMin;shader.uniforms.uShelterMax=uniforms.uShelterMax;
   shader.vertexShader=VERTEX_HEAD+shader.vertexShader.replace('#include <worldpos_vertex>',VERTEX_BODY);
-  shader.fragmentShader=FRAGMENT_HEAD+shader.fragmentShader.replace('#include <color_fragment>',FRAGMENT_COLOR).replace('#include <fog_fragment>',FRAGMENT_FOG);
+  shader.fragmentShader=FRAGMENT_HEAD+shader.fragmentShader.replace('#include <color_fragment>',FRAGMENT_COLOR).replace('#include <normal_fragment_maps>',FRAGMENT_NORMAL).replace('#include <fog_fragment>',FRAGMENT_FOG);
  };
  material.customProgramCacheKey=()=>`${previousKey()}|${WEATHER_CACHE_KEY}`;
  material.userData.weatherPatched=true;material.needsUpdate=true;

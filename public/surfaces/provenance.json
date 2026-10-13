@@ -2,8 +2,8 @@
   "author": "Mixed: see each file",
   "license": "CC0-1.0",
   "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-  "source": "scripts/generate-surface-maps.py (generated), scripts/import-scanned-surfaces.py (scanned)",
-  "modifications": "Asphalt maps are a CC0 photographic scan (Poly Haven, Asphalt 02), 512 px; plaster maps are original generated studies, 256 px. See each file.",
+  "source": "scripts/generate-plaster-maps.py (generated), scripts/import-scanned-surfaces.py (scanned)",
+  "modifications": "Asphalt maps are a CC0 photographic scan (Poly Haven, Asphalt 02), 512 px; plaster maps are an original generated cement-render study, 1024 px tiling every 2 m. See each file.",
   "files": [
     {
       "file": "asphalt-color.png",
@@ -70,36 +70,48 @@
     },
     {
       "file": "plaster-color.png",
-      "sha256": "e91174d43dc59f5f7d1ee2a5bc58530032612913bf3cd5a1cb15cd4eac7d55c4",
-      "bytes": 45841,
-      "width": 256,
-      "height": 256,
+      "sha256": "ac16628d95c8ef99389ce230a8e40810f3eb67175da8f4b223c7f641e6c36b0d",
+      "bytes": 754469,
+      "width": 1024,
+      "height": 1024,
       "colorSpace": "sRGB",
       "channel": "color",
       "surface": "plaster",
-      "origin": "generated"
+      "origin": "generated",
+      "author": "Harsh Jha portfolio (original generator)",
+      "license": "CC0-1.0",
+      "source": "scripts/generate-plaster-maps.py",
+      "modifications": "Original painted cement render, tileable, 1024 px = 2 m of wall; no photographs or third-party input."
     },
     {
       "file": "plaster-roughness.png",
-      "sha256": "4f44f26ecd5f9e4ec149ac6815543642b1b15cc2e9a8444ee43a4cb7428ea279",
-      "bytes": 52861,
-      "width": 256,
-      "height": 256,
+      "sha256": "a678304d085ace32ace2ccf41b55f6aaa3d3c7c8e773b75511a4a9c727c9badc",
+      "bytes": 312374,
+      "width": 1024,
+      "height": 1024,
       "colorSpace": "linear",
       "channel": "roughness",
       "surface": "plaster",
-      "origin": "generated"
+      "origin": "generated",
+      "author": "Harsh Jha portfolio (original generator)",
+      "license": "CC0-1.0",
+      "source": "scripts/generate-plaster-maps.py",
+      "modifications": "Original painted cement render, tileable, 1024 px = 2 m of wall; no photographs or third-party input."
     },
     {
       "file": "plaster-normal.png",
-      "sha256": "4ecc56b952312a92389d803083b23a103501acd027a13c971e02f87553d38539",
-      "bytes": 110618,
-      "width": 256,
-      "height": 256,
+      "sha256": "251a95f212b74fd8d474be2449fae20a2d1d0e08de244d213a62f1312dce73e1",
+      "bytes": 1070073,
+      "width": 1024,
+      "height": 1024,
       "colorSpace": "linear",
       "channel": "normal",
       "surface": "plaster",
-      "origin": "generated"
+      "origin": "generated",
+      "author": "Harsh Jha portfolio (original generator)",
+      "license": "CC0-1.0",
+      "source": "scripts/generate-plaster-maps.py",
+      "modifications": "Original painted cement render, tileable, 1024 px = 2 m of wall; no photographs or third-party input."
     }
   ]
 }

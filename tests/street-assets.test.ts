@@ -1,5 +1,7 @@
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import * as THREE from 'three';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import {patinaGeometry,runoffGeometry} from '../src/game/World/architecture/StreetArt';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import surfaces from '../public/surfaces/provenance.json';
 import {ParkedScooters,SCOOTER_ASSET,scooterGeometry} from '../src/game/World/architecture/ParkedScooters';
@@ -36,7 +38,19 @@ describe('scanned asphalt',()=>{
   expect(road.customProgramCacheKey()).toBe(wall.customProgramCacheKey());
   const shader={uniforms:{} as Record<string,{value:unknown}>,vertexShader:'#include <worldpos_vertex>',fragmentShader:'#include <color_fragment>\n#include <fog_fragment>'};
   road.onBeforeCompile(shader as unknown as THREE.WebGLProgramParametersWithUniforms,{} as THREE.WebGLRenderer);
-  expect(shader.uniforms.uWorldUv.value).toBeCloseTo(1/3);expect(shader.vertexShader).toContain('vMapUv = weatherWorld.xz * uWorldUv');
+  expect(shader.uniforms.uWorldUv.value).toBeCloseTo(1/3);expect(shader.vertexShader).toContain('weatherWorld.xz * uWorldUv');expect(shader.vertexShader).toContain('vMapUv = worldUv;');
+ });
+ it('tiles the generated cement render every 2 m on wall faces, with the same program key',()=>{
+  const uniforms=createAtmosphereUniforms(new THREE.Vector3(-39,13,-72),new THREE.Vector3(0,0,-26),'#f2b682');
+  const wall=new THREE.MeshStandardMaterial();wall.userData={surface:'plaster',wallUv:1/2};const glass=new THREE.MeshStandardMaterial();glass.userData={surface:'glass'};
+  patchMaterial(wall,uniforms);patchMaterial(glass,uniforms);expect(wall.customProgramCacheKey()).toBe(glass.customProgramCacheKey());
+  const shader={uniforms:{} as Record<string,{value:unknown}>,vertexShader:'#include <worldpos_vertex>',fragmentShader:'#include <color_fragment>\n#include <normal_fragment_maps>\n#include <fog_fragment>'};
+  wall.onBeforeCompile(shader as unknown as THREE.WebGLProgramParametersWithUniforms,{} as THREE.WebGLRenderer);
+  expect(shader.uniforms.uWallUv.value).toBeCloseTo(.5);expect(shader.uniforms.uWorldUv.value).toBe(0);
+  // Relief perturbs the shading normal from world-space noise; no texture is sampled for it.
+  expect(shader.fragmentShader).toContain('normal = normalize( abs( rdet ) * normal - rgrad );');
+  const plaster=surfaces.files.filter(r=>r.surface==='plaster');expect(plaster).toHaveLength(3);
+  for(const r of plaster){expect(r).toMatchObject({width:1024,height:1024,license:'CC0-1.0',source:'scripts/generate-plaster-maps.py'});expect(file(`/surfaces/${r.file}`).length).toBe(r.bytes);}
  });
 });
 
@@ -100,4 +114,15 @@ describe('modelled taxi and auto bodies',()=>{
    Object.values(parts).forEach(g=>g.dispose());
   });
  }
+});
+
+describe('façade run-off',()=>{
+ it('merges with the damp patina and costs two triangles a streak',()=>{
+  const runoff=runoffGeometry([[0,4,.5,.1],[1,8,2,.12]],new THREE.Color('#b9a48a'),new THREE.Color('#23241f'));
+  expect(runoff.index!.count/3).toBe(4);
+  const damp=patinaGeometry(.2,.4,'seed');damp.setAttribute('color',new THREE.Float32BufferAttribute(new Array(damp.attributes.position.count*3).fill(.5),3));
+  const merged=mergeGeometries([damp,runoff]);expect(merged).not.toBeNull();
+  // Darkest where water leaves the ledge, nearer the wall colour at the tip.
+  const c=runoff.attributes.color;expect(c.getX(0)).toBeLessThan(c.getX(2));
+ });
 });

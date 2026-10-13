@@ -8,7 +8,7 @@ It works on branch `claude/mumbai-visual-overhaul-wsa2hm` (PR #3), on top of the
 
 | Need | Reachable, openly licensed? | Outcome |
 | --- | --- | --- |
-| Scanned plaster, concrete, brick for façades | **No.** Poly Haven, ambientCG and texture sites are refused by this environment's network policy, and GitHub mirrors only hold scraps (one brick set, one ground set). | **BLOCKED** |
+| Scanned plaster, concrete, brick for façades | **No.** Poly Haven, ambientCG and texture sites are refused by this environment's network policy, and GitHub mirrors only hold scraps (one brick set, one ground set). | **BLOCKED.** An original generated cement-render set stands in (see Façade surfaces) |
 | Mumbai buildings (Deco walk-ups, chawls) as models | **No.** Nothing suitable and licensed is reachable. | **BLOCKED** |
 | Premier Padmini taxi, Bajaj auto-rickshaw, BEST bus | **No.** These exist mostly on Sketchfab, which is refused and needs a signed-in download. GitHub holds only sports cars, mostly under non-commercial licences. | Taxi and auto: **modelled here instead** (original, see below). Bus: **BLOCKED** |
 | Road asphalt | **Yes.** Poly Haven "Asphalt 02" (CC0) is mirrored in the Khronos glTF sample repository. | **Done** |
@@ -67,7 +67,26 @@ These are matched captures: SwiftShader, 1440×900, Medium preset, reduced motio
 - **Cost:** each body has fewer triangles than the exterior it replaces: taxi 3,648 vs 3,728, auto 1,558 vs 1,624. A test enforces this.
 - **Limits:** the wheels are still the code-built ones. The bodies are original approximations from reference knowledge, not measured replicas. There is no plate lettering, because the bodies carry no textures.
 
-**Unchanged:** buildings, the CST station, the bus, shopfronts and props other than scooters and vehicles. These still need the blocked assets above.
+**Unchanged in that pass:** buildings, the CST station, the bus, shopfronts and props other than scooters and vehicles. The façade work below came next.
+
+### Façade surfaces (13 October 2026)
+
+Harsh asked for the buildings to look realistic. GitHub was searched for an open library like Rocketbox, this time for buildings. About 20 repositories were checked, among them pmndrs market, Babylon, three.js, Khronos, AMD Cauldron, CARLA, Godot, Bevy, O3DE and streets-gl. None had realistic, cleanly licensed Mumbai buildings or façade scans. The closest were streets-gl's MIT façade tiles, but they are clean grey European brick and block at 512 px. Scanned textures stay **BLOCKED** on the allowlist above. This pass makes the walls themselves read as aged render, without new textures or programs.
+
+![Façade close-up before and after](screenshots/street-assets/compare-walls-closeup.jpg)
+
+- **Cement-render maps, original:** `scripts/generate-plaster-maps.py` replaces the 256 px noise plaster set (colour, roughness, normal) with a tileable 1,024 px study of painted cement render. It has float-trowel undulation, sand grain, aggregate pits, hairline cracks, patched repairs, and flaking paint over grey cement, with dirt held in the cracks. It is generated from seeded noise; no photographs or third-party input. It replaces three textures one for one, so the texture count is unchanged.
+- **Wall maps in real metres:** plaster and stone were mapped on each box's own UVs, so every wall stretched them differently and the detail washed out. They now tile in world metres on each face's plane: plaster every 2 m, stone courses about 30 cm apart. This uses the same shared shader patch as the asphalt (`uWallUv`), so the program count is unchanged.
+- **Shader ageing:** the same patch adds procedural plaster relief to the shading normal within 25 m, plus fine grain, patchy repaint and long monsoon tide marks. It applies to every lit street material by uniform strength; people, vehicles and glass stay at zero.
+- **Rain run-off:** tapered streaks hang under every window sill and run down the solid piers from each parapet. They are dark where water leaves the ledge and fade toward the wall colour. They merge into the existing damp-patina mesh, so they add **no draw call**: about 880 triangles across the street, two per streak.
+- **Station:** grey-blue basalt courses band the buff sandstone front, as on the Indo-Gothic original, and its stone now shows coursing at a true scale.
+
+![Junction before and after](screenshots/street-assets/compare-walls-junction.jpg)
+![Benchmark frontage before and after](screenshots/street-assets/compare-walls-benchmark.jpg)
+![Station before and after](screenshots/street-assets/compare-walls-station.jpg)
+![Spawn before and after](screenshots/street-assets/compare-walls-spawn.jpg)
+
+**Limits:** these are still generated surfaces, not photographs of Mumbai walls. The streaks follow the shared window grid, so Radio House (authored separately) has none. Geometry, colours and signage are unchanged. Real scans would replace the generated maps one for one once the sites are allowed.
 
 ## Performance
 
@@ -133,6 +152,7 @@ Download size: the scooter GLB is 510 KB. The asphalt maps grew from 260 KB to 1
 
 ```sh
 python3 scripts/import-scanned-surfaces.py                        # asphalt scan (pinned in scripts/scanned-surfaces.lock.json)
+python3 scripts/generate-plaster-maps.py                          # original 1,024 px cement-render maps (numpy, Pillow)
 python3.11 -m pip install bpy==4.2.0 numpy                         # Blender as a Python module
 python3.11 scripts/vehicles/build_scooter.py /tmp/scooter          # pinned source → scooter.glb (scripts/vehicles/scooter.json)
 node scripts/vehicles/import-scooter.mjs /tmp/scooter              # admit into public/models/vehicles with provenance
