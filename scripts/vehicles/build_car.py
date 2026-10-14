@@ -242,7 +242,7 @@ for x in (-TRACK, TRACK):
 parts = {'body': body, 'lamps': lamps, 'tail': tail}
 palette = {**PALETTE, 'lamp': PALETTE['trim'], 'tail': PALETTE['trim']}
 if '--preview' not in sys.argv:
-    tris = export(parts, palette, os.path.join(work, f'{kind}.glb'), occluders=[])
+    tris = export(parts, palette, os.path.join(work, f'{kind}.glb'), occluders=[], city=dict(out=os.path.join(work, f'{kind}-city.glb'), near=4800, far=2000, paint={'paint'}, lamp='#f4e7c2', tail='#9c2b22'))
     json.dump({'triangles': tris, 'length': L, 'wheelbase': WB, 'wheelRadius': WR, 'track': TRACK}, open(os.path.join(work, f'{kind}.stats.json'), 'w'))
     print(kind, tris, 'total', sum(tris.values()))
 else:

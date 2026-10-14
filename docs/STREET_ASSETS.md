@@ -147,6 +147,42 @@ Textures peak at 32 and programs at 25. On High: spawn 254 / 549,277, junction 2
 
 **Limits:** the façades are flat painted quads. They read well from the street but have no depth up close, and the skyline repeats rows. They are generated artwork, not photographs.
 
+## Combined build and modelled traffic (14 October 2026)
+
+Harsh approved merging all four open pull requests. This branch now carries the scanned surfaces (#5), the licensed Rocketbox people (#2) and the seven walkable districts (#4) on top of the visual overhaul (#3).
+
+**People.** Every person is now a licensed Rocketbox character once the cast loads, as follows:
+- the CST street crowd and the High-preset extra crowd (23 people, which were still procedural before this change);
+- taxi and auto drivers;
+- district crowds;
+- district drivers and two-wheeler riders, from the districts thread's patch;
+- the Fort Road through-traffic.
+
+The procedural figures remain only as stand-ins while the cast downloads.
+
+**Vehicles.** The district traffic and Fort Road through-traffic now use original Blender models built as code:
+- hatchback, saloon and SUV (`build_car.py`);
+- BEST double-decker and single-deck bus (`build_bus.py`);
+- commuter motorbike (`build_bike.py`).
+
+Taxis, autos, scooters, tempos, carts and cycles keep the lofted bodies.
+
+Each model ships as `public/models/vehicles/city/<name>.glb` with a `near` and a `far` mesh. These are decimated to at most the triangle count of the lofted body they replace; `import-city-vehicles.mjs` and `tests/city-vehicle-models.test.ts` enforce this. COLOR_0 alpha marks paint faces, so each car keeps its random colour. The models use the districts' single paint material, so they add no textures or programs. The lofted bodies stand in until the models load.
+
+**Budget (Medium, main pass):**
+- Districts: at most 83 draws and 223k triangles (Andheri), with 27–30 textures.
+- CST street: spawn 83 / 228,473, junction 74 / 217,050, return 104 / 217,149, station front 49 / 144,584.
+
+Two trims keep CST inside 230k after the merge:
+- Licensed people use their reduced mesh beyond 8 m (was 10 m).
+- Traffic switches to the reduced body beyond 16 m (was 22 m) and draws nothing beyond 70 m, in the haze.
+
+**Over the ceilings, not fixed:** textures and programs. CST Medium is at 45 textures and 34 programs (ceilings 32 / 26). CST High is at 76 / 66 (ceilings 64 / 60), with 586k triangles and 256 draws, both within budget. All of the overrun comes from the licensed people, as `docs/STREET_CAST.md` already records. The reductions listed there still apply. The ceilings have not been raised.
+
+Rebuild:
+- `python3.11 scripts/vehicles/build_car.py <work> <hatchback|saloon|suv>`, `build_bus.py <work> <double|single>` and `build_bike.py <work>`;
+- then `node scripts/vehicles/import-city-vehicles.mjs <work>`.
+
 ## Scanned surfaces (13 October 2026)
 
 Harsh allowed `polyhaven.com`, `dl.polyhaven.org`, `ambientcg.com` and `upload.wikimedia.org`. Poly Haven files now download. ambientCG search works, but its downloads redirect to `acg-download.struffelproductions.com`, which is still refused, so nothing came from ambientCG. `api.polyhaven.com` is also refused; assets were found by name on `dl.polyhaven.org` and their licence, author and real-world size read from each `polyhaven.com/a/<asset>` page.

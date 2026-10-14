@@ -12,6 +12,7 @@ try{
  await page.emulateMedia({reducedMotion:process.env.MOTION==='1'?'no-preference':'reduce'});await page.goto(new URL('?debug&review=1&benchmark=1#world',base).href);
  await page.waitForFunction(()=>document.querySelector('canvas')?.dataset.eyeHeight,{},{timeout:180000});
  await page.waitForFunction(()=>document.querySelector('canvas')?.dataset.surfaceMaps!=='loading');await page.addStyleTag({content:'.world-debug{visibility:hidden}'});
+ if(process.env.STREET_CAPTURE_PRESET){await page.getByRole('button',{name:'Open world menu'}).click();await page.getByLabel('Street detail').selectOption(process.env.STREET_CAPTURE_PRESET);await page.getByRole('button',{name:'CONTINUE EXPLORING'}).click();await page.waitForTimeout(1500);}
  // Warm up: the first district build and shader compile would otherwise land in the first shot.
  await page.evaluate(view=>window.dispatchEvent(new CustomEvent('street-review-view',{detail:view})),views[0]);await page.waitForTimeout(6000);
  for(const view of views){

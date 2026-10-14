@@ -114,8 +114,14 @@ def smooth(edge0, edge1, x):
     t = min(max((x - edge0) / (edge1 - edge0), 0), 1); return t * t * (3 - 2 * t)
 
 
-def export(parts, palette, out, ground=True, occluders=(), ao_distance=.35, ao_floor=.32):
-    """Builds Blender objects, bakes ambient occlusion into the body colour and writes a GLB."""
+def export(parts, palette, out, ground=True, occluders=(), ao_distance=.35, ao_floor=.32, city=None):
+    """Builds Blender objects, bakes ambient occlusion into the body colour and writes a GLB.
+
+    city: optional dict(out=path, near=triangles, far=triangles, paint={regions}, lamp=hex, tail=hex). Also writes a
+    district-traffic GLB with two meshes, 'near' and 'far': body, lamps and tail joined into one vertex-coloured
+    mesh, decimated to the given triangle counts. COLOR_0 alpha is 1 on paint faces (recoloured per vehicle at
+    runtime) and 0 elsewhere.
+    """
     import bpy, bmesh
     bpy.ops.wm.read_factory_settings(use_empty=True)
     scene = bpy.context.scene; scene.render.engine = 'CYCLES'; scene.cycles.device = 'CPU'; scene.cycles.samples = 64
@@ -161,7 +167,45 @@ def export(parts, palette, out, ground=True, occluders=(), ao_distance=.35, ao_f
     bpy.ops.export_scene.gltf(filepath=out, export_format='GLB', use_selection=False, export_vertex_color='ACTIVE',
                               export_active_vertex_color_when_no_material=True, export_texcoords=True, export_normals=True,
                               export_materials='NONE', export_yup=True)
-    return {name: part.triangles() for name, part in parts.items()}
+    counts = {name: part.triangles() for name, part in parts.items()}
+    if city: counts.update(_export_city(objects, parts, city))
+    return counts
+
+
+def _export_city(objects, parts, city):
+    import bpy
+    copies = []
+    for name, obj in objects.items():
+        copy = obj.copy(); copy.data = obj.data.copy(); bpy.context.scene.collection.objects.link(copy); mesh = copy.data
+        n = len(mesh.loops)
+        if name == 'body':
+            colour = np.zeros(n * 4, np.float32); mesh.color_attributes['base'].data.foreach_get('color', colour); colour = colour.reshape(-1, 4)
+            paint = np.array([r in city['paint'] for r in parts['body'].regions])
+            for poly in mesh.polygons: colour[poly.loop_start:poly.loop_start + poly.loop_total, 3] = 1.0 if paint[poly.index] else 0.0
+        else:
+            rgb = srgb(city['lamp'] if name == 'lamps' else city['tail'] if name == 'tail' else '#26343a')
+            colour = np.tile(np.array([*rgb, 0], np.float32), (n, 1))
+            attr = mesh.color_attributes.new('base', 'FLOAT_COLOR', 'CORNER')
+        mesh.color_attributes['base'].data.foreach_set('color', colour.ravel()); mesh.color_attributes.active_color = mesh.color_attributes['base']
+        for uv in list(mesh.uv_layers): mesh.uv_layers.remove(uv)
+        copies.append(copy)
+    for o in bpy.context.scene.objects: o.select_set(False)
+    for c in copies: c.select_set(True)
+    bpy.context.view_layer.objects.active = copies[0]; bpy.ops.object.join(); near = bpy.context.object; near.name = 'near'; near.data.name = 'near'
+    far = near.copy(); far.data = near.data.copy(); far.name = 'far'; far.data.name = 'far'; bpy.context.scene.collection.objects.link(far)
+    out = {}
+    for obj, target in ((near, city['near']), (far, city['far'])):
+        tris = sum(len(p.vertices) - 2 for p in obj.data.polygons)
+        if tris > target:
+            mod = obj.modifiers.new('decimate', 'DECIMATE'); mod.decimate_type = 'COLLAPSE'; mod.ratio = target / tris
+            for o in bpy.context.scene.objects: o.select_set(False)
+            obj.select_set(True); bpy.context.view_layer.objects.active = obj; bpy.ops.object.modifier_apply(modifier='decimate')
+        out[obj.name] = sum(len(p.vertices) - 2 for p in obj.data.polygons)
+    for o in bpy.context.scene.objects: o.select_set(o in (near, far))
+    bpy.ops.export_scene.gltf(filepath=city['out'], export_format='GLB', use_selection=True, export_vertex_color='ACTIVE',
+                              export_active_vertex_color_when_no_material=True, export_texcoords=False, export_normals=True,
+                              export_materials='NONE', export_yup=True)
+    return out
 
 
 def preview(glb, out, camera, target, lens=35, size=(960, 600), samples=48):

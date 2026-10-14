@@ -10,6 +10,7 @@ import { createVisitor } from '../game/World/WalkingBody';
 import { MumbaiStreet } from '../game/World/MumbaiStreet';
 import { createTransitModel, animateTransit } from '../game/World/TransitModel';
 import { idleRide, pointAtDistance, routeLength, storyFare, type Point, type RideStatus, type TransitKind } from '../game/World/transit';
+import { preloadCityVehicleModels } from '../game/World/districts/CityVehicleModels';
 import { STREET_SPAWN, streetStops, streetPickupRoute, walkingVelocity, cityRideLegs, cityZones, zoneIndexAt, districtViews } from '../game/World/streetLayout';
 import { CityDistricts } from '../game/World/districts/CityDistricts';
 import { setCityDensity } from '../game/World/districts/District';
@@ -95,14 +96,15 @@ export class WorldEngine {
     this.street = new MumbaiStreet(this.physics); this.scene.add(this.street.group);
     // Districts are built on first need and receive the same weathering/haze patch as the street.
     setCityDensity(this.renderPreset);
-    this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.fortTraffic = createFortRoadTraffic(); applyStreetAtmosphere(this.fortTraffic.group, this.atmosphere); this.scene.add(this.fortTraffic.group); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}});
+    // Modelled district traffic loads in the background; lofted bodies stand in until it arrives.
+    this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.fortTraffic = createFortRoadTraffic(); applyStreetAtmosphere(this.fortTraffic.group, this.atmosphere); this.scene.add(this.fortTraffic.group); if (typeof location !== 'undefined') void preloadCityVehicleModels(location.origin).then(() => { if (this.disposed) return; this.fortTraffic.refresh(); this.city.refreshVehicles(); this.pausedFrameDirty = true; }); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}});
     const preview=import.meta.env.DEV?new URLSearchParams(location.search).get('characterPreview'):null;
     // Licensed street cast: approved characters load at runtime; DEV ?characterPreview also shows candidates.
     const castPreview=preview==='idle'||preview==='walk'||preview==='cast';
     const refresh=()=>{if(!this.disposed){applyStreetAtmosphere(this.scene,this.atmosphere);this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}};
     void this.street.installCast(characterCast,castPreview).then(refresh).catch(error=>console.warn('Street cast unavailable; original figures retained',error));
     // The same licensed people walk every district: one shared set of rigs, borrowing the street's uploaded textures.
-    void this.street.sharedAssetLibrary().then(library=>DistrictCast.load(library,characterCast)).then(cast=>{if(this.disposed){cast.dispose();return;}setDistrictCast(cast);this.city.adoptCast(cast);refresh();}).catch(error=>console.warn('District cast unavailable; procedural figures retained',error));
+    void this.street.sharedAssetLibrary().then(library=>DistrictCast.load(library,characterCast)).then(cast=>{if(this.disposed){cast.dispose();return;}setDistrictCast(cast);this.city.adoptCast(cast);this.fortTraffic.adopt(cast);refresh();}).catch(error=>console.warn('District cast unavailable; procedural figures retained',error));
     void this.street.installDrivers(characterCast,[this.taxi,this.auto],castPreview).then(refresh).catch(error=>console.warn('Drivers unavailable; original drivers retained',error));
     if(stationCharacter&&(stationCharacter.status==='approved'&&stationCharacter.visualReview||preview==='idle'||preview==='walk'))void this.street.installStationCharacter(stationCharacter.asset,preview==='walk').then(refresh).catch(error=>console.warn('Character admission failed; existing host retained',error));
     this.visitor = createVisitor(STREET_SPAWN.x, STREET_SPAWN.z);

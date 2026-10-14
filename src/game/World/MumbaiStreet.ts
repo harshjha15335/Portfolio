@@ -32,6 +32,8 @@ export interface StreetInteraction { id: string; position: THREE.Vector3; label:
 
 
 /** Original modular Mumbai-inspired CST/Fort lane. One art-directed vertical slice. */
+/** Licensed people switch to their reduced mesh beyond this distance (m); 8 m keeps the combined street inside the Medium triangle budget. */
+const CAST_FULL_DETAIL=8;
 export class MumbaiStreet {
   readonly group = new THREE.Group();
   readonly interactions: StreetInteraction[] = [];
@@ -687,8 +689,8 @@ export class MumbaiStreet {
     this.motion.push(time=>{if(g===this.stationHost&&this.stationCharacter){human.mesh.visible=false;this.stationCharacter.update(time===0?0:Math.min(.08,Math.max(0,time-lastAnimation)),this.characterPreviewWalk);lastAnimation=time;return;}const distance=g.position.distanceTo(this.viewPosition);
       const velocity=moving?this.walkers.find(w=>w.group===g)?.agent?.velocity():undefined,walking=moving&&Boolean(velocity&&Math.hypot(velocity.x,velocity.z)>.08);
       if(slot.actor){
-        // Licensed characters: cull beyond 48 m, reduced mesh beyond 10 m, and 10 Hz animation beyond 18 m.
-        const actor=slot.actor;actor.root.visible=distance<48;actor.setDetail(distance<10);const delta=time===0?0:Math.min(.25,Math.max(0,time-lastAnimation));if(lastAnimation<0||time===0){lastAnimation=time;actor.update(0,walking);return;}
+        // Licensed characters: cull beyond 48 m, reduced mesh beyond CAST_FULL_DETAIL, and 10 Hz animation beyond 18 m.
+        const actor=slot.actor;actor.root.visible=distance<48;actor.setDetail(distance<CAST_FULL_DETAIL);const delta=time===0?0:Math.min(.25,Math.max(0,time-lastAnimation));if(lastAnimation<0||time===0){lastAnimation=time;actor.update(0,walking);return;}
         if(!actor.root.visible||distance>18&&delta<.1)return;lastAnimation=time;actor.update(delta,walking,velocity?Math.hypot(velocity.x,velocity.z):undefined);return;
       }
       human.mesh.visible=distance<48;human.setDetail(distance<10);if(distance>18&&time-lastAnimation<.1)return;lastAnimation=time;human.animate(time,walking,seated);});return g;
@@ -713,7 +715,7 @@ export class MumbaiStreet {
     this.motion.push(time=>{if(!this.dense.visible)return;const distance=g.position.distanceTo(this.viewPosition);
       const velocity=moving?this.denseWalkers.find(w=>w.group===g)?.agent?.velocity():undefined,walking=moving&&Boolean(velocity&&Math.hypot(velocity.x,velocity.z)>.08);
       if(slot.actor){
-        const actor=slot.actor;actor.root.visible=distance<48;actor.setDetail(distance<10);const delta=time===0?0:Math.min(.25,Math.max(0,time-lastAnimation));if(lastAnimation<0||time===0){lastAnimation=time;actor.update(0,walking);return;}
+        const actor=slot.actor;actor.root.visible=distance<48;actor.setDetail(distance<CAST_FULL_DETAIL);const delta=time===0?0:Math.min(.25,Math.max(0,time-lastAnimation));if(lastAnimation<0||time===0){lastAnimation=time;actor.update(0,walking);return;}
         if(!actor.root.visible||distance>18&&delta<.1)return;lastAnimation=time;actor.update(delta,walking,velocity?Math.hypot(velocity.x,velocity.z):undefined);return;
       }
       human.mesh.visible=distance<48;human.setDetail(distance<10);if(distance>18&&time-lastAnimation<.1)return;lastAnimation=time;human.animate(time,walking);});

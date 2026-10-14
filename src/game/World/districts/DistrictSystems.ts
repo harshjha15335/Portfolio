@@ -221,6 +221,8 @@ interface Agent { mesh: THREE.Mesh; kind: CityVehicleKind; lane: number; s: numb
 /** Who drives what: autos and taxis by the vendor/driver cast, two-wheelers by commuters and office staff. */
 /** Riders are small inside their vehicles, so they drop out sooner than people on foot. */
 const RIDER_HIDDEN = 30;
+/** Vehicles use their full body inside VEHICLE_NEAR (m), the reduced one beyond, and none past VEHICLE_HIDDEN in the haze; keeps CST's Fort Road traffic inside the Medium triangle budget. */
+const VEHICLE_NEAR = 16, VEHICLE_HIDDEN = 70;
 const RIDER_OUTFIT: Partial<Record<CityVehicleKind, Outfit>> = { auto: 'vendor', bike: 'shirt', cycle: 'worker', bus: 'office', tempo: 'worker' };
 
 export class LaneTraffic {
@@ -248,12 +250,16 @@ export class LaneTraffic {
     a.mesh.add(figure.mesh); a.rider = figure;
   }
   /** Swap the baked procedural drivers for the licensed cast once it has loaded. */
-  adopt(cast: DistrictCast) {
+  adopt(cast: DistrictCast) { this.rebuild(a => !a.rider && Boolean(a.mesh.userData.seat), cast); }
+  /** Rebuild every vehicle body, e.g. once the modelled vehicles (CityVehicleModels) have loaded. */
+  refresh() { this.rebuild(() => true, districtCast()); }
+  private rebuild(which: (a: Agent) => boolean, cast: DistrictCast | null) {
     for (const a of this.agents) {
-      if (a.rider || !a.mesh.userData.seat) continue;
-      const mesh = createCityVehicleLod(a.kind, a.seed, false); mesh.position.copy(a.mesh.position); mesh.rotation.copy(a.mesh.rotation); mesh.visible = a.mesh.visible;
+      if (!which(a)) continue;
+      a.rider?.dispose(); a.rider = null;
+      const mesh = createCityVehicleLod(a.kind, a.seed, !cast); mesh.position.copy(a.mesh.position); mesh.rotation.copy(a.mesh.rotation); mesh.visible = a.mesh.visible;
       this.group.add(mesh); a.mesh.removeFromParent(); for (const g of a.mesh.userData.lodGeometries as THREE.BufferGeometry[]) g.dispose();
-      a.mesh = mesh; this.seat(a, cast);
+      a.mesh = mesh; if (cast) this.seat(a, cast);
     }
   }
   dispose() { for (const a of this.agents) { a.rider?.dispose(); a.rider = null; } }
@@ -266,7 +272,7 @@ export class LaneTraffic {
     const view = obstacles[0];
     for (const a of this.agents) {
       const near = view ? a.mesh.position.distanceTo(view) : 0;
-      if (view) setVehicleDetail(a.mesh as THREE.Mesh, near < 22);
+      if (view) setVehicleDetail(a.mesh as THREE.Mesh, near > VEHICLE_HIDDEN ? 'hidden' : near < VEHICLE_NEAR);
       if (a.rider) { a.rider.mesh.visible = a.mesh.visible && near < RIDER_HIDDEN; a.rider.setLevel(near < CAST_LOD.far ? 0 : near < CAST_LOD.distant * .5 ? 1 : 2); }
       if (!a.max) continue;
       const lane = this.lanes[a.lane];

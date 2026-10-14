@@ -125,6 +125,8 @@ export class District {
     return z;
   }
   /** A parked vehicle: static, solid, no driver unless asked. */
+  /** Swap moving traffic onto the modelled bodies (parked cars are merged at build time and keep what they were built with). */
+  refreshVehicles() { this.traffic.refresh(); }
   parked(kind: CityVehicleKind, x: number, z: number, yaw: number, rider = false) {
     // Parked cars merge into one static mesh, so they use the far build (still lofted and round-wheeled).
     const mesh = createCityVehicle(kind, `${this.spec.id}:parked:${x}:${z}`, rider, true); mesh.position.set(x, .02, z); mesh.rotation.y = yaw; mesh.updateMatrix();

@@ -1,0 +1,80 @@
+{
+  "origin": "original",
+  "author": "Harsh Jha portfolio (modelled as code)",
+  "license": "Original work for this repository (no third-party licence applies)",
+  "notes": "No third-party geometry or images. Built in Blender from code; ambient occlusion baked into COLOR_0, whose alpha marks paint faces recoloured at runtime. Each file holds near and far meshes decimated to the triangle counts of the lofted bodies they replace.",
+  "files": [
+    {
+      "name": "hatchback",
+      "url": "/models/vehicles/city/hatchback.glb",
+      "sha256": "3bedbf48f81565ab48275907591f2a5de55e77ead6891d9575e7330b3f3579dd",
+      "bytes": 263876,
+      "triangles": {
+        "near": 4800,
+        "far": 1996
+      },
+      "paintKey": "#c7c9c8",
+      "source": "scripts/vehicles/build_car.py hatchback"
+    },
+    {
+      "name": "saloon",
+      "url": "/models/vehicles/city/saloon.glb",
+      "sha256": "592a81af27fbff3cc02d25f29e7c54c9cf14641b2a085212311f5df3c675b799",
+      "bytes": 258644,
+      "triangles": {
+        "near": 4800,
+        "far": 1998
+      },
+      "paintKey": "#5a1f24",
+      "source": "scripts/vehicles/build_car.py saloon"
+    },
+    {
+      "name": "suv",
+      "url": "/models/vehicles/city/suv.glb",
+      "sha256": "e7307bde2cc8f9800bacff62b7adbc2e6f9b86a24dc98d08ff8d858d809c67e9",
+      "bytes": 263844,
+      "triangles": {
+        "near": 4800,
+        "far": 1996
+      },
+      "paintKey": "#e9e9e6",
+      "source": "scripts/vehicles/build_car.py suv"
+    },
+    {
+      "name": "bus-double",
+      "url": "/models/vehicles/city/bus-double.glb",
+      "sha256": "ed994a9c541d098ac69dfbe4315ad07498d2f357cf25d12a8a4ece40cc82cba8",
+      "bytes": 236540,
+      "triangles": {
+        "near": 3600,
+        "far": 1498
+      },
+      "paintKey": "#b3241b",
+      "source": "scripts/vehicles/build_bus.py double"
+    },
+    {
+      "name": "bus-single",
+      "url": "/models/vehicles/city/bus-single.glb",
+      "sha256": "b7481e755185ddd083ff18fce83494cf714c62f58c0bf652d2c98114cda23140",
+      "bytes": 242516,
+      "triangles": {
+        "near": 3600,
+        "far": 1498
+      },
+      "paintKey": "#b3241b",
+      "source": "scripts/vehicles/build_bus.py single"
+    },
+    {
+      "name": "motorbike",
+      "url": "/models/vehicles/city/motorbike.glb",
+      "sha256": "8ef822047bf0e1a44466ae7f9eaccaf05afec4ba8cb6179df533da29d7a560a4",
+      "bytes": 135760,
+      "triangles": {
+        "near": 2096,
+        "far": 724
+      },
+      "paintKey": "#1d2d5a",
+      "source": "scripts/vehicles/build_bike.py"
+    }
+  ]
+}

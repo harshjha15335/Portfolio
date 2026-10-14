@@ -112,7 +112,7 @@ body.box((0, FW + .32, .55), (.16, .012, .1), 'plate')
 parts = {'body': body, 'lamps': lamps, 'tail': tail}
 palette = {**PALETTE, 'lamp': PALETTE['black'], 'tail': PALETTE['black']}
 if '--preview' not in sys.argv:
-    tris = export(parts, palette, os.path.join(work, 'motorbike.glb'), occluders=[])
+    tris = export(parts, palette, os.path.join(work, 'motorbike.glb'), occluders=[], city=dict(out=os.path.join(work, 'motorbike-city.glb'), near=2100, far=750, paint={'paint'}, lamp='#f4e7c2', tail='#9c2b22'))
     json.dump({'triangles': tris, 'wheelbase': WB, 'wheelRadius': WR}, open(os.path.join(work, 'motorbike.stats.json'), 'w'))
     print('motorbike', tris, 'total', sum(tris.values()))
 else:

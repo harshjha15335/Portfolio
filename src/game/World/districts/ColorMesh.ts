@@ -69,6 +69,10 @@ export class ColorMesh {
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3)); this.parts.push(g); return g;
   }
   /** Merge a geometry that already carries vertex colours (e.g. a baked seated driver). */
+  /** Add a whole modelled vehicle (position, normal, colour), at every level of detail. Takes ownership of it. */
+  model(geometry: THREE.BufferGeometry) {
+    geometry.applyMatrix4(this.matrix); this.parts.push(geometry);
+  }
   colored(source: THREE.BufferGeometry, position: V3) {
     if (this.lite) return;
     const g = plain(source); g.setAttribute('color', source.getAttribute('color').clone());
