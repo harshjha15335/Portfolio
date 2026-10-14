@@ -1,0 +1,49 @@
+{
+ "title": "Vino",
+ "author": "minghauLoh",
+ "authorUrl": "https://sketchfab.com/minghau",
+ "license": "CC-BY-4.0",
+ "licenseUrl": "http://creativecommons.org/licenses/by/4.0/",
+ "origin": "https://sketchfab.com/3d-models/vino-2205f4e69bc64df3aab03c71ab9d7492",
+ "credit": "This work is based on \"Vino\" (https://sketchfab.com/3d-models/vino-2205f4e69bc64df3aab03c71ab9d7492) by minghauLoh (https://sketchfab.com/minghau) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
+ "source": {
+  "repository": "gkjohnson/3d-demo-data",
+  "commit": "c82e657bdaf1748fa4edffd4858e41733ce1932e",
+  "path": "models/vino-bike",
+  "licenseEvidence": "https://github.com/gkjohnson/3d-demo-data/blob/c82e657bdaf1748fa4edffd4858e41733ce1932e/models/vino-bike/license.txt",
+  "files": {
+   "scene.gltf": "b59cd571b6f7922e0fde81a7e5debabdc1c1df9d1b751ba3cfc15bd1999278de",
+   "scene.bin": "3ab3be85f8867ba97467cf7adf21e4f0e17d6ca9af38062f39077ac270e10eeb",
+   "textures/Glass_metallicRoughness.png": "258e40d5565f243a4906b6121936511c6103a33cb5ac0b5a0e0bdc41d49261b2",
+   "textures/Lamp__Glass_baseColor.jpeg": "26d9fcad70ccff8bf3f8d250476009461eafe2b617503c3d16f72288e23a2c04",
+   "textures/Lamp__Glass_metallicRoughness.png": "4c01ba220eef8c26d3a78c954181652ba2aeb88613f48bb65baba61c7c281995",
+   "textures/Lamp__Glass_normal.png": "14fefb939c5da96bbd091ed20d999377be2ce27bc2afd4e7ddceb6c30fbda7f1",
+   "textures/Main_Body_baseColor.jpeg": "d89c8fcb0ecdfb6378b0e9ac855e499fe04e276bef1972a88138c39ec12748d0",
+   "textures/Main_Body_clearcoat.png": "ef8962cd6bf661d067df0cbc27469472759c72f829bf74548f5b96498318fc49",
+   "textures/Main_Body_clearcoat_normal.png": "0eef76ea81f0e8581d5717174466453b309b0310e1c52c76caa9e2d0f09c16cd",
+   "textures/Main_Body_clearcoat_roughness.png": "02d08e9c6f9204bf095ff4a4ebdbcf0d0c57b53a1bf065d073b5ef2506f248dd",
+   "textures/Main_Body_metallicRoughness.png": "e934545b24f054d488e8afea609366cbb5cc9a4c0aba5afdc7259d0c3f922d22",
+   "textures/Main_Body_normal.png": "a8e677cbaec7831337cf1de82332ceda9db394a1e5357edbfcccb9aebd121eb6",
+   "textures/SmallParts_baseColor.jpeg": "684c212b170c1717cd72373d48bab1ec71d7f9141ddad6a9a2f58a2737a43d09",
+   "textures/SmallParts_metallicRoughness.png": "bf56f28a2cac2491e50367a4f39f3ff8f7ec006a2cbc4285beb79a0a7db575c6",
+   "textures/SmallParts_normal.png": "76fdc4e2591a4204a479867bec49e554bc7ada308ab49cb294fa42a4ea39c703",
+   "textures/Sticker_baseColor.png": "279ad94dc1ee9f9f2e0526cc0b9c9d1908d95f22b5d2b50886105826ae777efa",
+   "textures/Sticker_metallicRoughness.png": "558d3f942b96d756a504889d0e49222c866821aa19e3085a52357cdae65c3d80",
+   "textures/Sticker_normal.png": "3ae447a76fd250fb1ede4b9737ac37d6e835bf2869dd965b1ac63bcb9c3a0f51",
+   "textures/Tire_baseColor.jpeg": "1c59ed12e994b90dce77946d7f6ba5bb666754739815a9254fa949d442ee13f3",
+   "textures/Tire_metallicRoughness.png": "c4a6085f070e4b4a4c574539d52bfa98ccefcbbaf6dcfad2946c88ba0d5645d3",
+   "textures/Tire_normal.png": "5d3031d40c08e10ea455f24ec6448be224377d70ff5f18e10b6a2141446cef0d"
+  }
+ },
+ "targetTriangles": 4500,
+ "lengthMetres": 1.7,
+ "headlampTowardPlusY": false,
+ "glass": {
+  "color": [
+   0.55,
+   0.58,
+   0.6
+  ],
+  "roughness": 0.12
+ }
+}

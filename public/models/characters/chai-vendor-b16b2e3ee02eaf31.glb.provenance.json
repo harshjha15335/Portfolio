@@ -1,0 +1,83 @@
+{
+ "status": "approved",
+ "visualReview": {
+  "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+  "date": "2026-10-11",
+  "notes": "Behind the Irani chai counter facing the street; kurta and cap read cleanly; idle has weight shifts."
+ },
+ "asset": {
+  "id": "cast-chai-vendor",
+  "url": "/models/characters/chai-vendor-b16b2e3ee02eaf31.glb",
+  "sha256": "b16b2e3ee02eaf317a3510951f38d47c3b039444213ba750ddaafddddc201f5a",
+  "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_15",
+  "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+  "license": "MIT"
+ },
+ "provenance": {
+  "repository": "https://github.com/microsoft/Microsoft-Rocketbox",
+  "commit": "0943055db6ec570bcef9f2c8b41c9e5467c808f9",
+  "license": "MIT",
+  "licenseEvidence": "https://github.com/microsoft/Microsoft-Rocketbox/blob/0943055db6ec570bcef9f2c8b41c9e5467c808f9/LICENSE.md",
+  "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+  "copyright": "Copyright (c) 2020 Microsoft",
+  "licenseReviewedOn": "2026-10-11",
+  "avatar": "Assets/Avatars/Adults/Male_Adult_15",
+  "avatarSha256": "44b5ae914f20aa25f4ae2d4a5ead6a7a1516387f92ddd12cb2323961163da1f0",
+  "clips": {
+   "Idle": {
+    "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_02.max.fbx",
+    "sha256": "d6d13b12e1f8d677dfaffef342a5ffeacf5ee3b38036de83425ab68316cd4e5e"
+   },
+   "Walk": {
+    "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_slow_01.max.fbx",
+    "sha256": "8c5e5ed18be9e1062a26d230677d2801a679c70fd67f8aa8de14ff37f6d20577"
+   },
+   "Talk": {
+    "file": "Assets/Animations/all_animations_max_motextr_static/m_gestic_talk_neutral_01.max.fbx",
+    "sha256": "4c2b9ff481a9538dafbbe7f6aa6ffd6b948b5d34bb16a1e2052e943bbbbd3cd8"
+   }
+  },
+  "modifications": "Blender 4.2 FBX import; body and head maps packed into one 2048×1024 atlas with matching normal atlas; clips retargeted from the Rocketbox animation rig, trimmed ({\"Idle\":12,\"Talk\":9}) and resampled with gltf-transform 4.1.1; 30% decimated LOD mesh on the same rig."
+ },
+ "inspection": {
+  "triangles": 7292,
+  "lodTriangles": 2186,
+  "primitives": 1,
+  "materials": 1,
+  "joints": [
+   80
+  ],
+  "textures": [
+   {
+    "width": 2048,
+    "height": 1024,
+    "mimeType": "image/jpeg"
+   },
+   {
+    "width": 2048,
+    "height": 1024,
+    "mimeType": "image/jpeg"
+   }
+  ],
+  "clips": [
+   {
+    "name": "Idle",
+    "duration": 12.033333778381348,
+    "channels": 240
+   },
+   {
+    "name": "Walk",
+    "duration": 1.5,
+    "channels": 240
+   }
+  ],
+  "visualReviewRequired": [
+   "human proportions",
+   "clothing and texture quality",
+   "human-scale floor alignment",
+   "Idle and Walk move the intended skeleton",
+   "foot sliding/facing direction",
+   "new Medium draw/triangle/texture/program counts"
+  ]
+ }
+}

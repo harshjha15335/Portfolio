@@ -21,6 +21,21 @@ describe('first-person street slice', () => {
     expect(street.interactions.map(p=>p.id)).toEqual(['cst','fort','ffprime','hail-taxi','hail-auto']);
     expect(street.interactions.every(p=>p.position.y>=1 && p.position.y<1.7)).toBe(true);
   });
+  it('keeps the High-preset crowd and traffic hidden and out of the Medium frame until density is switched on',()=>{
+    const street=new MumbaiStreet(new CANNON.World());const dense=street.group.getObjectByName('dense-street')!;
+    const count=()=>{let people=0,cars=0;dense.traverse(o=>{if((o as THREE.SkinnedMesh).isSkinnedMesh)people++;if(o.name.endsWith('-original-bodywork'))cars++;});return {people,cars};};
+    expect(dense.visible).toBe(false);expect(count()).toEqual({people:23,cars:3});
+    street.setDensity(true);expect(dense.visible).toBe(true);street.setDensity(false);expect(dense.visible).toBe(false);
+  });
+  it('paints the end-of-street and skyline buildings from one atlas in three draws, and drops the lamp pools',()=>{
+    const street=new MumbaiStreet(new CANNON.World());const names:string[]=[];let pools=0;
+    street.group.traverse(o=>{if(o.name.startsWith('backdrop-facades-'))names.push(o.name);const m=(o as THREE.Mesh).material as THREE.Material|undefined;if(m&&!Array.isArray(m)&&m.userData.surface==='pool')pools++;});
+    expect(names.sort()).toEqual(['backdrop-facades-north','backdrop-facades-skyline','backdrop-facades-south']);
+    const facades=names.map(n=>street.group.getObjectByName(n) as THREE.Mesh);
+    expect(new Set(facades.map(m=>(m.material as THREE.MeshStandardMaterial).map)).size).toBe(1);
+    expect(facades.every(m=>m.material===facades[0].material||(m.material as THREE.Material).customProgramCacheKey()===(facades[0].material as THREE.Material).customProgramCacheKey())).toBe(true);
+    expect(pools).toBe(0);
+  });
   it('keeps elevated shop stock and facade modules attached to buildings and out of the carriageway',()=>{
     const street=new MumbaiStreet(new CANNON.World());street.update(0,true);const misplaced:number[][]=[];
     street.group.traverse(object=>{
@@ -74,6 +89,6 @@ describe('first-person street slice', () => {
         expect(hit.hasHit,`${destination} segment ${i}`).toBe(false);
       }
     }
-    expect(streetRideRoute({x:0,z:0},'powai')).toEqual([]);
+    expect(streetRideRoute({x:0,z:0},'nowhere')).toEqual([]);
   });
 });

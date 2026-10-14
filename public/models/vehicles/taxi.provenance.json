@@ -1,0 +1,18 @@
+{
+  "id": "taxi-body",
+  "url": "/models/vehicles/taxi.glb",
+  "sha256": "f01eb11d3238ca54238954482168c8f71b8e4accb56075ef77946f15982b4325",
+  "bytes": 175084,
+  "triangles": 3648,
+  "parts": {
+    "body": 3288,
+    "glass": 144,
+    "lamps": 120,
+    "tail": 96
+  },
+  "origin": "original",
+  "author": "Harsh Jha portfolio (modelled as code)",
+  "source": "scripts/vehicles/build_taxi.py",
+  "license": "Original work for this repository (no third-party licence applies)",
+  "notes": "No third-party geometry or images. Body colour in COLOR_0, (roughness, 1 - metalness) in TEXCOORD_0, ambient occlusion baked in Blender; glass, lamps and tail are position-only parts drawn with the vehicle's own materials."
+}

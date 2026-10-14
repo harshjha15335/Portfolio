@@ -1,0 +1,74 @@
+{
+ "status": "approved",
+ "visualReview": {
+  "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+  "date": "2026-10-11",
+  "notes": "Street walker/stander: proportions, clothing and gait checked at 2–12 m in matched SwiftShader captures; idle-to-walk crossfade 0.3 s."
+ },
+ "asset": {
+  "id": "cast-commuter",
+  "url": "/models/characters/commuter-051d3af874f48944.glb",
+  "sha256": "051d3af874f48944e17afdf4ae27b99bbb912ea1375ab7a5287895f1f455bdfc",
+  "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_04",
+  "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+  "license": "MIT"
+ },
+ "provenance": {
+  "repository": "https://github.com/microsoft/Microsoft-Rocketbox",
+  "commit": "0943055db6ec570bcef9f2c8b41c9e5467c808f9",
+  "license": "MIT",
+  "licenseEvidence": "https://github.com/microsoft/Microsoft-Rocketbox/blob/0943055db6ec570bcef9f2c8b41c9e5467c808f9/LICENSE.md",
+  "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+  "copyright": "Copyright (c) 2020 Microsoft",
+  "licenseReviewedOn": "2026-10-11",
+  "avatar": "Assets/Avatars/Adults/Male_Adult_04",
+  "avatarSha256": "fe0d026bc59e7d7ea8f4049edf77ee8040e050224b44a10fb4727b9b3d6efba0",
+  "clips": {
+   "Idle": {
+    "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_01.max.fbx",
+    "sha256": "818cc185af21390575f7fbfdeb3012ba2ce5969fbcb220ea725a2617b339a6e2"
+   },
+   "Walk": {
+    "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_slow_01.max.fbx",
+    "sha256": "8c5e5ed18be9e1062a26d230677d2801a679c70fd67f8aa8de14ff37f6d20577"
+   }
+  },
+  "modifications": "Blender 4.2 FBX import; body and head maps packed into one 1024×512 atlas; clips retargeted from the Rocketbox animation rig, trimmed ({\"Idle\":12}) and resampled with gltf-transform 4.1.1; 30% decimated LOD mesh on the same rig."
+ },
+ "inspection": {
+  "triangles": 8684,
+  "lodTriangles": 2604,
+  "primitives": 1,
+  "materials": 1,
+  "joints": [
+   80
+  ],
+  "textures": [
+   {
+    "width": 1024,
+    "height": 768,
+    "mimeType": "image/png"
+   }
+  ],
+  "clips": [
+   {
+    "name": "Idle",
+    "duration": 11.699999809265137,
+    "channels": 240
+   },
+   {
+    "name": "Walk",
+    "duration": 1.5,
+    "channels": 240
+   }
+  ],
+  "visualReviewRequired": [
+   "human proportions",
+   "clothing and texture quality",
+   "human-scale floor alignment",
+   "Idle and Walk move the intended skeleton",
+   "foot sliding/facing direction",
+   "new Medium draw/triangle/texture/program counts"
+  ]
+ }
+}

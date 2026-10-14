@@ -1,5 +1,7 @@
 import type {VerifiedGLB,GLBAssetLibrary} from './assets/GLBAssetLibrary';
 import type {GLBCharacter} from './assets/GLBCharacter';
+import {loadable,placementNoise,STANDING_CAST,WALKER_CAST,type CastMember} from './npc/cast';
+import {DriverRig} from './npc/DriverRig';
 import * as THREE from 'three';
 import {casterPrefix,restrictInstanceShadows} from '../../core/ShadowInstances';
 import * as CANNON from 'cannon-es';
@@ -7,14 +9,20 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {sampleMultipole} from '../../research/multipoles';
 import {createHeroStorefront} from './architecture/HeroStorefront';
+import {createBenchmarkFacade} from './architecture/BenchmarkFacade';
+import {BakedKit} from './architecture/BakedKit';
+import {cableCoil,posters,roofTank,rubbish,twoWheeler,type TwoWheeler} from './architecture/StreetProps';
+import {ParkedScooters,type ParkedScooter} from './architecture/ParkedScooters';
 import { pointedArchGeometry, heritageDomeGeometry } from './architecture/HeritageDetails';
-import { awningGeometry, patinaGeometry } from './architecture/StreetArt';
+import { awningGeometry, patinaGeometry, runoffGeometry } from './architecture/StreetArt';
+import { FacadeBatch, faceFrame } from './architecture/BackdropFacades';
 import { createTransitModel, animateTransit } from './TransitModel';
+import { loadVehicleBody } from './AuthoredVehicles';
 import { StreetMaterials, type Surface } from './StreetMaterials';
 import { facadeSpec, seededRandom } from './StreetArchitecture';
 import { FacadePanels } from './architecture/FacadePanels';
 import { SpatialIndex } from './spatial/SpatialIndex';
-import { createHuman } from './npc/NPCFactory';
+import { createHuman, type Human } from './npc/NPCFactory';
 import { NavMeshManager, type Obstacle } from './navigation/NavMeshManager';
 import { RoadTraffic, pedestrianGreen } from './traffic/RoadTraffic';
 import type { CrowdAgent } from '@recast-navigation/core';
@@ -24,6 +32,8 @@ export interface StreetInteraction { id: string; position: THREE.Vector3; label:
 
 
 /** Original modular Mumbai-inspired CST/Fort lane. One art-directed vertical slice. */
+/** Licensed people switch to their reduced mesh beyond this distance (m); 8 m keeps the combined street inside the Medium triangle budget. */
+const CAST_FULL_DETAIL=8;
 export class MumbaiStreet {
   readonly group = new THREE.Group();
   readonly interactions: StreetInteraction[] = [];
@@ -33,6 +43,17 @@ export class MumbaiStreet {
   private patina:THREE.Mesh[]=[];
   /** Research-room interior, kept cleaner than the street by the atmosphere pass. */
   readonly shelteredBounds=new THREE.Box3();
+  /** False while riding: fine façade detail is skipped from a moving vehicle to keep ride frames in budget. */
+  nearDetail=true;
+  /** Baked batches for parked two-wheelers, posters, coils, rubbish and roof tanks: one per street
+   * third, so each can be frustum-culled when it is behind the visitor. */
+  private propKits=[0,1,2].map(n=>new BakedKit(seededRandom(`street-props:${n}`)));
+  private props(z:number){return this.propKits[z>-12?0:z>-34?1:2];}
+  private scooterPlacements:ParkedScooter[]=[];
+  private scooters!:ParkedScooters;
+  private scootersReady:Promise<void>=Promise.resolve();
+  /** Scooters go to the authored-model set; motorcycles stay code-modelled in the prop batches. */
+  private parked(x:number,z:number,yaw:number,kind:TwoWheeler,body:string){if(kind==='scooter')this.scooterPlacements.push({x,z,yaw,body});else twoWheeler(this.props(z),x,z,yaw,kind,body);}
   private patinaMaterial=Object.assign(new THREE.MeshStandardMaterial({vertexColors:true,roughness:.97,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}),{userData:{weather:.4}});
   private cylinderGeometry = new THREE.CylinderGeometry(1, 1, 1, 8);
   private sphereGeometry = new THREE.SphereGeometry(1, 8, 6);
@@ -44,13 +65,11 @@ export class MumbaiStreet {
   private motion: Array<(time: number) => void> = [];
   private surfaces = new StreetMaterials();
   private archGeometry = this.makeArch();
-  private distantWindow=new THREE.PlaneGeometry(1,1);
   private pointedArch=pointedArchGeometry();
   private dome=heritageDomeGeometry();
   private hippedRoof=new THREE.ConeGeometry(1,1,4);
   private torsoGeometry = new THREE.CylinderGeometry(.19, .145, 1, 10);
   private leafGeometry = this.makeLeafCluster();
-  private poolGeometry=new THREE.CircleGeometry(2.5,16);
   private contactGeometry = new THREE.CircleGeometry(1, 16);
   private contactMaterial = new THREE.MeshBasicMaterial({color: '#20272a', transparent:true, opacity:.16, depthWrite:false});
   private pedestrians: THREE.Group[] = [];
@@ -70,12 +89,31 @@ export class MumbaiStreet {
   private stationCharacter:GLBCharacter|null=null;
   private characterPreviewWalk=false;
   characterStatus='not-supplied';
+  /** Each street placement keeps its procedural figure until its licensed character has loaded. */
+  private castSlots:Array<{group:THREE.Group;human:Human;cast:string;moving:boolean;seated:boolean;seat:number;actor:GLBCharacter|null;pending:number}>=[];
+  private drivers:DriverRig[]=[];
+  castStatus='not-loaded';
   private walkers: Array<{group:THREE.Group;agent?:CrowdAgent;target:number;wait:number}> = [];
-  private trafficSystem = new RoadTraffic();
+  private trafficSystem = new RoadTraffic(3,3);
+  /** High preset only: extra walkers and traffic. Hidden and inert on Medium/Low, so their budgets are untouched. */
+  private dense=Object.assign(new THREE.Group(),{name:'dense-street',visible:false});
+  private denseCount=0;
+  private denseWalkers: Array<{group:THREE.Group;agent?:CrowdAgent;target:number;wait:number}> = [];
   private trafficVehicles: THREE.Group[] = [];
+  /** Through traffic driven outside the street (cars, BEST buses) that the loop taxis must queue behind. */
+  extraTrafficObstacles: Array<{ x: number; z: number }> = [];
+  /** Where the street's own taxis and autos are, so through traffic can queue behind them. */
+  get trafficPositions() { return this.trafficVehicles.map(v => v.position); }
+  private parkedVehicles: THREE.Group[] = [];
   private previousTime = 0;
   private viewPosition = new THREE.Vector3();
-  get assetsReady(){return this.surfaces.ready;}
+  // Modelled taxi and auto bodies, shared with every vehicle of each kind (see TransitModel).
+  private vehicleBodiesReady=typeof location==='undefined'?Promise.resolve():Promise.allSettled((['taxi','auto'] as const).map(kind=>loadVehicleBody(kind,location.origin))).then(()=>undefined);
+  /** 'ready' once surface maps, scooters and vehicle bodies have loaded or fallen back. */
+  assetStatus:'loading'|'ready'='loading';
+  get assetsReady(){return Promise.all([this.surfaces.ready,this.scootersReady,this.vehicleBodiesReady]).then(()=>undefined);}
+  /** Shared verified surface materials; the other districts clone these. */
+  get surfaceLibrary(){return this.surfaces;}
   get surfaceStatus(){return this.surfaces.status;}
   navigationStatus = 'loading';
   npcUpdateMs = 0; trafficUpdateMs = 0;
@@ -86,9 +124,14 @@ export class MumbaiStreet {
     this.signAtlas = new THREE.CanvasTexture(this.signCanvas); this.signAtlas.colorSpace = THREE.SRGBColorSpace;
     this.landscape();
     for (let i = 0; i < 7; i++) for (const side of [-1, 1]) this.facade(side, 4 - i * 9.5, i);
-    this.station(); this.researchRoom(); this.streetDetails(); this.vegetation(); this.people(); this.traffic();
+    this.station(); this.researchRoom(); this.streetDetails(); this.vegetation(); this.people(); this.traffic(); this.densePeople(); this.group.add(this.dense);
     this.spatial = new SpatialIndex(this.colliderGeometry); this.colliderGeometry.forEach(g=>g.dispose()); this.colliderGeometry=[];
-    void NavMeshManager.create(this.obstacles).then(nav=>{if(this.disposed){nav.dispose();return;}this.navigation=nav;this.navigationStatus='ready';for(const [i,w] of this.walkers.entries()){w.agent=nav.add({x:w.group.position.x,y:0,z:w.group.position.z});w.target=i%this.destinations.length;w.agent.requestMoveTarget(this.destinations[w.target]);}}).catch(()=>{this.navigationStatus='unavailable';});
+    void NavMeshManager.create(this.obstacles).then(nav=>{if(this.disposed){nav.dispose();return;}this.navigation=nav;this.navigationStatus='ready';for(const [i,w] of this.walkers.entries()){w.agent=nav.add({x:w.group.position.x,y:0,z:w.group.position.z});w.target=i%this.destinations.length;w.agent.requestMoveTarget(this.destinations[w.target]);}if(this.dense.visible)this.joinDenseCrowd();}).catch(()=>{this.navigationStatus='unavailable';});
+    const scooters=new ParkedScooters(this.scooterPlacements,seededRandom('parked-scooters'));this.scooters=scooters;this.group.add(scooters.group);
+    this.motion.push(()=>scooters.update(this.viewPosition,this.nearDetail));if(typeof location!=='undefined')this.scootersReady=scooters.load(location.origin);void this.assetsReady.then(()=>{this.assetStatus='ready';});
+    // Props beyond ~30 m along the street are a few pixels each; whole thirds drop out by distance.
+    this.propKits.forEach((kit,n)=>{const props=kit.build(`Street props ${n}`,.3).group,[lo,hi]=[[-12,20],[-34,-12],[-70,-34]][n];this.group.add(props);
+      this.motion.push(()=>{const z=this.viewPosition.z;props.visible=Math.max(lo-z,z-hi,0)<30;});});
     this.signAtlas.needsUpdate = true; this.instanceStatics(); this.mergeSigns(); this.mergePatina(); this.instancePedestrians();
   }
   private material(color: string, glow = false, wall = false, surface: Surface = 'solid') {
@@ -183,7 +226,7 @@ export class MumbaiStreet {
       this.box([.65, .013, .45], [side * 3.5, .012, z], '#282d34');
       for (let n = 0; n < 5; n++) this.box([.035, .015, .38], [side * 3.5 - .22 + n * .11, .02, z], '#53545a');
     }
-    const puddle = new THREE.Mesh(new THREE.CircleGeometry(1, 14), new THREE.MeshStandardMaterial({ color: '#736172', transparent: true, opacity: .5, roughness: .35 }));
+    const puddle = new THREE.Mesh(new THREE.CircleGeometry(1, 14), new THREE.MeshStandardMaterial({ color: '#33383a', transparent: true, opacity: .55, roughness: .1 }));
     puddle.rotation.x = -Math.PI / 2; puddle.scale.set(1.2, .38, 1); puddle.position.set(2.6, .014, -17); this.group.add(puddle);
   }
   private streetContinuation(){
@@ -193,41 +236,38 @@ export class MumbaiStreet {
     for(const z of [-67,-57])this.box([74,.05,2.0],[0,.014,z],'#afa392',false,this.group,false,false,'paving');
     // Three layers continue beyond both termini. No distant façade is a navigation surface.
     const blocks=[[-1.5,-112,18,13,12],[-26,-23,15,13,18],[26,-29,18,14,20],[-9,-75,13,10,13],[8,-72,12,8,11],[26,-71,17,12,16],[-34,-82,14,10,12],[-10,-99,18,11,14],[13,-104,22,12,16],[34,-112,26,14,17],[-36,-116,24,13,16],[-14,41,16,12,15],[15,44,19,13,15],[-36,58,23,14,17],[34,66,27,15,18],[-12,82,29,16,18],[12,108,32,17,20]];
+    // Façades are painted quads from one atlas (see BackdropFacades); only massing and rooflines are boxes.
+    const north=new FacadeBatch(),south=new FacadeBatch(),skyline=new FacadeBatch();
+    const facade=(batch:FacadeBatch,parent:THREE.Object3D,offset:THREE.Vector3,yaw:number,width:number,height:number,color:string,seed:number,coarse=false)=>batch.add({frame:faceFrame(this.group,parent,offset,yaw),width,height,tint:new THREE.Color(color),seed,coarse,ground:!coarse});
     for(const [i,[x,z,h,w,d]] of blocks.entries()){
       const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=(i>0&&i<5?-.22:i%3===0?.13:0);this.group.add(g);
-      const color=['#aa9987','#9b9e93','#b5aa98','#8e9994'][i%4];
+      const color=['#aa9987','#9b9e93','#b5aa98','#8e9994'][i%4],batch=z<-20?north:south;
       this.box([w,h,d],[0,h/2,0],color,false,g,false,true);
       const face=z<0?d/2:-d/2;
-      for(let y=2.0;y<h-1;y+=2.7){this.box([w+.12,.10,.24],[0,y-1.03,face],'#b6aa94',false,g,false,false,'stone');for(let col=0;col<4;col++){
-        const wx=(col-1.5)*w/4;const pane=this.shape(this.distantWindow,[1.0,1.42,1],[wx,y,face+(z<0?.06:-.06)],'#43575b',g,false,false,true,'glass');pane.rotation.y=z<0?0:Math.PI;
-        if((i+col+Math.floor(y))%5===0)this.box([.68,1.05,.012],[wx,y,face+(z<0?.06:-.06)],'#b6a074',false,g,true);
-      }}
+      facade(batch,g,new THREE.Vector3(0,0,face+(z<0?.03:-.03)),z<0?0:Math.PI,w,h,color,i+1);
       // Side elevation is visible along the bend; it must not read as another terminal slab.
-      if(i>0&&i<5)for(const side of [-1,1])for(let y=2.1;y<h-1;y+=2.7)for(let n=0;n<3;n++){
-        const pane=this.shape(this.distantWindow,[.95,1.35,1],[side*(w/2+.04),y,(n-1)*d*.28],'#43575b',g,false,false,true,'glass');pane.rotation.y=side*Math.PI/2;
-        this.box([.19,.09,1.12],[side*(w/2+.05),y-.72,(n-1)*d*.28],'#b6aa94',false,g,false,false,'stone');
-      }
+      if(i>0&&i<5)for(const side of [-1,1])facade(batch,g,new THREE.Vector3(side*(w/2+.03),0,0),side*Math.PI/2,d,h,color,i*7+side+20);
       this.box([w+.3,.26,d+.3],[0,h+.12,0],'#958c7c',false,g,false,false,'stone');
       if(i%3===0){this.box([w*.65,.6,.2],[0,h+.55,face],color,false,g,false,true);this.cylinder(.7,1.1,[w*.27,h+.75,0],'#49534e',g);}
-      if(i>0&&i<5){for(const wx of [-w*.3,0,w*.3]){this.box([2.1,2.3,.15],[wx,1.2,face],'#4c655e',false,g);this.box([2.2,.1,1.0],[wx,2.48,face+.25],'#9b8b70',false,g,false,false,'fabric');}}
+      if(i>0&&i<5)for(const wx of [-w*.3,0,w*.3])this.box([2.2,.1,1.0],[wx,2.48,face+.25],'#9b8b70',false,g,false,false,'fabric');
     }
     // Back-lot silhouettes close the narrow gaps between near façades without exposing a perimeter wall.
     for(const side of [-1,1])for(let i=0;i<4;i++){
-      const x=side*(25+(i%2)*2),z=5-i*22,h=11+(i%3)*3;
-      this.box([10,h,21],[x,h/2,z],i%2?'#a99d8a':'#87988f',false,this.group,false,true);
+      const x=side*(25+(i%2)*2),z=5-i*22,h=11+(i%3)*3,color=i%2?'#a99d8a':'#87988f';
+      this.box([10,h,21],[x,h/2,z],color,false,this.group,false,true);
       this.box([10.4,.22,21.4],[x,h+.12,z],'#958c7c',false,this.group,false,false,'stone');
-      for(let y=2.5;y<h;y+=2.8)for(let n=0;n<6;n++){const pane=this.shape(this.distantWindow,[.95,1.3,1],[x-side*5.05,y,z-8+n*3.1],'#526465',this.group,false,false,true,'glass');pane.rotation.y=-side*Math.PI/2;}
+      facade(z<-20?north:south,this.group,new THREE.Vector3(x-side*5.03,0,z),-side*Math.PI/2,21,h,color,40+i*2+(side>0?1:0));
     }
     // Fogged, overlapping skyline closes every azimuth instead of revealing a bare ground/sky seam.
     // It is static backdrop geometry outside the original safety envelope, not explorable districts.
     for(let i=0;i<32;i++){
       const angle=i*Math.PI/16,h=16+(i%5)*3,g=new THREE.Group();g.position.set(Math.sin(angle)*120,0,-22+Math.cos(angle)*120);g.rotation.y=angle;this.group.add(g);
-      this.box([25,h,12],[0,h/2,0],['#9ba69e','#afb1a2','#97a4a0'][i%3],false,g,false,true).castShadow=false;
+      const color=['#9ba69e','#afb1a2','#97a4a0'][i%3];
+      this.box([25,h,12],[0,h/2,0],color,false,g,false,true).castShadow=false;
       this.box([25.2,.25,12.2],[0,h+.13,0],'#8a938b',false,g,false,false,'stone').castShadow=false;
-      for(let row=0;row<3;row++)for(let col=0;col<4;col++){
-        const pane=this.shape(this.distantWindow,[1.2,1.5,1],[-8+col*5.3,3+row*4.1,-6.04],'#677c79',g,false,false,true,'glass');pane.rotation.y=Math.PI;pane.castShadow=false;
-      }
+      facade(skyline,g,new THREE.Vector3(0,0,-6.03),Math.PI,25,h,color,60+i,true);
     }
+    for(const [batch,name] of [[north,'backdrop-facades-north'],[south,'backdrop-facades-south'],[skyline,'backdrop-facades-skyline']] as Array<[FacadeBatch,string]>){const mesh=batch.build(this.surfaces.facade,name);if(mesh)this.group.add(mesh);}
     // Near corners carry a real roofline; sky/fog, rather than a flat cap, finishes the vista.
     for(const x of [-32,31])this.box([15,.07,7],[x,.02,24],'#afa392',false,this.group,false,false,'paving');
   }
@@ -237,6 +277,11 @@ export class MumbaiStreet {
     // Local constructors default to the building, so every decorative module inherits its placement.
     const frontageBox=(size:Triple,position:Triple,tint:string,solid=false,parent:THREE.Object3D=g,glow=false,wall=false,surface:Surface='solid')=>this.box(size,position,tint,solid,parent,glow,wall,surface);
     const {height,width,color,style}=spec;const fort=side<0&&index===4;const hero=side<0&&index===0;
+    // Radio House replaces the procedural upper storeys of this frontage with the authored benchmark.
+    const benchmark=side<0&&index===1;
+    if(benchmark){const radio=createBenchmarkFacade(spec);g.add(radio.group);g.updateWorldMatrix(true,false);const centre=g.localToWorld(radio.centre.clone()),detail=radio.detail;
+      // Near-detail LOD: railings, grille bars, plants and cables only draw within 22 m, on foot.
+      if(detail)this.motion.push(()=>{detail.visible=this.nearDetail&&this.viewPosition.distanceToSquared(centre)<484;});this.sign(g,'RADIO HOUSE · 1938','रेडियो हाउस',radio.plaque.position,radio.plaque.width,'#cbbd9c','#4d4536');}
     // Rear mass provides simple collision. The visible face is built around actual window recesses.
     frontageBox([width,height-3.2,5.85],[0,3.2+(height-3.2)/2,-3.75],color,false,g,false,true);
     this.solidProxy([width,height-3.2,6.5],[0,3.2+(height-3.2)/2,-3.4],g);
@@ -265,6 +310,8 @@ export class MumbaiStreet {
           frontageBox([3.3,.54,.5],[x,.3,.13],'#867158',false,g,false,false,'wood');
         } else {
           frontageBox([3.4,2.18,.09],[x,1.19,-.12],'#8b8c87',false,g,false,false,'metal');
+          // Bills pasted over the closed shutter, layered and torn.
+          g.updateWorldMatrix(true,false);posters(this.props(z),g.matrixWorld.clone().multiply(new THREE.Matrix4().makeTranslation(x+(x>0?-.35:.35),1.3,-.035)),1.5,.7,seededRandom(`${spec.seed}:posters:${x}`));
           for(let y=.21;y<2.3;y+=.13)frontageBox([3.42,.035,.035],[x,y,-.06],'#636d6c',false,g);
         }
       }
@@ -281,7 +328,7 @@ export class MumbaiStreet {
       for(let x=-3.65;x<3.7;x+=.55){const hem=frontageBox([.48,.095,.025],[x,2.19,1.19],index%2?'#61786b':'#b6a17d',false,g,false,false,'fabric');hem.rotation.z=Math.sin(x*13)*.035;}
       this.shopDressing(g,index,side);
     }
-    for(let floor=0;floor<spec.floors;floor++) {
+    for(let floor=0;floor<(benchmark?0:spec.floors);floor++) {
       const y=4.55+floor*spec.floorHeight;
       // Spandrels and piers frame sunken glass. Thin shaded reveals bake recess occlusion.
       // Cached through-cut wall panels expose continuous, physically deep reveals.
@@ -343,28 +390,44 @@ export class MumbaiStreet {
     if(style==='commercial'&&index%2===0)frontageBox([width*.52,1.2,4.1],[-1.8,height+.65,-3.1],color,false,g,false,true);
     // Distinct silhouette: stepped Art Deco parapets, heritage cornices, utility terraces.
     frontageBox([width+.18,.18,6.6],[0,height,-3.45],'#8e8878');
-    frontageBox([width,.55,.22],[0,height+.3,-.06],color,false,g,false,true);
+    if(!benchmark)frontageBox([width,.55,.22],[0,height+.3,-.06],color,false,g,false,true);
     if(style==='art-deco')for(let n=0;n<3;n++)frontageBox([2.6-n*.68,.27,.3],[0,height+.61+n*.24,-.04],'#cbbda0');
     if(style==='heritage') {
       for(let n=0;n<3;n++)frontageBox([width+.35+n*.1,.09,.35+n*.1],[0,height-.24+n*.13,.01],'#bbaa8e');
       for(let x=-4;x<=4;x+=.7)frontageBox([.12,.18,.26],[x,height-.45,.03],'#a79880');
       for(const x of [-4.1,4.1])frontageBox([.25,height-3.2,.33],[x,(height+3.2)/2,-.01],'#c3b397');
     }
-    this.cylinder(.68,1.05,[2,height+.75,-2.8],'#414a49',g);this.cylinder(.72,.09,[2,height+1.3,-2.8],'#333d3c',g);
+    if(!benchmark){
+    // Front roofs seen down the street carry black Sintex tanks; further ones keep the cheap drum.
+    if(index<=2){g.updateWorldMatrix(true,false);roofTank(this.props(z),g.matrixWorld.clone().multiply(new THREE.Matrix4().makeTranslation(2,height+.09,-2.8)),1.15);}
+    else{this.cylinder(.68,1.05,[2,height+.75,-2.8],'#414a49',g);this.cylinder(.72,.09,[2,height+1.3,-2.8],'#333d3c',g);}
     this.wire(new THREE.Vector3(-3.9,1,-.03),new THREE.Vector3(-3.9,height+.55,-.03),.035,'#7c8176',g);
     this.wire(new THREE.Vector3(-3.9,1,-.03),new THREE.Vector3(-3.45,.24,.17),.035,'#7c8176',g);
     const dish=this.shape(this.sphereGeometry,[.34,.12,.34],[-1.5,height+.9,-2],'#a2a49a',g);dish.rotation.x=.65;
     this.wire(new THREE.Vector3(-1.5,height,-2),new THREE.Vector3(-1.5,height+.8,-2),.025,'#67716b',g);
+    }
     this.sign(g,index%2?'EVENING CLASSES':'THE JOURNEY SO FAR','मुंबई',[3.78,1.62,-.005],.52,'#c2ad88','#454944').scale.y=2.7;
     // Local aging is aligned with piers and water paths, not scattered across windows.
     if(!fort)for(const x of [-4.03,4.03])this.paintWear(g,[x,1.05,.065],.145,1.15,color,`${spec.seed}:damp:${x}`);
-    for(let floor=0;floor<spec.floors;floor++)for(const x of [-1.06,1.06])this.paintWear(g,[x,4.3+floor*spec.floorHeight,-.016],.19,.42,color,`${spec.seed}:pier:${floor}:${x}`);
+    // Run-off streaks take over from the small per-storey pier patches, at about the same triangle cost.
+    if(!benchmark)this.runoff(g,spec);
     if(index===0||index===2){const blade=this.sign(g,index===0?(side<0?'CHAI':'PAPERS'):(side<0?'BOOKS':'OPTICS'),'मुंबई',[3.5,3.45,.9],1.0,index%2?'#734d3c':'#3c5148');blade.rotation.y=Math.PI/2;this.wire(new THREE.Vector3(3.5,3.55,0),new THREE.Vector3(3.5,3.55,1.4),.021,'#5f675e',g);}
   }
   private paintWear(parent:THREE.Object3D,position:Triple,width:number,height:number,base:string,seed:string){
     const geometry=patinaGeometry(width,height,seed),color=new THREE.Color(base).lerp(new THREE.Color('#555b4d'),.24),colors=[];
     for(let i=0;i<geometry.attributes.position.count;i++)colors.push(color.r,color.g,color.b);
     geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));const mesh=new THREE.Mesh(geometry,this.patinaMaterial);mesh.position.set(...position);mesh.receiveShadow=true;parent.add(mesh);this.patina.push(mesh);
+  }
+  /** Streaks where rain leaves each sill and the parapet, on the wall plane; merged with the patina. */
+  private runoff(parent:THREE.Object3D,spec:ReturnType<typeof facadeSpec>){
+    const random=seededRandom(`${spec.seed}:runoff`),spans:Array<[number,number,number,number]>=[];
+    for(let floor=0;floor<spec.floors;floor++){
+      const sill=4.55+floor*spec.floorHeight-.95,room=floor===0?.28:spec.floorHeight-2.0;
+      for(const x of [-2.8,0,2.8])for(let n=0,count=1+Math.floor(random()*3);n<count;n++)spans.push([x+(random()-.5)*1.4,sill,Math.min(room,.18+random()*.55),.05+random()*.16]);
+    }
+    // Parapet run-off falls the full height of the solid piers between window bays.
+    for(const x of [-4.2,-1.1,1.1,4.2])for(let n=0,count=1+Math.floor(random()*3);n<count;n++)spans.push([x+(random()-.5)*.25,spec.height+.02,.8+random()*(spec.height-4.2),.06+random()*.14]);
+    const mesh=new THREE.Mesh(runoffGeometry(spans,new THREE.Color(spec.color),new THREE.Color('#23241f')),this.patinaMaterial);mesh.position.z=-.024;mesh.receiveShadow=true;parent.add(mesh);this.patina.push(mesh);
   }
   private mergePatina(){
     this.group.updateMatrixWorld(true);const pieces=this.patina.map(mesh=>{const g=mesh.geometry.clone().applyMatrix4(mesh.matrixWorld);mesh.removeFromParent();mesh.geometry.dispose();return g;});
@@ -403,6 +466,7 @@ export class MumbaiStreet {
     }
   }
   private station() {
+    const firstStatic=this.statics.length;
     // Shallow open arcades frame the forecourt and replace the empty boundary-wall backdrop.
     for(const side of [-1,1]){
       const x=side*9.25;
@@ -415,6 +479,8 @@ export class MumbaiStreet {
         this.box([1.48,.055,.47],[x+dx,1.0,19.0],'#8b765b',false,this.group,false,false,'wood');
         this.box([.43,.58,.08],[x+dx,1.52,19.35],'#43594d');
         this.box([.28,.18,.02],[x+dx,1.59,19.29],'#b3a17d');
+        // Booking-hall lamps under each arch keep the shaded arcade inviting.
+        this.box([.9,.05,.16],[x+dx,3.28,18.9],'#f0c890',false,this.group,true);
       }
       for(const y of [3.49,4.36])this.box([6.0,.085,.35],[x,y,16.74],'#c1ac8a',false,this.group,false,false,'stone');
       const board=this.sign(this.group,side<0?'MUMBAI LOCAL · TICKETS':'CST · INFORMATION','मुंबई लोकल',[x,3.87,16.66],4.5,'#4d5c50','#e4d4ae');board.rotation.y=Math.PI;
@@ -422,15 +488,29 @@ export class MumbaiStreet {
     // Indo-Gothic composition: broad wings, central drum/dome, pointed galleries and corner turrets.
     // Mumbai CST-inspired massing; not a measured replica of the protected monument.
     this.box([23.5,7.0,6.0],[0,3.5,21.5],'#ae9776',true,this.group,false,false,'stone');
+    // Station carving rides the near props batch: same atlas and program, no extra draws.
+    const kit=this.props(17),face=Math.PI;
     for(const x of [-10,-8,-6,-4,0,4,6,8,10]){
-      this.box([1.36,2.66,.08],[x,1.75,18.43],'#485653');
+      // Concourse openings: glazed doors in iron frames, the lit booking hall behind the central and wing doors.
+      const lit=Math.abs(x)%4===0;
+      this.box([1.36,2.66,.08],[x,1.75,18.43],lit?'#6f563c':'#323b38',false,this.group,lit);
+      if(lit){this.box([1.1,.62,.04],[x,2.62,18.38],'#c99d62',false,this.group,true);for(const dx of [-.42,.42])this.box([.26,.62,.05],[x+dx,.31,18.36],'#2d2a24');}
+      // Iron glazing bars, a transom and cusped tracery in the arch head.
+      for(const dx of [-.33,0,.33])kit.box([.035,2.3,.03],[x+dx,1.6,18.35],'#2f2c26','metal','none');
+      for(const y of [1.0,2.28])kit.box([1.3,.04,.03],[x,y,18.35],'#2f2c26','metal','none');
+      kit.add(this.pointedArch,BakedKit.matrix([.42,.36,.15],[x,2.2,18.36],[0,face,0]),'#2f2c26','metal','none');
+      // Deep reveal: an inner order of the arch, set back and in shade, so each opening reads as cut into the wall.
+      kit.add(this.pointedArch,BakedKit.matrix([.86,.9,1],[x,1.2,18.47],[0,face,0]),'#9a8566','stone','none');
+      for(const dx of [-.7,.7])kit.box([.1,1.4,.2],[x+dx,.7,18.3],'#a48e6c','stone','none');
       this.shape(this.pointedArch,[1,1.02,1],[x,1.2,18.18],'#c9b492',this.group,false,false,true,'stone');
-      this.box([1.19,1.42,.05],[x,4.9,18.4],'#576562',false,this.group,false,false,'glass');
+      this.box([1.19,1.42,.05],[x,4.9,18.4],'#4b5653');
       this.shape(this.pointedArch,[.91,.78,1],[x,4.23,18.14],'#c7b38f',this.group,false,false,true,'stone');
       for(const dx of [-.9,.9])this.box([.16,6.35,.31],[x+dx,3.2,18.13],'#c3af8a',false,this.group,false,false,'stone');
       this.box([1.7,.12,.48],[x,3.55,18.16],'#8f7e65',false,this.group,false,false,'stone');
     }
     for(const y of [3.58,6.66,6.9])this.box([24,.13,.52],[0,y,18.22],'#cfb994',false,this.group,false,false,'stone');
+    // Polychrome masonry: grey-blue basalt courses banding the buff sandstone, as on the Indo-Gothic original.
+    for(const y of [.32,2.92,4.02,5.86])this.box([23.6,.24,.05],[0,y,18.47],'#5b6461',false,this.group,false,false,'stone');
     for(const x of [-8,8]){const roof=this.shape(this.hippedRoof,[6.0,1.95,4.8],[x,7.87,21.3],'#686e69',this.group,false,false,true,'metal');roof.rotation.y=Math.PI/4;}
     this.box([4.6,3.5,4.6],[0,8.55,21.4],'#b29a76',false,this.group,false,false,'stone');
     this.cylinder(2.47,.28,[0,10.30,21.4],'#d0b68e');
@@ -450,19 +530,26 @@ export class MumbaiStreet {
       this.shape(this.dome,[1.25,1.45,1.25],[x,9.8,20.1],'#7f897b',this.group,false,false,true,'metal');
       this.cylinder(.065,.6,[x,11.75,20.1],'#bba47b');
     }
-    // Human-scale plaque, not an oversized billboard carrying the building's identity.
-    const sign=this.sign(this.group,'CHHATRAPATI SHIVAJI TERMINUS','छत्रपती शिवाजी टर्मिनस',[0,3.73,18.02],3.4,'#4d5c50','#e4d4ae');sign.rotation.y=Math.PI;
+    // Name board over the main entrance, above the arrival canopy's sight line from the forecourt.
+    const sign=this.sign(this.group,'CHHATRAPATI SHIVAJI TERMINUS','छत्रपती शिवाजी टर्मिनस',[0,4.75,17.93],5.2,'#4d5c50','#e4d4ae');sign.rotation.y=Math.PI;
     for(const x of [-2.65,2.65]){
-      const clock=new THREE.Mesh(new THREE.CircleGeometry(.38,24),this.surfaces.get('#e4d7b9','stone'));clock.position.set(x,6.00,18.04);clock.rotation.y=Math.PI;this.group.add(clock);
+      // Dial, bronze bezel, hour marks and a pointed stone hood, all in the props batch.
+      kit.add(new THREE.CircleGeometry(.38,24),BakedKit.matrix([1,1,1],[x,6.0,18.04],[0,face,0]),'#e8dcc0','plaster','none');
+      kit.add(new THREE.RingGeometry(.38,.46,24),BakedKit.matrix([1,1,1],[x,6.0,18.03],[0,face,0]),'#6a5536','metal','none');
+      kit.add(new THREE.RingGeometry(.46,.53,24),BakedKit.matrix([1,1,1],[x,6.0,18.05],[0,face,0]),'#b09a74','stone','none');
+      for(let h=0;h<12;h++){const a=h*Math.PI/6,r=h%3?.33:.31;kit.add(new THREE.PlaneGeometry(1,1),BakedKit.matrix([h%3?.022:.04,h%3?.06:.1,1],[x-Math.sin(a)*r,6.0+Math.cos(a)*r,18.035],[0,face,-a]),'#2b2721','metal','none');}
+      kit.add(this.pointedArch,BakedKit.matrix([.72,.62,.6],[x,5.42,18.0],[0,face,0]),'#c3ad87','stone','none');
       // Fixed 17:40 scene time, seen from the forecourt (front face points toward -Z).
       const centre=new THREE.Vector3(x,6.0,17.99);
       for(const [angle,length] of [[40*Math.PI/30,.30],[((17+40/60)%12)*Math.PI/6,.22]])this.wire(centre,new THREE.Vector3(x-Math.sin(angle)*length,6+Math.cos(angle)*length,17.99),.012,'#514d42');
     }
-    this.stationHost=this.person([5.8,0,8.3],'#829382',false);
+    this.stationHost=this.person([5.8,0,8.3],'#829382',false,false,'host');
     this.interactions.push({id:'cst',position:new THREE.Vector3(5.8,1.45,8.3),label:'Talk to the station host'});
     const board=this.sign(this.group,'FORT ROAD →','फोर्ट',[6.3,2.9,7.8],1.2,'#3e5c51');board.rotation.y=-.1;
     // Arrival canopy, ribs and transport notice board.
     this.box([10,.09,1.4],[0,3.7,15.82],'#80765e');for(const x of [-4.5,4.5])this.cylinder(.06,3.65,[x,1.83,15.5],'#69756a');
+    // A cared-for monument: lighter ageing than the street so arches and carving stay legible.
+    for(const mesh of this.statics.slice(firstStatic))for(const material of [mesh.material].flat())if(material.userData.weather===undefined)material.userData.weather=.4;
   }
   private researchRoom() {
     const g = new THREE.Group(); g.position.set(-7, 0, -34); g.rotation.y = Math.PI / 2; this.group.add(g);
@@ -531,7 +618,7 @@ export class MumbaiStreet {
       this.sign(g, x < 0 ? 'INSPECT THE FIELD' : 'FOLLOW THE SOURCE', x < 0 ? 'Interactive teaching exhibit' : 'Five reviewed contributions', [x, 1.25, -4.69], .9);
       this.box([.07, .3, .15], [x, .95, -4.75], '#283638', false, g);
     }
-    this.person([-5.9, 0, -35.8], '#718d86', false);
+    this.person([-5.9, 0, -35.8], '#718d86', false, false, 'office-woman');
     this.interactions.push({ id: 'fort', position: new THREE.Vector3(-5.9, 1.4, -35.8), label: 'Talk to the research fellow' });
     this.interactions.push({ id: 'ffprime', position: new THREE.Vector3(-11.8, 1.3, -34), label: 'Read the FFprime research' });
     const light = new THREE.PointLight('#ffe5ba', 10, 9, 2); light.position.set(-10, 2.5, -34); this.group.add(light);
@@ -547,15 +634,18 @@ export class MumbaiStreet {
         const point = (t: number) => new THREE.Vector3(x + cable * .12, 6 - Math.sin(t * Math.PI) * .7, z - t * 13);
         this.wire(point(n / 8), point((n + 1) / 8), .018);
       }
-      // Warm pools are translucent original geometry; no costly light per lamp.
-      const pool = new THREE.Mesh(this.poolGeometry, new THREE.MeshBasicMaterial({ color: '#e8ae61', transparent: true, opacity: .07, depthWrite: false }));
-      pool.rotation.x = -Math.PI / 2; pool.position.set(x - side * 1.4, .013, z); pool.material.userData.surface='pool';this.group.add(pool);this.statics.push(pool);
       if (i < 3 && side === 1) { const light = new THREE.PointLight('#ffd198', 8, 7, 2);const shop=[[-7.25,1.9,4],[-7.25,1.9,-15],[7.25,1.9,-43.5]][i];light.position.set(...shop as Triple);this.group.add(light); }
       this.box([.5, .65, .5], [side * 6.2, .325, z - 4.5], '#465e56', true);
       this.cylinder(.23, .45, [side * 6.1, .23, z + 3], '#8c6551');
       this.shape(this.leafGeometry, [.55, .9, .55], [side * 6.1, .85, z + 3], '#698159');
-      if (i % 2 === 0) this.scooter(side * 5.6, z - 5, side);
+      if (i % 2 === 0) this.parked(side * 5.62, z - 5, side * .4, i===2?'motorcycle':'scooter', ['#7d1f25','#2c4a6b','#d6d3c7','#3b3f42','#9a8f78','#1f2224'][(i+(side>0?1:0))%6]);
+      // Posters on the street face of each junction box, coils of spare cable on alternate poles.
+      posters(this.props(z-4.5),new THREE.Matrix4().compose(new THREE.Vector3(side*5.946,.38,z-4.5),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,-side*Math.PI/2,0)),new THREE.Vector3(1,1,1)),.44,.46,seededRandom(`box-posters:${side}:${i}`));
+      if (i % 2 === 1) cableCoil(this.props(z), x, 4.6, z, -side);
     }
+    // Parked between street furniture, angled to the kerb the way riders leave them.
+    for(const [x,z,yaw,kind,body] of [[5.62,-39,.45,'motorcycle','#8a1c1c'],[-5.62,-13.3,-.38,'scooter','#d6d3c7'],[-5.62,-27,-.42,'motorcycle','#2a3f63']] as Array<[number,number,number,TwoWheeler,string]>)this.parked(x,z,yaw,kind,body);
+    rubbish(this.props(-35.6),6.3,-35.6,seededRandom('rubbish:a'));rubbish(this.props(-22.6),-6.3,-22.6,seededRandom('rubbish:b'));
     // Hanging cross-street service wires frame the view above eye level.
     for (const z of [-8, -30, -47]) for (let cable = 0; cable < 3; cable++) for (let n = 0; n < 10; n++) {
       const point = (t: number) => new THREE.Vector3(-7 + t * 14, 7.5 - Math.sin(t * Math.PI) * 1.2 + cable * .16, z + cable * .3);
@@ -567,7 +657,7 @@ export class MumbaiStreet {
     this.cylinder(.14, .25, [-5.6, 1.12, 3], '#adb0a4');
     for (let i = 0; i < 4; i++) this.cylinder(.045, .1, [-6.15 + i * .19, 1.05, 3.15], '#b19772');
     for (let i = 0; i < 3; i++) this.box([.55, .5, .55], [-6.4, .25 + i * .5, .8], '#7d664b', true);
-    this.person([-6.2, 0, 3.5], '#ac8b67', false);
+    this.person([-6.2, 0, 3.5], '#ac8b67', false, false, 'chai-vendor').rotation.y=-Math.PI/2;
     this.box([1.7, .13, .45], [5.9, .48, -16], '#715b48', true);
     for (const x of [5.25, 6.5]) this.box([.09, .48, .35], [x, .24, -16], '#3e4948');
   }
@@ -591,32 +681,59 @@ export class MumbaiStreet {
     }
     for(let i=0;i<16;i++)this.shape(this.leafGeometry,[.4,.5,.4],[i%2?6.1:-6.1,.85,9-i*4],'#788e63');
   }
-  private scooter(x: number, z: number, side: number) {
-    const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = side * .4; this.group.add(g);
-    for (const wz of [-.65, .65]) { const wheel = this.cylinder(.25, .15, [0, .25, wz], '#242b30', g); wheel.rotation.z = Math.PI / 2; }
-    this.box([.42, .45, .9], [0, .5, .1], '#627e7b', false, g);
-    this.box([.38, .12, .65], [0, .8, .15], '#252d32', false, g);
-    this.box([.45, .6, .17], [0, .65, -.5], '#9e8b62', false, g);
-    this.box([.65, .05, .06], [0, 1, -.55], '#45494c', false, g);
-  }
-  private person(position: Triple, shirt: string, moving: boolean, seated=false) {
+  private person(position: Triple, shirt: string, moving: boolean, seated=false, cast='') {
     const human=createHuman(`person:${position.join(':')}`,shirt),g=human.group;g.position.set(...position);if(seated)g.position.y-=.45;this.group.add(g);this.pedestrians.push(g);this.contact(0,0,.23,.15,g);
     if(moving)this.walkers.push({group:g,target:0,wait:0});
+    const slot={group:g,human,cast,moving,seated,seat:seated?position[1]+.515:0,actor:null as GLBCharacter|null,pending:0};if(cast)this.castSlots.push(slot);
     let lastAnimation=-1;
-    this.motion.push(time=>{if(g===this.stationHost&&this.stationCharacter){human.mesh.visible=false;this.stationCharacter.update(time===0?0:Math.min(.08,Math.max(0,time-lastAnimation)),this.characterPreviewWalk);lastAnimation=time;return;}const distance=g.position.distanceTo(this.viewPosition);human.mesh.visible=distance<48;human.setDetail(distance<10);if(distance>18&&time-lastAnimation<.1)return;lastAnimation=time;const velocity=this.walkers.find(w=>w.group===g)?.agent?.velocity();human.animate(time,moving&&Boolean(velocity&&Math.hypot(velocity.x,velocity.z)>.08),seated);});return g;
+    this.motion.push(time=>{if(g===this.stationHost&&this.stationCharacter){human.mesh.visible=false;this.stationCharacter.update(time===0?0:Math.min(.08,Math.max(0,time-lastAnimation)),this.characterPreviewWalk);lastAnimation=time;return;}const distance=g.position.distanceTo(this.viewPosition);
+      const velocity=moving?this.walkers.find(w=>w.group===g)?.agent?.velocity():undefined,walking=moving&&Boolean(velocity&&Math.hypot(velocity.x,velocity.z)>.08);
+      if(slot.actor){
+        // Licensed characters: cull beyond 48 m, reduced mesh beyond CAST_FULL_DETAIL, and 10 Hz animation beyond 18 m.
+        const actor=slot.actor;actor.root.visible=distance<48;actor.setDetail(distance<CAST_FULL_DETAIL);const delta=time===0?0:Math.min(.25,Math.max(0,time-lastAnimation));if(lastAnimation<0||time===0){lastAnimation=time;actor.update(0,walking);return;}
+        if(!actor.root.visible||distance>18&&delta<.1)return;lastAnimation=time;actor.update(delta,walking,velocity?Math.hypot(velocity.x,velocity.z):undefined);return;
+      }
+      human.mesh.visible=distance<48;human.setDetail(distance<10);if(distance>18&&time-lastAnimation<.1)return;lastAnimation=time;human.animate(time,walking,seated);});return g;
   }
   private people() {
-    for(let i=0;i<10;i++)this.person([i%2?4.9:-4.9,0,7-i*6],['#8b968c','#9c8279','#788d80','#b0a081','#748b99'][i%5],true);
-    for(const [x,z] of [[-6,-10],[6,-23],[-6,-43],[5.8,-46]])this.person([x,0,z],'#a38f78',false);
-    this.person([5.9,.03,-16],'#8a9b93',false,true);
+    for(let i=0;i<10;i++)this.person([i%2?4.9:-4.9,0,7-i*6],['#8b968c','#9c8279','#788d80','#b0a081','#748b99'][i%5],true,false,WALKER_CAST[i%WALKER_CAST.length]);
+    for(const [i,[x,z]] of [[-6,-10],[6,-23],[-6,-43],[5.8,-46]].entries())this.person([x,0,z],'#a38f78',false,false,STANDING_CAST[i]);
+    this.person([5.9,.03,-16],'#8a9b93',false,true,'student');
+  }
+  /** Extra pavement life for the High preset; no contact patches, so nothing joins the shared instanced batches. */
+  private densePeople(){
+    const random=seededRandom('dense-people'),shirts=['#c8b37f','#6f8fa6','#a8584b','#e0ddd2','#4f6b57','#b98a5a','#7b6f9c','#d4c7a1'];
+    for(let i=0;i<16;i++){const g=this.densePerson([(i%2?1:-1)*(i%4<2?5.6:6.2),.04,6-i*3.4-random()*1.5],shirts[i%shirts.length],true);this.denseWalkers.push({group:g,target:0,wait:0});}
+    // Knots of people standing at shop counters and the chai stall.
+    for(const [x,z,yaw] of [[-5.3,2.2,1.4],[-5.5,1.5,1.9],[5.4,-6.5,-1.5],[-5.4,-18.8,1.3],[5.5,-29,-1.7],[5.3,-29.7,-1.2],[-5.4,-47,1.6]]){const g=this.densePerson([x,0,z],shirts[Math.floor(random()*shirts.length)],false);g.rotation.y=yaw;}
+  }
+  private densePerson(position:Triple,shirt:string,moving:boolean){
+    const human=createHuman(`dense:${position.join(':')}`,shirt),g=human.group;g.position.set(...position);this.dense.add(g);let lastAnimation=-1;
+    // The High crowd uses the same licensed cast as the base crowd; the procedural figure is only the stand-in until it loads.
+    const n=this.denseCount++,cast=moving?WALKER_CAST[(n+3)%WALKER_CAST.length]:STANDING_CAST[n%STANDING_CAST.length];
+    const slot={group:g,human,cast,moving,seated:false,seat:0,actor:null as GLBCharacter|null,pending:0};this.castSlots.push(slot);
+    this.motion.push(time=>{if(!this.dense.visible)return;const distance=g.position.distanceTo(this.viewPosition);
+      const velocity=moving?this.denseWalkers.find(w=>w.group===g)?.agent?.velocity():undefined,walking=moving&&Boolean(velocity&&Math.hypot(velocity.x,velocity.z)>.08);
+      if(slot.actor){
+        const actor=slot.actor;actor.root.visible=distance<48;actor.setDetail(distance<CAST_FULL_DETAIL);const delta=time===0?0:Math.min(.25,Math.max(0,time-lastAnimation));if(lastAnimation<0||time===0){lastAnimation=time;actor.update(0,walking);return;}
+        if(!actor.root.visible||distance>18&&delta<.1)return;lastAnimation=time;actor.update(delta,walking,velocity?Math.hypot(velocity.x,velocity.z):undefined);return;
+      }
+      human.mesh.visible=distance<48;human.setDetail(distance<10);if(distance>18&&time-lastAnimation<.1)return;lastAnimation=time;human.animate(time,walking);});
+    return g;
+  }
+  private joinDenseCrowd(){if(!this.navigation)return;for(const [i,w] of this.denseWalkers.entries()){if(w.agent)continue;w.agent=this.navigation.add({x:w.group.position.x,y:0,z:w.group.position.z});w.target=(i*2+1)%this.destinations.length;w.agent.requestMoveTarget(this.destinations[w.target]);}}
+  /** High preset turns on the extra crowd and traffic; other presets leave them hidden, parked and out of the crowd. */
+  setDensity(dense:boolean){
+    if(this.dense.visible===dense)return;this.dense.visible=dense;this.trafficSystem.active=dense?this.trafficSystem.agents.length:3;
+    if(dense)this.joinDenseCrowd();else for(const w of this.denseWalkers)if(w.agent){this.navigation?.crowd.removeAgent(w.agent);w.agent=undefined;}
   }
   setQuality(low:boolean) { this.pedestrians.forEach((p,i)=>{p.visible=!low||i<3||i%2===0;}); }
   private traffic() {
     for (const kind of ['taxi', 'auto'] as const) {
-      const vehicle = createTransitModel(kind); vehicle.position.set(kind === 'taxi' ? 7.4 : -7.4, .02, 12); vehicle.rotation.y = kind === 'auto' ? Math.PI : 0; this.group.add(vehicle);this.solidProxy([2,1.5,3.8],[0,.8,0],vehicle);
+      const vehicle = createTransitModel(kind); vehicle.position.set(kind === 'taxi' ? 7.4 : -7.4, .02, 12); vehicle.rotation.y = kind === 'auto' ? Math.PI : 0; this.group.add(vehicle);this.parkedVehicles.push(vehicle);this.solidProxy([2,1.5,3.8],[0,.8,0],vehicle);
       this.interactions.push({ id: `hail-${kind}`, label: `Hail ${kind === 'taxi' ? 'kaali-peeli taxi' : 'auto'}`, position: new THREE.Vector3(kind==='taxi'?6.1:-6.1, 1, vehicle.position.z) });
     }
-    for (let i=0;i<3;i++){const vehicle=createTransitModel(i===1?'auto':'taxi');this.group.add(vehicle);this.trafficVehicles.push(vehicle);const pose=this.trafficSystem.pose(i);vehicle.position.set(pose.x,.02,pose.z);vehicle.rotation.y=pose.heading;}
+    for (let i=0;i<this.trafficSystem.agents.length;i++){const vehicle=createTransitModel(i===1||i===4?'auto':'taxi');(i<3?this.group:this.dense).add(vehicle);this.trafficVehicles.push(vehicle);const pose=this.trafficSystem.pose(i);vehicle.position.set(pose.x,.02,pose.z);vehicle.rotation.y=pose.heading;}
   }
   private instanceStatics() {
     this.group.updateMatrixWorld(true);
@@ -652,6 +769,8 @@ export class MumbaiStreet {
       restrictInstanceShadows(instance,count); instance.receiveShadow = true; instance.frustumCulled = true; this.group.add(instance); this.dynamicBatches.push({ instance, meshes });
     }
   }
+  /** The street's licensed-asset library, shared so the districts reuse its uploaded textures and materials. */
+  async sharedAssetLibrary(){const {GLBAssetLibrary}=await import('./assets/GLBAssetLibrary');if(this.disposed)throw new Error('Street disposed');this.assetLibrary??=new GLBAssetLibrary(window.location.origin,8*1024*1024,16);return this.assetLibrary;}
   /** Called only by trusted application code once an individually verified asset is approved. */
   async installStationCharacter(asset:VerifiedGLB,previewWalk=false){
     if(this.disposed||!this.stationHost)throw new Error('Street unavailable');
@@ -662,12 +781,49 @@ export class MumbaiStreet {
     if(this.disposed){lease.release();throw new Error('Street disposed during character load');}
     const actor=new GLBCharacter(lease);this.stationCharacter?.dispose();this.stationCharacter=actor;this.stationHost.add(actor.root);this.characterPreviewWalk=previewWalk;this.characterStatus='loaded-awaiting-rendered-review';
   }
-  dispose(){this.disposed=true;this.stationCharacter?.dispose();void this.assetLibrary?.dispose();this.surfaces.dispose();this.navigation?.dispose();this.navigation=null;this.spatial.dispose();this.panels.dispose();}
+  /** Replace each placement's procedural figure with its admitted licensed character. Failures keep the original figure. */
+  async installCast(cast:Record<string,CastMember>,preview=false){
+    if(this.disposed)throw new Error('Street unavailable');
+    const [{GLBAssetLibrary},{GLBCharacter}]=await Promise.all([import('./assets/GLBAssetLibrary'),import('./assets/GLBCharacter')]);
+    if(this.disposed)throw new Error('Street disposed during loader initialization');
+    this.assetLibrary??=new GLBAssetLibrary(window.location.origin,8*1024*1024,16);this.castStatus='loading';
+    const results=await Promise.allSettled(this.castSlots.map(async slot=>{
+      const member=cast[slot.cast];if(!loadable(member,preview)||slot.actor)return false;
+      const lease=await this.assetLibrary!.acquire(member.asset);if(this.disposed){lease.release();throw new Error('Street disposed during character load');}
+      const key=slot.group.position.toArray().join(':'),actor=new GLBCharacter(lease,{height:member.height*(.985+placementNoise(key)*.03),phase:placementNoise(`${key}:phase`),rate:.94+placementNoise(`${key}:rate`)*.12});
+      // Rocketbox characters face +Z; the street's figures and walkers face -Z.
+      actor.root.rotation.y=Math.PI;
+      if(slot.seated){slot.group.position.y=slot.seat-.515;actor.pose('Sit',0);actor.update(0,false);actor.seat(slot.seat-slot.group.position.y);}
+      else if(slot.group===this.stationHost&&actor.clips.includes('Talk'))actor.pose('Talk',0);
+      slot.group.add(actor.root);slot.actor=actor;this.retireHuman(slot.human);return true;
+    }));
+    const loaded=results.filter(r=>r.status==='fulfilled'&&r.value).length,failed=results.filter(r=>r.status==='rejected');
+    failed.forEach(r=>console.warn('Cast character failed; original figure retained',(r as PromiseRejectedResult).reason));
+    this.castStatus=failed.length?`partial:${loaded}/${this.castSlots.length}`:`loaded:${loaded}`;return loaded;
+  }
+  /** Seat licensed drivers in the given vehicles: live rigs for the boarded cabins, baked poses for traffic. */
+  async installDrivers(cast:Record<string,CastMember>,live:THREE.Group[],preview=false){
+    if(this.disposed)throw new Error('Street unavailable');
+    const {GLBAssetLibrary}=await import('./assets/GLBAssetLibrary'),{GLBCharacter}=await import('./assets/GLBCharacter');
+    this.assetLibrary??=new GLBAssetLibrary(window.location.origin,8*1024*1024,16);
+    const vehicles=[...this.parkedVehicles,...this.trafficVehicles].map(v=>({vehicle:v,live:false})).concat(live.map(v=>({vehicle:v,live:true})));
+    const results=await Promise.allSettled(vehicles.map(async({vehicle,live})=>{
+      const kind=vehicle.name.startsWith('auto')?'auto':'taxi',member=cast[kind==='auto'?'student':'taxi-driver'];if(!loadable(member,preview))return false;
+      const lease=await this.assetLibrary!.acquire(member.asset);if(this.disposed){lease.release();throw new Error('Street disposed during driver load');}
+      const rig=new DriverRig(new GLBCharacter(lease,{height:member.height,phase:placementNoise(vehicle.uuid)}),vehicle,kind,live);this.drivers.push(rig);return true;
+    }));
+    results.filter(r=>r.status==='rejected').forEach(r=>console.warn('Driver character failed; original driver retained',(r as PromiseRejectedResult).reason));
+    return results.filter(r=>r.status==='fulfilled'&&r.value).length;
+  }
+  /** Animate live drivers (only the boarded cabin's driver is live). */
+  updateDrivers(delta:number,steering:number){for(const d of this.drivers)if(d.live&&d.vehicle.visible)d.update(delta,steering);}
+  private retireHuman(human:Human){human.mesh.visible=false;human.mesh.removeFromParent();for(const g of new Set(human.mesh.userData.lodGeometries as THREE.BufferGeometry[]))g.dispose();(human.mesh.material as THREE.Material).dispose();human.mesh.skeleton.dispose();}
+  dispose(){this.disposed=true;this.scooters.dispose();this.castSlots.forEach(s=>s.actor?.dispose());this.drivers.forEach(d=>d.dispose());this.stationCharacter?.dispose();void this.assetLibrary?.dispose();this.surfaces.dispose();this.navigation?.dispose();this.navigation=null;this.spatial.dispose();this.panels.dispose();}
   update(time: number, reduced: boolean, viewPosition?:THREE.Vector3) {
     if(viewPosition)this.viewPosition.copy(viewPosition);const delta=reduced?0:Math.min(.08,Math.max(0,time-this.previousTime));this.previousTime=time;
     const start=performance.now();
     if(this.navigation&&delta){
-      for(const w of this.walkers){if(!w.agent)continue;const p=w.agent.position(),v=w.agent.velocity();
+      for(const w of [...this.walkers,...this.denseWalkers]){if(!w.agent)continue;const p=w.agent.position(),v=w.agent.velocity();
         if(Math.hypot(p.x-this.destinations[w.target].x,p.z-this.destinations[w.target].z)<.65){w.agent.resetMoveTarget();w.wait+=delta;if(w.wait>3+(w.target%3)){w.target=(w.target+1)%this.destinations.length;w.wait=0;w.agent.requestMoveTarget(this.destinations[w.target]);}}
         const approaching=Math.abs(p.z+12)<2.8&&Math.abs(p.x)>3.9&&Math.abs(p.x)<4.8;
         w.agent.maxSpeed=approaching&&!pedestrianGreen(time)?0:Math.hypot(p.x-this.viewPosition.x,p.z-this.viewPosition.z)<.75?0:1;
@@ -675,8 +831,8 @@ export class MumbaiStreet {
       }
       this.navigation.crowd.update(1/30,delta,3);
     }
-    this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...this.walkers.filter(w=>Math.abs(w.group.position.x)<3.9).map(w=>({x:w.group.position.x,z:w.group.position.z}))]);
-    this.trafficVehicles.forEach((vehicle,i)=>{const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y+=turn*(1-Math.exp(-8*delta));animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);});this.trafficUpdateMs=performance.now()-trafficStart;
+    this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...[...this.walkers,...this.denseWalkers].filter(w=>w.agent&&Math.abs(w.group.position.x)<3.9).map(w=>({x:w.group.position.x,z:w.group.position.z})),...this.extraTrafficObstacles]);
+    this.trafficVehicles.forEach((vehicle,i)=>{if(i>=this.trafficSystem.active)return;const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y+=turn*(1-Math.exp(-8*delta));animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);});this.trafficUpdateMs=performance.now()-trafficStart;
     for (const animate of this.motion) animate(reduced ? 0 : time);
     this.group.updateMatrixWorld(true);
     for (const { instance, meshes } of this.dynamicBatches) { meshes.forEach((mesh, i) => { let visible=true; for(let p:THREE.Object3D|null=mesh.parent;p&&p!==this.group;p=p.parent)if(!p.visible)visible=false; instance.setMatrixAt(i,visible?mesh.matrixWorld:new THREE.Matrix4().makeScale(0,0,0)); }); instance.instanceMatrix.needsUpdate = true;instance.computeBoundingSphere(); }

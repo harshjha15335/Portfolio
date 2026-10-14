@@ -13,7 +13,7 @@ import { Annotation } from '../ui/Annotation';
 import { districts } from '../data/city';
 import { CityMap, DistrictExperience, RideMeter } from '../ui/CityExperience';
 import { idleRide, type Point, type TransitKind } from '../game/World/transit';
-import { streetStops, STREET_SPAWN } from '../game/World/streetLayout';
+import { streetStops, STREET_SPAWN, zoneAt } from '../game/World/streetLayout';
 import type { WorldEngine } from '../core/WorldEngine';
 
 const heroProjects = () => projects.filter(p => p.priority <= 4);
@@ -232,7 +232,7 @@ export default function App() {
     {entering && <EntryTransition />}
     {mode === 'world' && <main className="world-ui" id="main-content" tabIndex={-1} aria-label="Interactive mini Mumbai portfolio city">
       {!ready && <div className="loader" role="status"><span className="status-dot" /><span>OPENING THE CITY</span><small>Warming renderer · Quick View is ready</small></div>}
-      <div className="street-location"><span className="street-live" /> CST / FORT ROAD <small>{STREET_MOOD.clock} · {STREET_MOOD.label}</small></div>
+      <div className="street-location"><span className="street-live" /> {zoneAt(position.x).label} <small>{STREET_MOOD.clock} · {STREET_MOOD.label}</small></div>
       {near && <div className="street-reticle" aria-hidden="true" />}
       {ride.phase === 'idle' && near && <button className="proximity-prompt" onClick={() => boardNear ? hail(boardNear) : openProject(near)}><kbd>{mobile ? '↗' : 'E'}</kbd><strong>{boardNear ? `Hail ${boardNear === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : near === 'ffprime' ? 'Read the FFprime research' : `Talk · ${nearDistrict?.guide}`}</strong></button>}
       <div className="city-transport-actions"><button disabled={!ready} onClick={() => hail('taxi')}>HAIL TAXI ↗</button><button disabled={!ready} onClick={() => hail('auto')}>HAIL AUTO ↗</button></div>

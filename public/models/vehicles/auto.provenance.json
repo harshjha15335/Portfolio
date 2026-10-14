@@ -1,0 +1,18 @@
+{
+  "id": "auto-body",
+  "url": "/models/vehicles/auto.glb",
+  "sha256": "0aba7292b05da840bbde0d33768e5d915e786db6ad454b2f67ab3cc2c7dbf8d5",
+  "bytes": 77864,
+  "triangles": 1558,
+  "parts": {
+    "body": 1422,
+    "glass": 12,
+    "lamps": 60,
+    "tail": 64
+  },
+  "origin": "original",
+  "author": "Harsh Jha portfolio (modelled as code)",
+  "source": "scripts/vehicles/build_auto.py",
+  "license": "Original work for this repository (no third-party licence applies)",
+  "notes": "No third-party geometry or images. Body colour in COLOR_0, (roughness, 1 - metalness) in TEXCOORD_0, ambient occlusion baked in Blender; glass, lamps and tail are position-only parts drawn with the vehicle's own materials."
+}
