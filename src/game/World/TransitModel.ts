@@ -26,6 +26,7 @@ function bodywork(rings: Array<[number, number, number, number]>) {
 }
 export function createTransitModel(kind: TransitKind,cabinDetail:'close'|'street'='street') {
   const group=new THREE.Group();group.name=`${kind}-original-bodywork`;
+  const steering=new THREE.Group();steering.name='steering';
   const rounded=new RoundedBoxGeometry(1,1,1,1,.07);
   const yellow=new THREE.MeshStandardMaterial({color:'#c9a343',roughness:.38,metalness:.18});
   const black=new THREE.MeshStandardMaterial({color:'#24292c',roughness:.43,metalness:.18});
@@ -83,7 +84,7 @@ export function createTransitModel(kind: TransitKind,cabinDetail:'close'|'street
   part([auto?1.16:1.46,.13,.5],[0,.83,.59],fabric);part([auto?1.14:1.46,.38,.13],[0,1.01,.84],fabric);
   part([auto?1.06:1.48,.08,.3],[0,1.04,auto?-.62:-.69],black);
   const driverX=auto?0:.34;
-  const driver=createSeatedDriver(`${kind}:driver`,cabinDetail);driver.position.set(driverX,-.29,auto?-.24:-.03);group.add(driver);
+  const driver=createSeatedDriver(`${kind}:driver`,cabinDetail);driver.position.set(driverX,-.29,auto?-.24:-.03);group.add(driver);const driverMaterial=driver.material as THREE.Material;
   for(const x of auto?[0]:[-.36,.36]){
     part([auto?.48:.49,.11,.44],[x,.59,auto?-.25:-.04],fabric);
     const back=part([auto?.48:.49,.52,.10],[x,.9,auto?-.02:.19],fabric);back.rotation.x=-.12;
@@ -105,16 +106,17 @@ export function createTransitModel(kind: TransitKind,cabinDetail:'close'|'street
     part([.055,.06,.24],[side*(auto?.60:.79),1.03,.46],black);
     part([.015,.025,.09],[side*(auto?.59:.775),1.12,.44],metal);
   }
+  // Steering parts stay separate from the merged body so the wheel and handlebar can turn with the ride.
   if(auto){
-    bar([-.23,1.06,-.75],[.23,1.06,-.75],.016,metal);
-    for(const side of [-1,1])part([.13,.035,.035],[side*.23,1.06,-.75],rubber);
+    steering.position.set(0,1.06,-.75);
+    for(const m of [bar([-.23,1.06,-.75],[.23,1.06,-.75],.016,metal),...[-1,1].map(side=>part([.13,.035,.035],[side*.23,1.06,-.75],rubber))]){m.position.sub(steering.position);steering.add(m);}
     bar([0,.48,-.92],[0,1.06,-.75],.022,metal);
   }else{
     part([1.25,.018,1.08],[0,1.582,.13],fabric);
     part([.15,.017,.065],[0,1.565,.42],lamp);
-    const wheel=add(new THREE.TorusGeometry(.195,.014,8,24),[driverX,1.07,-.53],black);wheel.rotation.x=-.36;
+    const wheel=add(new THREE.TorusGeometry(.195,.014,8,24),[0,0,0],black);steering.position.set(driverX,1.07,-.53);steering.rotation.x=-.36;steering.add(wheel);
     bar([driverX,.70,-.67],[driverX,1.07,-.53],.023,black);
-    for(const dx of [-.17,.17])bar([driverX,1.07,-.53],[driverX+dx,1.07,-.53],.009,metal);
+    for(const dx of [-.17,.17]){const spoke=bar([driverX,1.07,-.53],[driverX+dx,1.07,-.53],.009,metal);spoke.position.sub(new THREE.Vector3(driverX,1.07,-.53));steering.add(spoke);}
     part([.39,.14,.06],[driverX,1.12,-.70],fabric);
     for(const dx of [-.105,.105]){
       const dial=add(new THREE.CircleGeometry(.043,20),[driverX+dx,1.145,-.66],rubber);
@@ -133,12 +135,16 @@ export function createTransitModel(kind: TransitKind,cabinDetail:'close'|'street
 
   // Merge static body panels by material; wheels remain independently articulated.
   const originals=new Set<THREE.BufferGeometry>();const buckets=new Map<THREE.Material,THREE.BufferGeometry[]>();group.updateMatrixWorld(true);
-  for(const child of [...group.children]){const m=child as THREE.Mesh;originals.add(m.geometry);const mat=m.material as THREE.Material;const geometries=buckets.get(mat)??[];const geometry=(m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone()).applyMatrix4(m.matrix);
+  // Only boarded cabins turn their controls; street vehicles fold them back into the merged body.
+  if(cabinDetail==='street'){group.updateMatrixWorld(true);for(const m of [...steering.children]){m.applyMatrix4(steering.matrix);group.add(m);}}
+  else{const parts=new Map<THREE.Material,THREE.BufferGeometry[]>();for(const child of [...steering.children]){const m=child as THREE.Mesh;m.updateMatrix();const list=parts.get(m.material as THREE.Material)??[];list.push((m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone()).applyMatrix4(m.matrix));parts.set(m.material as THREE.Material,list);steering.remove(m);}
+   for(const [material,list] of parts){const merged=new THREE.Mesh(mergeGeometries(list.map(g=>{g.deleteAttribute('uv');return g;}))!,material);merged.castShadow=true;steering.add(merged);list.forEach(g=>g.dispose());}}
+  for(const child of [...group.children]){if(child===steering)continue;const m=child as THREE.Mesh;originals.add(m.geometry);const mat=m.material as THREE.Material;const geometries=buckets.get(mat)??[];const geometry=(m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone()).applyMatrix4(m.matrix);
     if((mat as THREE.MeshStandardMaterial).map){
       if(!geometry.hasAttribute('uv')){const uv=[],p=geometry.attributes.position;for(let i=0;i<p.count;i++)uv.push(p.getX(i),p.getZ(i));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));}
     }else geometry.deleteAttribute('uv');
     geometries.push(geometry);buckets.set(mat,geometries);group.remove(m);}
-  for(const [material,parts] of buckets){const mesh=new THREE.Mesh(mergeGeometries(parts)!,material);mesh.name=`${kind}:${cabinDetail}:${(material as THREE.MeshStandardMaterial).color.getHexString()}`;mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);parts.forEach(p=>p.dispose());}
+  for(const [material,parts] of buckets){const mesh=new THREE.Mesh(mergeGeometries(parts)!,material);mesh.name=material===driverMaterial?`${kind}:driver`:`${kind}:${cabinDetail}:${(material as THREE.MeshStandardMaterial).color.getHexString()}`;mesh.castShadow=true;mesh.receiveShadow=true;group.add(mesh);parts.forEach(p=>p.dispose());}
   originals.forEach(g=>g.dispose());
   const wheels:THREE.Group[]=[];
   const radius=auto?.255:.32;
@@ -154,11 +160,13 @@ export function createTransitModel(kind: TransitKind,cabinDetail:'close'|'street
   wheels.forEach((wheel,i)=>{wheel.updateMatrix();wheelBatch.setMatrixAt(i,wheel.matrix);});wheelBatch.computeBoundingSphere();group.userData.wheelBatch=wheelBatch;
   group.userData.wheels=wheels;group.userData.wheelRadius=auto?.255:.32;
   group.userData.lastPosition=new THREE.Vector3();group.userData.travel=0;
+  group.add(steering);group.userData.steering=steering;
   group.userData.cabinDetail=cabinDetail;
   return group;
 }
 export function animateTransit(model:THREE.Group,distance:number,steering=0) {
   const wheels=model.userData.wheels as THREE.Group[];
   for(let i=0;i<wheels.length;i++){wheels[i].rotation.x=distance/model.userData.wheelRadius;wheels[i].rotation.y=i<(wheels.length===3?1:2)?THREE.MathUtils.clamp(steering,-.35,.35):0;wheels[i].updateMatrix();(model.userData.wheelBatch as THREE.InstancedMesh).setMatrixAt(i,wheels[i].matrix);}
+  const wheelTurn=THREE.MathUtils.clamp(steering,-.35,.35),control=model.userData.steering as THREE.Group|undefined;if(control){if(model.name.startsWith('auto'))control.rotation.y=-wheelTurn*.5;else control.rotation.z=-wheelTurn*1.4;}
   (model.userData.wheelBatch as THREE.InstancedMesh).instanceMatrix.needsUpdate=true;(model.userData.wheelBatch as THREE.InstancedMesh).computeBoundingSphere();
 }

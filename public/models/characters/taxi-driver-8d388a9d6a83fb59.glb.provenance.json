@@ -1,0 +1,83 @@
+{
+ "status": "approved",
+ "visualReview": {
+  "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+  "date": "2026-10-11",
+  "notes": "Seated on the right-hand driver seat; wrists reach the wheel rim with closed fingers; no clipping through seat or dash in side and passenger views."
+ },
+ "asset": {
+  "id": "cast-taxi-driver",
+  "url": "/models/characters/taxi-driver-8d388a9d6a83fb59.glb",
+  "sha256": "8d388a9d6a83fb59b8d00b6aaf40464484355fb9602d4c260a227cb43d3d3762",
+  "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_14",
+  "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+  "license": "MIT"
+ },
+ "provenance": {
+  "repository": "https://github.com/microsoft/Microsoft-Rocketbox",
+  "commit": "0943055db6ec570bcef9f2c8b41c9e5467c808f9",
+  "license": "MIT",
+  "licenseEvidence": "https://github.com/microsoft/Microsoft-Rocketbox/blob/0943055db6ec570bcef9f2c8b41c9e5467c808f9/LICENSE.md",
+  "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+  "copyright": "Copyright (c) 2020 Microsoft",
+  "licenseReviewedOn": "2026-10-11",
+  "avatar": "Assets/Avatars/Adults/Male_Adult_14",
+  "avatarSha256": "9d3ecf5c94a84e22b081ddadebf57da18d79541e48e792fa598335553f2dc399",
+  "clips": {
+   "Idle": {
+    "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_01.max.fbx",
+    "sha256": "818cc185af21390575f7fbfdeb3012ba2ce5969fbcb220ea725a2617b339a6e2"
+   },
+   "Walk": {
+    "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_neutral_01.max.fbx",
+    "sha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0"
+   },
+   "Sit": {
+    "file": "Assets/Animations/all_animations_max_motextr_static/m_sit_chair_idle_neutral_01.max.fbx",
+    "sha256": "c5aeab85a7daa50770f70644b1651ff7811594500a702e8b454e7386566e1df2"
+   }
+  },
+  "modifications": "Blender 4.2 FBX import; body and head maps packed into one 2048×1024 atlas with matching normal atlas; skin tone shifted toward a South Asian complexion (strength 0.55); clips retargeted from the Rocketbox animation rig, trimmed ({\"Idle\":12,\"Sit\":10}) and resampled with gltf-transform 4.1.1; 30% decimated LOD mesh on the same rig."
+ },
+ "inspection": {
+  "triangles": 6842,
+  "lodTriangles": 2051,
+  "primitives": 1,
+  "materials": 1,
+  "joints": [
+   80
+  ],
+  "textures": [
+   {
+    "width": 2048,
+    "height": 1024,
+    "mimeType": "image/jpeg"
+   },
+   {
+    "width": 2048,
+    "height": 1024,
+    "mimeType": "image/jpeg"
+   }
+  ],
+  "clips": [
+   {
+    "name": "Idle",
+    "duration": 11.699999809265137,
+    "channels": 240
+   },
+   {
+    "name": "Walk",
+    "duration": 1.2333333492279053,
+    "channels": 240
+   }
+  ],
+  "visualReviewRequired": [
+   "human proportions",
+   "clothing and texture quality",
+   "human-scale floor alignment",
+   "Idle and Walk move the intended skeleton",
+   "foot sliding/facing direction",
+   "new Medium draw/triangle/texture/program counts"
+  ]
+ }
+}

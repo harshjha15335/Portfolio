@@ -1,0 +1,74 @@
+{
+ "status": "approved",
+ "visualReview": {
+  "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+  "date": "2026-10-11",
+  "notes": "Street walker/stander: proportions, clothing and gait checked at 2–12 m in matched SwiftShader captures; idle-to-walk crossfade 0.3 s."
+ },
+ "asset": {
+  "id": "cast-shopper",
+  "url": "/models/characters/shopper-24bd49950eef2f4e.glb",
+  "sha256": "24bd49950eef2f4e7aeba3ccd338b7e974f56fe70c7ba76c1ec1c8b428654122",
+  "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Female_Adult_05",
+  "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+  "license": "MIT"
+ },
+ "provenance": {
+  "repository": "https://github.com/microsoft/Microsoft-Rocketbox",
+  "commit": "0943055db6ec570bcef9f2c8b41c9e5467c808f9",
+  "license": "MIT",
+  "licenseEvidence": "https://github.com/microsoft/Microsoft-Rocketbox/blob/0943055db6ec570bcef9f2c8b41c9e5467c808f9/LICENSE.md",
+  "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+  "copyright": "Copyright (c) 2020 Microsoft",
+  "licenseReviewedOn": "2026-10-11",
+  "avatar": "Assets/Avatars/Adults/Female_Adult_05",
+  "avatarSha256": "fffbb46af5f0f0323abad47f04f6067ec6f8757a345d5e53804601bbb77feca4",
+  "clips": {
+   "Idle": {
+    "file": "Assets/Animations/all_animations_max_motextr_static/f_idle_neutral_01.max.fbx",
+    "sha256": "fd68b33ea9e290dc734ca8c3a71ef5842bb2dfe719853ff84f6336d06d39fdcb"
+   },
+   "Walk": {
+    "file": "Assets/Animations/all_animations_max_motextr_xy/f_walk_neutral_01.max.fbx",
+    "sha256": "20238709c689d46f5864aebaa58918cc1233cb9045b24aa4d58cf2752786a73b"
+   }
+  },
+  "modifications": "Blender 4.2 FBX import; body and head maps packed into one 1024×512 atlas; skin tone shifted toward a South Asian complexion (strength 0.6); clips retargeted from the Rocketbox animation rig, trimmed ({\"Idle\":12}) and resampled with gltf-transform 4.1.1; 30% decimated LOD mesh on the same rig."
+ },
+ "inspection": {
+  "triangles": 8288,
+  "lodTriangles": 2486,
+  "primitives": 1,
+  "materials": 1,
+  "joints": [
+   80
+  ],
+  "textures": [
+   {
+    "width": 1024,
+    "height": 768,
+    "mimeType": "image/png"
+   }
+  ],
+  "clips": [
+   {
+    "name": "Idle",
+    "duration": 12.033333778381348,
+    "channels": 240
+   },
+   {
+    "name": "Walk",
+    "duration": 1.2333333492279053,
+    "channels": 240
+   }
+  ],
+  "visualReviewRequired": [
+   "human proportions",
+   "clothing and texture quality",
+   "human-scale floor alignment",
+   "Idle and Walk move the intended skeleton",
+   "foot sliding/facing direction",
+   "new Medium draw/triangle/texture/program counts"
+  ]
+ }
+}

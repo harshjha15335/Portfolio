@@ -1,3 +1,5 @@
+> **Superseded 11 October 2026:** the Microsoft Rocketbox Avatar Library (MIT, pinned commit `0943055`) was selected, converted and admitted for the street cast, pending Harsh's sign-off. See [STREET_CAST.md](STREET_CAST.md). The review below is kept as history.
+
 # NPC candidate review — 10 October 2026
 
 No model binary is downloaded or installed. The user has no local licensed GLB and expressly prohibited retrying the previously denied Quaternius binary. The original host/crowd remain temporary placeholders. **No individually inspected realistic humanoid with clothing and Idle/Walk clips is currently approved.**
@@ -12,3 +14,5 @@ No model binary is downloaded or installed. The user has no local licensed GLB a
 Publisher-level CC0 evidence is useful for selecting a production path, but it is not evidence that a finished asset was acquired or inspected. Future close-up assets should target12,000 triangles or fewer, four primitives/materials or fewer,1–4 textures at≤1024px, a usable skeleton and both real clips. The existing street's texture/program budgets currently leave no free slots; count the replacement in the rendered scene before approval.
 
 Use [local admission and visual review](LOCAL_CHARACTER_IMPORT.md) when an actual licensed GLB is supplied. Catalogue thumbnails, test fixtures and successful TypeScript builds are not NPC acceptance evidence.
+
+| [Microsoft Rocketbox Avatar Library](https://github.com/microsoft/Microsoft-Rocketbox), Microsoft Research / Rocketbox Studios | MIT `LICENSE.md` retrieved at commit `0943055db6ec570bcef9f2c8b41c9e5467c808f9`; copy and checksum in `asset-evidence/street-cast/`. Source files fetched from raw.githubusercontent.com and SHA-256 pinned. | **Selected.** Semi-realistic rigged people with authored faces, hair and clothing, plus a shared animation set (idle, walk, talk, sit). Nine avatars converted; see STREET_CAST.md. |

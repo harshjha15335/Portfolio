@@ -1,0 +1,74 @@
+{
+ "host": {
+  "sha256": "05a7ac345b1b1c191bb62454b009456fbf8eddb97bf024276347094df6d16f88",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-11",
+   "notes": "Close-up at the station forecourt: face, ears, hair and shirt folds read at 1.5 m; Talk clip loops without foot sliding."
+  }
+ },
+ "chai-vendor": {
+  "sha256": "b16b2e3ee02eaf317a3510951f38d47c3b039444213ba750ddaafddddc201f5a",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-11",
+   "notes": "Behind the Irani chai counter facing the street; kurta and cap read cleanly; idle has weight shifts."
+  }
+ },
+ "taxi-driver": {
+  "sha256": "8d388a9d6a83fb59b8d00b6aaf40464484355fb9602d4c260a227cb43d3d3762",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-11",
+   "notes": "Seated on the right-hand driver seat; wrists reach the wheel rim with closed fingers; no clipping through seat or dash in side and passenger views."
+  }
+ },
+ "student": {
+  "sha256": "ce87e58d77e1d3b6b883820593d4009f404d33f82baedef69a1b46d30835f436",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-11",
+   "notes": "Auto driver (hands on handlebar grips) and bench sitter; walk clip in place."
+  }
+ },
+ "commuter": {
+  "sha256": "051d3af874f48944e17afdf4ae27b99bbb912ea1375ab7a5287895f1f455bdfc",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-11",
+   "notes": "Street walker/stander: proportions, clothing and gait checked at 2\u201312 m in matched SwiftShader captures; idle-to-walk crossfade 0.3 s."
+  }
+ },
+ "office-man": {
+  "sha256": "477a7207c34eeb34846f91b67244a39a3c527b5f1235aeabd64d4ccd82d14963",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-11",
+   "notes": "Street walker/stander: proportions, clothing and gait checked at 2\u201312 m in matched SwiftShader captures; idle-to-walk crossfade 0.3 s."
+  }
+ },
+ "office-woman": {
+  "sha256": "8b8010c03e7229c6cc8ff656626703d729240104d9fc57021b69ded1326fe66f",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-11",
+   "notes": "Street walker/stander: proportions, clothing and gait checked at 2\u201312 m in matched SwiftShader captures; idle-to-walk crossfade 0.3 s."
+  }
+ },
+ "shopper": {
+  "sha256": "24bd49950eef2f4e7aeba3ccd338b7e974f56fe70c7ba76c1ec1c8b428654122",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-11",
+   "notes": "Street walker/stander: proportions, clothing and gait checked at 2\u201312 m in matched SwiftShader captures; idle-to-walk crossfade 0.3 s."
+  }
+ },
+ "clerk": {
+  "sha256": "5ec242faa718a71308568ab196c142dda0313c7313f06699ae41cf72da152377",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-11",
+   "notes": "Street walker/stander: proportions, clothing and gait checked at 2\u201312 m in matched SwiftShader captures; idle-to-walk crossfade 0.3 s."
+  }
+ }
+}
