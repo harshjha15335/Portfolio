@@ -107,6 +107,15 @@ test('local demonstrations respond to input', async ({ page }) => {
   await expect(page.locator('.pipeline-note strong')).toHaveText('Deterministic guardrails');
 });
 
+test('Fort coordinate workstation converts, agrees and refuses a non-traceless tensor', async ({ page }) => {
+  await page.goto('/#/project/ffprime');
+  const station = page.getByRole('region', { name: 'Coordinate workstation: Cartesian to spherical multipoles' });
+  await expect(station.locator('tbody tr').first()).toContainText('0.7000');
+  await expect(station).toContainText('max |Θ − Θ′|');
+  await station.getByLabel('Let me set Θzz (break tracelessness)').check();
+  await expect(station.getByRole('alert')).toHaveText(/quadrupole tensor must be traceless, got trace = 3.000000e-01/);
+});
+
 test('Powai flagship labs run their ported project logic', async ({ page }) => {
   await page.goto('/#/project/northstar');
   const verdict = page.locator('.lab-verdict');
