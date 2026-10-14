@@ -93,6 +93,19 @@ test('Andheri shops show evidence and run each bench', async ({ page }) => {
   await expect(shops.getByRole('status')).toContainText('Accepted as a BUY proposal');
 });
 
+test('Powai ASTFLOW lab replays the fusion experiment', async ({ page }) => {
+  await page.goto('/#/place/powai');
+  await page.getByRole('button', { name: 'SHOW ME AROUND' }).click();
+  const lab = page.getByRole('region', { name: 'ASTFLOW Engineering Lab' });
+  await expect(lab).toContainText('team ByteCoders');
+  // BM25 ranks this answer #73; the baseline 1:1 fusion pushes it to #169, BM25-only weights bring it back.
+  await expect(lab.getByRole('status')).toHaveText('169');
+  await lab.locator('label', { hasText: /^Weights/ }).locator('select').selectOption('1:0 (BM25 only)');
+  await expect(lab.getByRole('status')).toContainText('73 (▲ 96)');
+  await expect(lab).toContainText('E001: REJECT');
+  await expect(lab).toContainText('E002: REJECT');
+});
+
 test('reduced-motion transport arrives directly and can be reboarded', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/#world');

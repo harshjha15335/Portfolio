@@ -48,11 +48,10 @@ Tests:
 - The NORTHSTAR `ledger_consistent` check is reconstructed by replaying paper fills (average cost). The repository
   reconciles its SQLite ledger instead.
 
-### Blocked
+### ASTFLOW (unblocked 14 October 2026, see §4)
 
-- **ASTFLOW Engineering Lab**: no ASTFLOW repository or document exists among the 19 repositories on
-  github.com/harshjha15335 (checked 14 October 2026). The Powai panel shows it as planned and blocked, with no
-  invented demo. Unblock: point to the source.
+The first pass found no ASTFLOW repository under harshjha15335. Harsh pointed out it is public: it lives at
+`ANUJ-DESHPANDE/ASTFLOW`, a team repository. Its lab is described in §4.
 
 ### Not yet done for Powai
 
@@ -166,3 +165,44 @@ existing skill-evidence test now goes through Frontend Studio.
 
 - The shops are panels opened from the district guide. Walk-in shop interiors and shopkeeper NPCs (brief §8 physical
   settings) are not built.
+
+## 4. ASTFLOW Engineering Lab (brief §9, Powai)
+
+### What ASTFLOW is, and whose work this is
+
+[ASTFLOW](https://github.com/ANUJ-DESHPANDE/ASTFLOW) is a local, CPU-based code-retrieval engine built by team
+ByteCoders (Aarush Shetty, Harsh Jha, Anuj Deshpande, VIT Vellore) for Samsung PRISM 2026. Harsh authored 5 of its 155
+commits (23–24 September 2026): the baseline-v1 forensic diagnosis, the **E001 fusion experiment** (`0a60b37`) and the
+**E002 cross-encoder reranker experiment** (`cef22c9`, `cab4931`). The lab shows those experiments and says plainly that
+the shipped retrieval result (gte-modernbert-base, NDCG@10 0.5509 on the full MTEB AppsRetrieval test set) is the
+team's, not Harsh's.
+
+### Implemented and tested
+
+The Powai panel's blocked placeholder is replaced by a working lab:
+- **One dev query, live.** Five real dev queries, picked by category (both retrievers agree, BM25 only, dense only,
+  fusion pushes the answer out of the top 100, neither finds it), with their frozen baseline-v1 BM25 and dense
+  rankings. The visitor changes k, weights and depth; the lab fuses the two lists in the browser and shows where the
+  answer lands and the scored top 10.
+- **The same setting on all 1,859 dev queries.** The archived E001 sweep (315 settings): NDCG@10, MRR@10, Recall@100 and
+  answers lost by fusion for the chosen setting, and a k × weight grid of NDCG@10 change at the chosen depth.
+- **E002.** The reranker's dev results at depths 20/50/100 with bootstrap intervals, and the REJECT decision.
+
+Port: `src/projects/astflow.ts` (`rrf`, from `rrf_for_queries` in `benchmark/run_fusion_sweep.py`). UI:
+`src/ui/AstflowLab.tsx`. Data: `src/projects/data/astflow.json`, built by `scripts/projects/astflow_reference.py`. The
+script loads ASTFLOW's own `load_ranks`, `rrf_for_queries` and `evaluate_rankings` from the checkout and runs them
+unchanged. It re-scores the E001 dev winner and the baseline on all 1,859 dev queries and asserts they equal the
+archived sweep. It also checks that k=60/1:1 reconstructs the frozen hybrid ranking for each sample query, and records
+the fused rankings for 60 settings per query.
+
+Tests: `tests/astflow.test.ts` matches every recorded top 10 and answer rank, ASTFLOW's own toy RRF case, and the sweep
+invariants (315 rows, baseline row = baseline, winner = best row, every reranker depth worse).
+`tests/city.spec.ts` › "Powai ASTFLOW lab replays the fusion experiment" drives it in Chromium.
+
+Screenshot: [ASTFLOW lab, BM25-only weights recovering a lost answer](screenshots/powai/astflow-lab.png).
+
+### Notes
+
+- Query and code text are not shipped (they live in the MTEB dataset, not the repository), so the lab shows
+  document ids only.
+- The Powai panel now reads "Seven workplaces"; ASTFLOW is not added as a separate case study.
