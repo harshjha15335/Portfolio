@@ -1,0 +1,366 @@
+{
+ "source": "harshjha15335/meeting-intelligence-service",
+ "commit": "ea732a9418be7c2377be0018362f851b003b43de",
+ "versions": {
+  "express": "4.22.2 (lock: 4.22.2)",
+  "zod": "3.25.76 (lock: 3.25.76)",
+  "jsonwebtoken": "9.0.3 (lock: 9.0.3)",
+  "body-parser": "1.20.5 (lock: 1.20.5)"
+ },
+ "cases": [
+  {
+   "id": "valid",
+   "label": "Valid request",
+   "auth": "valid",
+   "traceId": "",
+   "body": "{\"title\":\"Campus Cart release planning\",\"participants\":[\"Asha\",\"Rohan\"],\"meetingDate\":\"2026-10-12T10:00:00Z\",\"transcript\":[{\"timestamp\":\"00:01\",\"speaker\":\"Asha\",\"text\":\"Ship the cart fix on Friday.\"}]}",
+   "status": 201,
+   "traceHeader": "e1afb4a0-b3d7-408d-9f20-1a313522aae0",
+   "csp": true,
+   "response": {
+    "traceId": "e1afb4a0-b3d7-408d-9f20-1a313522aae0",
+    "success": true,
+    "data": {
+     "id": "00000000-0000-4000-8000-000000000001",
+     "title": "Campus Cart release planning",
+     "participants": [
+      "Asha",
+      "Rohan"
+     ],
+     "meetingDate": "2026-10-12T10:00:00.000Z",
+     "transcript": [
+      {
+       "timestamp": "00:01",
+       "speaker": "Asha",
+       "text": "Ship the cart fix on Friday."
+      }
+     ],
+     "userId": "user-demo"
+    }
+   }
+  },
+  {
+   "id": "trace",
+   "label": "Valid, with your own x-trace-id",
+   "auth": "valid",
+   "traceId": "my-trace-42",
+   "body": "{\"title\":\"Campus Cart release planning\",\"participants\":[\"Asha\",\"Rohan\"],\"meetingDate\":\"2026-10-12T10:00:00Z\",\"transcript\":[{\"timestamp\":\"00:01\",\"speaker\":\"Asha\",\"text\":\"Ship the cart fix on Friday.\"}]}",
+   "status": 201,
+   "traceHeader": "my-trace-42",
+   "csp": true,
+   "response": {
+    "traceId": "my-trace-42",
+    "success": true,
+    "data": {
+     "id": "00000000-0000-4000-8000-000000000001",
+     "title": "Campus Cart release planning",
+     "participants": [
+      "Asha",
+      "Rohan"
+     ],
+     "meetingDate": "2026-10-12T10:00:00.000Z",
+     "transcript": [
+      {
+       "timestamp": "00:01",
+       "speaker": "Asha",
+       "text": "Ship the cart fix on Friday."
+      }
+     ],
+     "userId": "user-demo"
+    }
+   }
+  },
+  {
+   "id": "no-token",
+   "label": "No Authorization header",
+   "auth": "missing",
+   "traceId": "",
+   "body": "{\"title\":\"Campus Cart release planning\",\"participants\":[\"Asha\",\"Rohan\"],\"meetingDate\":\"2026-10-12T10:00:00Z\",\"transcript\":[{\"timestamp\":\"00:01\",\"speaker\":\"Asha\",\"text\":\"Ship the cart fix on Friday.\"}]}",
+   "status": 401,
+   "traceHeader": "32f02a8a-369a-4883-bed6-86a9e57c4d76",
+   "csp": true,
+   "response": {
+    "traceId": "32f02a8a-369a-4883-bed6-86a9e57c4d76",
+    "success": false,
+    "error": {
+     "code": "UNAUTHORIZED",
+     "message": "Invalid or expired token"
+    }
+   }
+  },
+  {
+   "id": "bad-token",
+   "label": "Token signed with another secret",
+   "auth": "invalid",
+   "traceId": "",
+   "body": "{\"title\":\"Campus Cart release planning\",\"participants\":[\"Asha\",\"Rohan\"],\"meetingDate\":\"2026-10-12T10:00:00Z\",\"transcript\":[{\"timestamp\":\"00:01\",\"speaker\":\"Asha\",\"text\":\"Ship the cart fix on Friday.\"}]}",
+   "status": 401,
+   "traceHeader": "6a59f2ba-f05a-4c15-a6aa-8a6d794c8948",
+   "csp": true,
+   "response": {
+    "traceId": "6a59f2ba-f05a-4c15-a6aa-8a6d794c8948",
+    "success": false,
+    "error": {
+     "code": "UNAUTHORIZED",
+     "message": "Invalid or expired token"
+    }
+   }
+  },
+  {
+   "id": "expired",
+   "label": "Expired token",
+   "auth": "expired",
+   "traceId": "",
+   "body": "{\"title\":\"Campus Cart release planning\",\"participants\":[\"Asha\",\"Rohan\"],\"meetingDate\":\"2026-10-12T10:00:00Z\",\"transcript\":[{\"timestamp\":\"00:01\",\"speaker\":\"Asha\",\"text\":\"Ship the cart fix on Friday.\"}]}",
+   "status": 401,
+   "traceHeader": "f59bdfad-bfc7-42cb-a636-9d8f2f2422fa",
+   "csp": true,
+   "response": {
+    "traceId": "f59bdfad-bfc7-42cb-a636-9d8f2f2422fa",
+    "success": false,
+    "error": {
+     "code": "UNAUTHORIZED",
+     "message": "Invalid or expired token"
+    }
+   }
+  },
+  {
+   "id": "auth-first",
+   "label": "No token and an empty body",
+   "auth": "missing",
+   "traceId": "",
+   "body": "{}",
+   "status": 401,
+   "traceHeader": "da6b84b8-3d61-4e4c-8c25-009f97d57caa",
+   "csp": true,
+   "response": {
+    "traceId": "da6b84b8-3d61-4e4c-8c25-009f97d57caa",
+    "success": false,
+    "error": {
+     "code": "UNAUTHORIZED",
+     "message": "Invalid or expired token"
+    }
+   }
+  },
+  {
+   "id": "empty",
+   "label": "Empty object",
+   "auth": "valid",
+   "traceId": "",
+   "body": "{}",
+   "status": 400,
+   "traceHeader": "c34fff41-d8b7-44da-8964-99e588a2a988",
+   "csp": true,
+   "response": {
+    "traceId": "c34fff41-d8b7-44da-8964-99e588a2a988",
+    "success": false,
+    "error": {
+     "code": "VALIDATION_ERROR",
+     "message": "Validation failed",
+     "details": [
+      {
+       "field": "title",
+       "message": "Required"
+      },
+      {
+       "field": "participants",
+       "message": "Required"
+      },
+      {
+       "field": "meetingDate",
+       "message": "Invalid date"
+      },
+      {
+       "field": "transcript",
+       "message": "Required"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "blank-fields",
+   "label": "Blank title, no participants, empty transcript",
+   "auth": "valid",
+   "traceId": "",
+   "body": "{\"title\":\"\",\"participants\":[],\"meetingDate\":\"2026-10-12T10:00:00Z\",\"transcript\":[]}",
+   "status": 400,
+   "traceHeader": "121af903-408f-4a4b-9634-e0a5263ae3ff",
+   "csp": true,
+   "response": {
+    "traceId": "121af903-408f-4a4b-9634-e0a5263ae3ff",
+    "success": false,
+    "error": {
+     "code": "VALIDATION_ERROR",
+     "message": "Validation failed",
+     "details": [
+      {
+       "field": "title",
+       "message": "Title is required"
+      },
+      {
+       "field": "participants",
+       "message": "At least one participant is required"
+      },
+      {
+       "field": "transcript",
+       "message": "Transcript must have at least one entry"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "bad-entry",
+   "label": "Transcript entry missing speaker and text",
+   "auth": "valid",
+   "traceId": "",
+   "body": "{\"title\":\"Campus Cart release planning\",\"participants\":[\"Asha\",\"Rohan\"],\"meetingDate\":\"2026-10-12T10:00:00Z\",\"transcript\":[{\"timestamp\":\"00:01\",\"speaker\":\"\",\"text\":\"\"}]}",
+   "status": 400,
+   "traceHeader": "9fc50e9c-34ed-4741-b731-74b552254840",
+   "csp": true,
+   "response": {
+    "traceId": "9fc50e9c-34ed-4741-b731-74b552254840",
+    "success": false,
+    "error": {
+     "code": "VALIDATION_ERROR",
+     "message": "Validation failed",
+     "details": [
+      {
+       "field": "transcript.0.speaker",
+       "message": "Speaker is required"
+      },
+      {
+       "field": "transcript.0.text",
+       "message": "Text is required"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "bad-date",
+   "label": "Unparseable meeting date",
+   "auth": "valid",
+   "traceId": "",
+   "body": "{\"title\":\"Campus Cart release planning\",\"participants\":[\"Asha\",\"Rohan\"],\"meetingDate\":\"next Tuesday\",\"transcript\":[{\"timestamp\":\"00:01\",\"speaker\":\"Asha\",\"text\":\"Ship the cart fix on Friday.\"}]}",
+   "status": 400,
+   "traceHeader": "bbfd9fa3-ed45-4f2c-b84a-dd91c37bc1be",
+   "csp": true,
+   "response": {
+    "traceId": "bbfd9fa3-ed45-4f2c-b84a-dd91c37bc1be",
+    "success": false,
+    "error": {
+     "code": "VALIDATION_ERROR",
+     "message": "Validation failed",
+     "details": [
+      {
+       "field": "meetingDate",
+       "message": "Invalid date"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "wrong-types",
+   "label": "Wrong types",
+   "auth": "valid",
+   "traceId": "",
+   "body": "{\"title\":7,\"participants\":\"Asha\",\"meetingDate\":\"2026-10-12T10:00:00Z\",\"transcript\":[{\"timestamp\":\"00:01\",\"speaker\":\"Asha\",\"text\":\"Ship the cart fix on Friday.\"}]}",
+   "status": 400,
+   "traceHeader": "9c8e9296-dfa3-4591-b090-f084413ac2e7",
+   "csp": true,
+   "response": {
+    "traceId": "9c8e9296-dfa3-4591-b090-f084413ac2e7",
+    "success": false,
+    "error": {
+     "code": "VALIDATION_ERROR",
+     "message": "Validation failed",
+     "details": [
+      {
+       "field": "title",
+       "message": "Expected string, received number"
+      },
+      {
+       "field": "participants",
+       "message": "Expected array, received string"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "long-title",
+   "label": "Title over 500 characters",
+   "auth": "valid",
+   "traceId": "",
+   "body": "{\"title\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\"participants\":[\"Asha\",\"Rohan\"],\"meetingDate\":\"2026-10-12T10:00:00Z\",\"transcript\":[{\"timestamp\":\"00:01\",\"speaker\":\"Asha\",\"text\":\"Ship the cart fix on Friday.\"}]}",
+   "status": 400,
+   "traceHeader": "ef48a1fb-4cfb-4183-b611-9e33ed18157c",
+   "csp": true,
+   "response": {
+    "traceId": "ef48a1fb-4cfb-4183-b611-9e33ed18157c",
+    "success": false,
+    "error": {
+     "code": "VALIDATION_ERROR",
+     "message": "Validation failed",
+     "details": [
+      {
+       "field": "title",
+       "message": "String must contain at most 500 character(s)"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "malformed",
+   "label": "Malformed JSON body",
+   "auth": "valid",
+   "traceId": "my-trace-42",
+   "body": "{\"title\": \"Campus Cart\",",
+   "status": 500,
+   "traceHeader": null,
+   "csp": true,
+   "response": {
+    "success": false,
+    "error": {
+     "code": "INTERNAL_ERROR",
+     "message": "An unexpected error occurred"
+    }
+   }
+  },
+  {
+   "id": "extra",
+   "label": "Unknown extra field",
+   "auth": "valid",
+   "traceId": "",
+   "body": "{\"title\":\"Campus Cart release planning\",\"participants\":[\"Asha\",\"Rohan\"],\"meetingDate\":\"2026-10-12T10:00:00Z\",\"transcript\":[{\"timestamp\":\"00:01\",\"speaker\":\"Asha\",\"text\":\"Ship the cart fix on Friday.\"}],\"priority\":\"high\"}",
+   "status": 201,
+   "traceHeader": "06d8d206-f39b-474d-a5be-2d8a644930d1",
+   "csp": true,
+   "response": {
+    "traceId": "06d8d206-f39b-474d-a5be-2d8a644930d1",
+    "success": true,
+    "data": {
+     "id": "00000000-0000-4000-8000-000000000001",
+     "title": "Campus Cart release planning",
+     "participants": [
+      "Asha",
+      "Rohan"
+     ],
+     "meetingDate": "2026-10-12T10:00:00.000Z",
+     "transcript": [
+      {
+       "timestamp": "00:01",
+       "speaker": "Asha",
+       "text": "Ship the cart fix on Friday."
+      }
+     ],
+     "userId": "user-demo"
+    }
+   }
+  }
+ ]
+}
