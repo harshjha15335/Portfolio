@@ -135,6 +135,8 @@ The city audit flagged three CST/Fort problems on this branch. All three are fix
 | station front | 48 / 139,486 | 47 / 136,592 |
 | north end | 11 / 86,488 | 11 / 81,336 |
 
+Medium software benchmark (same settings as above), peak cached frame: walking 220,877 triangles / 88 draws; NPC movement 220,973 / 89; taxi ride 218,841 / 96; auto ride 228,777 / 108; Fort 140,196 / 32. Peak textures 28–32, programs 25. **Every scenario is within the Medium budget**, and the auto-ride overrun recorded below (230,821) is gone at the sampled moment, since the façades took about 4,000 triangles out of the always-drawn static batch.
+
 Textures peak at 32 and programs at 25. On High: spawn 254 / 549,277, junction 214 / 499,447, return 274 / 525,685, with textures at most 63 and programs 52.
 
 ![High road before and after](screenshots/street-assets/compare-audit-high-road.jpg)
