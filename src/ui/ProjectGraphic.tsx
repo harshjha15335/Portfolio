@@ -21,6 +21,9 @@ export function ProjectGraphic({ project, className = '' }: { project: Project; 
       <text x="48" y="268">INCOME / EXPENSES / WHAT IF?</text>
     </> : project.id === 'meeting-intelligence-service' ? <>
       {[100,125,150,175,200].map((y,i) => <path key={y} d={`M55 ${y}h${[210,285,245,275,155][i]}`} stroke="currentColor" strokeWidth="6" />)}<circle cx="316" cy="208" r="30" stroke="currentColor" strokeWidth="2" /><path d="m305 210 9 10 20-22" stroke="currentColor" strokeWidth="3" /><text x="55" y="65">TRANSCRIPT → EVIDENCE</text>
+    </> : project.id === 'repolens' ? <>
+      {[0,1,2].map(c => [0,1,2,3].map(r => <rect key={`${c}${r}`} x={48+c*112} y={78+r*36} width="86" height="22" stroke="currentColor" strokeWidth="2" opacity={1-r*.2} fill={r===0 ? 'currentColor' : 'none'} />))}
+      <path d="M134 89h26M246 89h26" stroke="currentColor" strokeWidth="2" /><text x="48" y="60">BM25 + DENSE → RRF</text><text x="48" y="250">[calculator.py:34-41]</text>
     </> : <>
       <path d="M50 236 C310 245 63 30 348 53" stroke="currentColor" strokeWidth="12" /><path d="M50 236 C310 245 63 30 348 53" stroke="var(--paper, #f2efe7)" strokeWidth="1.5" strokeDasharray="9 8" /><circle cx="50" cy="236" r="14" fill="currentColor" /><circle cx="348" cy="53" r="14" fill="currentColor" /><text x="202" y="263">PLAN / RANK / SIMULATE</text>
     </>}

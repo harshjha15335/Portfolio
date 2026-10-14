@@ -6,7 +6,7 @@ import { skills } from '../src/data/skills';
 
 describe('portfolio content integrity', () => {
   it('keeps the four featured landmarks and six case studies addressable', () => {
-    expect(projects.map(project => project.id)).toEqual(['ffprime', 'northstar', 'reco', 'moneymetrics', 'meeting-intelligence-service', 'rideflow']);
+    expect(projects.map(project => project.id)).toEqual(['ffprime', 'northstar', 'reco', 'moneymetrics', 'meeting-intelligence-service', 'rideflow', 'repolens']);
     expect(new Set(projects.map(project => project.id)).size).toBe(projects.length);
     expect(projects.filter(project => project.priority <= 4).map(project => project.landmarkType)).toEqual(['research', 'terminal', 'tower', 'vault']);
     expect(new Set(projects.map(project => project.priority)).size).toBe(projects.length);
