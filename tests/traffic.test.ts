@@ -36,3 +36,15 @@ describe('Fort Road traffic sharing the loop',()=>{
   expect(road.agents.every(a=>a.distance>0)).toBe(true);
  });
 });
+
+describe('Fort cross street behind the frontages', () => {
+  it('hides only vehicles the corner blocks cover', async () => {
+    const { hiddenByFrontage } = await import('../src/game/World/districts/FortRoadTraffic');
+    const spawn = { x: 4.6, z: 11.5 };
+    expect(hiddenByFrontage({ x: 45, z: -63.2 }, 4.1, spawn)).toBe(true);
+    expect(hiddenByFrontage({ x: -45, z: -60 }, 11, spawn)).toBe(true);
+    expect(hiddenByFrontage({ x: 0, z: -60 }, 4.1, spawn)).toBe(false);
+    expect(hiddenByFrontage({ x: 9, z: -60 }, 4.1, spawn)).toBe(false);   // still in the street's open end
+    expect(hiddenByFrontage({ x: 45, z: -63.2 }, 4.1, { x: 2, z: -60 })).toBe(false);   // standing at the junction
+  });
+});

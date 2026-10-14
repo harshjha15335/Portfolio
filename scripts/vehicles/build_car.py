@@ -110,8 +110,12 @@ def section(s, inset=0.0):
 NP = len(section(0))
 
 
+# The distant level keeps 9 of the 13 section points (one per crease that reads at 40 m and beyond).
+KEEP = list(range(NP)) if LOD < 2 else [0, 1, 3, 4, 6, 7, 9, 11, 12]
+
+
 def ring(s, inset=0.0):
-    half = section(s, inset)
+    half = [section(s, inset)[k] for k in KEEP]
     full = half + [(-x, z) for x, z in half[-2:0:-1]]
     return [(x, s, z) for x, z in full]
 
@@ -120,7 +124,7 @@ def ring(s, inset=0.0):
 door_front, door_mid = WS0 - .12, (WS0 - .12 + RS1) / 2 if not S['hatch'] else (WS0 - .12 + RS1 + .1) / 2
 door_rear = RS1 + .05 if S['hatch'] else RS0 + .05
 SEAMS = [(door_front, door_front - .008), (door_mid, door_mid - .008), (door_rear, door_rear - .008)]
-base = list(np.linspace(FRONT, REAR, (30, 10, 6)[LOD]))
+base = list(np.linspace(FRONT, REAR, (30, 10, 5)[LOD]))
 extra = [WS0, WS1, RS0, RS1] + ([FRONT - .008, FRONT - .022, REAR + .022, REAR + .008], [FRONT - .022, REAR + .022], [])[LOD]
 for w in (FRONT_WHEEL, REAR_WHEEL): extra += [w + d for d in np.linspace(-ARCH_R, ARCH_R, (9, 5, 3)[LOD])]
 if LOD == 0:
@@ -143,7 +147,8 @@ C_PILLAR = RS1 + (.32 if S['hatch'] else .06)   # side glass ends here; a hatch 
 
 def region(i, j):
     s0, s1 = STATIONS[i], STATIONS[i + 1]; mid = (s0 + s1) / 2; h = height(mid)
-    jj = j if j < NP - 1 else 2 * (NP - 1) - j - 1
+    n = len(KEEP)
+    jj = KEEP[j if j < n - 1 else 2 * (n - 1) - j - 1]
     if jj == 0: return 'under'
     if jj in (1, 2) and S.get('cladding'): return 'cladding'
     if jj == 1: return 'trim'
@@ -228,14 +233,14 @@ def wheel(cx, cy):
     out = 1 if cx > 0 else -1
     rings = []
     # Tyre profile: shoulders and tread near; tread and sidewalls only further out.
-    prof = [(.105, WR * .66), (.11, WR * .9), (.095, WR), (-.095, WR), (-.11, WR * .9), (-.105, WR * .66)] if LOD == 0 else [(.105, WR * .66), (.1, WR), (-.1, WR), (-.105, WR * .66)]
-    for t in np.linspace(0, 2 * math.pi, (24, 12, 8)[LOD], endpoint=False):
+    prof = [(.105, WR * .66), (.11, WR * .9), (.095, WR), (-.095, WR), (-.11, WR * .9), (-.105, WR * .66)] if LOD == 0 else [(.105, WR * .66), (.1, WR), (-.1, WR), (-.105, WR * .66)] if LOD == 1 else [(.105, WR * .66), (.1, WR), (-.1, WR)]
+    for t in np.linspace(0, 2 * math.pi, (24, 12, 7)[LOD], endpoint=False):
         c, s_ = math.cos(t), math.sin(t)
         rings.append([(cx + out * dx, cy + r * c, WR + r * s_) for dx, r in prof])
     rings.append(rings[0])
-    tread = len(prof) // 2 - 1
+    tread = 1 if len(prof) == 3 else len(prof) // 2 - 1
     body.grid(rings, lambda i, j: 'tread' if j == tread else 'rubber')
-    body.disc((cx + out * .09, cy, WR), (out, 0, 0), (WR * .66, WR * .66), 'rim', n=(24, 12, 8)[LOD], flip=out < 0)
+    body.disc((cx + out * .09, cy, WR), (out, 0, 0), (WR * .66, WR * .66), 'rim', n=(24, 12, 7)[LOD], flip=out < 0)
     if LOD: return
     body.disc((cx + out * .097, cy, WR), (out, 0, 0), (WR * .2, WR * .2), 'hub', n=10, flip=out < 0)
     for k in range(5):

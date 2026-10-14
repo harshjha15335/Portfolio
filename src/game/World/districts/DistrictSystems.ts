@@ -233,6 +233,8 @@ const RIDER_OUTFIT: Partial<Record<CityVehicleKind, Outfit>> = { auto: 'vendor',
 export class LaneTraffic {
   readonly group = new THREE.Group(); private lanes: Array<{ curve: THREE.CatmullRomCurve3; length: number; closed: boolean; shared: () => LoopVehicle[] }> = []; private agents: Agent[] = [];
   private stops: Array<{ lane: number; s: number; active: (time: number) => boolean }> = [];
+  /** True when buildings hide a vehicle (centre, length) from `view`; such vehicles draw nothing. */
+  occluded: ((position: THREE.Vector3, length: number, view: THREE.Vector3) => boolean) | null = null;
   /** A stop line on a lane at local `z` (on the side of `x`, for a loop that passes z twice), held while `active(time)` (a pedestrian green). */
   stopLine(lane: number, z: number, active: (time: number) => boolean, x?: number) {
     const { curve, length } = this.lanes[lane]; let best = 0, bestGap = Infinity;
@@ -304,7 +306,7 @@ export class LaneTraffic {
     const view = obstacles[0];
     for (const a of this.agents) {
       const near = view ? a.mesh.position.distanceTo(view) : 0;
-      if (view) setVehicleDetail(a.mesh as THREE.Mesh, near > VEHICLE_HIDDEN ? 'hidden' : near < VEHICLE_NEAR ? 0 : near < VEHICLE_FAR ? 1 : 2);
+      if (view) setVehicleDetail(a.mesh as THREE.Mesh, near > VEHICLE_HIDDEN || this.occluded?.(a.mesh.position, a.length, view) ? 'hidden' : near < VEHICLE_NEAR ? 0 : near < VEHICLE_FAR ? 1 : 2);
       if (a.rider) { a.rider.mesh.visible = a.mesh.visible && near < RIDER_HIDDEN; a.rider.setLevel(near < CAST_LOD.far ? 0 : near < CAST_LOD.distant * .5 ? 1 : 2); }
       if (!a.max) continue;
       const lane = this.lanes[a.lane];

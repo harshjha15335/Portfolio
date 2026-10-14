@@ -5,6 +5,20 @@ import type { CityVehicleKind } from './CityVehicles';
 
 /** Fort Road is a dead end at the station, so through traffic uses the cross street at its north end (z ≈ −62). */
 const CROSS_STREET = -62;
+/** Fort Road's frontages stand at |x| ≈ 7.8 as far north as z ≈ −57, where the cross street opens out. */
+const FRONTAGE = 7.8, FRONTAGE_END = -57;
+
+/**
+ * From inside Fort Road, the cross street shows only through the street's open end: a vehicle on it is hidden
+ * when its whole length lies behind the corner blocks, seen along the line from the visitor.
+ */
+export function hiddenByFrontage(p: { x: number; z: number }, length: number, view: { x: number; z: number }) {
+  if (p.z > FRONTAGE_END || view.z < FRONTAGE_END || Math.abs(view.x) > FRONTAGE) return false;
+  const at = (x: number) => view.x + (x - view.x) * (FRONTAGE_END - view.z) / (p.z - view.z);
+  const a = at(p.x - length / 2), b = at(p.x + length / 2), margin = 1;
+  return Math.max(a, b) < -FRONTAGE - margin || Math.min(a, b) > FRONTAGE + margin;
+}
+
 /** The loop is the first lane, so the street can read this system's loop vehicles with `onLane(FORT_LOOP_LANE)`. */
 export const FORT_LOOP_LANE = 0;
 
@@ -23,11 +37,13 @@ export function createFortRoadTraffic(loop: () => LoopVehicle[]) {
   const east = traffic.lane([[-90, 0, CROSS_STREET + 2], [90, 0, CROSS_STREET + 2]]), west = traffic.lane([[90, 0, CROSS_STREET - 1.2], [-90, 0, CROSS_STREET - 1.2]]);
   const scale = cityDensity.traffic * .35;
   const loopKinds: CityVehicleKind[] = ['hatch', 'bike', 'sedan', 'suv', 'bike', 'hatch'], crossKinds: CityVehicleKind[] = ['bus', 'sedan', 'hatch', 'bus', 'suv', 'sedan'];
-  // Between the loop's own taxis and autos, which sit at sixths of the loop.
+  // Behind the loop's own taxis and autos, which sit at sixths of the loop. The first starts beyond the near
+  // detail range of the arrival view, so the opening frame keeps inside the Medium triangle budget.
   const onLoop = loopKinds.slice(0, Math.max(1, Math.round(loopKinds.length * scale)));
-  onLoop.forEach((kind, i) => traffic.vehicle(ring, kind, (i * 2 + 1) / 12, `fort:${i}`));
+  onLoop.forEach((kind, i) => traffic.vehicle(ring, kind, (i * 2 + 1) / 12 + 1 / 24, `fort:${i}`));
   const across = crossKinds.slice(0, Math.max(2, Math.round(crossKinds.length * scale))), half = Math.ceil(across.length / 2);
   across.forEach((kind, i) => traffic.vehicle(i % 2 ? west : east, kind, ((i >> 1) + (i % 2) * .5) / half, `fort:cross:${i}`));
+  traffic.occluded = hiddenByFrontage;
   traffic.group.name = 'fort-road:through-traffic';
   return traffic;
 }
