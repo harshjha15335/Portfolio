@@ -1,0 +1,42 @@
+[
+  {
+    "view": "npc",
+    "profile": "idle · 48 draws · 144552 triangles · 27 textures · 26 shaders · 142 MB JS · scale 1.00 · eye 1.68m",
+    "cast": null
+  },
+  {
+    "view": "walkers",
+    "profile": "idle · 62 draws · 175954 triangles · 32 textures · 26 shaders · 142 MB JS · scale 1.00 · eye 1.68m",
+    "cast": null
+  },
+  {
+    "view": "chai",
+    "profile": "0.3 fps · 41 draws · 162835 triangles · 32 textures · 26 shaders · 141 MB JS · scale 1.00 · eye 1.68m",
+    "cast": null
+  },
+  {
+    "view": "bench",
+    "profile": "idle · 71 draws · 191847 triangles · 32 textures · 26 shaders · 143 MB JS · scale 1.00 · eye 1.68m",
+    "cast": null
+  },
+  {
+    "view": "station",
+    "profile": "idle · 65 draws · 181087 triangles · 32 textures · 26 shaders · 142 MB JS · scale 1.00 · eye 1.68m",
+    "cast": null
+  },
+  {
+    "view": "spawn",
+    "profile": "idle · 73 draws · 196273 triangles · 32 textures · 26 shaders · 142 MB JS · scale 1.00 · eye 1.68m",
+    "cast": null
+  },
+  {
+    "view": "taxi",
+    "profile": "idle · 42 draws · 177864 triangles · 32 textures · 26 shaders · 143 MB JS · scale 1.00 · eye 1.39m",
+    "cast": null
+  },
+  {
+    "view": "auto",
+    "profile": "idle · 42 draws · 171888 triangles · 32 textures · 26 shaders · 144 MB JS · scale 1.00 · eye 1.36m",
+    "cast": null
+  }
+]

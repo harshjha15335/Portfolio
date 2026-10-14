@@ -14,18 +14,22 @@ export function inspectCharacter(bytes){
  for(const a of gltf.accessors??[]){const v=gltf.bufferViews?.[a.bufferView],size=sizes[a.componentType]*components[a.type];if(!v||!size||a.sparse||!Number.isInteger(a.count)||a.count<=0)throw Error('Unsupported accessor');const stride=v.byteStride??size;if(stride<size||(a.byteOffset??0)<0||(a.byteOffset??0)+(a.count-1)*stride+size>v.byteLength)throw Error('Accessor exceeds its buffer view');}
  let triangles=0,primitives=0;const skins=gltf.skins??[];
  if(!skins.length||skins.some(s=>s.joints.length<15||s.joints.length>80||s.joints.some(j=>!gltf.nodes?.[j])))throw Error('Expected a humanoid rig with 15–80 valid joints');
- for(const mesh of gltf.meshes??[])for(const p of mesh.primitives??[]){
+ // An in-file `_LOD1` node is a reduced copy on the same rig; the ceilings apply to the close level a viewer sees.
+ const lodMeshes=new Set((gltf.nodes??[]).filter(n=>n.mesh!==undefined&&/_LOD1$/.test(n.name??'')).map(n=>n.mesh));let lodTriangles=0;
+ for(const [index,mesh] of (gltf.meshes??[]).entries())for(const p of mesh.primitives??[]){
   if((p.mode??4)!==4||p.extensions?.KHR_draco_mesh_compression)throw Error('Only uncompressed triangle primitives are admitted');
   if(!gltf.accessors?.[p.attributes?.POSITION]||p.attributes.JOINTS_0===undefined||p.attributes.WEIGHTS_0===undefined||p.attributes.NORMAL===undefined)throw Error('Every character primitive must have positions, normals and skin weights');
-  const count=gltf.accessors[p.indices??p.attributes.POSITION]?.count;if(!Number.isInteger(count)||count<=0||count%3!==0)throw Error('Invalid triangle count');triangles+=count/3;primitives++;
+  const count=gltf.accessors[p.indices??p.attributes.POSITION]?.count;if(!Number.isInteger(count)||count<=0||count%3!==0)throw Error('Invalid triangle count');if(lodMeshes.has(index)){lodTriangles+=count/3;continue;}triangles+=count/3;primitives++;
  }
  if(!primitives||primitives>4||triangles>12000)throw Error('Character ceiling: 12,000 triangles and four primitives');
+ if(lodTriangles>triangles*.5)throw Error('LOD1 must be at most half the close mesh');
  if((gltf.materials??[]).length>4)throw Error('Maximum four materials');
  if(!(gltf.nodes??[]).some(n=>n.mesh!==undefined&&n.skin!==undefined&&skins[n.skin]))throw Error('No skinned mesh node');
  const textures=(gltf.images??[]).map(image=>{const v=gltf.bufferViews?.[image.bufferView];if(!v)throw Error('Embedded image view missing');const b=bin.subarray(v.byteOffset??0,(v.byteOffset??0)+v.byteLength);let width,height;
   if(image.mimeType==='image/png'&&b.length>=24&&b.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))){width=b.readUInt32BE(16);height=b.readUInt32BE(20);}
   else if(image.mimeType==='image/jpeg'&&b[0]===255&&b[1]===216){let i=2;while(i+9<b.length){if(b[i++]!==255)continue;const marker=b[i++];if(marker===216||marker===217)continue;const size=b.readUInt16BE(i);if(size<2||i+size>b.length)break;if([192,193,194].includes(marker)){height=b.readUInt16BE(i+3);width=b.readUInt16BE(i+5);break;}i+=size;}}
-  if(!width||!height||width>1024||height>1024)throw Error('Textures must be embedded PNG/JPEG at most 1024×1024');return {width,height,mimeType:image.mimeType};
+  // A 2048×1024 atlas is the body and head maps side by side: the same texels as two 1024² maps in one binding.
+  if(!width||!height||Math.max(width,height)>2048||width*height>2048*1024)throw Error('Textures must be embedded PNG/JPEG at most 1024×1024, or one 2048×1024 body+head atlas');return {width,height,mimeType:image.mimeType};
  });if(!textures.length||textures.length>4)throw Error('Expected 1–4 authored character textures');
  const animations=gltf.animations??[];
  const jointNodes=new Set(skins.flatMap(s=>s.joints));
@@ -34,5 +38,5 @@ export function inspectCharacter(bytes){
   let duration=0;for(const s of a.samplers??[]){const input=gltf.accessors?.[s.input],v=gltf.bufferViews?.[input?.bufferView];if(!input||!v||input.componentType!==5126||input.type!=='SCALAR'||input.count<2||input.sparse)throw Error('Animation times must be non-sparse float scalars');const offset=(v.byteOffset??0)+(input.byteOffset??0),stride=v.byteStride??4;let previous=-1;for(let i=0;i<input.count;i++){const pos=offset+i*stride;if(pos+4>bin.length)throw Error('Animation accessor exceeds binary');const t=bin.readFloatLE(pos);if(!Number.isFinite(t)||t<0||t<=previous)throw Error('Animation times must strictly increase');previous=t;}duration=Math.max(duration,previous);}
   if(duration<=0)throw Error('Animation duration must be positive');return {name:a.name,duration,channels:a.channels.length};
  });
- return {triangles,primitives,materials:(gltf.materials??[]).length,joints:skins.map(s=>s.joints.length),textures,clips,visualReviewRequired:['human proportions','clothing and texture quality','human-scale floor alignment','Idle and Walk move the intended skeleton','foot sliding/facing direction','new Medium draw/triangle/texture/program counts']};
+ return {triangles,lodTriangles,primitives,materials:(gltf.materials??[]).length,joints:skins.map(s=>s.joints.length),textures,clips,visualReviewRequired:['human proportions','clothing and texture quality','human-scale floor alignment','Idle and Walk move the intended skeleton','foot sliding/facing direction','new Medium draw/triangle/texture/program counts']};
 }

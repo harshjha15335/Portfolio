@@ -8,7 +8,7 @@ const metadata=JSON.parse(await readFile(provenanceFile,'utf8'));
 for(const key of ['author','source','license','licenseEvidence','licenseReviewedOn'])if(typeof metadata[key]!=='string'||!metadata[key].trim())throw Error(`Missing provenance ${key}`);
 for(const key of ['source','licenseEvidence'])if(new URL(metadata[key]).protocol!=='https:')throw Error('Publisher/licence evidence must be HTTPS URLs');
 if(metadata.redistributionPermitted!==true)throw Error('Explicit publisher licence permitting public GLB redistribution must be reviewed first');
-if(!['CC0-1.0','CC-BY-4.0'].includes(metadata.license))throw Error('This public-asset import path accepts reviewed CC0/CC-BY 4.0 only. Mixamo/other commercial terms require a separate redistribution review.');
+if(!['CC0-1.0','CC-BY-4.0','MIT'].includes(metadata.license))throw Error('This public-asset import path accepts reviewed CC0, CC-BY 4.0 or MIT only. Mixamo/other commercial terms require a separate redistribution review.');
 const bytes=await readFile(file),inspection=inspectCharacter(bytes),sha256=createHash('sha256').update(bytes).digest('hex');
 if(metadata.sourceSha256!==sha256)throw Error('Supplied SHA-256 must match the actual local GLB');
 const root=resolve(import.meta.dirname,'..'),name=`station-character-${sha256.slice(0,16)}.glb`;
