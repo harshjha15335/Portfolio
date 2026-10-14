@@ -98,6 +98,10 @@ export class MumbaiStreet {
   private denseCount=0;
   private denseWalkers: Array<{group:THREE.Group;agent?:CrowdAgent;target:number;wait:number}> = [];
   private trafficVehicles: THREE.Group[] = [];
+  /** Through traffic driven outside the street (cars, BEST buses) that the loop taxis must queue behind. */
+  extraTrafficObstacles: Array<{ x: number; z: number }> = [];
+  /** Where the street's own taxis and autos are, so through traffic can queue behind them. */
+  get trafficPositions() { return this.trafficVehicles.map(v => v.position); }
   private parkedVehicles: THREE.Group[] = [];
   private previousTime = 0;
   private viewPosition = new THREE.Vector3();
@@ -106,6 +110,8 @@ export class MumbaiStreet {
   /** 'ready' once surface maps, scooters and vehicle bodies have loaded or fallen back. */
   assetStatus:'loading'|'ready'='loading';
   get assetsReady(){return Promise.all([this.surfaces.ready,this.scootersReady,this.vehicleBodiesReady]).then(()=>undefined);}
+  /** Shared verified surface materials; the other districts clone these. */
+  get surfaceLibrary(){return this.surfaces;}
   get surfaceStatus(){return this.surfaces.status;}
   navigationStatus = 'loading';
   npcUpdateMs = 0; trafficUpdateMs = 0;
@@ -761,6 +767,8 @@ export class MumbaiStreet {
       restrictInstanceShadows(instance,count); instance.receiveShadow = true; instance.frustumCulled = true; this.group.add(instance); this.dynamicBatches.push({ instance, meshes });
     }
   }
+  /** The street's licensed-asset library, shared so the districts reuse its uploaded textures and materials. */
+  async sharedAssetLibrary(){const {GLBAssetLibrary}=await import('./assets/GLBAssetLibrary');if(this.disposed)throw new Error('Street disposed');this.assetLibrary??=new GLBAssetLibrary(window.location.origin,8*1024*1024,16);return this.assetLibrary;}
   /** Called only by trusted application code once an individually verified asset is approved. */
   async installStationCharacter(asset:VerifiedGLB,previewWalk=false){
     if(this.disposed||!this.stationHost)throw new Error('Street unavailable');
@@ -821,7 +829,7 @@ export class MumbaiStreet {
       }
       this.navigation.crowd.update(1/30,delta,3);
     }
-    this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...[...this.walkers,...this.denseWalkers].filter(w=>w.agent&&Math.abs(w.group.position.x)<3.9).map(w=>({x:w.group.position.x,z:w.group.position.z}))]);
+    this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...[...this.walkers,...this.denseWalkers].filter(w=>w.agent&&Math.abs(w.group.position.x)<3.9).map(w=>({x:w.group.position.x,z:w.group.position.z})),...this.extraTrafficObstacles]);
     this.trafficVehicles.forEach((vehicle,i)=>{if(i>=this.trafficSystem.active)return;const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y+=turn*(1-Math.exp(-8*delta));animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);});this.trafficUpdateMs=performance.now()-trafficStart;
     for (const animate of this.motion) animate(reduced ? 0 : time);
     this.group.updateMatrixWorld(true);

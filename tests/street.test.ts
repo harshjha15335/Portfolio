@@ -89,6 +89,6 @@ describe('first-person street slice', () => {
         expect(hit.hasHit,`${destination} segment ${i}`).toBe(false);
       }
     }
-    expect(streetRideRoute({x:0,z:0},'powai')).toEqual([]);
+    expect(streetRideRoute({x:0,z:0},'nowhere')).toEqual([]);
   });
 });

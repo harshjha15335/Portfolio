@@ -59,7 +59,7 @@ export class GLBCharacter {
 }
 
 /** Average backward speed of the lower foot while it is planted: what the body must travel for the foot not to slide. */
-function measureGroundSpeed(root:THREE.Object3D,walk:THREE.AnimationClip){
+export function measureGroundSpeed(root:THREE.Object3D,walk:THREE.AnimationClip){
  let foot:THREE.Object3D|undefined;root.traverse(o=>{if(!foot&&/L_Foot$/.test(o.name))foot=o;});if(!foot)return 0;
  const mixer=new THREE.AnimationMixer(root),action=mixer.clipAction(walk).play(),samples:THREE.Vector3[]=[],steps=48;
  for(let i=0;i<=steps;i++){mixer.setTime(walk.duration*i/steps);root.updateMatrixWorld(true);samples.push(root.worldToLocal(foot.getWorldPosition(new THREE.Vector3())).multiply(root.scale));}
