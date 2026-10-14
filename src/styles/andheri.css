@@ -1,0 +1,63 @@
+/* Andheri Tech Bazaar: five skill shops, each with a working bench. */
+.andheri-shops > p { max-width:760px; color:var(--muted); }
+.shop-signs { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin:20px 0; }
+.shop-signs button { display:flex; align-items:center; gap:10px; border:1px solid var(--ink); padding:10px 12px; font:600 12px var(--mono); text-transform:uppercase; text-align:left; background:var(--paper); color:var(--ink); }
+.shop-signs button b { font:600 26px/1 var(--display); color:#c7682f; }
+.shop-signs button[aria-pressed=true] { background:var(--ink); color:var(--paper); }
+.shop-signs button[aria-pressed=true] b { color:#f9c847; }
+.shop-front { display:grid; grid-template-columns:minmax(180px,240px) minmax(0,1fr); gap:24px; align-items:start; }
+.shop-front > * { min-width:0; }
+.shop-skills { display:grid; gap:6px; }
+.shop-skills button { display:flex; justify-content:space-between; align-items:center; gap:8px; border:1px solid var(--ink); padding:9px 12px; font:500 13px var(--body); text-align:left; background:transparent; color:var(--ink); }
+.shop-skills button.resume { border-style:dashed; }
+.shop-skills button small { font:500 9px var(--mono); color:var(--muted); }
+.shop-skills button[aria-pressed=true] { background:var(--ink); color:var(--paper); }
+.shop-skills button[aria-pressed=true] small { color:var(--paper); }
+.skill-card { background:var(--surface); border-top:3px solid #c7682f; padding:18px 22px; }
+.skill-card h4 { font:600 30px/1 var(--display); text-transform:uppercase; margin:0 0 12px; }
+.skill-card dl { display:grid; grid-template-columns:150px minmax(0,1fr); gap:10px 18px; margin:0; font-size:14px; }
+.skill-card dt { font:500 10px var(--mono); letter-spacing:.05em; color:var(--muted); padding-top:3px; }
+.skill-card dd { margin:0; min-width:0; }
+.skill-card ul { margin:0; padding-left:18px; }
+.skill-card a { text-decoration:underline; text-underline-offset:3px; overflow-wrap:anywhere; }
+.skill-card .resume-only, .skill-card .caption-note { display:block; background:var(--paper); border-left:3px solid #c7882f; padding:8px 10px; margin:0 0 8px; font-size:13px; }
+.evidence-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.evidence-actions button { border:1px solid var(--ink); padding:7px 10px; font:500 10px var(--mono); text-align:left; }
+.shop-bench { margin-top:26px; }
+.bench-split { grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); }
+.bench-inputs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+.bench-source { display:inline-block; margin-top:8px; font:500 11px var(--mono); text-decoration:underline; }
+.bench-title { font-size:14px; margin:14px 0; } .bench-title a { text-decoration:underline; }
+.studio-stage { position:relative; background:#1d2629; padding:24px; min-height:220px; display:grid; place-items:center; margin-bottom:14px; }
+.studio-stage .ride-meter { position:static; max-height:none; width:280px; }
+.studio-stage > .caption { color:#f0e4c9; }
+.event-log { list-style:none; padding:0; margin:6px 0 12px; font-size:12px; display:grid; gap:4px; }
+.hop-list { list-style:none; margin:0 0 10px; padding:0; font-size:12px; }
+.hop-list li { display:grid; grid-template-columns:22px 1fr; gap:6px; padding:6px 4px; border-bottom:1px solid var(--border); }
+.hop-list li b { font:600 12px var(--mono); }
+.hop-list li.pass b { color:#2f6b35; } .hop-list li.stop { background:rgba(214,96,62,.12); } .hop-list li.stop b { color:#a33a1f; }
+.hop-list li.skipped { opacity:.45; }
+.hop-list a { text-decoration:underline; } .hop-list code { font:600 11px var(--mono); }
+.hop-list span { display:block; color:var(--muted); margin-top:2px; }
+.pipeline { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
+.pipeline .job { border:1px solid var(--ink); background:var(--paper); padding:12px; min-width:0; }
+.pipeline .job.fail { border-color:#a33a1f; } .pipeline .job.skipped { opacity:.55; border-style:dashed; }
+.pipeline h4 { display:flex; justify-content:space-between; gap:8px; font:600 12px var(--mono); margin:0 0 8px; text-transform:uppercase; }
+.pipeline h4 small { font:500 9px var(--mono); }
+.pipeline ol { list-style:none; margin:0 0 8px; padding:0; display:grid; gap:4px; }
+.pipeline li button, .pipeline li > span { width:100%; display:grid !important; grid-template-columns:16px 1fr; gap:6px; font:12px var(--body) !important; padding:6px 8px !important; border:1px solid var(--border) !important; text-align:left; }
+.pipeline li .fail { background:#f2d9cf; border-color:#a33a1f !important; }
+.pipeline li .skipped { opacity:.5; }
+.pipeline li .pass b { color:#2f6b35; } .pipeline li .fail b { color:#a33a1f; }
+.pipeline .gated { border-style:double; border-width:3px; }
+.pipeline .gated a { font:500 11px var(--mono); text-decoration:underline; }
+.guard-stages { list-style:none; display:flex; flex-wrap:wrap; gap:6px; padding:0; margin:0 0 6px; }
+.guard-stages li { font:500 10px var(--mono); text-transform:uppercase; padding:6px 8px; border:1px solid var(--border); }
+.guard-stages li.pass { background:#dce8d6; } .guard-stages li.fail { background:#f2d9cf; } .guard-stages li.skipped { opacity:.45; }
+@media (max-width:760px) {
+  .shop-signs { grid-template-columns:1fr 1fr; }
+  .shop-front, .bench-split { grid-template-columns:1fr; }
+  .skill-card { padding:14px; }
+  .skill-card dl { grid-template-columns:1fr; gap:4px; } .skill-card dd { margin-bottom:8px; }
+  .bench-inputs { grid-template-columns:1fr 1fr; }
+}

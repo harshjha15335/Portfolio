@@ -1,0 +1,433 @@
+{
+ "source": "harshjha15335/NORTHSTAR",
+ "commit": "10e96d3807b9d302cf33c03f29ff37b97232beb2",
+ "evidence": {
+  "symbol": "ITC",
+  "cycle_id": "cycle-demo-001",
+  "quote": {
+   "price": "420"
+  },
+  "source_ids": [
+   "mock-fundamental-ITC",
+   "mock-technical-ITC"
+  ]
+ },
+ "cases": [
+  {
+   "id": "no-action",
+   "label": "Valid NO_ACTION",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"NO_ACTION\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 0,\n  \"estimated_order_value\": 0,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"Evidence does not justify adding risk; preserve cash and monitor.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "accepted"
+  },
+  {
+   "id": "buy",
+   "label": "Valid BUY, one share",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "accepted"
+  },
+  {
+   "id": "fenced",
+   "label": "Valid, wrapped in a ```json fence",
+   "raw": "```json\n{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}\n```",
+   "stage": "accepted"
+  },
+  {
+   "id": "prose",
+   "label": "Prose instead of JSON",
+   "raw": "I think ITC looks strong. Buy 1 share around 420.",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [],
+     "type": "json_invalid",
+     "msg": "Invalid JSON: expected ident at line 1 column 2"
+    }
+   ]
+  },
+  {
+   "id": "array",
+   "label": "A JSON array, not an object",
+   "raw": "[\n  {\n    \"cycle_id\": \"cycle-demo-001\",\n    \"symbol\": \"ITC\",\n    \"action\": \"BUY\",\n    \"confidence\": 0.74,\n    \"current_price\": 420,\n    \"proposed_quantity\": 1,\n    \"estimated_order_value\": 420,\n    \"maximum_entry_price\": 424.2,\n    \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n    \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n    \"fundamental_view\": \"MOCK / INCOMPLETE\",\n    \"technical_view\": \"SIDEWAYS\",\n    \"news_view\": \"MOCK / NEUTRAL\",\n    \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n    \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n    \"bull_case\": \"Illustrative improvement in demand and margins\",\n    \"base_case\": \"Maintain stable operating performance\",\n    \"bear_case\": \"Demand contraction and valuation compression\",\n    \"supporting_factors\": [\n      \"Controlled paper-only demonstration\"\n    ],\n    \"major_risks\": [\n      \"All inputs are synthetic\",\n      \"No return is guaranteed\"\n    ],\n    \"entry_conditions\": [\n      \"Every deterministic risk check passes\"\n    ],\n    \"invalidation_conditions\": [\n      \"Verified thesis deterioration\"\n    ],\n    \"expected_holding_period\": \"Review each monitoring cycle\",\n    \"source_ids\": [\n      \"mock-fundamental-ITC\"\n    ]\n  }\n]",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [],
+     "type": "model_type",
+     "msg": "Input should be an object"
+    }
+   ]
+  },
+  {
+   "id": "missing",
+   "label": "Missing narrative fields",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\"\n}",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [
+      "thesis"
+     ],
+     "type": "missing",
+     "msg": "Field required"
+    },
+    {
+     "loc": [
+      "bear_case"
+     ],
+     "type": "missing",
+     "msg": "Field required"
+    },
+    {
+     "loc": [
+      "source_ids"
+     ],
+     "type": "missing",
+     "msg": "Field required"
+    }
+   ]
+  },
+  {
+   "id": "extra",
+   "label": "Invents a price target",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ],\n  \"target_price\": 520\n}",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [
+      "target_price"
+     ],
+     "type": "extra_forbidden",
+     "msg": "Extra inputs are not permitted"
+    }
+   ]
+  },
+  {
+   "id": "confidence",
+   "label": "Confidence above 1",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 1.4,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [
+      "confidence"
+     ],
+     "type": "less_than_equal",
+     "msg": "Input should be less than or equal to 1"
+    }
+   ]
+  },
+  {
+   "id": "action",
+   "label": "Action outside the allowed set",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"STRONG_BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [
+      "action"
+     ],
+     "type": "literal_error",
+     "msg": "Input should be 'BUY', 'SELL', 'HOLD' or 'NO_ACTION'"
+    }
+   ]
+  },
+  {
+   "id": "qty-string",
+   "label": "Quantity as a string",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": \"1\",\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [
+      "proposed_quantity"
+     ],
+     "type": "int_type",
+     "msg": "Input should be a valid integer"
+    }
+   ]
+  },
+  {
+   "id": "qty-float",
+   "label": "Fractional quantity",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1.5,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [
+      "proposed_quantity"
+     ],
+     "type": "int_type",
+     "msg": "Input should be a valid integer"
+    }
+   ]
+  },
+  {
+   "id": "entry-zero",
+   "label": "maximum_entry_price of 0",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 0,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [
+      "maximum_entry_price"
+     ],
+     "type": "greater_than",
+     "msg": "Input should be greater than 0"
+    }
+   ]
+  },
+  {
+   "id": "thesis-number",
+   "label": "Number where text is required",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": 42,\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [
+      "thesis"
+     ],
+     "type": "string_type",
+     "msg": "Input should be a valid string"
+    }
+   ]
+  },
+  {
+   "id": "confidence-string",
+   "label": "Confidence as a numeric string",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": \"0.7\",\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "accepted"
+  },
+  {
+   "id": "nan",
+   "label": "Non-finite price",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": \"Infinity\",\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [
+      "current_price"
+     ],
+     "type": "finite_number",
+     "msg": "Input should be a finite number"
+    }
+   ]
+  },
+  {
+   "id": "symbol",
+   "label": "Swaps the instrument",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"INFY\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "decision",
+   "message": "AI changed the assigned cycle or instrument identity"
+  },
+  {
+   "id": "cycle",
+   "label": "Changes the cycle id",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-999\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "decision",
+   "message": "AI changed the assigned cycle or instrument identity"
+  },
+  {
+   "id": "price",
+   "label": "Price differs from the quote",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 425,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 425,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "decision",
+   "message": "AI current price does not match the supplied quote"
+  },
+  {
+   "id": "value",
+   "label": "Order value doesn't match price × quantity",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 500,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "decision",
+   "message": "AI order value does not match supplied quote and quantity"
+  },
+  {
+   "id": "hold-qty",
+   "label": "HOLD with a quantity",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"HOLD\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 2,\n  \"estimated_order_value\": 840,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"Evidence does not justify adding risk; preserve cash and monitor.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "decision",
+   "message": "AI non-trade action included a trade quantity"
+  },
+  {
+   "id": "buy-zero",
+   "label": "BUY with no quantity",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 0,\n  \"estimated_order_value\": 0,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "decision",
+   "message": "AI trade action omitted a trade quantity"
+  },
+  {
+   "id": "dup-source",
+   "label": "Duplicate source ids",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\",\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "decision",
+   "message": "AI returned duplicate source identifiers"
+  },
+  {
+   "id": "unknown-source",
+   "label": "Cites a source it never received",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"reuters-2026-10-14\"\n  ]\n}",
+   "stage": "decision",
+   "message": "AI referenced a source that was not retrieved"
+  },
+  {
+   "id": "probe-qty-float-int",
+   "label": "Quantity written as 1.0",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1.0,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [
+      "proposed_quantity"
+     ],
+     "type": "int_type",
+     "msg": "Input should be a valid integer"
+    }
+   ]
+  },
+  {
+   "id": "probe-bools",
+   "label": "Booleans in typed fields",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": false,\n  \"current_price\": 420,\n  \"proposed_quantity\": true,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    1\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [
+      "confidence"
+     ],
+     "type": "decimal_type",
+     "msg": "Decimal input should be an integer, float, string or Decimal object"
+    },
+    {
+     "loc": [
+      "proposed_quantity"
+     ],
+     "type": "int_type",
+     "msg": "Input should be a valid integer"
+    },
+    {
+     "loc": [
+      "major_risks",
+      "0"
+     ],
+     "type": "string_type",
+     "msg": "Input should be a valid string"
+    }
+   ]
+  },
+  {
+   "id": "probe-parsing",
+   "label": "Unparseable decimal, negative quantity, string list",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": \"abc\",\n  \"proposed_quantity\": -1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": \"x\"\n}",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [
+      "current_price"
+     ],
+     "type": "decimal_parsing",
+     "msg": "Input should be a valid decimal"
+    },
+    {
+     "loc": [
+      "proposed_quantity"
+     ],
+     "type": "greater_than_equal",
+     "msg": "Input should be greater than or equal to 0"
+    },
+    {
+     "loc": [
+      "source_ids"
+     ],
+     "type": "list_type",
+     "msg": "Input should be a valid array"
+    }
+   ]
+  },
+  {
+   "id": "probe-nulls",
+   "label": "Nulls",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": null,\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": null,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": null,\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ]\n}",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [
+      "symbol"
+     ],
+     "type": "string_type",
+     "msg": "Input should be a valid string"
+    },
+    {
+     "loc": [
+      "estimated_order_value"
+     ],
+     "type": "decimal_type",
+     "msg": "Decimal input should be an integer, float, string or Decimal object"
+    },
+    {
+     "loc": [
+      "supporting_factors"
+     ],
+     "type": "list_type",
+     "msg": "Input should be a valid array"
+    }
+   ]
+  },
+  {
+   "id": "probe-timestamp",
+   "label": "Unparseable timestamp",
+   "raw": "{\n  \"cycle_id\": \"cycle-demo-001\",\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": 0.74,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"why_now\": \"Synthetic paper-testing scenario only; no real market timing claim.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ],\n  \"timestamp\": \"yesterday\"\n}",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [
+      "timestamp"
+     ],
+     "type": "datetime_from_date_parsing",
+     "msg": "Input should be a valid datetime or date, input is too short"
+    }
+   ]
+  },
+  {
+   "id": "probe-order",
+   "label": "Missing, invalid and extra fields together",
+   "raw": "{\n  \"symbol\": \"ITC\",\n  \"action\": \"BUY\",\n  \"confidence\": -0.1,\n  \"current_price\": 420,\n  \"proposed_quantity\": 1,\n  \"estimated_order_value\": 420,\n  \"maximum_entry_price\": 424.2,\n  \"thesis\": \"MOCK demonstration: a small cash-equity allocation exercises the complete pipeline.\",\n  \"fundamental_view\": \"MOCK / INCOMPLETE\",\n  \"technical_view\": \"SIDEWAYS\",\n  \"news_view\": \"MOCK / NEUTRAL\",\n  \"quant_view\": \"Synthetic backtest; insufficient real-world evidence\",\n  \"portfolio_context\": \"Capital preservation with isolated strategy allocation\",\n  \"bull_case\": \"Illustrative improvement in demand and margins\",\n  \"base_case\": \"Maintain stable operating performance\",\n  \"bear_case\": \"Demand contraction and valuation compression\",\n  \"supporting_factors\": [\n    \"Controlled paper-only demonstration\"\n  ],\n  \"major_risks\": [\n    \"All inputs are synthetic\",\n    \"No return is guaranteed\"\n  ],\n  \"entry_conditions\": [\n    \"Every deterministic risk check passes\"\n  ],\n  \"invalidation_conditions\": [\n    \"Verified thesis deterioration\"\n  ],\n  \"expected_holding_period\": \"Review each monitoring cycle\",\n  \"source_ids\": [\n    \"mock-fundamental-ITC\"\n  ],\n  \"zzz\": 1,\n  \"aaa\": 2\n}",
+   "stage": "schema",
+   "errors": [
+    {
+     "loc": [
+      "zzz"
+     ],
+     "type": "extra_forbidden",
+     "msg": "Extra inputs are not permitted"
+    },
+    {
+     "loc": [
+      "aaa"
+     ],
+     "type": "extra_forbidden",
+     "msg": "Extra inputs are not permitted"
+    },
+    {
+     "loc": [
+      "cycle_id"
+     ],
+     "type": "missing",
+     "msg": "Field required"
+    },
+    {
+     "loc": [
+      "confidence"
+     ],
+     "type": "greater_than_equal",
+     "msg": "Input should be greater than or equal to 0"
+    },
+    {
+     "loc": [
+      "why_now"
+     ],
+     "type": "missing",
+     "msg": "Field required"
+    }
+   ]
+  }
+ ]
+}
