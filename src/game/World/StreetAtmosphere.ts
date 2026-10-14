@@ -7,7 +7,7 @@ import * as THREE from 'three';
  * renderer keeps the same number of program variants; per-material strength is a
  * uniform (people, vehicles and glass stay at zero). No textures are allocated.
  */
-const STRENGTH:Record<string,number>={plaster:1,stone:.85,paving:.75,asphalt:.8,solid:.55,wood:.5,metal:.4,fabric:.25,pool:0,glass:0,foliage:0};
+const STRENGTH:Record<string,number>={plaster:1,stone:.85,paving:.75,asphalt:.8,solid:.55,wood:.5,metal:.4,fabric:.25,glass:0,foliage:0};
 export const WEATHER_CACHE_KEY='street-weather-v2';
 
 export type AtmosphereUniforms={uSunDir:{value:THREE.Vector3};uSunHaze:{value:THREE.Color};uShelterMin:{value:THREE.Vector3};uShelterMax:{value:THREE.Vector3}};

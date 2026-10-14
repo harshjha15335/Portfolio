@@ -10,6 +10,7 @@ import {VEHICLE_BODIES,vehicleBodyParts} from '../src/game/World/AuthoredVehicle
 import {createTransitModel} from '../src/game/World/TransitModel';
 import {seededRandom} from '../src/game/World/StreetArchitecture';
 import {createAtmosphereUniforms,patchMaterial} from '../src/game/World/StreetAtmosphere';
+import {FacadeBatch} from '../src/game/World/architecture/BackdropFacades';
 
 beforeEach(()=>vi.stubGlobal('document',{createElement:()=>({getContext:()=>({fillRect(){},beginPath(){},moveTo(){},lineTo(){},stroke(){},ellipse(){},fill(){}})})}));
 afterEach(()=>vi.unstubAllGlobals());
@@ -19,6 +20,23 @@ const readFileSync=fs.readFileSync;
 const file=(path:string)=>new Uint8Array(readFileSync(new URL(`../public${path}`,import.meta.url)));
 const buffer=(bytes:Uint8Array)=>bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer;
 const sha=async(bytes:Uint8Array)=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',buffer(bytes)))).map(n=>n.toString(16).padStart(2,'0')).join('');
+
+describe('backdrop façade atlas',()=>{
+ it('is an original generated atlas, pinned by size and hash',async()=>{
+  const r=surfaces.files.find(f=>f.file==='facade-color.png')!;
+  expect(r).toMatchObject({surface:'facade',channel:'color',origin:'generated',license:'CC0-1.0',width:1024,height:1024,source:'scripts/generate-facade-atlas.py'});
+  const bytes=file(`/surfaces/${r.file}`);expect(bytes.length).toBe(r.bytes);expect(await sha(bytes)).toBe(r.sha256);
+ });
+ it('lays one quad per 3 m bay and storey, shopfronts only on the ground storey, coarse skyline rows four bays wide',()=>{
+  const batch=new FacadeBatch(),tint=new THREE.Color('#aa9987');
+  batch.add({frame:new THREE.Matrix4(),width:12,height:9,tint,seed:3});
+  expect(batch.quads).toBe(12);
+  const mesh=batch.build(new THREE.Texture(),'test')!,uv=mesh.geometry.attributes.uv,p=mesh.geometry.attributes.position;
+  for(let i=0;i<uv.count;i++){expect(uv.getX(i)).toBeGreaterThan(0);expect(uv.getX(i)).toBeLessThan(1);const shopRow=uv.getY(i)<.25;if(shopRow)expect(p.getY(i)).toBeLessThanOrEqual(3.0001);}
+  const coarse=new FacadeBatch();coarse.add({frame:new THREE.Matrix4(),width:25,height:19,tint,seed:4,coarse:true,ground:false});
+  expect(coarse.quads).toBe(2*6);
+ });
+});
 
 describe('scanned asphalt',()=>{
  it('replaces the generated asphalt maps one for one with a pinned CC0 scan',async()=>{

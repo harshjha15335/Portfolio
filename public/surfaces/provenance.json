@@ -2,7 +2,7 @@
   "author": "Mixed: see each file",
   "license": "CC0-1.0",
   "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-  "source": "scripts/generate-plaster-maps.py (generated), scripts/import-scanned-surfaces.py (scanned)",
+  "source": "scripts/generate-plaster-maps.py and scripts/generate-facade-atlas.py (generated), scripts/import-scanned-surfaces.py (scanned)",
   "modifications": "Asphalt maps are a CC0 photographic scan (Poly Haven, Asphalt 02), 512 px; plaster maps are an original generated cement-render study, 1024 px tiling every 2 m. See each file.",
   "files": [
     {
@@ -112,6 +112,22 @@
       "license": "CC0-1.0",
       "source": "scripts/generate-plaster-maps.py",
       "modifications": "Original painted cement render, tileable, 1024 px = 2 m of wall; no photographs or third-party input."
+    },
+    {
+      "file": "facade-color.png",
+      "sha256": "3b1a4c61a8e73bb60a79aeff20cdff798921675f1996d718d67492ad79beb182",
+      "bytes": 1276585,
+      "width": 1024,
+      "height": 1024,
+      "colorSpace": "sRGB",
+      "channel": "color",
+      "surface": "facade",
+      "origin": "generated",
+      "author": "Harsh Jha portfolio (original generator)",
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "source": "scripts/generate-facade-atlas.py",
+      "modifications": "Original Mumbai mid-rise fa\u00e7ade atlas, 4 x 4 cells of one 3 m bay each; no photographs or third-party input."
     }
   ]
 }

@@ -13,6 +13,7 @@ import {cableCoil,posters,roofTank,rubbish,twoWheeler,type TwoWheeler} from './a
 import {ParkedScooters,type ParkedScooter} from './architecture/ParkedScooters';
 import { pointedArchGeometry, heritageDomeGeometry } from './architecture/HeritageDetails';
 import { awningGeometry, patinaGeometry, runoffGeometry } from './architecture/StreetArt';
+import { FacadeBatch, faceFrame } from './architecture/BackdropFacades';
 import { createTransitModel, animateTransit } from './TransitModel';
 import { loadVehicleBody } from './AuthoredVehicles';
 import { StreetMaterials, type Surface } from './StreetMaterials';
@@ -60,13 +61,11 @@ export class MumbaiStreet {
   private motion: Array<(time: number) => void> = [];
   private surfaces = new StreetMaterials();
   private archGeometry = this.makeArch();
-  private distantWindow=new THREE.PlaneGeometry(1,1);
   private pointedArch=pointedArchGeometry();
   private dome=heritageDomeGeometry();
   private hippedRoof=new THREE.ConeGeometry(1,1,4);
   private torsoGeometry = new THREE.CylinderGeometry(.19, .145, 1, 10);
   private leafGeometry = this.makeLeafCluster();
-  private poolGeometry=new THREE.CircleGeometry(2.5,16);
   private contactGeometry = new THREE.CircleGeometry(1, 16);
   private contactMaterial = new THREE.MeshBasicMaterial({color: '#20272a', transparent:true, opacity:.16, depthWrite:false});
   private pedestrians: THREE.Group[] = [];
@@ -211,7 +210,7 @@ export class MumbaiStreet {
       this.box([.65, .013, .45], [side * 3.5, .012, z], '#282d34');
       for (let n = 0; n < 5; n++) this.box([.035, .015, .38], [side * 3.5 - .22 + n * .11, .02, z], '#53545a');
     }
-    const puddle = new THREE.Mesh(new THREE.CircleGeometry(1, 14), new THREE.MeshStandardMaterial({ color: '#736172', transparent: true, opacity: .5, roughness: .35 }));
+    const puddle = new THREE.Mesh(new THREE.CircleGeometry(1, 14), new THREE.MeshStandardMaterial({ color: '#33383a', transparent: true, opacity: .55, roughness: .1 }));
     puddle.rotation.x = -Math.PI / 2; puddle.scale.set(1.2, .38, 1); puddle.position.set(2.6, .014, -17); this.group.add(puddle);
   }
   private streetContinuation(){
@@ -221,41 +220,38 @@ export class MumbaiStreet {
     for(const z of [-67,-57])this.box([74,.05,2.0],[0,.014,z],'#afa392',false,this.group,false,false,'paving');
     // Three layers continue beyond both termini. No distant façade is a navigation surface.
     const blocks=[[-1.5,-112,18,13,12],[-26,-23,15,13,18],[26,-29,18,14,20],[-9,-75,13,10,13],[8,-72,12,8,11],[26,-71,17,12,16],[-34,-82,14,10,12],[-10,-99,18,11,14],[13,-104,22,12,16],[34,-112,26,14,17],[-36,-116,24,13,16],[-14,41,16,12,15],[15,44,19,13,15],[-36,58,23,14,17],[34,66,27,15,18],[-12,82,29,16,18],[12,108,32,17,20]];
+    // Façades are painted quads from one atlas (see BackdropFacades); only massing and rooflines are boxes.
+    const north=new FacadeBatch(),south=new FacadeBatch(),skyline=new FacadeBatch();
+    const facade=(batch:FacadeBatch,parent:THREE.Object3D,offset:THREE.Vector3,yaw:number,width:number,height:number,color:string,seed:number,coarse=false)=>batch.add({frame:faceFrame(this.group,parent,offset,yaw),width,height,tint:new THREE.Color(color),seed,coarse,ground:!coarse});
     for(const [i,[x,z,h,w,d]] of blocks.entries()){
       const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=(i>0&&i<5?-.22:i%3===0?.13:0);this.group.add(g);
-      const color=['#aa9987','#9b9e93','#b5aa98','#8e9994'][i%4];
+      const color=['#aa9987','#9b9e93','#b5aa98','#8e9994'][i%4],batch=z<-20?north:south;
       this.box([w,h,d],[0,h/2,0],color,false,g,false,true);
       const face=z<0?d/2:-d/2;
-      for(let y=2.0;y<h-1;y+=2.7){this.box([w+.12,.10,.24],[0,y-1.03,face],'#b6aa94',false,g,false,false,'stone');for(let col=0;col<4;col++){
-        const wx=(col-1.5)*w/4;const pane=this.shape(this.distantWindow,[1.0,1.42,1],[wx,y,face+(z<0?.06:-.06)],'#43575b',g,false,false,true,'glass');pane.rotation.y=z<0?0:Math.PI;
-        if((i+col+Math.floor(y))%5===0)this.box([.68,1.05,.012],[wx,y,face+(z<0?.06:-.06)],'#b6a074',false,g,true);
-      }}
+      facade(batch,g,new THREE.Vector3(0,0,face+(z<0?.03:-.03)),z<0?0:Math.PI,w,h,color,i+1);
       // Side elevation is visible along the bend; it must not read as another terminal slab.
-      if(i>0&&i<5)for(const side of [-1,1])for(let y=2.1;y<h-1;y+=2.7)for(let n=0;n<3;n++){
-        const pane=this.shape(this.distantWindow,[.95,1.35,1],[side*(w/2+.04),y,(n-1)*d*.28],'#43575b',g,false,false,true,'glass');pane.rotation.y=side*Math.PI/2;
-        this.box([.19,.09,1.12],[side*(w/2+.05),y-.72,(n-1)*d*.28],'#b6aa94',false,g,false,false,'stone');
-      }
+      if(i>0&&i<5)for(const side of [-1,1])facade(batch,g,new THREE.Vector3(side*(w/2+.03),0,0),side*Math.PI/2,d,h,color,i*7+side+20);
       this.box([w+.3,.26,d+.3],[0,h+.12,0],'#958c7c',false,g,false,false,'stone');
       if(i%3===0){this.box([w*.65,.6,.2],[0,h+.55,face],color,false,g,false,true);this.cylinder(.7,1.1,[w*.27,h+.75,0],'#49534e',g);}
-      if(i>0&&i<5){for(const wx of [-w*.3,0,w*.3]){this.box([2.1,2.3,.15],[wx,1.2,face],'#4c655e',false,g);this.box([2.2,.1,1.0],[wx,2.48,face+.25],'#9b8b70',false,g,false,false,'fabric');}}
+      if(i>0&&i<5)for(const wx of [-w*.3,0,w*.3])this.box([2.2,.1,1.0],[wx,2.48,face+.25],'#9b8b70',false,g,false,false,'fabric');
     }
     // Back-lot silhouettes close the narrow gaps between near façades without exposing a perimeter wall.
     for(const side of [-1,1])for(let i=0;i<4;i++){
-      const x=side*(25+(i%2)*2),z=5-i*22,h=11+(i%3)*3;
-      this.box([10,h,21],[x,h/2,z],i%2?'#a99d8a':'#87988f',false,this.group,false,true);
+      const x=side*(25+(i%2)*2),z=5-i*22,h=11+(i%3)*3,color=i%2?'#a99d8a':'#87988f';
+      this.box([10,h,21],[x,h/2,z],color,false,this.group,false,true);
       this.box([10.4,.22,21.4],[x,h+.12,z],'#958c7c',false,this.group,false,false,'stone');
-      for(let y=2.5;y<h;y+=2.8)for(let n=0;n<6;n++){const pane=this.shape(this.distantWindow,[.95,1.3,1],[x-side*5.05,y,z-8+n*3.1],'#526465',this.group,false,false,true,'glass');pane.rotation.y=-side*Math.PI/2;}
+      facade(z<-20?north:south,this.group,new THREE.Vector3(x-side*5.03,0,z),-side*Math.PI/2,21,h,color,40+i*2+(side>0?1:0));
     }
     // Fogged, overlapping skyline closes every azimuth instead of revealing a bare ground/sky seam.
     // It is static backdrop geometry outside the original safety envelope, not explorable districts.
     for(let i=0;i<32;i++){
       const angle=i*Math.PI/16,h=16+(i%5)*3,g=new THREE.Group();g.position.set(Math.sin(angle)*120,0,-22+Math.cos(angle)*120);g.rotation.y=angle;this.group.add(g);
-      this.box([25,h,12],[0,h/2,0],['#9ba69e','#afb1a2','#97a4a0'][i%3],false,g,false,true).castShadow=false;
+      const color=['#9ba69e','#afb1a2','#97a4a0'][i%3];
+      this.box([25,h,12],[0,h/2,0],color,false,g,false,true).castShadow=false;
       this.box([25.2,.25,12.2],[0,h+.13,0],'#8a938b',false,g,false,false,'stone').castShadow=false;
-      for(let row=0;row<3;row++)for(let col=0;col<4;col++){
-        const pane=this.shape(this.distantWindow,[1.2,1.5,1],[-8+col*5.3,3+row*4.1,-6.04],'#677c79',g,false,false,true,'glass');pane.rotation.y=Math.PI;pane.castShadow=false;
-      }
+      facade(skyline,g,new THREE.Vector3(0,0,-6.03),Math.PI,25,h,color,60+i,true);
     }
+    for(const [batch,name] of [[north,'backdrop-facades-north'],[south,'backdrop-facades-south'],[skyline,'backdrop-facades-skyline']] as Array<[FacadeBatch,string]>){const mesh=batch.build(this.surfaces.facade,name);if(mesh)this.group.add(mesh);}
     // Near corners carry a real roofline; sky/fog, rather than a flat cap, finishes the vista.
     for(const x of [-32,31])this.box([15,.07,7],[x,.02,24],'#afa392',false,this.group,false,false,'paving');
   }
@@ -476,11 +472,20 @@ export class MumbaiStreet {
     // Indo-Gothic composition: broad wings, central drum/dome, pointed galleries and corner turrets.
     // Mumbai CST-inspired massing; not a measured replica of the protected monument.
     this.box([23.5,7.0,6.0],[0,3.5,21.5],'#ae9776',true,this.group,false,false,'stone');
+    // Station carving rides the near props batch: same atlas and program, no extra draws.
+    const kit=this.props(17),face=Math.PI;
     for(const x of [-10,-8,-6,-4,0,4,6,8,10]){
-      // Concourse openings: the lit booking hall reads through the central and wing doors.
+      // Concourse openings: glazed doors in iron frames, the lit booking hall behind the central and wing doors.
       const lit=Math.abs(x)%4===0;
-      this.box([1.36,2.66,.08],[x,1.75,18.43],lit?'#9a6a3c':'#3d4743',false,this.group,lit);
-      if(lit){this.box([1.36,.75,.04],[x,2.7,18.38],'#5e4127',false,this.group,true);this.box([.06,2.5,.1],[x,1.75,18.37],'#3a3328');this.box([1.3,.06,.1],[x,2.05,18.37],'#3a3328');for(const dx of [-.42,.42])this.box([.26,.62,.05],[x+dx,.31,18.36],'#2d2a24');}
+      this.box([1.36,2.66,.08],[x,1.75,18.43],lit?'#6f563c':'#323b38',false,this.group,lit);
+      if(lit){this.box([1.1,.62,.04],[x,2.62,18.38],'#c99d62',false,this.group,true);for(const dx of [-.42,.42])this.box([.26,.62,.05],[x+dx,.31,18.36],'#2d2a24');}
+      // Iron glazing bars, a transom and cusped tracery in the arch head.
+      for(const dx of [-.33,0,.33])kit.box([.035,2.3,.03],[x+dx,1.6,18.35],'#2f2c26','metal','none');
+      for(const y of [1.0,2.28])kit.box([1.3,.04,.03],[x,y,18.35],'#2f2c26','metal','none');
+      kit.add(this.pointedArch,BakedKit.matrix([.42,.36,.15],[x,2.2,18.36],[0,face,0]),'#2f2c26','metal','none');
+      // Deep reveal: an inner order of the arch, set back and in shade, so each opening reads as cut into the wall.
+      kit.add(this.pointedArch,BakedKit.matrix([.86,.9,1],[x,1.2,18.47],[0,face,0]),'#9a8566','stone','none');
+      for(const dx of [-.7,.7])kit.box([.1,1.4,.2],[x+dx,.7,18.3],'#a48e6c','stone','none');
       this.shape(this.pointedArch,[1,1.02,1],[x,1.2,18.18],'#c9b492',this.group,false,false,true,'stone');
       this.box([1.19,1.42,.05],[x,4.9,18.4],'#4b5653');
       this.shape(this.pointedArch,[.91,.78,1],[x,4.23,18.14],'#c7b38f',this.group,false,false,true,'stone');
@@ -509,10 +514,15 @@ export class MumbaiStreet {
       this.shape(this.dome,[1.25,1.45,1.25],[x,9.8,20.1],'#7f897b',this.group,false,false,true,'metal');
       this.cylinder(.065,.6,[x,11.75,20.1],'#bba47b');
     }
-    // Human-scale plaque, not an oversized billboard carrying the building's identity.
-    const sign=this.sign(this.group,'CHHATRAPATI SHIVAJI TERMINUS','छत्रपती शिवाजी टर्मिनस',[0,3.73,18.02],3.4,'#4d5c50','#e4d4ae');sign.rotation.y=Math.PI;
+    // Name board over the main entrance, above the arrival canopy's sight line from the forecourt.
+    const sign=this.sign(this.group,'CHHATRAPATI SHIVAJI TERMINUS','छत्रपती शिवाजी टर्मिनस',[0,4.75,17.93],5.2,'#4d5c50','#e4d4ae');sign.rotation.y=Math.PI;
     for(const x of [-2.65,2.65]){
-      const clock=new THREE.Mesh(new THREE.CircleGeometry(.38,24),this.surfaces.get('#e4d7b9','stone'));clock.position.set(x,6.00,18.04);clock.rotation.y=Math.PI;this.group.add(clock);
+      // Dial, bronze bezel, hour marks and a pointed stone hood, all in the props batch.
+      kit.add(new THREE.CircleGeometry(.38,24),BakedKit.matrix([1,1,1],[x,6.0,18.04],[0,face,0]),'#e8dcc0','plaster','none');
+      kit.add(new THREE.RingGeometry(.38,.46,24),BakedKit.matrix([1,1,1],[x,6.0,18.03],[0,face,0]),'#6a5536','metal','none');
+      kit.add(new THREE.RingGeometry(.46,.53,24),BakedKit.matrix([1,1,1],[x,6.0,18.05],[0,face,0]),'#b09a74','stone','none');
+      for(let h=0;h<12;h++){const a=h*Math.PI/6,r=h%3?.33:.31;kit.add(new THREE.PlaneGeometry(1,1),BakedKit.matrix([h%3?.022:.04,h%3?.06:.1,1],[x-Math.sin(a)*r,6.0+Math.cos(a)*r,18.035],[0,face,-a]),'#2b2721','metal','none');}
+      kit.add(this.pointedArch,BakedKit.matrix([.72,.62,.6],[x,5.42,18.0],[0,face,0]),'#c3ad87','stone','none');
       // Fixed 17:40 scene time, seen from the forecourt (front face points toward -Z).
       const centre=new THREE.Vector3(x,6.0,17.99);
       for(const [angle,length] of [[40*Math.PI/30,.30],[((17+40/60)%12)*Math.PI/6,.22]])this.wire(centre,new THREE.Vector3(x-Math.sin(angle)*length,6+Math.cos(angle)*length,17.99),.012,'#514d42');
@@ -608,9 +618,6 @@ export class MumbaiStreet {
         const point = (t: number) => new THREE.Vector3(x + cable * .12, 6 - Math.sin(t * Math.PI) * .7, z - t * 13);
         this.wire(point(n / 8), point((n + 1) / 8), .018);
       }
-      // Warm pools are translucent original geometry; no costly light per lamp.
-      const pool = new THREE.Mesh(this.poolGeometry, new THREE.MeshBasicMaterial({ color: '#e8ae61', transparent: true, opacity: .07, depthWrite: false }));
-      pool.rotation.x = -Math.PI / 2; pool.position.set(x - side * 1.4, .013, z); pool.material.userData.surface='pool';this.group.add(pool);this.statics.push(pool);
       if (i < 3 && side === 1) { const light = new THREE.PointLight('#ffd198', 8, 7, 2);const shop=[[-7.25,1.9,4],[-7.25,1.9,-15],[7.25,1.9,-43.5]][i];light.position.set(...shop as Triple);this.group.add(light); }
       this.box([.5, .65, .5], [side * 6.2, .325, z - 4.5], '#465e56', true);
       this.cylinder(.23, .45, [side * 6.1, .23, z + 3], '#8c6551');

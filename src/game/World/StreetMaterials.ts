@@ -11,21 +11,23 @@ export class StreetMaterials {
   private materials = new Map<string, THREE.Material>();
   private maps = new Map<Surface, THREE.CanvasTexture>();
   private pbr = new Map<string,THREE.Texture>();
+  /** Backdrop façade atlas (generated, see scripts/generate-facade-atlas.py); a rough canvas stands in until it loads. */
+  readonly facade = this.facadePlaceholder();
   private abort = new AbortController();
   private disposed=false;
   readonly ready:Promise<void>;
   status='loading';
   constructor() {
-    for (const surface of ['plaster', 'stone', 'asphalt', 'paving', 'wood', 'fabric'] as Surface[]) this.maps.set(surface, this.texture(surface));
+    for (const surface of ['plaster', 'stone', 'asphalt', 'paving', 'wood'] as Surface[]) this.maps.set(surface, this.texture(surface));
     for(const surface of ['asphalt','plaster'] as Surface[])for(const channel of ['roughness','normal']){const pixel=channel==='normal'?[128,128,255,255]:[255,255,255,255];const c=document.createElement('canvas');c.width=c.height=1;const ctx=c.getContext('2d')!;ctx.fillStyle=`rgb(${pixel[0]},${pixel[1]},${pixel[2]})`;ctx.fillRect(0,0,1,1);const texture=new THREE.CanvasTexture(c);texture.needsUpdate=true;texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.copy(this.maps.get(surface)!.repeat);this.pbr.set(`${surface}:${channel}`,texture);}
     this.ready=typeof location==='undefined'?Promise.resolve():this.loadMaps().then(()=>{this.status='verified';}).catch(error=>{if(!this.disposed){this.status='fallback';console.warn('Verified surface maps unavailable; original textures retained',error);}});
   }
   get(color: string, surface: Surface = 'solid') {
     const key = `${surface}:${color}`;
     if (!this.materials.has(key)) {
-      // Painted and metal parts borrow the cement-render maps: grain and grime instead of flat colour,
-      // with the very same textures and shader program as the walls.
-      const maps:Surface=surface==='solid'||surface==='metal'?'plaster':surface;
+      // Painted, metal and fabric parts borrow the cement-render maps: grain and grime instead of flat colour,
+      // with the very same textures and shader program as the walls (and one texture fewer for fabric).
+      const maps:Surface=surface==='solid'||surface==='metal'||surface==='fabric'?'plaster':surface;
       const map = surface==='wood'?null:this.maps.get(maps) ?? null;
       const roughness = { plaster:.94, stone:.84, asphalt:.98, paving:.9, metal:.48, wood:.76, fabric:.96, glass:.22, solid:.8, glow:1, foliage:.87 }[surface];
       const material = surface === 'glow' ? new THREE.MeshBasicMaterial({color}) : new THREE.MeshStandardMaterial({color, map, roughness, metalness:surface === 'metal' ? .35 : 0, normalMap:this.pbr.get(`${maps}:normal`)??null, normalScale:new THREE.Vector2(surface==='asphalt'?.42:surface==='plaster'?.8:maps==='plaster'?.4:.22,surface==='asphalt'?.42:surface==='plaster'?.8:maps==='plaster'?.4:.22),roughnessMap:this.pbr.get(`${maps}:roughness`)??null,bumpMap:this.pbr.has(`${maps}:normal`)?null:map, bumpScale:surface === 'asphalt' ? .018 : surface === 'plaster' ? .008 : .012, envMapIntensity:surface === 'glass' ? .6 : .25});
@@ -46,11 +48,19 @@ export class StreetMaterials {
       const bytes=await response.arrayBuffer();if(bytes.byteLength!==record.bytes)throw new Error('Surface size mismatch');
       const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(n=>n.toString(16).padStart(2,'0')).join('');if(digest!==record.sha256)throw new Error('Surface integrity mismatch');
       const image=await createImageBitmap(new Blob([bytes],{type:'image/png'}),{imageOrientation:'flipY',colorSpaceConversion:'none'});if(this.disposed){image.close();return;}if(image.width!==record.width||image.height!==record.height){image.close();throw new Error('Unexpected surface dimensions');}
-      const texture=record.channel==='color'?this.maps.get(record.surface as Surface)!:this.pbr.get(`${record.surface}:${record.channel}`)!;
-      texture.image=image;texture.colorSpace=record.channel==='color'?THREE.SRGBColorSpace:THREE.NoColorSpace;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.magFilter=THREE.LinearFilter;texture.generateMipmaps=true;texture.anisotropy=4;texture.needsUpdate=true;
+      const texture=record.surface==='facade'?this.facade:record.channel==='color'?this.maps.get(record.surface as Surface)!:this.pbr.get(`${record.surface}:${record.channel}`)!;
+      // The placeholder was already uploaded at its small size; free it so the full image gets new storage.
+      texture.dispose();texture.image=image;texture.colorSpace=record.channel==='color'?THREE.SRGBColorSpace:THREE.NoColorSpace;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.magFilter=THREE.LinearFilter;texture.generateMipmaps=true;texture.anisotropy=4;texture.needsUpdate=true;
     }));
   }
-  dispose(){this.disposed=true;this.abort.abort();for(const texture of [...this.maps.values(),...this.pbr.values()]){texture.dispose();const image=texture.image as {close?:()=>void};image?.close?.();}this.materials.forEach(m=>m.dispose());}
+  dispose(){this.disposed=true;this.abort.abort();for(const texture of [...this.maps.values(),...this.pbr.values(),this.facade]){texture.dispose();const image=texture.image as {close?:()=>void};image?.close?.();}this.materials.forEach(m=>m.dispose());}
+  private facadePlaceholder(){
+    const c=document.createElement('canvas');c.width=c.height=64;const ctx=c.getContext('2d')!;
+    ctx.fillStyle='#cfcbc3';ctx.fillRect(0,0,64,64);ctx.fillStyle='#3a4448';
+    for(let row=0;row<3;row++)for(let col=0;col<4;col++)ctx.fillRect(col*16+5,row*16+4,6,6);
+    ctx.fillStyle='#5f6e6a';for(let col=0;col<4;col++)ctx.fillRect(col*16+2,52,12,12);
+    const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=4;return t;
+  }
   private texture(surface: Surface) {
     const c = document.createElement('canvas'); c.width = c.height = 256; const ctx = c.getContext('2d')!;
     const random = seededRandom(`material:${surface}`);
@@ -67,8 +77,8 @@ export class StreetMaterials {
       // Thin meandering cracks, drawn as tiny connected strips, not loud noise.
       for(let i=0;i<3;i++) { let x=random()*200+20; for(let y=20;y<230;y+=3){x+=random()*4-2;ctx.fillStyle='#35393d45';ctx.fillRect(x,y,.8,4);} }
     }
-    if(surface==='wood'||surface==='fabric') {
-      for(let i=0;i<256;i+=surface==='wood'?3:2){ctx.fillStyle=surface==='wood'?'#66554412':'#6655440b';ctx.fillRect(i,0,1,256);}
+    if(surface==='wood') {
+      for(let i=0;i<256;i+=3){ctx.fillStyle='#66554412';ctx.fillRect(i,0,1,256);}
     }
     const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=4;if(surface==='asphalt')t.repeat.set(4,35);else if(surface==='paving')t.repeat.set(2,30);else if(surface==='plaster')t.repeat.set(3,3);return t;
   }

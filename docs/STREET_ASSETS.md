@@ -114,6 +114,37 @@ High software benchmark (`BENCHMARK_PRESET=high`, same settings as above), peak 
 
 **Limits:** the extra people are the same procedural figures as the rest of the street; the Rocketbox cast is on its own branch. The road is one short loop, so "busy" here means more cars on it, not more lanes or streets. That belongs to the city-expansion work.
 
+### Audit fixes for CST/Fort (14 October 2026)
+
+The city audit flagged three CST/Fort problems on this branch. All three are fixed:
+
+- **Orange blobs on the road (High):** these were the street lamps' light pools. They were translucent orange discs on the road, faint on Medium but flat orange patches on High. A lamp pool also makes no sense at golden hour, so they are removed (−2 draws, −320 triangles).
+- **Plain boxes at the street ends:** the buildings closing both ends of Fort Road, the back lots and the skyline ring had flat dark window planes. They now carry painted façades from one original atlas (`scripts/generate-facade-atlas.py`, 4 × 4 cells of one 3 m bay each). The bays are grilled windows, AC units, balconies with plants or laundry, blue monsoon tarpaulins, louvres, enclosed balconies, and four shopfronts with signboards and shutters. Each building keeps to a small set of bays, and its tint rides in vertex colours. All of it is three draws (north, south, skyline) on the shared baked-architecture program. It replaces the window planes and storey bands, so the static batch lost about 4,000 triangles.
+- **Flat station front:** the name board is larger and sits above the arrival canopy's sight line, so it reads from the forecourt. The clocks have a bronze bezel, a stone ring, hour marks and a pointed hood. The arches have a set-back inner order, side reveals, iron glazing bars, a transom and tracery, and the lit booking hall is dimmer behind them. All of this rides the existing near props batch, so it adds no draws, textures or programs.
+- **Also fixed:** the junction puddle is dark and wet instead of mauve.
+
+**Correction: wall and road maps were never displayed on this branch.** The surface maps load after first render, into textures already uploaded at their small placeholder size. WebGL rejected the larger images ("offset overflows texture dimensions"), so the 1,024 px plaster maps and the scanned asphalt were never on screen. The earlier façade comparisons show only the shader ageing. Each texture is now disposed before its image is swapped (the same fix as PR #5), so the maps appear for the first time in this pass.
+
+**Budget:** the façade atlas is one new texture. To keep Medium at 32, fabric now borrows the cement-render maps like painted and metal parts, which frees its own canvas texture and also drops one program (26 → 25).
+
+| Review pose (Medium) | Before | After |
+| --- | --- | --- |
+| spawn | 80 / 218,091 | 81 / 216,313 |
+| junction | 71 / 204,718 | 72 / 202,940 |
+| return | 103 / 213,657 | 102 / 209,747 |
+| station front | 48 / 139,486 | 47 / 136,592 |
+| north end | 11 / 86,488 | 11 / 81,336 |
+
+Textures peak at 32 and programs at 25. On High: spawn 254 / 549,277, junction 214 / 499,447, return 274 / 525,685, with textures at most 63 and programs 52.
+
+![High road before and after](screenshots/street-assets/compare-audit-high-road.jpg)
+![North end of Fort Road before and after](screenshots/street-assets/compare-audit-street-end.jpg)
+![Behind the station before and after](screenshots/street-assets/compare-audit-south-look.jpg)
+![Station front before and after](screenshots/street-assets/compare-audit-station-front.jpg)
+![Taxi rank before and after](screenshots/street-assets/compare-audit-taxi-rank.jpg)
+
+**Limits:** the façades are flat painted quads. They read well from the street but have no depth up close, and the skyline repeats rows. They are generated artwork, not photographs.
+
 ## Performance
 
 The static review budget is 110 draws, 230,000 triangles, 32 textures and 26 programs. **No budget was raised.**
@@ -179,7 +210,7 @@ Download size: the scooter GLB is 510 KB. The asphalt maps grew from 260 KB to 1
 ## Tests and build
 
 - `npx tsc --noEmit`: clean.
-- `npx vitest run`: 99 pass (95 before the façade pass; it added the wall-mapping and run-off tests, and the High pass added dense-traffic and dense-street tests). The new tests in `tests/street-assets.test.ts` cover:
+- `npx vitest run`: 102 pass (95 before the façade pass; it added the wall-mapping and run-off tests, the High pass added dense-traffic and dense-street tests, and the audit fixes added the façade atlas, façade batch and backdrop tests). The new tests in `tests/street-assets.test.ts` cover:
   - scan pins and licences;
   - the world-UV patch keeping one program key;
   - the scooter's hash, credit and lack of textures;
@@ -194,6 +225,7 @@ Download size: the scooter GLB is 510 KB. The asphalt maps grew from 260 KB to 1
 ```sh
 python3 scripts/import-scanned-surfaces.py                        # asphalt scan (pinned in scripts/scanned-surfaces.lock.json)
 python3 scripts/generate-plaster-maps.py                          # original 1,024 px cement-render maps (numpy, Pillow)
+python3 scripts/generate-facade-atlas.py                          # original 1,024 px backdrop façade atlas (numpy, Pillow)
 python3.11 -m pip install bpy==4.2.0 numpy                         # Blender as a Python module
 python3.11 scripts/vehicles/build_scooter.py /tmp/scooter          # pinned source → scooter.glb (scripts/vehicles/scooter.json)
 node scripts/vehicles/import-scooter.mjs /tmp/scooter              # admit into public/models/vehicles with provenance
