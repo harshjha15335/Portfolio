@@ -3,12 +3,13 @@ import { districts, journey, type District } from '../data/city';
 import { experience, achievements } from '../data/experience';
 import { projects } from '../data/projects';
 import { portfolio } from '../data/portfolio';
-import { skills } from '../data/skills';
 import {ResearchExhibition} from './ResearchExhibition';
 import { AstflowBlocked, FLAGSHIP_LABS } from './FlagshipLab';
 import { Modal } from './Modal';
 import { streetStops, zoneAt } from '../game/World/streetLayout';
-import type { Point, RideStatus, TransitKind } from '../game/World/transit';
+import type { Point, TransitKind } from '../game/World/transit';
+import { SkillShops } from './AndheriShops';
+export { RideMeter } from './RideMeter';
 
 export function CityMap({ position, canRide, onTravel, onOpen, onRide, onClose }: {
   canRide: boolean;
@@ -29,16 +30,6 @@ export function CityMap({ position, canRide, onTravel, onOpen, onRide, onClose }
   </Modal>;
 }
 
-export function RideMeter({ ride, onChoose, onSkip, onExit, onOpen }: { ride: RideStatus; onChoose: (id: string) => void; onSkip: () => void; onExit: () => void; onOpen: (id: string) => void }) {
-  if (ride.phase === 'idle') return null;
-  const destination = districts.find(d => d.id === ride.destination);
-  return <section className="ride-meter" aria-label="Portfolio Meter">
-    <div className="meter-top"><span>{ride.kind === 'auto' ? 'AUTO RICKSHAW' : 'KAALI-PEELI'} / STORY FARE</span><button aria-label="Exit ride" onClick={onExit}>✕</button></div>
-    <div className="meter-face"><span className="caption">PORTFOLIO METER</span><strong data-testid="ride-fare">₹{ride.fare.toFixed(2)}</strong><span>FOR THE JOURNEY · NO PAYMENT</span></div>
-    {ride.phase === 'hailing' ? <p role="status">Your driver is pulling over. One moment…</p> : ride.phase === 'boarding' ? <><p>Your ride is ready.<br /><strong>Choose your next stop.</strong></p><label className="ride-destination">DESTINATION<select aria-label="Ride destination" value="" onChange={e => onChoose(e.target.value)}><option value="" disabled>Where shall we go?</option>{districts.filter(d => streetStops[d.id]).map(d => <option key={d.id} value={d.id}>{d.title}</option>)}</select></label></> : <><p className="ride-destination-name">{destination?.title}</p><div className="meter-readings"><span>{Math.round(ride.distance)} m</span><span>{Math.floor(ride.elapsed)} sec</span></div><progress aria-label="Ride progress" value={ride.progress} max={1} />{ride.phase === 'riding' ? <button className="primary-button" onClick={onSkip}>SKIP TO ARRIVAL →</button> : <><p role="status">Arrived. Your story continues here.</p><button className="primary-button" onClick={() => { onExit(); if (destination) onOpen(destination.id); }}>STEP OUT & MEET THE GUIDE →</button></>}</>}
-  </section>;
-}
-
 export function DistrictExperience({ district: d, reduced, resumeAvailable, onClose, onProject, onQuick, onContact, onDestination }: {
   district: District; reduced: boolean; resumeAvailable: boolean; onClose: () => void;
   onProject: (id: string) => void; onQuick: () => void; onContact: () => void; onDestination: (id: string) => void;
@@ -51,7 +42,7 @@ export function DistrictExperience({ district: d, reduced, resumeAvailable, onCl
       {d.id === 'cst' && <><h3>Welcome to Harsh’s city.</h3><p>{portfolio.tagline} {portfolio.education}. Expected graduation: {portfolio.graduation}.</p><div className="district-stop-list">{districts.filter(item => item.id !== 'cst').map(item => <button key={item.id} onClick={() => onDestination(item.id)}>{item.title}<span>↗</span></button>)}</div></>}
       {d.id === 'fort' && <><ResearchExhibition/><h3>Scientific Python, developed upstream.</h3><p>{experience[0].description}</p><ul>{experience[0].highlights.map(h => <li key={h}>{h}</li>)}</ul><div className="district-metrics">{projects[0].metrics.map(m => <a key={m.label} href={m.source} target="_blank" rel="noreferrer"><strong>{m.value}</strong><span>{m.label} ↗</span></a>)}</div><button className="primary-button" onClick={() => onProject('ffprime')}>OPEN FFPRIME CASE STUDY ↗</button></>}
       {d.id === 'bkc' && <><span className="eyebrow">{experience[1].period} / {experience[1].organization}</span><h3>{experience[1].title}</h3><p>{experience[1].description}</p><ul>{experience[1].highlights.map(h => <li key={h}>{h}</li>)}</ul><div className="system-route"><span>POLICY</span><b>→</b><span>OAUTH2</span><b>→</b><span>SECURE ACCESS</span></div><a className="text-button" href={experience[1].source} target="_blank" rel="noreferrer">RÉSUMÉ SOURCE ↗</a></>}
-      {d.id === 'andheri' && <SkillBazaar onProject={onProject} />}
+      {d.id === 'andheri' && <SkillShops onProject={onProject} />}
       {d.id === 'powai' && <><h3>Six workplaces, one per project.</h3><p>Each facility opens a working demo that runs the project's own logic, ported from a pinned commit, followed by the full case study and source.</p><div className="district-projects">{projects.filter(p => p.id !== 'ffprime').map(p => <article key={p.id}><span className="eyebrow">{FLAGSHIP_LABS[p.id]?.setting ?? p.category}</span><h3>{FLAGSHIP_LABS[p.id]?.place ?? `${p.title} Recovery Control Tower`}</h3><p>{p.shortDescription}</p><p className="architecture-strip">{p.architecture.slice(0, 4).join(' → ')}</p><button className="primary-button" onClick={() => onProject(p.id)}>{FLAGSHIP_LABS[p.id] ? 'OPEN THE WORKING DEMO ↗' : 'EXPLORE THE CASE STUDY ↗'}</button></article>)}</div><AstflowBlocked /></>}
       {d.id === 'dadar' && <div className="journey-platforms">{journey.map((stop, i) => <article key={stop.title}><b>{String(i + 1).padStart(2, '0')}</b><div><span className="eyebrow">{stop.date}</span><h3>{stop.title}</h3><p>{stop.detail}</p></div></article>)}</div>}
       {d.id === 'worli' && <><h3>Numbers with their receipts.</h3><p>Résumé claims, upstream checks, and repository audits stay distinct. Seeded demos are never presented as production outcomes.</p><div className="signal-evidence">{achievements.map(a => <article key={a.title}><h3>{a.title}</h3><p>{a.detail}</p><a href={a.source} target="_blank" rel="noreferrer">SOURCE ↗</a></article>)}</div><div className="district-metrics">{[projects[0], projects[1]].flatMap(p => p.metrics.filter(m => m.source).map(m => <a key={p.id + m.label} href={m.source} target="_blank" rel="noreferrer"><strong>{m.value}</strong><span>{p.title} / {m.label} ↗</span></a>))}</div></>}
@@ -59,12 +50,6 @@ export function DistrictExperience({ district: d, reduced, resumeAvailable, onCl
       {d.id === 'filmcity' && <Theatre reduced={reduced} onContact={onContact} />}
     </div>}
   </Modal>;
-}
-
-function SkillBazaar({ onProject }: { onProject: (id: string) => void }) {
-  const [active, setActive] = useState('Python');
-  const matches = projects.filter(p => p.skills.some(s => s.toLowerCase() === active.toLowerCase()));
-  return <><h3>Pick a skill. Follow the evidence.</h3><div className="bazaar-stalls">{skills.map(group => <section key={group.title}><span className="eyebrow">{group.title}</span><div>{group.items.map(skill => <button key={skill} aria-pressed={active === skill} onClick={() => setActive(skill)}>{skill}</button>)}</div></section>)}</div><section className="bazaar-evidence" aria-live="polite"><h3>{active} / the receipts</h3>{matches.length ? matches.map(p => <button key={p.id} onClick={() => onProject(p.id)}>{p.title}<small>{p.shortDescription}</small><span>OPEN CASE STUDY ↗</span></button>) : <><p>Listed in résumé / experience. No dedicated project evidence is claimed here.</p><a href={portfolio.resume} target="_blank" rel="noreferrer">INSPECT THE RÉSUMÉ ↗</a></>}</section></>;
 }
 
 const scenes = [

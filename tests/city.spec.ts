@@ -44,8 +44,9 @@ test('every stop has an accessible guide and meaningful sourced content', async 
 test('skill evidence opens the existing case study and theatre supports scene controls', async ({ page }) => {
   await page.goto('/#/place/andheri');
   await page.getByRole('button', { name: 'SHOW ME AROUND' }).click();
+  await page.getByRole('navigation', { name: 'Shops' }).getByRole('button', { name: /Frontend Studio/ }).click();
   await page.getByRole('button', { name: 'React', exact: true }).click();
-  await page.locator('.bazaar-evidence').getByRole('button', { name: /NORTHSTAR/ }).click();
+  await page.getByRole('article', { name: 'React evidence' }).getByRole('button', { name: /NORTHSTAR/ }).click();
   await expect(page.getByRole('dialog', { name: 'CASE STUDY / NORTHSTAR' })).toBeVisible();
   await page.goto('/#/place/filmcity');
   await page.getByRole('button', { name: 'TAKE A SEAT' }).click();
@@ -59,6 +60,37 @@ test('skill evidence opens the existing case study and theatre supports scene co
   await expect(theatre).toContainText('Let’s build something.');
   await theatre.getByRole('button', { name: 'GET IN TOUCH' }).click();
   await expect(page.getByRole('dialog', { name: 'CONTACT', exact: true })).toBeVisible();
+});
+
+test('Andheri shops show evidence and run each bench', async ({ page }) => {
+  await page.goto('/#/place/andheri');
+  await page.getByRole('button', { name: 'SHOW ME AROUND' }).click();
+  const shops = page.getByRole('region', { name: 'Andheri Tech Bazaar shops' });
+  const sign = (name: RegExp) => shops.getByRole('navigation', { name: 'Shops' }).getByRole('button', { name });
+  // Language Lane: résumé-only skills say so; the Python bench refuses a non-traceless tensor.
+  await shops.getByRole('button', { name: 'Java RÉSUMÉ ONLY' }).click();
+  await expect(shops.getByRole('article', { name: 'Java evidence' })).toContainText('No public repository uses it');
+  await shops.getByLabel('Θzz').fill('0.9');
+  await expect(shops.getByRole('alert')).toContainText('must be traceless');
+  // Frontend Studio: the real RideMeter fires its callbacks.
+  await sign(/Frontend Studio/).click();
+  await shops.getByRole('button', { name: 'SKIP TO ARRIVAL' }).click();
+  await expect(shops.getByRole('list', { name: 'Callbacks fired' })).toContainText('onSkip()');
+  // Backend Workshop: a missing token stops at authenticate with the service's real message.
+  await sign(/Backend Workshop/).click();
+  await shops.locator('label', { hasText: /^Authorization/ }).locator('select').selectOption('missing');
+  await expect(shops.getByRole('status')).toContainText('HTTP 401');
+  await expect(shops.locator('.hop-list li.stop')).toContainText('authenticate');
+  // DevOps Garage: failing a backend step blocks RootCause's gated deploy.
+  await sign(/DevOps Garage/).click();
+  await shops.getByRole('button', { name: /backend: pytest -q \(pass\)/ }).click();
+  await expect(shops.getByRole('status')).toContainText('Deploy Azure does not run');
+  // AI Integration Lab: an invented field is rejected by the schema.
+  await sign(/AI Integration Lab/).click();
+  await expect(shops.getByRole('status')).toContainText('Rejected by the schema');
+  await expect(shops.locator('.lab-table')).toContainText('target_price');
+  await shops.locator('label', { hasText: /^Model reply preset/ }).locator('select').selectOption('buy');
+  await expect(shops.getByRole('status')).toContainText('Accepted as a BUY proposal');
 });
 
 test('reduced-motion transport arrives directly and can be reboarded', async ({ page }) => {

@@ -102,3 +102,67 @@ Breaking tracelessness reproduces FFprime's own `ValueError` text.
 
 - Interaction C (researcher NPC with evidence-grounded dialogue) still uses the existing district guide text.
 - The lab, simulation room and archive interiors are not built.
+
+## 3. Andheri Tech Bazaar skill shops (brief §8)
+
+### Implemented and tested
+
+The old skill stalls (a chip list that filtered case studies) are replaced by the brief's five shops. Each skill opens
+**what it does → where Harsh used it → demonstration → evidence**, with every "where" link pinned to a commit. Each
+shop has a bench underneath that runs real logic from those repositories:
+
+| Shop | Bench | Checked against |
+|---|---|---|
+| A. Language Lane | Verbatim excerpts in Python (FFprime `spherical.py`), JavaScript (MoneyMetrics `dashboard.js`) and TypeScript (Meeting Intelligence `meeting.validator.ts`), each beside a live run of the same logic. | Existing ports (`stone.ts`, `moneymetrics.ts`) and the recorded Zod results below. |
+| B. Frontend Studio | This site's own `RideMeter` component on a bench with its `RideStatus` props exposed and its callbacks logged. | The component is the one used during rides (moved to `src/ui/RideMeter.tsx`, unchanged). |
+| C. Backend Workshop | `POST /api/meetings` through Meeting Intelligence hop by hop (helmet → cors → `express.json` → trace id → logger → `authenticate` → `validate(createMeetingSchema)` → controller → service → repository → envelope), with the status, `x-trace-id` and body that come back. | `scripts/projects/meeting_request_reference.mjs` bundles the repository's own middleware, validator, controller, service and error modules with esbuild, runs them on the locked Express 4.22.2 / Zod 3.25.76 / jsonwebtoken 9.0.3 / body-parser 1.20.5, and records 14 real HTTP responses. Only config, the logger and the Prisma repository are stubbed. |
+| D. DevOps Garage | RootCause CI + gated Azure deploy, RepoLens CI, Meeting Intelligence's multi-stage Dockerfile and this portfolio's own checks, step for step. Clicking a step makes it fail and shows what is skipped and whether the deploy would run. | GitHub Actions defaults the files rely on (steps stop at the first failure; jobs without `needs` are independent; `workflow_run` + `conclusion == 'success'`). Nothing is executed. |
+| E. AI Integration Lab | Paste a model reply and see NORTHSTAR's guard (fence cleanup → `TradeProposal` schema → `DecisionAgent` checks) next to Meeting Intelligence's (`JSON.parse` → `validateAnalysis` repairs). | `scripts/projects/northstar_guard_reference.py` runs 29 replies through NORTHSTAR's real Pydantic model and `DecisionAgent` (loaded from the checkout unchanged); the port matches every outcome, field location, error type and message. |
+
+Code: `src/data/shops.ts`, `src/ui/AndheriShops.tsx`, `src/styles/andheri.css`, `src/projects/{aiguard,meetingRequest,pipelines,excerpts}.ts`,
+fixtures in `src/projects/data/{northstar-guard,meeting-requests}.json`.
+
+Tests: `tests/andheri.test.ts` (52 tests: every recorded NORTHSTAR and HTTP case, the pipeline rules, and the shop data);
+`tests/city.spec.ts` › "Andheri shops show evidence and run each bench" drives all five benches in Chromium, and the
+existing skill-evidence test now goes through Frontend Studio.
+
+### Accuracy notes found while building
+
+- **Java and C++** are on the résumé but in no public repository. Their cards say so and show no demonstration.
+  **SQL** evidence is a Prisma-generated PostgreSQL migration; no hand-written queries were found, and the card says so.
+- **Meeting Intelligence, missing token**: the service answers `Invalid or expired token`, not its intended
+  `Missing or invalid authorization header`. `AppError`'s constructor resets the prototype to `AppError.prototype`,
+  so `instanceof UnauthorizedError` in `authenticate()` never matches. Recorded from the real code; the exhibit shows it.
+- **Meeting Intelligence, malformed JSON**: `express.json()` runs before the trace-id middleware and `errorHandler` only
+  knows `AppError` and `ZodError`, so a bad body gets `500 INTERNAL_ERROR` with no `traceId`.
+- **Meeting Intelligence, bad date**: Zod reports `Invalid date`; the schema's `invalid_type_error: 'Invalid meeting date'`
+  never fires after `z.coerce.date()`. The Powai Meeting lab's port (`src/projects/meeting.ts`) used the wrong message and
+  is corrected here.
+- **Meeting Intelligence citations**: the "every item cites a real timestamp" rule lives in the prompt and
+  `AI_APPROACH.md`. `validateAnalysis` only fills missing arrays with `[]`; no code rejects an uncited item.
+- **RootCause**: its README calls it the "Role 3" implementation for a team brief, and its deploy needs repository
+  variables the repository can't show, so the exhibit doesn't claim it is deployed. Likewise, the portfolio has both
+  Vercel and Netlify configs and no CI; the exhibit doesn't say which serves the site.
+- **SENTINEL** is not used as evidence: its only commit is authored by "Claude", so it can't be attributed cleanly.
+
+### Screenshots (Chromium, 1440 px; phone at 390 px)
+
+- [Language Lane, Python bench](screenshots/andheri/andheri-language.png) ·
+  [TypeScript bench, Zod refusing a date](screenshots/andheri/andheri-language-typescript.png)
+- [Frontend Studio, RideMeter on the bench](screenshots/andheri/andheri-frontend.png)
+- [Backend Workshop, missing token](screenshots/andheri/andheri-backend.png)
+- [DevOps Garage, failing pytest blocks the Azure deploy](screenshots/andheri/andheri-devops.png)
+- [AI Integration Lab, invented field rejected](screenshots/andheri/andheri-ai.png) · [at 390 px](screenshots/andheri/andheri-ai-390.png)
+
+### Commands run
+
+- `npx vitest run`: 191 passed (23 files). `npx tsc --noEmit`: clean. `npm run build`: succeeds.
+- Playwright (cloud config): 14 quick-view, case-study, city-panel, Powai, Fort, Andheri and phone tests pass.
+  "reduced-motion transport arrives directly and can be reboarded" fails here, and fails the same way on the
+  unchanged base branch (the world loader is still up when the 12 s expect timeout ends under SwiftShader), so it
+  is environmental, not this change. `RideMeter` moved to its own file unchanged; the Frontend Studio test renders it.
+
+### Not yet done for Andheri
+
+- The shops are panels opened from the district guide. Walk-in shop interiors and shopkeeper NPCs (brief §8 physical
+  settings) are not built.

@@ -24,7 +24,8 @@ export function validateMeeting(input: MeetingInput) {
   else if (input.title.length > 500) details.push({ field: 'title', message: 'String must contain at most 500 character(s)' });
   if (input.participants.length < 1) details.push({ field: 'participants', message: 'At least one participant is required' });
   input.participants.forEach((p, i) => { if (!p) details.push({ field: `participants.${i}`, message: 'String must contain at least 1 character(s)' }); });
-  if (Number.isNaN(Date.parse(input.meetingDate))) details.push({ field: 'meetingDate', message: 'Invalid meeting date' });
+  // z.coerce.date() reports Zod's own "Invalid date"; the schema's invalid_type_error never fires after coercion.
+  if (Number.isNaN(Date.parse(input.meetingDate))) details.push({ field: 'meetingDate', message: 'Invalid date' });
   if (input.transcript.length < 1) details.push({ field: 'transcript', message: 'Transcript must have at least one entry' });
   input.transcript.forEach((e, i) => {
     if (!e.timestamp) details.push({ field: `transcript.${i}.timestamp`, message: 'Timestamp is required' });
