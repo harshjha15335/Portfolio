@@ -280,7 +280,7 @@ const filmcity: DistrictSpec = {
     for (let i = 0; i < 6; i++) hill(kit, [(i % 2 ? -1 : 1) * 78, -3, -125 + i * 28], 34 + i * 3, 30, 20 + (i % 3) * 6, 10 + i * 2.3, 12, 32);
     hoarding(c, -10, 6, 4, Math.PI / 2, 7.5, filmPoster('#4a1f22', 'NINE SCENES', 'one engineering story · you control the pace', '#f0b03a'), 'AD');
     // Half up on the kerb, the way Mumbai parks, so the traffic lanes stay clear.
-    d.parked('suv', -3.8, -24, 0, false); d.parked('tempo', 3.9, -34, Math.PI, false);
+    d.parked('suv', -4.1, -24, 0, false); d.parked('tempo', 4.1, -34, Math.PI, false);
     d.walkers(walkersOf(['worker', 'shirt', 'sari', 'kurta', 'worker', 'salwar', 'office', 'worker'], 14), [4.8, 5.5, -4.8, -5.4]);
     for (const [x, z, o, act] of [[-14.2, -21.6, 'sari', 'wave'], [-14.6, -22.8, 'kurta', 'talk'], [-9.2, -25.75, 'shirt', 'sit'], [-8.6, -20.8, 'worker', 'stand'], [-10.4, -27.8, 'worker', 'stand'], [4.4, -10.5, 'salwar', 'stand'], [4.9, -11.4, 'shirt', 'talk']] as Array<[number, number, Outfit, 'wave' | 'talk' | 'stand' | 'sit']>) d.crowd.idle(o, [x, .03, z], x < -12 ? -Math.PI / 2 : x < 0 ? Math.PI / 2 : -Math.PI / 2, act);
   },
