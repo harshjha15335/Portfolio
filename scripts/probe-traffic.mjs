@@ -25,10 +25,11 @@ try{
    if(district)district.crowd.group.traverse(o=>skip.add(o));else{for(const v of [...w.street.trafficVehicles,...w.street.parkedVehicles])v.traverse(o=>skip.add(o));}
    const targets=[];root.traverse(o=>{if(o.isMesh&&!o.isSkinnedMesh&&!skip.has(o)&&o.visible!==false&&!o.material?.transparent)targets.push(o);});
    root.updateMatrixWorld(true);console.log('probe',zone,'targets',targets.length);
-   const ray=new THREE.Raycaster(),down=new THREE.Vector3(0,-1,0);ray.far=4.6;
+   const ray=new THREE.Raycaster(),down=new THREE.Vector3(0,-1,0);ray.far=4.5;
    const WIDTH={bus:2.5,truck:2.4,tempo:1.9,sedan:1.75,hatch:1.7,suv:1.85,taxi:1.6,auto:1.4,bike:.75,cycle:.6,cart:1.3,scooter:.7};
    const footprint=(x,z,yaw,length,width)=>{const f=[-Math.sin(yaw),-Math.cos(yaw)],r=[-f[1],f[0]],pts=[];for(const a of [-.5,0,.5])for(const b of [-.5,0,.5])pts.push([x+f[0]*a*length+r[0]*b*width,z+f[1]*a*length+r[1]*b*width]);return pts;};
-   const blocked=(x,z)=>{ray.set(new THREE.Vector3(x,4.5,z),down);const hit=ray.intersectObjects(targets,false)[0];return hit&&hit.point.y>.1?{y:+hit.point.y.toFixed(2),name:hit.object.name||hit.object.parent?.name||'?'}:null;};
+   // Rays start at the vehicle's roof, so canopies and wires it passes under do not count.
+   const blocked=(x,z,top)=>{ray.set(new THREE.Vector3(x,top,z),down);const hit=ray.intersectObjects(targets,false)[0];return hit&&hit.point.y>.1?{y:+hit.point.y.toFixed(2),name:hit.object.name||hit.object.parent?.name||'?'}:null;};
    const issues={offroad:new Map(),overlap:new Map(),jump:0,samples:0};
    const view=new THREE.Vector3(ox+40,1.6,200);// the visitor stays out of the way
    
@@ -47,7 +48,7 @@ try{
     for(const v of now){
      // Only the stretch a visitor can see matters: the walkable street and its ends.
      if(v.z>40||v.z<-120)continue;
-     for(const [x,z] of footprint(v.x,v.z,v.yaw,v.length*.92,v.width*.92)){const b=blocked(x,z);if(b){const key=`${v.kind} at z≈${Math.round(v.z/5)*5} x≈${(v.x-ox).toFixed(1)} over ${b.name} (y ${b.y})`;issues.offroad.set(key,(issues.offroad.get(key)??0)+1);break;}}
+     for(const [x,z] of footprint(v.x,v.z,v.yaw,v.length*.92,v.width*.92)){const b=blocked(x,z,v.kind==='bus'?4.4:2.1);if(b){const key=`${v.kind} at z≈${Math.round(v.z/5)*5} x≈${(v.x-ox).toFixed(1)} over ${b.name} (y ${b.y})`;issues.offroad.set(key,(issues.offroad.get(key)??0)+1);break;}}
     }
     for(let i=0;i<now.length;i++)for(let j=i+1;j<now.length;j++){const a=now[i],b=now[j];if(Math.hypot(a.x-b.x,a.z-b.z)>(a.length+b.length)/2)continue;
      // Separating-axis test on the two footprints.

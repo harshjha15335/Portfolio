@@ -275,6 +275,22 @@ export class LaneTraffic {
     }
   }
   dispose() { for (const a of this.agents) { a.rider?.dispose(); a.rider = null; } }
+  /**
+   * Make room for a vehicle pulling in at `points` (local, e.g. a hailed cab's pickup route): traffic within
+   * `radius` of the route leaves the road and re-enters at its lane start when clear. Loop lanes keep theirs.
+   */
+  clearAround(points: Array<{ x: number; z: number }>, radius = 3) {
+    for (const a of this.agents) {
+      if (!a.active || !a.max || this.lanes[a.lane].closed) continue;
+      const near = points.some((p, i) => {
+        // Distance from the vehicle to the route segment ending at this point.
+        const q = points[Math.max(0, i - 1)], dx = p.x - q.x, dz = p.z - q.z, len = dx * dx + dz * dz;
+        const t = len ? THREE.MathUtils.clamp(((a.mesh.position.x - q.x) * dx + (a.mesh.position.z - q.z) * dz) / len, 0, 1) : 0;
+        return Math.hypot(a.mesh.position.x - (q.x + dx * t), a.mesh.position.z - (q.z + dz * t)) < radius + a.length / 2;
+      });
+      if (near) { a.active = false; a.mesh.visible = false; }
+    }
+  }
   private pose(a: Agent, blend: number) {
     const lane = this.lanes[a.lane], t = THREE.MathUtils.clamp(a.s / lane.length, 0, 1), p = lane.curve.getPointAt(t), d = lane.curve.getTangentAt(t);
     a.mesh.position.set(p.x, .02, p.z); const yaw = Math.atan2(-d.x, -d.z), turn = Math.atan2(Math.sin(yaw - a.mesh.rotation.y), Math.cos(yaw - a.mesh.rotation.y));

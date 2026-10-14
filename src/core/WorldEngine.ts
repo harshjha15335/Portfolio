@@ -181,9 +181,14 @@ export class WorldEngine {
     this.ride = { ...idleRide(), phase: this.reducedMotion ? 'boarding' : 'hailing', kind, fare: this.reducedMotion ? storyFare(kind, 0) : 0 };
     this.taxi.visible = kind === 'taxi'; this.auto.visible = kind === 'auto'; this.transit.visible = true; this.queuedDestination = null;
     // Pull in from the same lane, parallel to the pavement. No vehicle crosses a building.
-    this.ridePath = streetPickupRoute({x:this.visitor.position.x,z:this.visitor.position.z}); this.rideLength = routeLength(this.ridePath); this.pickupDistance = 0; this.rideSpeed=0;
+    this.ridePath = streetPickupRoute({x:this.visitor.position.x,z:this.visitor.position.z}); this.rideLength = routeLength(this.ridePath); this.clearPickup(); this.pickupDistance = 0; this.rideSpeed=0;
     const p = pointAtDistance(this.ridePath, this.reducedMotion ? this.rideLength : 0); this.transit.position.set(p.x, .02, p.z); this.transit.rotation.y = p.heading;
     this.options.onRide({ ...this.ride });
+  }
+  /** District or Fort Road traffic standing where the hailed cab pulls in makes way, so the cab never appears inside a car. */
+  private clearPickup() {
+    const ox = cityZones[zoneIndexAt(this.ridePath[0].x)].originX, local = this.ridePath.map(p => ({ x: p.x - ox, z: p.z }));
+    (this.zone ? this.district?.traffic : this.fortTraffic)?.clearAround(local, 2.2);
   }
   rideTo(id: string) {
     if (!streetStops[id] || this.ride.phase === 'idle') return;
