@@ -213,11 +213,16 @@ export class Crowd {
 }
 
 /* ------------------------------------------------------------------ traffic */
-interface Agent { mesh: THREE.Mesh; kind: CityVehicleKind; lane: number; s: number; speed: number; max: number; length: number; active: boolean }
+interface Agent { mesh: THREE.Mesh; kind: CityVehicleKind; lane: number; s: number; speed: number; max: number; length: number; active: boolean; seed: string; rider: CastFigure | null }
 /**
  * Mixed Mumbai traffic on authored lane curves that enter and leave by side streets.
  * Vehicles keep length-aware gaps, queue behind slow handcarts and stop for the visitor.
  */
+/** Who drives what: autos and taxis by the vendor/driver cast, two-wheelers by commuters and office staff. */
+/** Riders are small inside their vehicles, so they drop out sooner than people on foot. */
+const RIDER_HIDDEN = 30;
+const RIDER_OUTFIT: Partial<Record<CityVehicleKind, Outfit>> = { auto: 'vendor', bike: 'shirt', cycle: 'worker', bus: 'office', tempo: 'worker' };
+
 export class LaneTraffic {
   readonly group = new THREE.Group(); private lanes: Array<{ curve: THREE.CatmullRomCurve3; length: number }> = []; private agents: Agent[] = [];
   private stops: Array<{ lane: number; s: number; active: (time: number) => boolean }> = [];
@@ -231,10 +236,27 @@ export class LaneTraffic {
   get positions() { return this.agents.filter(a => a.active && a.mesh.visible).map(a => a.mesh.position); }
   lane(points: V3[]) { const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)), false, 'centripetal'); this.lanes.push({ curve, length: curve.getLength() }); return this.lanes.length - 1; }
   vehicle(lane: number, kind: CityVehicleKind, at: number, seed: string, parked = false) {
-    const mesh = createCityVehicleLod(kind, seed); this.group.add(mesh);
-    const a: Agent = { mesh, kind, lane, s: at * this.lanes[lane].length, speed: 0, max: parked ? 0 : VEHICLE_SPEED[kind] * (.85 + (seed.length % 5) * .06), length: VEHICLE_LENGTH[kind], active: true };
-    this.agents.push(a); this.pose(a, 1); return mesh;
+    const cast = districtCast(), mesh = createCityVehicleLod(kind, seed, !cast); this.group.add(mesh);
+    const a: Agent = { mesh, kind, lane, s: at * this.lanes[lane].length, speed: 0, max: parked ? 0 : VEHICLE_SPEED[kind] * (.85 + (seed.length % 5) * .06), length: VEHICLE_LENGTH[kind], active: true, seed, rider: null };
+    this.agents.push(a); this.pose(a, 1); if (cast) this.seat(a, cast); return mesh;
   }
+  /** Put a licensed cast figure in the vehicle's driving seat, posed sitting, riding with the vehicle. */
+  private seat(a: Agent, cast: DistrictCast) {
+    const seat = a.mesh.userData.seat as V3 | null; if (!seat) return;
+    const figure = cast.figure(RIDER_OUTFIT[a.kind] ?? 'shirt', 'sit', `${a.seed}:rider`, 1);
+    figure.mesh.matrix.premultiply(new THREE.Matrix4().makeTranslation(seat[0], seat[1] + .12 - figure.pelvisHeight, seat[2]));
+    a.mesh.add(figure.mesh); a.rider = figure;
+  }
+  /** Swap the baked procedural drivers for the licensed cast once it has loaded. */
+  adopt(cast: DistrictCast) {
+    for (const a of this.agents) {
+      if (a.rider || !a.mesh.userData.seat) continue;
+      const mesh = createCityVehicleLod(a.kind, a.seed, false); mesh.position.copy(a.mesh.position); mesh.rotation.copy(a.mesh.rotation); mesh.visible = a.mesh.visible;
+      this.group.add(mesh); a.mesh.removeFromParent(); for (const g of a.mesh.userData.lodGeometries as THREE.BufferGeometry[]) g.dispose();
+      a.mesh = mesh; this.seat(a, cast);
+    }
+  }
+  dispose() { for (const a of this.agents) { a.rider?.dispose(); a.rider = null; } }
   private pose(a: Agent, blend: number) {
     const lane = this.lanes[a.lane], t = THREE.MathUtils.clamp(a.s / lane.length, 0, 1), p = lane.curve.getPointAt(t), d = lane.curve.getTangentAt(t);
     a.mesh.position.set(p.x, .02, p.z); const yaw = Math.atan2(-d.x, -d.z), turn = Math.atan2(Math.sin(yaw - a.mesh.rotation.y), Math.cos(yaw - a.mesh.rotation.y));
@@ -243,7 +265,9 @@ export class LaneTraffic {
   update(time: number, delta: number, obstacles: THREE.Vector3[]) {
     const view = obstacles[0];
     for (const a of this.agents) {
-      if (view) setVehicleDetail(a.mesh as THREE.Mesh, a.mesh.position.distanceToSquared(view) < 22 * 22);
+      const near = view ? a.mesh.position.distanceTo(view) : 0;
+      if (view) setVehicleDetail(a.mesh as THREE.Mesh, near < 22);
+      if (a.rider) { a.rider.mesh.visible = a.mesh.visible && near < RIDER_HIDDEN; a.rider.setLevel(near < CAST_LOD.far ? 0 : near < CAST_LOD.distant * .5 ? 1 : 2); }
       if (!a.max) continue;
       const lane = this.lanes[a.lane];
       if (!a.active) {

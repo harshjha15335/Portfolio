@@ -35,6 +35,6 @@ export class CityDistricts {
   /** Build a district ahead of arrival (a ride towards it) without disposing the current one. */
   prepare(index: number) { if (index > 0) { this.pending = index; this.get(index); } }
   /** Give every built district's crowd the licensed cast once it has loaded. */
-  adoptCast(cast: DistrictCast) { for (const d of this.built.values()) d.crowd.adopt(cast); }
+  adoptCast(cast: DistrictCast) { for (const d of this.built.values()) { d.crowd.adopt(cast); d.traffic.adopt(cast); } }
   dispose() { for (const d of this.built.values()) d.dispose(); this.built.clear(); }
 }

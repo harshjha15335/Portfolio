@@ -29,7 +29,7 @@ const CASTING: Record<Outfit, string[]> = {
   dabbawala: ['chai-vendor', 'taxi-driver'], elder: ['taxi-driver', 'chai-vendor'],
 };
 /** Distances (m) at which a person drops to the in-file LOD, to the simplified body, and out of view. */
-export const CAST_LOD = { far: 6, distant: 12, hidden: 46 };
+export const CAST_LOD = { far: 5, distant: 12, hidden: 46 };
 
 interface Driver { act: CastAct; root: THREE.Object3D; mixer: THREE.AnimationMixer; base: number; rate: number; users: number }
 interface Member {

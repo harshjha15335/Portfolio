@@ -202,6 +202,7 @@ export class District {
     for (const body of this.kit.bodies) this.physics.removeBody(body);
     this.spatial.dispose(); this.signs.texture.dispose(); this.group.removeFromParent();
     for (const person of this.crowd.people()) person.cast?.dispose();
+    this.traffic.dispose();
     const shared = paintMaterial();
     this.group.traverse(object => {
       const mesh = object as THREE.SkinnedMesh;
