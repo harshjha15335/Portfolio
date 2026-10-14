@@ -141,13 +141,37 @@ export class ColorMesh {
   get empty() { return this.parts.length === 0; }
   build() {
     if (!this.parts.length) return new THREE.BufferGeometry();
-    const g = mergeGeometries(this.parts)!; this.parts.forEach(p => p.dispose()); this.parts = []; g.computeBoundingSphere(); return g;
+    const g = mergeGeometries(withFinish(this.parts))!; this.parts.forEach(p => p.dispose()); this.parts = []; g.computeBoundingSphere(); return g;
   }
 }
 
+/**
+ * Geometries merging into one mesh must share attributes: when any carries a per-vertex `finish`
+ * (the modelled vehicles' gloss), give the rest (0, 0), which `paintMaterial` reads as its own default.
+ */
+export function withFinish(parts: THREE.BufferGeometry[]) {
+  if (!parts.some(p => p.getAttribute('finish'))) return parts;
+  for (const p of parts) if (!p.getAttribute('finish')) p.setAttribute('finish', new THREE.BufferAttribute(new Float32Array(p.getAttribute('position').count * 2), 2));
+  return parts;
+}
+
 let shared: THREE.MeshStandardMaterial | null = null;
-/** One vertex-coloured paint material for every authored vehicle and prop in the districts. */
+/**
+ * One vertex-coloured paint material for every authored vehicle and prop in the districts. Geometry may carry a
+ * `finish` attribute (roughness, metalness) per vertex, so a modelled car's paint is glossy, its glass shines and
+ * its chrome is metal, in the same draw and program; a roughness of 0 (or no attribute) keeps the defaults below.
+ */
 export function paintMaterial() {
-  shared ??= Object.assign(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .62, metalness: .12, envMapIntensity: .3 }), { userData: { surface: 'solid', weather: .15 } });
+  if (shared) return shared;
+  shared = Object.assign(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .62, metalness: .12, envMapIntensity: .3 }), { userData: { surface: 'solid', weather: .15 } });
+  // Read when a geometry has no finish attribute (WebGL's own default would be (0, 0, 0, 1)).
+  (shared as unknown as { defaultAttributeValues: Record<string, number[]> }).defaultAttributeValues = { finish: [0, 0] };
+  shared.onBeforeCompile = shader => {
+    shader.vertexShader = 'attribute vec2 finish;\nvarying vec2 vFinish;\n' + shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvFinish = finish;');
+    shader.fragmentShader = 'varying vec2 vFinish;\n' + shader.fragmentShader
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nif ( vFinish.x > 0.0 ) roughnessFactor = vFinish.x;')
+      .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nif ( vFinish.x > 0.0 ) metalnessFactor = vFinish.y;');
+  };
+  shared.customProgramCacheKey = () => 'district-paint-finish-v1';
   return shared;
 }

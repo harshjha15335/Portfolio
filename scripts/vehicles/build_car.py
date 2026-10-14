@@ -9,12 +9,14 @@ COLOR_0, (roughness, metalness) in TEXCOORD_0, lamps and tail lamps as separate 
 The cars are generic, not replicas of any manufacturer's design.
 
 Usage: python3.11 scripts/vehicles/build_car.py <work-dir> <hatchback|saloon|suv> [colour-hex] [--preview]
-Output: <work-dir>/<kind>.glb and <kind>.stats.json.
+Output: <work-dir>/<kind>.glb and <kind>.stats.json. The district-traffic GLB, at three levels of detail
+(VEHICLE_LOD 0 near, 1 far, 2 distant: fewer stations, simpler wheels, no fine parts), comes from
+build_city.py <work-dir> <kind> scripts/vehicles/build_car.py <kind>.
 """
 import json, math, os, sys
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from vehicle_kit import Part, export, preview, smooth, srgb, table
+from vehicle_kit import LOD, Part, export, preview, smooth, srgb, table
 
 work = os.path.abspath(sys.argv[1]); os.makedirs(work, exist_ok=True)
 kind = sys.argv[2]
@@ -118,10 +120,11 @@ def ring(s, inset=0.0):
 door_front, door_mid = WS0 - .12, (WS0 - .12 + RS1) / 2 if not S['hatch'] else (WS0 - .12 + RS1 + .1) / 2
 door_rear = RS1 + .05 if S['hatch'] else RS0 + .05
 SEAMS = [(door_front, door_front - .008), (door_mid, door_mid - .008), (door_rear, door_rear - .008)]
-base = list(np.linspace(FRONT, REAR, 34))
-extra = [FRONT - .008, FRONT - .022, REAR + .022, REAR + .008, WS0, WS1, RS0, RS1]
-for w in (FRONT_WHEEL, REAR_WHEEL): extra += [w + d for d in np.linspace(-ARCH_R, ARCH_R, 9)]
-for a, b in SEAMS: extra += [a, b]
+base = list(np.linspace(FRONT, REAR, (30, 10, 6)[LOD]))
+extra = [WS0, WS1, RS0, RS1] + ([FRONT - .008, FRONT - .022, REAR + .022, REAR + .008], [FRONT - .022, REAR + .022], [])[LOD]
+for w in (FRONT_WHEEL, REAR_WHEEL): extra += [w + d for d in np.linspace(-ARCH_R, ARCH_R, (9, 5, 3)[LOD])]
+if LOD == 0:
+    for a, b in SEAMS: extra += [a, b]
 STATIONS = sorted(set(round(v, 4) for v in base + extra if REAR <= v <= FRONT), reverse=True)
 
 
@@ -132,7 +135,7 @@ def end_inset(s):
 
 body, lamps, tail = Part(), Part(), Part()
 rings = [ring(s, end_inset(s)) for s in STATIONS]
-seam_pairs = {(round(a, 4), round(b, 4)) for a, b in SEAMS}
+seam_pairs = {(round(a, 4), round(b, 4)) for a, b in SEAMS} if LOD == 0 else set()
 
 
 C_PILLAR = RS1 + (.32 if S['hatch'] else .06)   # side glass ends here; a hatch has a thick C-pillar
@@ -168,10 +171,10 @@ body.box((0, FRONT - .004, .395), (.86, .02, .07), 'grille')
 for sign, y0 in ((1, FRONT), (-1, REAR)):
     pz = .48 if sign > 0 else .62
     body.box((0, y0 + sign * .005, pz), (.50, .012, .12), 'plate')
-    for k in range(7):
+    for k in range(7 if LOD == 0 else 0):
         body.box((-.19 + k * .063, y0 + sign * .012, pz), (.035, .004, .065), 'platetext')
 body.box((0, FRONT - .01, .55), (.62, .02, .11), 'grille')
-for z in (.52, .58): body.box((0, FRONT - .002, z), (.58, .01, .012), 'chrome')
+for z in ((.52, .58) if LOD < 2 else ()): body.box((0, FRONT - .002, z), (.58, .01, .012), 'chrome')
 
 
 def surface_x(s, z):
@@ -191,29 +194,32 @@ def corner_lamp(part, region, sign, x_in, depth, lo, hi, off=.006):
     for side in (1, -1):
         rows = [[(side * x, y, lo(y)), (side * x, y, hi(y))] for x, y in outline]
         rows += [[(side * (surface_x(y, z) + off), y, z) for z in (lo(y), hi(y))] for y in flank]
-        part.grid(rows, lambda i, j: region, flip=(side * sign) < 0)
+        part.grid(rows, lambda i, j: region, flip=(side * sign) > 0, fixed=True)
 
 
 # Headlamps sweep back into the wings under the bonnet line; tail lamps wrap the rear corners.
 corner_lamp(lamps, 'lamp', 1, .38, .20, lambda y: BELT(y) - .14, lambda y: BELT(y) - .03)
-corner_lamp(body, 'trim', 1, .34, .23, lambda y: BELT(y) - .16, lambda y: BELT(y) - .015, off=.003)
+if LOD < 2: corner_lamp(body, 'trim', 1, .34, .23, lambda y: BELT(y) - .16, lambda y: BELT(y) - .015, off=.003)
 if S['hatch']:
     corner_lamp(tail, 'tail', -1, W(REAR) - .30, .16, lambda y: BELT(y) - .26, lambda y: BELT(y) - .02)
 else:
     corner_lamp(tail, 'tail', -1, .30, .24, lambda y: BELT(y) - .17, lambda y: BELT(y) - .05)
-for x in (-1, 1):
+for x in ((-1, 1) if LOD < 2 else ()):
     body.box((x * (WD - .12), FRONT - .05, .42), (.10, .02, .035), 'amber')
 
 # Mirrors, handles, wipers.
 for side in (-1, 1):
     bx = side * (W(WS0 - .1) - .02)
+    if LOD == 2:
+        body.box((bx + side * .1, WS0 - .15, BELT(WS0) + .1), (.14, .07, .1), 'paint'); continue
     body.tube([(bx, WS0 - .12, BELT(WS0) + .02), (bx + side * .09, WS0 - .14, BELT(WS0) + .1)], .012, 'trim', sides=4)
-    body.ellipsoid((bx + side * .12, WS0 - .15, BELT(WS0) + .11), (.075, .04, .052), 'paint', nu=10, nv=4)
+    body.ellipsoid((bx + side * .12, WS0 - .15, BELT(WS0) + .11), (.075, .04, .052), 'paint', nu=(10, 6)[LOD], nv=(4, 3)[LOD])
+    if LOD: continue
     body.box((bx + side * .125, WS0 - .19, BELT(WS0) + .11), (.1, .006, .07), 'mirror')
     for s in (door_front - .45, door_mid - .45):
         body.box((side * (W(s) + .012), s, BELT(s) - .08), (.015, .12, .025), 'chrome')
-for x in (-.25, .2): body.tube([(x - .22, WS0 + .02, BELT(WS0) + .01), (x + .22, WS0 + .06, BELT(WS0) + .02)], .008, 'trim', sides=3)
-if S.get('rails'):
+for x in ((-.25, .2) if LOD == 0 else ()): body.tube([(x - .22, WS0 + .02, BELT(WS0) + .01), (x + .22, WS0 + .06, BELT(WS0) + .02)], .008, 'trim', sides=3)
+if S.get('rails') and LOD < 2:
     for side in (-1, 1):
         body.tube([(side * (S['roofw'] - .1), y, S['roof'] + .05) for y in (WS1 - .05, (WS1 + RS1) / 2, RS1 + .08)], .018, 'trim', sides=5)
 
@@ -221,13 +227,16 @@ if S.get('rails'):
 def wheel(cx, cy):
     out = 1 if cx > 0 else -1
     rings = []
-    for t in np.linspace(0, 2 * math.pi, 24, endpoint=False):
+    # Tyre profile: shoulders and tread near; tread and sidewalls only further out.
+    prof = [(.105, WR * .66), (.11, WR * .9), (.095, WR), (-.095, WR), (-.11, WR * .9), (-.105, WR * .66)] if LOD == 0 else [(.105, WR * .66), (.1, WR), (-.1, WR), (-.105, WR * .66)]
+    for t in np.linspace(0, 2 * math.pi, (24, 12, 8)[LOD], endpoint=False):
         c, s_ = math.cos(t), math.sin(t)
-        prof = [(.105, WR * .66), (.11, WR * .9), (.095, WR), (-.095, WR), (-.11, WR * .9), (-.105, WR * .66)]
         rings.append([(cx + out * dx, cy + r * c, WR + r * s_) for dx, r in prof])
     rings.append(rings[0])
-    body.grid(rings, lambda i, j: 'tread' if j == 2 else 'rubber')
-    body.disc((cx + out * .09, cy, WR), (out, 0, 0), (WR * .66, WR * .66), 'rim', n=24, flip=out < 0)
+    tread = len(prof) // 2 - 1
+    body.grid(rings, lambda i, j: 'tread' if j == tread else 'rubber')
+    body.disc((cx + out * .09, cy, WR), (out, 0, 0), (WR * .66, WR * .66), 'rim', n=(24, 12, 8)[LOD], flip=out < 0)
+    if LOD: return
     body.disc((cx + out * .097, cy, WR), (out, 0, 0), (WR * .2, WR * .2), 'hub', n=10, flip=out < 0)
     for k in range(5):
         a = k * 2 * math.pi / 5
@@ -242,7 +251,7 @@ for x in (-TRACK, TRACK):
 parts = {'body': body, 'lamps': lamps, 'tail': tail}
 palette = {**PALETTE, 'lamp': PALETTE['trim'], 'tail': PALETTE['trim']}
 if '--preview' not in sys.argv:
-    tris = export(parts, palette, os.path.join(work, f'{kind}.glb'), occluders=[], city=dict(out=os.path.join(work, f'{kind}-city.glb'), near=4800, far=2000, paint={'paint'}, lamp='#f4e7c2', tail='#9c2b22'))
+    tris = export(parts, palette, os.path.join(work, f'{kind}.glb'), occluders=[], city=dict(paint={'paint'}, lamp='#f4e7c2', tail='#9c2b22'))
     json.dump({'triangles': tris, 'length': L, 'wheelbase': WB, 'wheelRadius': WR, 'track': TRACK}, open(os.path.join(work, f'{kind}.stats.json'), 'w'))
     print(kind, tris, 'total', sum(tris.values()))
 else:
