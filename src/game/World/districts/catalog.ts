@@ -86,7 +86,7 @@ const andheri: DistrictSpec = {
     let i = 0; for (const side of [-1, 1]) for (let z = 8; z > -54; z -= 7.5) if (Math.abs(z + 3) > 3) { const [t] = labels[i++ % labels.length]; stall(c, side * 6.15, z, side > 0 ? -Math.PI / 2 : Math.PI / 2, i % 3 ? '#2f5f9e' : '#c9442f', goods, t); }
     for (let z = 10; z > -56; z -= 5.5) for (let k = 0; k < 3; k++) kit.rod([-7.2, 6.2 + k * .35, z + k], [7.2, 6.5 + (k % 2) * .3, z + k * .8 - .6], .012, '#1f2020');
     for (const [x, z] of [[3.35, -16], [3.35, -17], [3.35, -18], [-3.35, -30], [-3.35, -31], [3.35, -40]] as const) d.parked('bike', x, z, x > 0 ? Math.PI : 0);
-    d.parked('cart', -3.3, -9.5, 0); d.parked('cart', 3.3, -46, Math.PI);
+    d.parked('cart', -3.5, -9.5, 0); d.parked('cart', 3.5, -46, Math.PI);
     d.walkers(walkersOf(['shirt', 'salwar', 'school', 'office', 'sari', 'kurta', 'worker', 'shirt', 'jogger', 'vendor'], 24), [4.6, 5.2, -4.6, -5.2]);
     for (const [x, z, o, act] of [[5.3, 6.4, 'vendor', 'sell'], [-5.3, -1, 'vendor', 'sell'], [5.3, -23.6, 'vendor', 'sell'], [-5.3, -38.6, 'vendor', 'sell'], [4.7, -8, 'salwar', 'talk'], [4.6, -9.2, 'school', 'talk'], [-4.5, -20, 'shirt', 'talk'], [-4.6, -21.3, 'office', 'stand'], [-4.4, -46, 'worker', 'talk']] as Array<[number, number, Outfit, 'sell' | 'talk' | 'stand']>) d.crowd.idle(o, [x, .03, z], x > 0 ? -Math.PI / 2 : Math.PI / 2, act);
   },
@@ -279,7 +279,8 @@ const filmcity: DistrictSpec = {
     // Aarey's forested hills ring the studio lots.
     for (let i = 0; i < 6; i++) hill(kit, [(i % 2 ? -1 : 1) * 78, -3, -125 + i * 28], 34 + i * 3, 30, 20 + (i % 3) * 6, 10 + i * 2.3, 12, 32);
     hoarding(c, -10, 6, 4, Math.PI / 2, 7.5, filmPoster('#4a1f22', 'NINE SCENES', 'one engineering story · you control the pace', '#f0b03a'), 'AD');
-    d.parked('suv', -3.2, -24, 0, false); d.parked('tempo', 3.3, -34, Math.PI, false);
+    // Half up on the kerb, the way Mumbai parks, so the traffic lanes stay clear.
+    d.parked('suv', -4.1, -24, 0, false); d.parked('tempo', 4.1, -34, Math.PI, false);
     d.walkers(walkersOf(['worker', 'shirt', 'sari', 'kurta', 'worker', 'salwar', 'office', 'worker'], 14), [4.8, 5.5, -4.8, -5.4]);
     for (const [x, z, o, act] of [[-14.2, -21.6, 'sari', 'wave'], [-14.6, -22.8, 'kurta', 'talk'], [-9.2, -25.75, 'shirt', 'sit'], [-8.6, -20.8, 'worker', 'stand'], [-10.4, -27.8, 'worker', 'stand'], [4.4, -10.5, 'salwar', 'stand'], [4.9, -11.4, 'shirt', 'talk']] as Array<[number, number, Outfit, 'wave' | 'talk' | 'stand' | 'sit']>) d.crowd.idle(o, [x, .03, z], x < -12 ? -Math.PI / 2 : x < 0 ? Math.PI / 2 : -Math.PI / 2, act);
   },

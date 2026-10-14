@@ -3,7 +3,7 @@ import { ColorMesh, paintMaterial, type V3 } from './ColorMesh';
 import { arch, carBody, CAR_SHAPES, sweep } from './CarBodies';
 import { createSeatedDriver } from '../npc/NPCFactory';
 import { seededRandom } from '../StreetArchitecture';
-import { cityVehicleGeometry } from './CityVehicleModels';
+import { cityVehicleGeometry, type VehicleDetail } from './CityVehicleModels';
 
 /**
  * Mumbai road traffic as single-draw meshes: BEST double-decker, hatchbacks and sedans,
@@ -26,7 +26,9 @@ function addDriver(m: ColorMesh, seed: string, x: number, y: number, z: number) 
 const shadeHex = (hex: string, k: number) => '#' + new THREE.Color(hex).multiplyScalar(k).getHexString();
 const glass = '#26343a', chrome = '#a8aaa3', tyre = '#1b1d1e', lamp = '#f4e7c2', tail = '#9c2b22';
 
-export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = true, lite = false) {
+/** `detail` 0 is the near build, 1 the far one (low-segment shapes, no fine parts, no baked occupants), 2 the distant one. */
+export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = true, detail: VehicleDetail | boolean = 0) {
+  const level: VehicleDetail = detail === true ? 1 : detail === false ? 0 : detail, lite = level > 0;
   const r = seededRandom(`vehicle:${seed}`), m = new ColorMesh(lite), pick = <T,>(l: T[]) => l[Math.floor(r() * l.length)];
   // Where the driver or rider sits; a licensed cast figure takes this seat when the baked one is left out.
   let seat: V3 | null = null;
@@ -36,7 +38,7 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
       // BEST: most are the red double-decker; some are the newer single-deck red AC buses.
       const red = '#b3241b', deep = '#8c1a14', cream = '#ece2c8', L = 10.2, double = r() < .65;
       // The modelled BEST bus once loaded (CityVehicleModels); the lofted shell below stands in until then.
-      const modelled = cityVehicleGeometry(double ? 'bus-double' : 'bus-single', lite);
+      const modelled = cityVehicleGeometry(double ? 'bus-double' : 'bus-single', level);
       if (modelled) { m.model(modelled); ride(`${seed}:bus`, .65, .25, -L / 2 + 1.0); break; }
       // Shells are swept through rounded sections with softened front and rear corners.
       const shell = (y0: number, y1: number, w: number, len: number, dz: number, color: string) => { const e = len / 2; m.loft(sweep([[dz - e, w * .9, y0 + .04, y1 - .05], [dz - e + .06, w * .985, y0, y1], [dz - e + .25, w, y0, y1], [dz + e - .25, w, y0, y1], [dz + e - .06, w * .985, y0, y1], [dz + e, w * .9, y0 + .04, y1 - .05]], lite ? 12 : 20, 9), color); };
@@ -65,7 +67,7 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
     case 'hatch': case 'sedan': case 'suv': case 'taxi': {
       // Lofted pressed-metal body (CarBodies); the kaali-peeli gets its yellow roof. Glass is opaque, so no driver is baked in.
       const body = kind === 'taxi' ? '#1d2022' : pick(['#e9e8e2', '#b9bcbd', '#8d9296', '#a32c26', '#2a4d78', '#e3dfd2', '#5b5f63', '#f0efe9', '#3b3f43', '#6b2a2a', '#c9c2ad']);
-      const modelled = kind === 'taxi' ? null : cityVehicleGeometry(kind === 'hatch' ? 'hatchback' : kind === 'sedan' ? 'saloon' : 'suv', lite, body);
+      const modelled = kind === 'taxi' ? null : cityVehicleGeometry(kind === 'hatch' ? 'hatchback' : kind === 'sedan' ? 'saloon' : 'suv', level, body);
       if (modelled) { m.model(modelled); break; }
       carBody(m, CAR_SHAPES[kind], body, { glass, dark: '#1a1b1c', lamp, tail, plate: kind === 'taxi' ? '#f1d248' : '#f2efe6', bumper: kind === 'taxi' ? chrome : shadeHex(body, .78), roof: kind === 'taxi' ? '#e0b33a' : undefined });
       if (kind === 'taxi') { const t = CAR_SHAPES.taxi; m.rounded([.5, .14, .18], [0, t.roof + .09, -t.L / 2 + (t.roofFront + t.roofRear) / 2], '#e0b33a'); }
@@ -103,7 +105,7 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
         ride(`${seed}:rider`, 0, -.12, .25); break;
       }
       const frame = kind === 'bike' ? pick(['#1f2a44', '#7b1e1e', '#2b2b2b', '#5c6168']) : '#2a2f36', rad = kind === 'bike' ? .3 : .33;
-      const modelled = kind === 'bike' ? cityVehicleGeometry('motorbike', lite, frame) : null;
+      const modelled = kind === 'bike' ? cityVehicleGeometry('motorbike', level, frame) : null;
       if (modelled) { m.model(modelled); ride(`${seed}:rider`, 0, -.14, .45); break; }
       m.wheel(rad, kind === 'bike' ? .09 : .045, [0, rad, -.68], tyre, '#8a8c88'); m.wheel(rad, kind === 'bike' ? .1 : .045, [0, rad, .66], tyre, '#8a8c88');
       if (kind === 'bike') {
@@ -146,13 +148,13 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
   return mesh;
 }
 
-/** A vehicle carrying a near and a far geometry; `setVehicleDetail` swaps them by distance. */
+/** A vehicle carrying near, far and distant geometries; `setVehicleDetail` swaps them by distance. */
 export function createCityVehicleLod(kind: CityVehicleKind, seed: string, rider = true) {
-  const mesh = createCityVehicle(kind, seed, rider), far = createCityVehicle(kind, seed, rider, true);
-  const geometries = [mesh.geometry, far.geometry]; mesh.userData.lodGeometries = geometries; return mesh;
+  const mesh = createCityVehicle(kind, seed, rider), geometries = [mesh.geometry, createCityVehicle(kind, seed, rider, 1).geometry, createCityVehicle(kind, seed, false, 2).geometry];
+  mesh.userData.lodGeometries = geometries; return mesh;
 }
 const NOTHING = new THREE.BufferGeometry();
 /** 'hidden' draws nothing (beyond the haze), without touching `visible`, which traffic uses for vehicles off the road. */
-export function setVehicleDetail(mesh: THREE.Mesh, near: boolean | 'hidden') {
-  const lods = mesh.userData.lodGeometries as THREE.BufferGeometry[] | undefined; if (lods) mesh.geometry = near === 'hidden' ? NOTHING : lods[near ? 0 : 1];
+export function setVehicleDetail(mesh: THREE.Mesh, detail: VehicleDetail | 'hidden') {
+  const lods = mesh.userData.lodGeometries as THREE.BufferGeometry[] | undefined; if (lods) mesh.geometry = detail === 'hidden' ? NOTHING : lods[detail];
 }

@@ -10,7 +10,7 @@ Output parts, matched by the runtime (src/game/World/AuthoredVehicles.ts):
 - glass: positions only, drawn with the vehicle's existing glass material;
 - lamps / tail: positions only, drawn with the vehicle's existing lamp and tail-lamp materials.
 """
-import math
+import math, os, pickle
 import numpy as np
 
 
@@ -24,14 +24,17 @@ class Part:
 
     def __init__(self):
         self.verts, self.faces, self.regions = [], [], []
+        # Faces whose winding is authoritative (single panels, which normal recalculation could turn away).
+        self.fixed = set()
 
     def add_vert(self, p):
         self.verts.append(tuple(float(v) for v in p)); return len(self.verts) - 1
 
-    def add_face(self, idx, region):
+    def add_face(self, idx, region, fixed=False):
+        if fixed: self.fixed.add(len(self.faces))
         self.faces.append(tuple(idx)); self.regions.append(region)
 
-    def grid(self, P, region, closed=False, flip=False):
+    def grid(self, P, region, closed=False, flip=False, fixed=False):
         """Quad strip surface over P[ring][point]. region(i, j) names face (i..i+1, j..j+1) or None to skip."""
         P = np.asarray(P, float); n_r, n_p = P.shape[:2]
         ids = [[self.add_vert(P[i, j]) for j in range(n_p)] for i in range(n_r)]
@@ -40,7 +43,7 @@ class Part:
                 k = (j + 1) % n_p; r = region(i, j)
                 if r is None: continue
                 quad = [ids[i][j], ids[i + 1][j], ids[i + 1][k], ids[i][k]]
-                self.add_face(quad[::-1] if flip else quad, r)
+                self.add_face(quad[::-1] if flip else quad, r, fixed)
         return ids
 
     def fan(self, ring_ids, centre, region, flip=False):
@@ -114,23 +117,32 @@ def smooth(edge0, edge1, x):
     t = min(max((x - edge0) / (edge1 - edge0), 0), 1); return t * t * (3 - 2 * t)
 
 
-def export(parts, palette, out, ground=True, occluders=(), ao_distance=.35, ao_floor=.32, city=None):
-    """Builds Blender objects, bakes ambient occlusion into the body colour and writes a GLB.
+# Level of detail being built: 0 near, 1 far, 2 distant. Builders read it to choose their resolution and
+# which small parts to keep; build_city.py runs a builder once per level (see export()).
+LOD = int(os.environ.get('VEHICLE_LOD', '0'))
+LEVEL_NAMES = ('near', 'far', 'distant')
+# Finish (roughness, metalness) of the parts that are not body: lamps and tail lamps are glossy covers.
+PART_FINISH = {'lamps': (.12, 0), 'tail': (.16, 0)}
 
-    city: optional dict(out=path, near=triangles, far=triangles, paint={regions}, lamp=hex, tail=hex). Also writes a
-    district-traffic GLB with two meshes, 'near' and 'far': body, lamps and tail joined into one vertex-coloured
-    mesh, decimated to the given triangle counts. COLOR_0 alpha is 1 on paint faces (recoloured per vehicle at
-    runtime) and 0 elsewhere.
-    """
+
+def _build(parts, palette, ground=True, occluders=(), ao_distance=.35, ao_floor=.32):
+    """Blender objects for the parts, with ambient occlusion baked into the body's 'base' colour and its
+    (roughness, metalness) in the 'finish' UV layer. Other objects in the scene are hidden from the bake."""
     import bpy, bmesh
-    bpy.ops.wm.read_factory_settings(use_empty=True)
-    scene = bpy.context.scene; scene.render.engine = 'CYCLES'; scene.cycles.device = 'CPU'; scene.cycles.samples = 64
-    scene.world = bpy.data.worlds.new('w')
+    scene = bpy.context.scene
+    hidden = [o for o in scene.objects if not o.hide_render]
+    for o in hidden: o.hide_render = True
     objects = {}
     for name, part in parts.items():
         mesh = bpy.data.meshes.new(name); mesh.from_pydata(part.verts, [], part.faces); mesh.validate(); mesh.update()
         obj = bpy.data.objects.new(name, mesh); scene.collection.objects.link(obj); objects[name] = obj
-        bm = bmesh.new(); bm.from_mesh(mesh); bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5); bmesh.ops.recalc_face_normals(bm, faces=bm.faces); bm.to_mesh(mesh); bm.free()
+        bm = bmesh.new(); bm.from_mesh(mesh); bm.faces.ensure_lookup_table(); bm.normal_update()
+        fixed = getattr(part, 'fixed', set()); authored = {i: bm.faces[i].normal.copy() for i in fixed}
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5); bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        bm.faces.ensure_lookup_table(); bm.normal_update()
+        flip = [bm.faces[i] for i, n in authored.items() if bm.faces[i].normal.dot(n) < 0]
+        if flip: bmesh.ops.reverse_faces(bm, faces=flip)
+        bm.to_mesh(mesh); bm.free()
     # Occluders for the bake only: ground and wheels.
     temp = []
     if ground:
@@ -164,48 +176,73 @@ def export(parts, palette, out, ground=True, occluders=(), ao_distance=.35, ao_f
         if name == 'body': continue
         for o in bpy.context.scene.objects: o.select_set(False)
         obj.select_set(True); bpy.context.view_layer.objects.active = obj; bpy.ops.object.shade_smooth_by_angle(angle=math.radians(40))
+    for o in hidden: o.hide_render = False
+    return objects
+
+
+def _scene():
+    import bpy
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    scene = bpy.context.scene; scene.render.engine = 'CYCLES'; scene.cycles.device = 'CPU'; scene.cycles.samples = 64
+    scene.world = bpy.data.worlds.new('w')
+    return scene
+
+
+def export(parts, palette, out, ground=True, occluders=(), ao_distance=.35, ao_floor=.32, city=None):
+    """Builds Blender objects, bakes ambient occlusion into the body colour and writes a GLB.
+
+    city: optional dict(out=path, paint={regions}, lamp=hex, tail=hex, allow=(near, far, distant)) for the
+    district-traffic GLB. Under build_city.py (VEHICLE_LOD_DUMP set) the parts are saved for it instead, and it
+    joins each level's body, lamps and tail into one mesh (see export_city).
+    """
+    dump = os.environ.get('VEHICLE_LOD_DUMP')
+    if dump:
+        with open(dump, 'wb') as f:
+            pickle.dump(dict(parts=parts, palette=palette, ground=ground, occluders=list(occluders), ao_distance=ao_distance, ao_floor=ao_floor, city=city), f)
+        return {name: part.triangles() for name, part in parts.items()}
+    import bpy
+    _scene()
+    _build(parts, palette, ground, occluders, ao_distance, ao_floor)
     bpy.ops.export_scene.gltf(filepath=out, export_format='GLB', use_selection=False, export_vertex_color='ACTIVE',
                               export_active_vertex_color_when_no_material=True, export_texcoords=True, export_normals=True,
                               export_materials='NONE', export_yup=True)
-    counts = {name: part.triangles() for name, part in parts.items()}
-    if city: counts.update(_export_city(objects, parts, city))
-    return counts
+    return {name: part.triangles() for name, part in parts.items()}
 
 
-def _export_city(objects, parts, city):
+def export_city(levels, out):
+    """The district-traffic GLB: one mesh per level of detail ('near', 'far', 'distant'), each the body, lamps
+    and tail of that level's own build joined. COLOR_0 is the baked colour with alpha 1 on paint faces
+    (recoloured per vehicle at runtime); TEXCOORD_0 is the finish (roughness, metalness). No decimation: each
+    level is modelled at its own resolution, so colour regions keep their real edges."""
     import bpy
-    copies = []
-    for name, obj in objects.items():
-        copy = obj.copy(); copy.data = obj.data.copy(); bpy.context.scene.collection.objects.link(copy); mesh = copy.data
-        n = len(mesh.loops)
-        if name == 'body':
-            colour = np.zeros(n * 4, np.float32); mesh.color_attributes['base'].data.foreach_get('color', colour); colour = colour.reshape(-1, 4)
-            paint = np.array([r in city['paint'] for r in parts['body'].regions])
-            for poly in mesh.polygons: colour[poly.loop_start:poly.loop_start + poly.loop_total, 3] = 1.0 if paint[poly.index] else 0.0
-        else:
-            rgb = srgb(city['lamp'] if name == 'lamps' else city['tail'] if name == 'tail' else '#26343a')
-            colour = np.tile(np.array([*rgb, 0], np.float32), (n, 1))
-            attr = mesh.color_attributes.new('base', 'FLOAT_COLOR', 'CORNER')
-        mesh.color_attributes['base'].data.foreach_set('color', colour.ravel()); mesh.color_attributes.active_color = mesh.color_attributes['base']
-        for uv in list(mesh.uv_layers): mesh.uv_layers.remove(uv)
-        copies.append(copy)
-    for o in bpy.context.scene.objects: o.select_set(False)
-    for c in copies: c.select_set(True)
-    bpy.context.view_layer.objects.active = copies[0]; bpy.ops.object.join(); near = bpy.context.object; near.name = 'near'; near.data.name = 'near'
-    far = near.copy(); far.data = near.data.copy(); far.name = 'far'; far.data.name = 'far'; bpy.context.scene.collection.objects.link(far)
-    out = {}
-    for obj, target in ((near, city['near']), (far, city['far'])):
-        tris = sum(len(p.vertices) - 2 for p in obj.data.polygons)
-        if tris > target:
-            mod = obj.modifiers.new('decimate', 'DECIMATE'); mod.decimate_type = 'COLLAPSE'; mod.ratio = target / tris
-            for o in bpy.context.scene.objects: o.select_set(False)
-            obj.select_set(True); bpy.context.view_layer.objects.active = obj; bpy.ops.object.modifier_apply(modifier='decimate')
-        out[obj.name] = sum(len(p.vertices) - 2 for p in obj.data.polygons)
-    for o in bpy.context.scene.objects: o.select_set(o in (near, far))
-    bpy.ops.export_scene.gltf(filepath=city['out'], export_format='GLB', use_selection=True, export_vertex_color='ACTIVE',
-                              export_active_vertex_color_when_no_material=True, export_texcoords=False, export_normals=True,
+    _scene()
+    joined, counts = [], {}
+    for level, dump in zip(LEVEL_NAMES, levels):
+        objects = _build(dump['parts'], dump['palette'], dump['ground'], dump['occluders'], dump['ao_distance'], dump['ao_floor'])
+        city, parts = dump['city'], dump['parts']
+        for name, obj in objects.items():
+            mesh = obj.data; n = len(mesh.loops)
+            if name == 'body':
+                colour = np.zeros(n * 4, np.float32); mesh.color_attributes['base'].data.foreach_get('color', colour); colour = colour.reshape(-1, 4)
+                paint = np.array([r in city['paint'] for r in parts['body'].regions])
+                for poly in mesh.polygons: colour[poly.loop_start:poly.loop_start + poly.loop_total, 3] = 1.0 if paint[poly.index] else 0.0
+            else:
+                rgb = srgb(city['lamp'] if name == 'lamps' else city['tail'] if name == 'tail' else '#26343a')
+                colour = np.tile(np.array([*rgb, 0], np.float32), (n, 1))
+                mesh.color_attributes.new('base', 'FLOAT_COLOR', 'CORNER')
+                uv = mesh.uv_layers.new(name='finish'); uv.data.foreach_set('uv', np.tile(np.array(PART_FINISH.get(name, (.5, 0)), np.float32), n))
+            mesh.color_attributes['base'].data.foreach_set('color', colour.ravel()); mesh.color_attributes.active_color = mesh.color_attributes['base']
+        for o in bpy.context.scene.objects: o.select_set(False)
+        for o in objects.values(): o.select_set(True)
+        bpy.context.view_layer.objects.active = objects['body']; bpy.ops.object.join(); obj = bpy.context.object
+        obj.name = level; obj.data.name = level
+        counts[level] = sum(len(p.vertices) - 2 for p in obj.data.polygons)
+        obj.hide_render = True; joined.append(obj)
+    for o in bpy.context.scene.objects: o.select_set(o in joined)
+    bpy.ops.export_scene.gltf(filepath=out, export_format='GLB', use_selection=True, export_vertex_color='ACTIVE',
+                              export_active_vertex_color_when_no_material=True, export_texcoords=True, export_normals=True,
                               export_materials='NONE', export_yup=True)
-    return out
+    return counts
 
 
 def preview(glb, out, camera, target, lens=35, size=(960, 600), samples=48):

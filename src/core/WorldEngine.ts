@@ -14,7 +14,7 @@ import { preloadCityVehicleModels } from '../game/World/districts/CityVehicleMod
 import { STREET_SPAWN, streetStops, streetPickupRoute, walkingVelocity, cityRideLegs, cityZones, zoneIndexAt, districtViews } from '../game/World/streetLayout';
 import { CityDistricts } from '../game/World/districts/CityDistricts';
 import { setCityDensity } from '../game/World/districts/District';
-import { createFortRoadTraffic } from '../game/World/districts/FortRoadTraffic';
+import { createFortRoadTraffic, FORT_LOOP_LANE } from '../game/World/districts/FortRoadTraffic';
 import { DistrictCast, districtCast, setDistrictCast } from '../game/World/districts/DistrictCast';
 import type { LaneTraffic } from '../game/World/districts/DistrictSystems';
 import { districts as directory } from '../data/city';
@@ -97,7 +97,7 @@ export class WorldEngine {
     // Districts are built on first need and receive the same weathering/haze patch as the street.
     setCityDensity(this.renderPreset);
     // Modelled district traffic loads in the background; lofted bodies stand in until it arrives.
-    this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.fortTraffic = createFortRoadTraffic(); applyStreetAtmosphere(this.fortTraffic.group, this.atmosphere); this.scene.add(this.fortTraffic.group); if (typeof location !== 'undefined') void preloadCityVehicleModels(location.origin).then(() => { if (this.disposed) return; this.fortTraffic.refresh(); this.city.refreshVehicles(); this.pausedFrameDirty = true; }); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}});
+    this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.fortTraffic = createFortRoadTraffic(() => this.street.loopVehicles); applyStreetAtmosphere(this.fortTraffic.group, this.atmosphere); this.scene.add(this.fortTraffic.group); if (typeof location !== 'undefined') void preloadCityVehicleModels(location.origin).then(() => { if (this.disposed) return; this.fortTraffic.refresh(); this.city.refreshVehicles(); this.pausedFrameDirty = true; }); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}});
     const preview=import.meta.env.DEV?new URLSearchParams(location.search).get('characterPreview'):null;
     // Licensed street cast: approved characters load at runtime; DEV ?characterPreview also shows candidates.
     const castPreview=preview==='idle'||preview==='walk'||preview==='cast';
@@ -181,9 +181,14 @@ export class WorldEngine {
     this.ride = { ...idleRide(), phase: this.reducedMotion ? 'boarding' : 'hailing', kind, fare: this.reducedMotion ? storyFare(kind, 0) : 0 };
     this.taxi.visible = kind === 'taxi'; this.auto.visible = kind === 'auto'; this.transit.visible = true; this.queuedDestination = null;
     // Pull in from the same lane, parallel to the pavement. No vehicle crosses a building.
-    this.ridePath = streetPickupRoute({x:this.visitor.position.x,z:this.visitor.position.z}); this.rideLength = routeLength(this.ridePath); this.pickupDistance = 0; this.rideSpeed=0;
+    this.ridePath = streetPickupRoute({x:this.visitor.position.x,z:this.visitor.position.z}); this.rideLength = routeLength(this.ridePath); this.clearPickup(); this.pickupDistance = 0; this.rideSpeed=0;
     const p = pointAtDistance(this.ridePath, this.reducedMotion ? this.rideLength : 0); this.transit.position.set(p.x, .02, p.z); this.transit.rotation.y = p.heading;
     this.options.onRide({ ...this.ride });
+  }
+  /** District or Fort Road traffic standing where the hailed cab pulls in makes way, so the cab never appears inside a car. */
+  private clearPickup() {
+    const ox = cityZones[zoneIndexAt(this.ridePath[0].x)].originX, local = this.ridePath.map(p => ({ x: p.x - ox, z: p.z }));
+    (this.zone ? this.district?.traffic : this.fortTraffic)?.clearAround(local, 2.2);
   }
   rideTo(id: string) {
     if (!streetStops[id] || this.ride.phase === 'idle') return;
@@ -217,7 +222,7 @@ export class WorldEngine {
   private fortPrevious = 0;
   private updateFortTraffic(others: THREE.Vector3[]) {
     const delta = this.reducedMotion ? 0 : Math.min(.08, Math.max(0, this.time - this.fortPrevious)); this.fortPrevious = this.time;
-    this.fortTraffic.update(this.time, delta, [this.camera.position, ...this.street.trafficPositions, ...others]);
+    this.fortTraffic.update(this.time, delta, [this.camera.position, ...others], this.street.roadWalkers);
   }
   private get district() { return this.zone ? this.city.get(this.zone) : null; }
   private finishRide() {
@@ -352,7 +357,7 @@ export class WorldEngine {
       }
       this.syncZone(this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? this.visitor.position.x : this.transit.position.x);
       this.updateCamera(); this.street.nearDetail=this.ride.phase==='idle'||this.ride.phase==='hailing'; const others = this.transit.visible ? [this.transit.position] : [];
-      if (this.zone === 0) { this.street.extraTrafficObstacles = this.fortTraffic.positions.map(p => ({ x: p.x, z: p.z })); this.street.update(this.time, this.reducedMotion,this.camera.position); this.updateFortTraffic(others); }
+      if (this.zone === 0) { this.street.loopTraffic = this.fortTraffic.onLane(FORT_LOOP_LANE); this.street.update(this.time, this.reducedMotion,this.camera.position); this.updateFortTraffic(others); }
       else this.district?.update(this.time, this.reducedMotion, this.camera.position, others);
       const needsRender=!this.reducedMotion||forceRender||this.camera.position.distanceToSquared(this.lastRenderPosition)>1e-8||this.camera.quaternion.angleTo(this.lastRenderRotation)>.0001||(this.renderer.shadowMap.enabled&&this.renderer.shadowMap.needsUpdate);
       if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)){this.resize();this.street.setQuality(this.quality.low);this.street.setDensity(this.renderPreset==='high'&&!this.quality.low);this.rendering.setPreset(this.quality.low?'low':this.renderPreset);this.resize();this.renderer.shadowMap.enabled=!this.options.mobile&&!this.quality.low&&this.renderPreset!=='low';this.syncSunBalance();this.renderer.shadowMap.needsUpdate=true;}

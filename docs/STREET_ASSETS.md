@@ -147,6 +147,46 @@ Textures peak at 32 and programs at 25. On High: spawn 254 / 549,277, junction 2
 
 **Limits:** the façades are flat painted quads. They read well from the street but have no depth up close, and the skyline repeats rows. They are generated artwork, not photographs.
 
+## Vehicle detail levels and traffic paths (14 October 2026, evening)
+
+Harsh said the vehicles were still not up to standard and that traffic drove onto the footpath and glitched. Audit 2 found the causes listed below.
+
+**Traffic paths.**
+- At CST, the street's taxi and auto loop (`RoadTraffic`) and the Fort through traffic (`LaneTraffic`) drove the same lanes, and only the loop gave way, so they passed through each other. Private cars and motorbikes now join the loop itself, as a closed lane that queues bumper to bumper with the taxis and autos (`LaneTraffic.lane(points, true, shared)`; `RoadTraffic.step` takes the other system's vehicles). Buses and the remaining cars use the cross street at z ≈ −62 and never turn into Fort Road.
+- The SUV stuck with its rear on the paving at z ≈ −56.8 was on the old through lane's turn; that lane is gone.
+- A hailed cab now clears open-lane traffic around its pickup route (`LaneTraffic.clearAround`), so the Worli auto no longer spawns inside a district car.
+- Parked bikes sit parallel to the kerb, and the Film City SUV and tempo park far enough onto the kerb for a bus to pass.
+- `scripts/probe-traffic.mjs` simulates a minute of traffic in each zone and casts rays down from each vehicle's roof at nine footprint points. It also runs a separating-axis overlap test. **All eight zones report no vehicle off the carriageway, no overlaps and no jumps.** `tests/traffic.test.ts` covers the shared loop: no overlaps, steady flow, and Fort vehicles stay on the road.
+
+**Models.** The levels are no longer collapse-decimated copies of the close-up model, which caused the black zig-zags on the bus sides. Each builder now builds itself three times (`VEHICLE_LOD` 0, 1 and 2) with fewer stations, simpler wheels and no fine parts at each step. `build_city.py` packs the three levels into one GLB.
+
+| Model | Near | Far (16 m) | Distant (40 m) |
+|---|---|---|---|
+| Hatchback / saloon / SUV | 4,756–4,864 | 1,772–1,880 | 732 |
+| Double-decker / single-deck bus | 3,568 / 3,096 | 1,548 / 1,360 | 722 / 642 |
+| Motorbike | 2,178 | 721 | 320 |
+
+- The bus front now has a split windscreen, an LED destination board reading "138 CSMT", a BEST badge, grille slats and lamps. The rear carries a route box.
+- Paint, glass, chrome and lamps carry their own roughness and metalness through a `finish` attribute in the shared paint material. This adds no textures; it likely accounts for the one extra program on CST (35, was 34).
+- Vehicles are hidden beyond 115 m, deep in the haze, instead of popping at 70 m. Cross-street vehicles that Fort Road's frontages hide from the visitor draw nothing (`hiddenByFrontage`).
+
+**Budget (main pass, cached shadows).**
+
+| Pose | Medium | High |
+|---|---|---|
+| CST spawn | 86 / 229,179 | 262 / 587,861 |
+| CST junction | 77 / 214,740 | 224 / 549,555 |
+| CST return | 106 / 222,381 | 282 / 577,421 |
+| CST station front | 47 / 137,788 | 95 / 275,291 |
+| Districts | ≤72 / ≤208,032 | ≤221 / ≤505,245 |
+
+- Triangles and draws are within both presets everywhere.
+- The first measurement had CST spawn at 235,105 on Medium, because of more visible vehicles and a car 11 m in front of the camera. Three changes fixed it: lighter distant cars (1,104 down to 732 triangles), the frontage occlusion, and starting the loop cars half a slot further on, beyond the arrival view's 16 m near range.
+- **Recorded honestly:** a modelled car passing within 16 m of any pose costs about 3,000 triangles more than one at the far level, the same as the lofted bodies before. A moving frame at spawn can therefore briefly read about 232,000.
+- Textures and programs are still over their ceilings because of the licensed cast, as above. No ceiling was raised.
+
+Review: `node scripts/review-vehicles.mjs <dir>` renders every model at each level, and `node scripts/probe-traffic.mjs [zones]` runs the path probe. Both need the dev server.
+
 ## Combined build and modelled traffic (14 October 2026)
 
 Harsh approved merging all four open pull requests. This branch now carries the scanned surfaces (#5), the licensed Rocketbox people (#2) and the seven walkable districts (#4) on top of the visual overhaul (#3).

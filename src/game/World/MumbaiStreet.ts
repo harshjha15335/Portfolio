@@ -24,7 +24,7 @@ import { FacadePanels } from './architecture/FacadePanels';
 import { SpatialIndex } from './spatial/SpatialIndex';
 import { createHuman, type Human } from './npc/NPCFactory';
 import { NavMeshManager, type Obstacle } from './navigation/NavMeshManager';
-import { RoadTraffic, pedestrianGreen } from './traffic/RoadTraffic';
+import { RoadTraffic, pedestrianGreen, type LoopVehicle } from './traffic/RoadTraffic';
 import type { CrowdAgent } from '@recast-navigation/core';
 
 type Triple = [number, number, number];
@@ -101,7 +101,12 @@ export class MumbaiStreet {
   private denseWalkers: Array<{group:THREE.Group;agent?:CrowdAgent;target:number;wait:number}> = [];
   private trafficVehicles: THREE.Group[] = [];
   /** Through traffic driven outside the street (cars, BEST buses) that the loop taxis must queue behind. */
-  extraTrafficObstacles: Array<{ x: number; z: number }> = [];
+  /** Other traffic on the Fort Road loop (the through cars), queued with the taxis and autos bumper to bumper. */
+  loopTraffic: LoopVehicle[] = [];
+  /** People crossing the carriageway this frame, for other traffic to stop for. */
+  readonly roadWalkers: THREE.Vector3[] = [];
+  /** The taxis and autos on the loop, for the through cars to queue behind. */
+  get loopVehicles(): LoopVehicle[] { return this.trafficSystem.agents.slice(0, this.trafficSystem.active).map((a, i) => ({ s: a.distance, length: RoadTraffic.lengthOf(i) })); }
   /** Where the street's own taxis and autos are, so through traffic can queue behind them. */
   get trafficPositions() { return this.trafficVehicles.map(v => v.position); }
   private parkedVehicles: THREE.Group[] = [];
@@ -831,7 +836,7 @@ export class MumbaiStreet {
       }
       this.navigation.crowd.update(1/30,delta,3);
     }
-    this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...[...this.walkers,...this.denseWalkers].filter(w=>w.agent&&Math.abs(w.group.position.x)<3.9).map(w=>({x:w.group.position.x,z:w.group.position.z})),...this.extraTrafficObstacles]);
+    this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.roadWalkers.length=0;for(const w of [...this.walkers,...this.denseWalkers])if(w.agent&&w.group.visible!==false&&Math.abs(w.group.position.x)<3.9)this.roadWalkers.push(w.group.position);this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...this.roadWalkers.map(p=>({x:p.x,z:p.z}))],this.loopTraffic);
     this.trafficVehicles.forEach((vehicle,i)=>{if(i>=this.trafficSystem.active)return;const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y+=turn*(1-Math.exp(-8*delta));animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);});this.trafficUpdateMs=performance.now()-trafficStart;
     for (const animate of this.motion) animate(reduced ? 0 : time);
     this.group.updateMatrixWorld(true);

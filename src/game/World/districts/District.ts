@@ -9,13 +9,15 @@ import { Crowd, LaneTraffic, SignAtlas, Water } from './DistrictSystems';
 import { backdropBlock, constructionSite, rooftop, skylineCrown, streetClutter, streetLight, towerRelief, PASTELS, type Ctx } from './buildings';
 import type { Outfit } from './CityFolk';
 import { createCityVehicle, VEHICLE_LENGTH, type CityVehicleKind } from './CityVehicles';
-import { paintMaterial, type V3 } from './ColorMesh';
+import { paintMaterial, withFinish, type V3 } from './ColorMesh';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 /**
  * How full the districts are, set from the graphics preset before a district is built
  * (a district already built keeps its crowd until it is rebuilt on the next visit).
  */
+/** Where district traffic enters and leaves the road (z): far enough out that vehicles appear and vanish beyond the haze. */
+const LANE_END = [150, -190] as const;
 export const cityDensity = { crowd: 1.35, traffic: 1.7 };
 export function setCityDensity(preset: 'low' | 'medium' | 'high') {
   Object.assign(cityDensity, preset === 'low' ? { crowd: .9, traffic: 1 } : preset === 'high' ? { crowd: 2.6, traffic: 2.4 } : { crowd: 1.35, traffic: 1.7 });
@@ -63,13 +65,13 @@ export class District {
   private street() {
     const { kit } = this, c = this.ctx, palette = this.spec.palette ?? PASTELS;
     kit.box([300, .1, 340], [0, -.12, -22], '#6d6f69', 'asphalt');
-    kit.box([7.8, .04, 290], [0, -.03, -22], '#55585a', 'asphalt');
+    kit.box([7.8, .04, 340], [0, -.03, -22], '#55585a', 'asphalt');
     for (let z = 118; z > -160; z -= 6) kit.box([.1, .01, 2.2], [0, .0, z], '#b8b09a');
     for (let i = 0; i < 8; i++) kit.box([.55, .01, 2.6], [-3 + i * .85, .0, -12], '#d4cfbf');
     kit.box([60, .035, 7], [0, -.015, 16.5], '#5a5d5e', 'asphalt'); kit.box([60, .035, 8], [0, -.015, -60.5], '#5a5d5e', 'asphalt');
     for (const side of [-1, 1]) {
       if ((side < 0 ? this.spec.west : this.spec.east) === 'open') continue;
-      kit.box([2.9, .08, 290], [side * 5.35, .02, -22], '#aea493', 'paving');
+      kit.box([2.9, .08, 340], [side * 5.35, .02, -22], '#aea493', 'paving');
       for (let z = 118; z > -160; z -= 1.7) kit.box([.24, .14, 1.6], [side * 3.98, .06, z], Math.floor(z / 1.7) % 2 ? '#c7a84f' : '#2f2e2b');
       for (let z = 10; z > -60; z -= 16) streetLight(c, side * 6.4, z, side);
       for (let z = 9; z > -60; z -= 4.5) kit.box([.65, .015, .45], [side * 3.45, .005, z], '#2a2e33', 'metal');
@@ -110,7 +112,7 @@ export class District {
     this.interactions.push({ id: this.spec.id, label: `Talk to ${this.spec.guide}`, position: new THREE.Vector3(this.origin.x + gx, 1.45, gz) });
   }
   private populateTraffic() {
-    const n = Math.round(this.spec.traffic.length * cityDensity.traffic), kinds = Array.from({ length: n }, (_, i) => this.spec.traffic[(i * 7) % this.spec.traffic.length]), north = this.traffic.lane([[1.6, 0, 120], [1.6, 0, -160]]), south = this.traffic.lane([[-1.6, 0, -160], [-1.6, 0, 120]]);
+    const n = Math.round(this.spec.traffic.length * cityDensity.traffic), kinds = Array.from({ length: n }, (_, i) => this.spec.traffic[(i * 7) % this.spec.traffic.length]), north = this.traffic.lane([[1.6, 0, LANE_END[0]], [1.6, 0, LANE_END[1]]]), south = this.traffic.lane([[-1.6, 0, LANE_END[1]], [-1.6, 0, LANE_END[0]]]);
     kinds.forEach((kind, i) => this.traffic.vehicle(i % 2 ? south : north, kind, ((i >> 1) + (i % 2) * .5) / Math.ceil(kinds.length / 2), `${this.spec.id}:${i}`));
   }
   /* --------- helpers used by district builders --------- */
@@ -168,13 +170,14 @@ export class District {
           p.group.rotation.y = Math.atan2(px - x, pz - z);
         }
       }
-      // Two-wheelers parked nose-in at the kerb, in clusters.
+      // Two-wheelers parked in line along the kerb, in clusters. Nose-in rows would reach into the traffic lane
+      // (a 2 m bike from the kerb ends where a passing car's flank is), so they stand parallel, clear of it.
       const kinds = ['bike', 'bike', 'cycle', 'bike'] as const;
-      for (let z = 10 - r() * 4; z > -58; z -= 14 + r() * 8) {
-        if (!this.clearOf(side * 3.4, z) || !this.clearOf(side * 3.4, z - 4)) continue;
-        const count = 3 + Math.floor(r() * 3);
-        for (let i = 0; i < count; i++) this.parkedLite(kinds[Math.floor(r() * kinds.length)], side * 3.35, z - i * .85, side > 0 ? -Math.PI / 2 + (r() - .5) * .2 : Math.PI / 2 + (r() - .5) * .2);
-        this.kit.solid([1.6, 1.2, count * .85], [side * 3.35, .6, z - (count - 1) * .85 / 2]);
+      for (let z = 10 - r() * 4; z > -58; z -= 16 + r() * 8) {
+        const count = 2 + Math.floor(r() * 3), span = count * 2.2;
+        if (!this.clearOf(side * 3.45, z) || !this.clearOf(side * 3.45, z - span)) continue;
+        for (let i = 0; i < count; i++) this.parkedLite(kinds[Math.floor(r() * kinds.length)], side * 3.45, z - 1.1 - i * 2.2, (side > 0 ? Math.PI : 0) + (r() - .5) * .12);
+        this.kit.solid([.8, 1.2, span], [side * 3.45, .6, z - span / 2]);
       }
     }
     this.flushParked();
@@ -187,7 +190,7 @@ export class District {
   }
   private flushParked() {
     if (!this.parkedParts.length) return;
-    const mesh = new THREE.Mesh(mergeGeometries(this.parkedParts)!, paintMaterial()); this.parkedParts.forEach(g => g.dispose()); this.parkedParts = [];
+    const mesh = new THREE.Mesh(mergeGeometries(withFinish(this.parkedParts))!, paintMaterial()); this.parkedParts.forEach(g => g.dispose()); this.parkedParts = [];
     mesh.name = 'district:parked'; mesh.castShadow = mesh.receiveShadow = true; this.group.add(mesh);
   }
   setActive(active: boolean) { this.group.visible = active; }
