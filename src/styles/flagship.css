@@ -83,3 +83,23 @@
   .transcript li { grid-template-columns:40px 1fr; } .transcript li span { grid-column:1 / -1; }
   .lab-table th, .lab-table td { padding:6px 4px; font-size:12px; overflow-wrap:anywhere; }
 }
+
+/* Fort coordinate workstation (inside the research exhibition). */
+.coordinate-workstation { background:var(--surface); border-top:3px solid #327b79; padding:24px; margin:28px 0; color:var(--ink); }
+.coordinate-workstation > header { max-width:780px; margin-bottom:18px; }
+.coordinate-workstation > header h3 { font:600 clamp(28px,3.5vw,40px)/1 var(--display); margin:8px 0 10px; }
+.coordinate-workstation > header p { font-size:14px; color:var(--muted); }
+.coordinate-workstation .lab-controls label { gap:2px; }
+.coordinate-workstation .lab-controls output { font-weight:600; color:#327b79; margin-left:6px; }
+.coordinate-workstation input[type=range] { width:100%; accent-color:#327b79; }
+.coordinate-workstation code { font:11px var(--mono); }
+.coordinate-workstation a { text-decoration:underline; }
+.workstation-split { display:grid; grid-template-columns:200px minmax(0,1fr); gap:20px; align-items:start; }
+.workstation-split svg { max-width:200px; }
+.coordinate-workstation .lab-controls label { text-transform:none; }
+.lab-chart path.lobe-pos { fill:rgba(50,123,121,.55); stroke:#327b79; stroke-width:1; }
+.lab-chart path.lobe-neg { fill:rgba(190,96,58,.5); stroke:#be603a; stroke-width:1; }
+.workstation-split .unit { fill:none; stroke:var(--muted); stroke-dasharray:2 3; }
+.workstation-split .axis { stroke:var(--muted); stroke-width:.6; }
+.workstation-split text { font:9px var(--mono); fill:var(--muted); }
+@media (max-width:760px) { .coordinate-workstation { padding:16px; } .workstation-split { grid-template-columns:1fr; } }

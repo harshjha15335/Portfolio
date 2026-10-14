@@ -1,6 +1,7 @@
 import {useMemo,useState} from 'react';
 import {sampleMultipole} from '../research/multipoles';
 import evidence from '../research/evidence.json';
+import {CoordinateWorkstation} from './CoordinateWorkstation';
 
 /** HTML/SVG scientific exhibit: keyboard-operable, no extra WebGL context. */
 export function ResearchExhibition(){
@@ -20,6 +21,7 @@ export function ResearchExhibition(){
    <div className="research-coordinates"><label>Inspect x<input type="range" min="-3.8" max="3.8" step=".1" value={point.x} onChange={e=>setPoint(p=>({...p,x:Number(e.target.value)}))}/><output>{point.x.toFixed(2)}</output></label><label>Inspect y<input type="range" min="-2.1" max="2.1" step=".1" value={point.y} onChange={e=>setPoint(p=>({...p,y:Number(e.target.value)}))}/><output>{point.y.toFixed(2)}</output></label></div>
    <output className="research-readout" aria-live="polite">{sample?`V = ${sample.potential.toFixed(4)} · Ex = ${sample.ex.toFixed(4)} · Ey = ${sample.ey.toFixed(4)} (arbitrary units)`:'Origin excluded: the point-multipole model is singular here.'}</output>
   </div><article className="research-explanation"><span className="eyebrow">0{chapter+1} / {chapters[chapter].title}</span><h3>{chapters[chapter].body}</h3><p className="research-equation">{chapters[chapter].formula}</p><p>{chapters[chapter].detail}</p><a href={evidence.formulaSource.url} target="_blank" rel="noreferrer">INSPECT PINNED IMPLEMENTATION ↗</a></article></div>
+  <CoordinateWorkstation/>
   <div className="research-evidence"><div><span className="eyebrow">REVIEWED UPSTREAM / VERIFIED {evidence.verifiedOn}</span><h3>Five merged contributions.</h3><p>GitHub confirms PR #19 is now merged; the final report still describes its notebooks as under review. The repository is collaborative work. No new performance or accuracy result is claimed here.</p></div><ol>{evidence.pullRequests.map(pr=><li key={pr.number}><a href={pr.url} target="_blank" rel="noreferrer"><b>#{pr.number}</b><span>{pr.title}<small>Merged {pr.mergedAt.slice(0,10)} · {pr.commit.slice(0,7)}</small></span><span>↗</span></a></li>)}</ol></div>
  </section>;
 }

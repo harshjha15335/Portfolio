@@ -75,3 +75,30 @@ Tests:
 - `npx playwright test -c playwright.cloud.config.ts` on the 17 quick-view, case-study, city-panel and phone tests: all pass.
   World-rendering tests (walking, rides) were not re-run: this change does not touch the renderer, and under
   SwiftShader each takes minutes.
+
+## 2. Fort coordinate workstation (brief §6, interaction B)
+
+### Implemented and tested
+
+The Fort research exhibition now includes a coordinate workstation. It appears in the Fort district panel and in
+the FFprime case study. The visitor edits a traceless Cartesian quadrupole and a dipole, and then sees:
+- the real spherical components with the formula for each one;
+- the round-trip error back to Θ;
+- the angular pattern of the quadrupole potential;
+- the potential at a chosen point, computed both in Cartesian form and directly from the spherical components.
+
+Breaking tracelessness reproduces FFprime's own `ValueError` text.
+
+- Port: `src/research/stone.ts`, from `theochem/ffprime@02ac79d` `ffprime/electrostatics/spherical.py`
+  (Stone convention, commit `d160e72` by harshjha15335) and `cartesian.py` `quadrupole_potential`.
+- UI: `src/ui/CoordinateWorkstation.tsx`, mounted in `src/ui/ResearchExhibition.tsx`.
+- Tests: `tests/stone.test.ts` compares conversions and potentials with values printed by the upstream Python
+  module (to 1e-12) and checks round trips and rejections. A new browser test,
+  "Fort coordinate workstation converts, agrees and refuses a non-traceless tensor", covers the UI.
+- Screenshots: [workstation](screenshots/fort/fort-workstation.png),
+  [non-traceless tensor refused](screenshots/fort/fort-workstation-error.png).
+
+### Not yet done for Fort
+
+- Interaction C (researcher NPC with evidence-grounded dialogue) still uses the existing district guide text.
+- The lab, simulation room and archive interiors are not built.
