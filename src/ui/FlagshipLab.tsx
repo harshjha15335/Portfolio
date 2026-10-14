@@ -197,7 +197,3 @@ function RepoLensOffice() {
   </Lab>;
 }
 
-/** ASTFLOW could not be verified: no repository by that name exists among Harsh's GitHub repositories. */
-export function AstflowBlocked() {
-  return <section className="flagship-lab blocked" aria-label="ASTFLOW Engineering Lab, blocked"><header><span className="eyebrow">POWAI / PLANNED · BLOCKED</span><h3>ASTFLOW Engineering Lab</h3><p>No ASTFLOW repository or document was found among the 19 repositories on github.com/harshjha15335 (checked 14 October 2026), so its purpose cannot be verified. The lab stays closed rather than showing an invented demo.</p></header></section>;
-}
