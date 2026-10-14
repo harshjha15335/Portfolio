@@ -39,25 +39,29 @@
 .hop-list li.skipped { opacity:.45; }
 .hop-list a { text-decoration:underline; } .hop-list code { font:600 11px var(--mono); }
 .hop-list span { display:block; color:var(--muted); margin-top:2px; }
-.pipeline { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
-.pipeline .job { border:1px solid var(--ink); background:var(--paper); padding:12px; min-width:0; }
-.pipeline .job.fail { border-color:#a33a1f; } .pipeline .job.skipped { opacity:.55; border-style:dashed; }
-.pipeline h4 { display:flex; justify-content:space-between; gap:8px; font:600 12px var(--mono); margin:0 0 8px; text-transform:uppercase; }
-.pipeline h4 small { font:500 9px var(--mono); }
-.pipeline ol { list-style:none; margin:0 0 8px; padding:0; display:grid; gap:4px; }
-.pipeline li button, .pipeline li > span { width:100%; display:grid !important; grid-template-columns:16px 1fr; gap:6px; font:12px var(--body) !important; padding:6px 8px !important; border:1px solid var(--border) !important; text-align:left; }
-.pipeline li .fail { background:#f2d9cf; border-color:#a33a1f !important; }
-.pipeline li .skipped { opacity:.5; }
-.pipeline li .pass b { color:#2f6b35; } .pipeline li .fail b { color:#a33a1f; }
-.pipeline .gated { border-style:double; border-width:3px; }
-.pipeline .gated a { font:500 11px var(--mono); text-decoration:underline; }
+.ci-pipeline { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
+.ci-pipeline .job { border:1px solid var(--ink); background:var(--paper); padding:12px; min-width:0; }
+.ci-pipeline .job.fail { border-color:#a33a1f; } .ci-pipeline .job.skipped { opacity:.55; border-style:dashed; }
+.ci-pipeline h4 { display:flex; justify-content:space-between; gap:8px; font:600 12px var(--mono); margin:0 0 8px; text-transform:uppercase; }
+.ci-pipeline h4 small { font:500 9px var(--mono); }
+.ci-pipeline ol { list-style:none; margin:0 0 8px; padding:0; display:grid; gap:4px; }
+.ci-pipeline li button, .ci-pipeline li > span { width:100%; display:grid !important; grid-template-columns:16px 1fr; gap:6px; font:12px var(--body) !important; padding:6px 8px !important; border:1px solid var(--border) !important; text-align:left; }
+.ci-pipeline li .fail { background:#f2d9cf; border-color:#a33a1f !important; }
+.ci-pipeline li .skipped { opacity:.5; }
+.ci-pipeline li .pass b { color:#2f6b35; } .ci-pipeline li .fail b { color:#a33a1f; }
+.ci-pipeline .gated { border-style:double; border-width:3px; }
+.ci-pipeline .gated a { font:500 11px var(--mono); text-decoration:underline; }
 .guard-stages { list-style:none; display:flex; flex-wrap:wrap; gap:6px; padding:0; margin:0 0 6px; }
 .guard-stages li { font:500 10px var(--mono); text-transform:uppercase; padding:6px 8px; border:1px solid var(--border); }
 .guard-stages li.pass { background:#dce8d6; } .guard-stages li.fail { background:#f2d9cf; } .guard-stages li.skipped { opacity:.45; }
 @media (max-width:760px) {
   .shop-signs { grid-template-columns:1fr 1fr; }
-  .shop-front, .bench-split { grid-template-columns:1fr; }
+  .shop-front, .bench-split { grid-template-columns:minmax(0,1fr); }
+  .bench-split figure { min-width:0; }
   .skill-card { padding:14px; }
   .skill-card dl { grid-template-columns:1fr; gap:4px; } .skill-card dd { margin-bottom:8px; }
   .bench-inputs { grid-template-columns:1fr 1fr; }
 }
+.shop-bench .bench-inputs label { text-transform:none; }
+.shop-bench .lab-presets { margin-bottom:18px; }
+.ci-pipeline li button[aria-pressed=true] { background:#f2d9cf; color:var(--ink); }

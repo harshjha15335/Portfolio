@@ -194,7 +194,7 @@ function DevOpsBench() {
   return <>
     <div className="lab-presets" role="group" aria-label="Pipeline">{PIPELINES.map(x => <button key={x.id} aria-pressed={x.id === id} onClick={() => { setId(x.id); setFail(null); }}>{x.repo}</button>)}</div>
     <p className="bench-title"><b>{p.title}</b> · <a href={p.href} target="_blank" rel="noopener noreferrer"><code>{p.file}</code> ↗</a> · on {p.trigger}</p>
-    <div className="pipeline" role="group" aria-label="Pipeline jobs">{p.jobs.map((job, j) => <section key={job.id} className={`job ${run.jobs[j].conclusion}`}>
+    <div className="ci-pipeline" role="group" aria-label="Pipeline jobs">{p.jobs.map((job, j) => <section key={job.id} className={`job ${run.jobs[j].conclusion}`}>
       <h4>{job.name}<small>{run.jobs[j].conclusion.toUpperCase()}</small></h4>
       <ol>{job.steps.map((step, i) => { const st = run.jobs[j].states[i]; return <li key={step}><button className={st} aria-pressed={fail?.job === job.id && fail.step === i} aria-label={`${job.name}: ${step} (${st})`} onClick={() => setFail(f => f?.job === job.id && f.step === i ? null : { job: job.id, step: i })}><b>{st === 'pass' ? '✓' : st === 'fail' ? '✕' : '–'}</b>{step}</button></li>; })}</ol>
     </section>)}

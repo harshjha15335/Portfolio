@@ -154,6 +154,14 @@ existing skill-evidence test now goes through Frontend Studio.
 - [DevOps Garage, failing pytest blocks the Azure deploy](screenshots/andheri/andheri-devops.png)
 - [AI Integration Lab, invented field rejected](screenshots/andheri/andheri-ai.png) · [at 390 px](screenshots/andheri/andheri-ai-390.png)
 
+### Commands run
+
+- `npx vitest run`: 191 passed (23 files). `npx tsc --noEmit`: clean. `npm run build`: succeeds.
+- Playwright (cloud config): 14 quick-view, case-study, city-panel, Powai, Fort, Andheri and phone tests pass.
+  "reduced-motion transport arrives directly and can be reboarded" fails here, and fails the same way on the
+  unchanged base branch (the world loader is still up when the 12 s expect timeout ends under SwiftShader), so it
+  is environmental, not this change. `RideMeter` moved to its own file unchanged; the Frontend Studio test renders it.
+
 ### Not yet done for Andheri
 
 - The shops are panels opened from the district guide. Walk-in shop interiors and shopkeeper NPCs (brief §8 physical
