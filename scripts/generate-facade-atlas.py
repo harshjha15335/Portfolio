@@ -284,6 +284,6 @@ record.update({'sha256': hashlib.sha256(path.read_bytes()).hexdigest(), 'bytes':
                'author': 'Harsh Jha portfolio (original generator)', 'license': 'CC0-1.0',
                'licenseUrl': 'https://creativecommons.org/publicdomain/zero/1.0/', 'source': 'scripts/generate-facade-atlas.py',
                'modifications': f'Original Mumbai mid-rise façade atlas, 4 x 4 cells of one {METRES:g} m bay each; no photographs or third-party input.'})
-provenance['source'] = 'scripts/generate-plaster-maps.py and scripts/generate-facade-atlas.py (generated), scripts/import-scanned-surfaces.py (scanned)'
+provenance['source'] = 'scripts/import-scanned-surfaces.py (scans) and scripts/generate-facade-atlas.py (generated façade atlas)'
 provenance_path.write_text(json.dumps(provenance, indent=2) + '\n')
 print(path, out_img.size, path.stat().st_size)

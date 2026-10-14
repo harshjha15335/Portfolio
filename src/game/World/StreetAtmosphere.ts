@@ -45,6 +45,9 @@ if ( uWorldUv > 0.0 || uWallUv > 0.0 ) {
  #ifdef USE_ROUGHNESSMAP
  vRoughnessMapUv = worldUv;
  #endif
+ #ifdef USE_BUMPMAP
+ vBumpMapUv = worldUv;
+ #endif
 }`;
 
 const FRAGMENT_HEAD=`uniform float uWeather;

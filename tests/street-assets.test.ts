@@ -38,16 +38,16 @@ describe('backdrop façade atlas',()=>{
  });
 });
 
-describe('scanned asphalt',()=>{
- it('replaces the generated asphalt maps one for one with a pinned CC0 scan',async()=>{
-  const asphalt=surfaces.files.filter(r=>r.surface==='asphalt');
-  expect(asphalt.map(r=>r.channel).sort()).toEqual(['color','normal','roughness']);
-  for(const r of asphalt){
-   expect(r).toMatchObject({origin:'scanned',license:'CC0-1.0',width:512,height:512});
+describe('scanned surfaces',()=>{
+ it('replaces each surface\'s maps one for one with pinned CC0 scans',async()=>{
+  const channels=(surface:string)=>surfaces.files.filter(r=>r.surface===surface).map(r=>r.channel).sort();
+  expect(channels('asphalt')).toEqual(['color','normal','roughness']);expect(channels('plaster')).toEqual(['color','normal','roughness']);
+  // Stone and paving keep their single colour slot, so the street's texture count is unchanged.
+  expect(channels('stone')).toEqual(['color']);expect(channels('paving')).toEqual(['color']);
+  for(const r of surfaces.files.filter(r=>r.surface!=='facade')){
+   expect(r).toMatchObject({origin:'scanned',license:'CC0-1.0',width:r.surface==='asphalt'?512:1024});expect(r.source).toMatch(/^https:\/\/polyhaven\.com\/a\//);
    const bytes=file(`/surfaces/${r.file}`);expect(bytes.length).toBe(r.bytes);expect(await sha(bytes)).toBe(r.sha256);
   }
-  // Plaster is still the original generator's output, and says so.
-  expect(surfaces.files.filter(r=>r.surface==='plaster').every(r=>(r as {origin?:string}).origin==='generated')).toBe(true);
  });
  it('maps world metres through the shared weathering patch without a new program key',()=>{
   const uniforms=createAtmosphereUniforms(new THREE.Vector3(-39,13,-72),new THREE.Vector3(0,0,-26),'#f2b682');
@@ -58,17 +58,17 @@ describe('scanned asphalt',()=>{
   road.onBeforeCompile(shader as unknown as THREE.WebGLProgramParametersWithUniforms,{} as THREE.WebGLRenderer);
   expect(shader.uniforms.uWorldUv.value).toBeCloseTo(1/3);expect(shader.vertexShader).toContain('weatherWorld.xz * uWorldUv');expect(shader.vertexShader).toContain('vMapUv = worldUv;');
  });
- it('tiles the generated cement render every 2 m on wall faces, with the same program key',()=>{
+ it('tiles the scanned render every 1.5 m on wall faces, with the same program key',()=>{
   const uniforms=createAtmosphereUniforms(new THREE.Vector3(-39,13,-72),new THREE.Vector3(0,0,-26),'#f2b682');
-  const wall=new THREE.MeshStandardMaterial();wall.userData={surface:'plaster',wallUv:1/2};const glass=new THREE.MeshStandardMaterial();glass.userData={surface:'glass'};
+  const wall=new THREE.MeshStandardMaterial();wall.userData={surface:'plaster',wallUv:1/1.5};const glass=new THREE.MeshStandardMaterial();glass.userData={surface:'glass'};
   patchMaterial(wall,uniforms);patchMaterial(glass,uniforms);expect(wall.customProgramCacheKey()).toBe(glass.customProgramCacheKey());
   const shader={uniforms:{} as Record<string,{value:unknown}>,vertexShader:'#include <worldpos_vertex>',fragmentShader:'#include <color_fragment>\n#include <normal_fragment_maps>\n#include <fog_fragment>'};
   wall.onBeforeCompile(shader as unknown as THREE.WebGLProgramParametersWithUniforms,{} as THREE.WebGLRenderer);
-  expect(shader.uniforms.uWallUv.value).toBeCloseTo(.5);expect(shader.uniforms.uWorldUv.value).toBe(0);
+  expect(shader.uniforms.uWallUv.value).toBeCloseTo(1/1.5);expect(shader.vertexShader).toContain('vBumpMapUv = worldUv;');expect(shader.uniforms.uWorldUv.value).toBe(0);
   // Relief perturbs the shading normal from world-space noise; no texture is sampled for it.
   expect(shader.fragmentShader).toContain('normal = normalize( abs( rdet ) * normal - rgrad );');
   const plaster=surfaces.files.filter(r=>r.surface==='plaster');expect(plaster).toHaveLength(3);
-  for(const r of plaster){expect(r).toMatchObject({width:1024,height:1024,license:'CC0-1.0',source:'scripts/generate-plaster-maps.py'});expect(file(`/surfaces/${r.file}`).length).toBe(r.bytes);}
+  for(const r of plaster)expect(r).toMatchObject({width:1024,height:1024,tileMetres:1.5,source:'https://polyhaven.com/a/plaster_grey_04'});
  });
 });
 
