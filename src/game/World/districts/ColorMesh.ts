@@ -19,6 +19,19 @@ const unit = {
 const liteUnit: Record<UnitShape, THREE.BufferGeometry> = { ...unit, rounded: new RoundedBoxGeometry(1, 1, 1, 1, .1), cylinder: unit.cylinderLow, tyre: new THREE.CylinderGeometry(1, 1, 1, 12), rim: new THREE.CylinderGeometry(1, 1, 1, 9), sphere: new THREE.SphereGeometry(1, 6, 4), cone: new THREE.ConeGeometry(1, 1, 5) };
 export type UnitShape = keyof typeof unit;
 const tapers = new Map<string, THREE.BufferGeometry>();
+const lathes = new Map<string, THREE.BufferGeometry>();
+/** Unit tyre and rim profiles turned about Y (radius 1, width 1). */
+function lathe(segments: number, kind: 'tyre' | 'rim') {
+  const key = `${kind}:${segments}`; let g = lathes.get(key);
+  if (!g) {
+    const v = (x: number, y: number) => new THREE.Vector2(x, y);
+    const profile = kind === 'tyre'
+      ? [v(.62, -.5), v(.9, -.5), v(.98, -.42), v(1, -.25), v(1, .25), v(.98, .42), v(.9, .5), v(.62, .5)]
+      : [v(0, -.42), v(.5, -.44), v(.64, -.38), v(.66, 0), v(.64, .38), v(.5, .44), v(0, .42)];
+    g = new THREE.LatheGeometry(profile, segments); lathes.set(key, g);
+  }
+  return g;
+}
 
 /** Strip a geometry down to indexed position + normal so different sources merge. */
 export function plain(geometry: THREE.BufferGeometry) {
@@ -63,16 +76,43 @@ export class ColorMesh {
   }
   shape(kind: UnitShape, size: V3, position: V3, color: string | THREE.Color, rotation: V3 = [0, 0, 0]) {
     if (this.lite && Math.max(...size) < .13) return null;
-    return this.add((this.lite ? liteUnit : unit)[kind], color, position, size, rotation);
+    // Small rounded parts (lamps, mirrors, seats) keep one bevel segment; it reads the same at a fraction of the cost.
+    const cheap = this.lite || kind === 'rounded' && Math.max(...size) < .7;
+    return this.add((cheap ? liteUnit : unit)[kind], color, position, size, rotation);
   }
   box(size: V3, position: V3, color: string | THREE.Color, rotation: V3 = [0, 0, 0]) { return this.shape('box', size, position, color, rotation); }
   rounded(size: V3, position: V3, color: string | THREE.Color, rotation: V3 = [0, 0, 0]) { return this.shape('rounded', size, position, color, rotation); }
-  /** A wheel or drum lying across X. */
+  /** A wheel lying across X: a rounded tyre, a dished rim with spokes and a hub cap. */
   wheel(radius: number, width: number, position: V3, color = '#1d2021', hub = '#8b8d86') {
-    // Round tyre, a pressed rim and a small hub cap.
-    this.shape('tyre', [radius, width, radius], position, color, [0, 0, Math.PI / 2]);
-    this.shape('rim', [radius * .6, width * 1.08, radius * .6], position, hub, [0, 0, Math.PI / 2]);
-    this.shape('cylinderLow', [radius * .2, width * 1.14, radius * .2], position, '#c9cbc6', [0, 0, Math.PI / 2]);
+    const turn: V3 = [0, 0, Math.PI / 2];
+    // Far away a wheel is just a tyre drum and a rim disc.
+    if (this.lite) { this.shape('tyre', [radius, width, radius], position, color, turn); this.shape('rim', [radius * .64, width * 1.06, radius * .64], position, hub, turn); return; }
+    this.add(lathe(18, 'tyre'), color, position, [radius, width, radius], turn);
+    this.add(lathe(12, 'rim'), hub, position, [radius, width, radius], turn);
+    this.shape('cylinder', [radius * .16, width * 1.02, radius * .16], position, '#c9cbc6', turn);
+    // Five spokes stand proud of the dish on both faces.
+    for (let i = 0; i < 5; i++) {
+      const a = i / 5 * Math.PI * 2, y = Math.cos(a) * radius * .33, z = Math.sin(a) * radius * .33;
+      this.box([width * .98, radius * .09, radius * .42], [position[0], position[1] + y, position[2] + z], hub, [a - Math.PI / 2, 0, 0]);
+    }
+  }
+  /**
+   * A smooth surface through rings of points (each ring a closed loop), e.g. a car body lofted
+   * through its cross-sections. `cap` closes the first and last ring with a fan; an open
+   * (`closed` false) ring makes a strip, such as a roof skin.
+   */
+  loft(rings: THREE.Vector3[][], color: string | THREE.Color, cap = true, closed = true) {
+    const n = rings[0].length, position: number[] = [], index: number[] = [];
+    for (const ring of rings) for (const p of ring) position.push(p.x, p.y, p.z);
+    for (let r = 0; r < rings.length - 1; r++) for (let i = 0; i < (closed ? n : n - 1); i++) {
+      const a = r * n + i, b = r * n + (i + 1) % n, c = a + n, d = b + n; index.push(a, b, c, b, d, c);
+    }
+    if (cap) for (const [r, flip] of [[0, true], [rings.length - 1, false]] as const) {
+      const centre = rings[r].reduce((s, p) => s.add(p), new THREE.Vector3()).divideScalar(n), k = position.length / 3; position.push(centre.x, centre.y, centre.z);
+      for (let i = 0; i < n; i++) { const a = r * n + i, b = r * n + (i + 1) % n; index.push(...(flip ? [k, b, a] : [k, a, b])); }
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(position, 3)); g.setIndex(index); g.computeVertexNormals();
+    this.add(g, color, [0, 0, 0]); g.dispose();
   }
   /** A thin rod between two points. */
   rod(a: V3, b: V3, radius: number, color: string) {

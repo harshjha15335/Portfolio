@@ -3,6 +3,7 @@ import * as CANNON from 'cannon-es';
 import { MumbaiStreet } from '../src/game/World/MumbaiStreet';
 import { cityRideLegs, cityZones, DISTRICT_SPACING, districtViews, streetStops, zoneAt, zoneIndexAt } from '../src/game/World/streetLayout';
 import { CityDistricts } from '../src/game/World/districts/CityDistricts';
+import { createCityVehicle } from '../src/game/World/districts/CityVehicles';
 import { districts } from '../src/data/city';
 import { routeLength } from '../src/game/World/transit';
 import * as THREE from 'three';
@@ -55,6 +56,9 @@ describe('city districts', () => {
       });
       district.crowd.group.traverse(o => { if ((o as THREE.SkinnedMesh).isSkinnedMesh) expect((o.userData.lodGeometries as unknown[]).length).toBe(3); });
       for (const v of district.traffic.group.children) expect((v.userData.lodGeometries as unknown[]).length).toBe(2);
+      // Nobody stands inside anybody else.
+      const standing = district.crowd.standing().map(p => p.group.position);
+      for (let a = 0; a < standing.length; a++) for (let b = a + 1; b < standing.length; b++) expect(Math.hypot(standing[a].x - standing[b].x, standing[a].z - standing[b].z), cityZones[i].id).toBeGreaterThan(.8);
       expect(staticDraws, cityZones[i].id).toBeLessThan(20);
       expect(staticTriangles, cityZones[i].id).toBeLessThan(180_000);
       expect(movers, cityZones[i].id).toBeLessThan(120);
@@ -65,4 +69,13 @@ describe('city districts', () => {
     expect(physics.bodies.length).toBe(baseline);
     expect(root.children).toHaveLength(0);
   }, 120_000);
+  it('builds smooth vehicles whose far version is a fraction of the near one', () => {
+    const triangles = (m: THREE.Mesh) => (m.geometry.index ? m.geometry.index.count : m.geometry.getAttribute('position').count) / 3;
+    for (const kind of ['hatch', 'sedan', 'suv', 'taxi', 'bus', 'auto', 'bike', 'cycle', 'tempo', 'cart'] as const) {
+      const near = createCityVehicle(kind, 'test'), far = createCityVehicle(kind, 'test', true, true);
+      expect(triangles(near), kind).toBeLessThan(7000);
+      expect(triangles(far), kind).toBeLessThan(triangles(near) * .55);
+      near.geometry.dispose(); far.geometry.dispose();
+    }
+  });
 });

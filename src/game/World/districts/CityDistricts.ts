@@ -4,6 +4,7 @@ import type { StreetMaterials } from '../StreetMaterials';
 import { cityZones } from '../streetLayout';
 import { District } from './District';
 import { DISTRICT_SPECS } from './catalog';
+import type { DistrictCast } from './DistrictCast';
 
 /**
  * The seven districts beyond CST–Fort. Each is built the first time it is needed
@@ -33,5 +34,7 @@ export class CityDistricts {
   private pending = -1;
   /** Build a district ahead of arrival (a ride towards it) without disposing the current one. */
   prepare(index: number) { if (index > 0) { this.pending = index; this.get(index); } }
+  /** Give every built district's crowd the licensed cast once it has loaded. */
+  adoptCast(cast: DistrictCast) { for (const d of this.built.values()) d.crowd.adopt(cast); }
   dispose() { for (const d of this.built.values()) d.dispose(); this.built.clear(); }
 }

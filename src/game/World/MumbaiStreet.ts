@@ -673,6 +673,8 @@ export class MumbaiStreet {
       restrictInstanceShadows(instance,count); instance.receiveShadow = true; instance.frustumCulled = true; this.group.add(instance); this.dynamicBatches.push({ instance, meshes });
     }
   }
+  /** The street's licensed-asset library, shared so the districts reuse its uploaded textures and materials. */
+  async sharedAssetLibrary(){const {GLBAssetLibrary}=await import('./assets/GLBAssetLibrary');if(this.disposed)throw new Error('Street disposed');this.assetLibrary??=new GLBAssetLibrary(window.location.origin,8*1024*1024,16);return this.assetLibrary;}
   /** Called only by trusted application code once an individually verified asset is approved. */
   async installStationCharacter(asset:VerifiedGLB,previewWalk=false){
     if(this.disposed||!this.stationHost)throw new Error('Street unavailable');

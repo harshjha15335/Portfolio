@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { hill, maidan } from './nature';
 import type { District, DistrictSpec } from './District';
 import { bench, bungalow, busStop, glassTower, hangar, hoarding, midrise, neoclassical, palm, sign, stall, streetLight, tetrapods, tree, backdropBlock, type Ctx } from './buildings';
 import type { Outfit } from './CityFolk';
@@ -104,7 +105,8 @@ const powai: DistrictSpec = {
     for (let z = 118; z > -160; z -= 2.4) kit.box([.08, 1.05, .08], [-12.6, .53, z], '#4f5853', 'metal');
     kit.box([1.2, .9, 290], [-13.3, -.4, -22], '#8e8a7d', 'stone');
     d.water(160, 300, [-92, -.35, -22], '#41626a', .05);
-    for (let i = 0; i < 9; i++) kit.shape('dome', [30 + (i % 3) * 8, 14 + (i % 4) * 4, 26], [-150 + (i % 2) * 10, -3, 60 - i * 26], '#4f6a47', 'foliage');
+    // The far shore: a chain of wooded hills behind the water.
+    for (let i = 0; i < 6; i++) hill(kit, [-158 + (i % 2) * 14, -3, 70 - i * 38], 42 + (i % 3) * 8, 30, 16 + (i % 4) * 5, i * 3.1, 12, 32);
     for (let i = 0; i < 6; i++) kit.frame([-108 - (i % 2) * 6, 0, -70 + i * 18], Math.PI / 2, () => backdropBlock(c, 14, 28 + (i % 3) * 8, 12, '#e3d7bf'));
     for (let z = 10; z > -60; z -= 16) streetLight(c, -11.8, z, -1);
     for (let z = 4; z > -58; z -= 12) { palm(c, -11.4, z - 6, 7); bench(c, -11.6, z, Math.PI / 2); }
@@ -118,7 +120,7 @@ const powai: DistrictSpec = {
     hoarding(c, 10.5, 6.5, -55, -Math.PI / 2 + .4, 7.5, poster('#28473b', '#e3b04b', 'FIVE PROJECTS', 'Research terminals · recovery · route planners'), 'AD');
     d.walkers(walkersOf(['jogger', 'office', 'salwar', 'jogger', 'kurta', 'school', 'office', 'sari'], 12), [-6.5, -8.4, -10.2], 12, -56, 1.15);
     d.walkers(walkersOf(['office', 'office', 'salwar', 'shirt'], 7), [4.8, 5.6]);
-    d.crowd.idle('jogger', [-11.62, .03, 3.6], Math.PI / 2, 'sit'); d.crowd.idle('salwar', [-11.62, .03, 4.4], Math.PI / 2, 'sit');
+    d.crowd.idle('jogger', [-11.62, .03, 3.45], Math.PI / 2, 'sit'); d.crowd.idle('salwar', [-11.62, .03, 4.5], Math.PI / 2, 'sit');
     d.crowd.idle('office', [9.3, .03, -21.6], -1.3, 'talk'); d.crowd.idle('office', [10.2, .03, -20.8], 2.1, 'talk'); d.crowd.idle('office', [9.4, .03, -19.7], -2.3, 'stand');
     d.crowd.idle('elder', [-11.62, .03, -20], Math.PI / 2, 'sit');
   },
@@ -153,11 +155,11 @@ const dadar: DistrictSpec = {
     // Flower market heaps on the west pavement, and a maidan for evening cricket.
     for (let z = -2; z > -24; z -= 4.4) { const k = kit; k.box([2, .5, 1.2], [-6.3, .25, z], '#6a5440', 'wood'); for (let i = 0; i < 30; i++) k.shape('sphere', [.09, .08, .09], [-7.1 + (i % 10) * .18, .55 + Math.floor(i / 10) * .07, z - .4 + Math.floor(i / 10) * .3], i % 3 ? '#f08a1c' : '#f6c624', 'foliage'); k.solid([2, .8, 1.2], [-6.3, .4, z]); for (let i = 0; i < 4; i++) k.shape('cylinder', [.04, .9, .04], [-5.6, 1.3, z - .4 + i * .25], '#f5a623', 'foliage'); }
     sign(c, 'DADAR FLOWER MARKET', 4.6, [-7.6, 3, -12], { bg: '#7a2b2b', fg: '#ffe2a8', local: 'फूल बाजार' }, [768, 128], Math.PI / 2);
-    kit.box([18, .06, 22], [-14, .01, -46], '#a08e66', 'asphalt'); kit.box([3, .065, 13], [-14, .015, -46], '#b9a77c', 'asphalt'); for (let z = -36; z > -57; z -= 2) kit.box([.05, 1.2, .05], [-7.2, .6, z], '#6a6a5a', 'metal'); kit.box([.05, .05, 22], [-7.2, 1.2, -46], '#6a6a5a', 'metal');
+    maidan(kit, [-14, .02, -46], 18, 22, { x: 0, z: 0, w: 3, d: 13 }); for (let z = -36; z > -57; z -= 2) kit.box([.05, 1.2, .05], [-7.2, .6, z], '#6a6a5a', 'metal'); kit.box([.05, .05, 22], [-7.2, 1.2, -46], '#6a6a5a', 'metal');
     for (let x = -7.4; x > -19; x -= 3.2) tree(c, x, -58, 7, '#4f7a3c');
     for (const z of [-40.4, -51.6]) for (const dx of [-.09, 0, .09]) kit.box([.03, .7, .03], [-14 + dx, .35, z], '#e9e3cf', 'wood');
     d.crowd.idle('school', [-14, .03, -51], 0, 'bat', .78); d.crowd.idle('school', [-14.2, .03, -41.2], Math.PI, 'bowl', .74);
-    d.crowd.idle('shirt', [-11, .03, -46], -Math.PI / 2, 'stand', .8); d.crowd.idle('school', [-17, .03, -44], Math.PI / 2, 'wave', .7); d.crowd.idle('school', [-14, .03, -53.2], 0, 'stand', .72);
+    d.crowd.idle('shirt', [-11, .03, -46], -Math.PI / 2, 'stand', .8); d.crowd.idle('school', [-17, .03, -44], Math.PI / 2, 'wave', .7); d.crowd.idle('school', [-14.7, .03, -53.4], 0, 'stand', .72);
     const ball = new THREE.Mesh(new THREE.SphereGeometry(.035, 8, 6), new THREE.MeshStandardMaterial({ color: '#c8322a', roughness: .6 })); d.group.add(ball);
     d.animate(time => { const t = (time * .55) % 1; ball.visible = t > .45 && t < .65 || t < .2; const p = t < .45 ? 0 : Math.min(1, (t - .45) / .2); ball.position.set(-14.1, .3 + Math.sin(p * Math.PI) * 1.6, -41.6 - p * 9); });
     busStop(c, 5.9, -48, -Math.PI / 2, 'DADAR T.T. · RANADE ROAD');
@@ -274,7 +276,8 @@ const filmcity: DistrictSpec = {
     const rig = (x: number, z: number) => { kit.rod([x, 0, z], [x, 2.6, z], .03, '#222', 'metal'); kit.box([.6, .5, .3], [x, 2.8, z], '#1e1e1e', 'metal'); kit.box([.5, .4, .02], [x, 2.8, z + .16], '#fff3c8', 'glow'); for (let a = 0; a < 3; a++) kit.rod([x, 1.2, z], [x + Math.cos(a * 2.1) * .5, 0, z + Math.sin(a * 2.1) * .5], .02, '#222', 'metal'); };
     rig(-12.2, -17.5); rig(-12.4, -27.5); kit.box([.8, 1.0, .8], [-8.6, .5, -22], '#2b2b2b', 'metal'); kit.solid([.8, 1, .8], [-8.6, .5, -22]); kit.rod([-8.6, 1, -22], [-11.6, 3.2, -22.6], .08, '#3a3a3a', 'metal'); kit.box([.7, .45, .5], [-11.6, 3.3, -22.6], '#111', 'metal');
     kit.box([.6, .05, .5], [-9.2, .5, -25.5], '#3a2a1c', 'wood'); kit.box([.6, .45, .05], [-9.2, .75, -25.25], '#2a2a2a', 'fabric'); sign(c, 'DIRECTOR', .55, [-9.2, .78, -25.21], { bg: '#2a2a2a', fg: '#fff', border: 'none' }, [256, 64]);
-    for (let i = 0; i < 6; i++) kit.shape('sphere', [26 + i * 3, 18 + (i % 3) * 6, 24], [(i % 2 ? -1 : 1) * 70, -4, -120 + i * 26], '#55703f', 'foliage');
+    // Aarey's forested hills ring the studio lots.
+    for (let i = 0; i < 6; i++) hill(kit, [(i % 2 ? -1 : 1) * 78, -3, -125 + i * 28], 34 + i * 3, 30, 20 + (i % 3) * 6, 10 + i * 2.3, 12, 32);
     hoarding(c, -10, 6, 4, Math.PI / 2, 7.5, filmPoster('#4a1f22', 'NINE SCENES', 'one engineering story · you control the pace', '#f0b03a'), 'AD');
     d.parked('suv', -3.2, -24, 0, false); d.parked('tempo', 3.3, -34, Math.PI, false);
     d.walkers(walkersOf(['worker', 'shirt', 'sari', 'kurta', 'worker', 'salwar', 'office', 'worker'], 14), [4.8, 5.5, -4.8, -5.4]);

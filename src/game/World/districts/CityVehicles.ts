@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ColorMesh, paintMaterial } from './ColorMesh';
+import { arch, carBody, CAR_SHAPES, sweep } from './CarBodies';
 import { createSeatedDriver } from '../npc/NPCFactory';
 import { seededRandom } from '../StreetArchitecture';
 
@@ -30,8 +31,10 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
     case 'bus': {
       // BEST: most are the red double-decker; some are the newer single-deck red AC buses.
       const red = '#b3241b', deep = '#8c1a14', cream = '#ece2c8', L = 10.2, double = r() < .65;
-      m.rounded([2.5, 1.95, L], [0, 1.33, 0], red);
-      if (double) { m.rounded([2.48, 1.86, L - .2], [0, 3.28, .08], red); m.box([2.53, .2, L - .06], [0, 2.32, 0], cream); m.rounded([2.4, .16, L - .5], [0, 4.25, .1], deep); }
+      // Shells are swept through rounded sections with softened front and rear corners.
+      const shell = (y0: number, y1: number, w: number, len: number, dz: number, color: string) => { const e = len / 2; m.loft(sweep([[dz - e, w * .9, y0 + .04, y1 - .05], [dz - e + .06, w * .985, y0, y1], [dz - e + .25, w, y0, y1], [dz + e - .25, w, y0, y1], [dz + e - .06, w * .985, y0, y1], [dz + e, w * .9, y0 + .04, y1 - .05]], lite ? 12 : 20, 9), color); };
+      shell(.36, 2.3, 1.25, L, 0, red);
+      if (double) { shell(2.35, 4.21, 1.24, L - .2, .08, red); m.box([2.53, .2, L - .06], [0, 2.32, 0], cream); m.rounded([2.4, .16, L - .5], [0, 4.25, .1], deep); }
       else { m.rounded([2.48, .85, L - .1], [0, 2.62, 0], red); m.rounded([2.3, .22, L * .5], [0, 3.12, .8], '#cfcfca'); for (let i = 0; i < 6; i++) m.box([.12, .03, L * .45], [-.7 + i * .28, 3.25, .8], '#8d8f8c'); }
       m.box([2.54, .26, L - .3], [0, .5, 0], '#2a2a2a');
       // Window bands: individual panes between red pillars, the driver's cab glass, and the open door.
@@ -53,71 +56,53 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
       if (rider) addDriver(m, `${seed}:bus`, .65, .25, -L / 2 + 1.0); break;
     }
     case 'hatch': case 'sedan': case 'suv': case 'taxi': {
-      const L = kind === 'hatch' ? 3.7 : kind === 'taxi' ? 4.1 : kind === 'suv' ? 4.5 : 4.35, W = kind === 'suv' ? 1.82 : 1.66;
-      const body = kind === 'taxi' ? '#1d2022' : pick(['#e9e8e2', '#b9bcbd', '#8d9296', '#a32c26', '#2a4d78', '#e3dfd2', '#5b5f63', '#f0efe9', '#3b3f43']);
-      const belt = kind === 'suv' ? 1.12 : .86, sill = kind === 'suv' ? .42 : .3, wr = kind === 'suv' ? .37 : .31;
-      // Glasshouse: length, centre offset, height and how much the roof is drawn in.
-      const [gl, gz, gh] = kind === 'hatch' ? [L * .56, L * .1, .5] : kind === 'suv' ? [L * .68, L * .1, .55] : [L * .5, L * .05, .48];
-      // Lower body with a sloping bonnet and boot, then bumpers and sills.
-      m.rounded([W, belt - sill, L - .1], [0, (belt + sill) / 2, 0], body);
-      m.taper([W * .98, .1, L * .3], [0, belt + .03, -L * .33], body, .96, .9, .04);
-      m.rounded([W + .04, .2, .22], [0, sill + .1, -L / 2 + .06], kind === 'taxi' ? chrome : shadeHex(body, .82));
-      m.rounded([W + .04, .2, .22], [0, sill + .1, L / 2 - .06], kind === 'taxi' ? chrome : shadeHex(body, .82));
-      m.box([W + .01, .08, L * .62], [0, sill + .03, 0], '#202224');
-      // Wheel wells read as dark discs around the tyres.
-      for (const z of [-L * .32, L * .31]) { m.shape('tyre', [wr * 1.18, W + .015, wr * 1.18], [0, wr, z], '#141516', [0, 0, Math.PI / 2]); for (const sd of [-1, 1]) m.wheel(wr, .2, [sd * (W / 2 - .08), wr, z], tyre, kind === 'suv' ? '#6d7073' : chrome); }
-      // Glasshouse in tinted glass, pillars and roof in body colour (yellow roof for a kaali-peeli).
-      m.taper([W * .9, gh, gl], [0, belt + gh / 2, gz], glass, .86, kind === 'hatch' ? .82 : .7, kind === 'hatch' ? .06 : 0);
-      const roof = kind === 'taxi' ? '#e0b33a' : body;
-      m.taper([W * .78, .07, gl * (kind === 'hatch' ? .84 : .72)], [0, belt + gh + .03, gz + (kind === 'hatch' ? gl * .05 : 0)], roof, .97, .95);
-      for (const sd of [-1, 1]) {
-        m.box([.05, gh * .95, .09], [sd * W * .42, belt + gh / 2, gz], body);
-        m.box([.08, .06, .14], [sd * (W / 2 + .05), belt + .05, gz - gl / 2 + .05], body);
-        for (const dz of [-L * .1, L * .17]) m.box([.01, (belt - sill) * .8, .015], [sd * (W / 2 + .003), (belt + sill) / 2 + .02, dz], '#2a2c2e');
-        m.box([.01, .03, .2], [sd * (W / 2 + .004), belt - .12, -L * .02], '#9a9d9f');
-      }
-      if (kind === 'taxi') { m.box([.5, .14, .18], [0, belt + gh + .14, gz], '#e0b33a'); m.box([.42, .08, .19], [0, belt + gh + .14, gz], '#202020'); m.taper([W * .97, .03, L * .3], [0, belt + .09, -L * .33], '#e0b33a', .96, .9, .04); }
-      // Lamps, grille and plates.
-      for (const sd of [-1, 1]) { m.box([.34, .12, .05], [sd * W * .33, belt - .14, -L / 2 + .02], lamp); m.box([.3, .1, .05], [sd * W * .36, belt - .12, L / 2 - .02], tail); }
-      m.box([W * .36, .14, .05], [0, belt - .18, -L / 2 + .01], '#1a1b1c');
-      m.box([.46, .11, .03], [0, sill + .12, -L / 2 - .06], kind === 'taxi' ? '#f1d248' : '#f2efe6'); m.box([.46, .11, .03], [0, sill + .3, L / 2 + .01], kind === 'taxi' ? '#f1d248' : '#f2efe6');
-      if (rider) addDriver(m, `${seed}:car`, .36, kind === 'suv' ? -.1 : -.3, gz - .05); break;
+      // Lofted pressed-metal body (CarBodies); the kaali-peeli gets its yellow roof. Glass is opaque, so no driver is baked in.
+      const body = kind === 'taxi' ? '#1d2022' : pick(['#e9e8e2', '#b9bcbd', '#8d9296', '#a32c26', '#2a4d78', '#e3dfd2', '#5b5f63', '#f0efe9', '#3b3f43', '#6b2a2a', '#c9c2ad']);
+      carBody(m, CAR_SHAPES[kind], body, { glass, dark: '#1a1b1c', lamp, tail, plate: kind === 'taxi' ? '#f1d248' : '#f2efe6', bumper: kind === 'taxi' ? chrome : shadeHex(body, .78), roof: kind === 'taxi' ? '#e0b33a' : undefined });
+      if (kind === 'taxi') { const t = CAR_SHAPES.taxi; m.rounded([.5, .14, .18], [0, t.roof + .09, -t.L / 2 + (t.roofFront + t.roofRear) / 2], '#e0b33a'); }
+      break;
     }
     case 'auto': {
-      // Mumbai's black-and-yellow three-wheeler: open sides, canvas hood, bench seat.
-      const black = '#1c1f1e', yellow = '#d8b23a';
-      m.rounded([1.3, .5, 2.15], [0, .6, .12], black); m.rounded([.78, .62, .55], [0, 1.0, -.9], black);
-      m.rounded([1.4, .1, 2.05], [0, 1.9, .12], yellow); m.rounded([1.42, .22, .2], [0, 1.82, -.88], yellow); m.rounded([1.36, .85, .06], [0, 1.42, 1.13], black);
-      for (const s of [-1, 1]) { m.rod([s * .64, .85, -.86], [s * .66, 1.85, -.86], .025, '#2a2a2a'); m.rod([s * .64, .85, .92], [s * .66, 1.85, 1.0], .025, '#2a2a2a'); m.box([.04, .16, 1.9], [s * .66, 1.74, .1], yellow); }
-      m.rounded([1.16, .32, .5], [0, .98, .68], '#4a3a2c'); m.rounded([1.16, .5, .12], [0, 1.25, .95], '#4a3a2c');
-      m.box([.95, .55, .04], [0, 1.45, -.92], glass, [-.15, 0, 0]); m.box([.18, .14, .05], [0, .95, -1.18], lamp); m.box([.7, .12, .05], [0, .7, 1.2], '#e8d24a');
-      m.wheel(.25, .14, [0, .25, -.95]); for (const s of [-1, 1]) m.wheel(.26, .16, [s * .62, .26, .75]);
+      // Mumbai's black-and-yellow three-wheeler: a rounded tub and nose, an open-sided canvas hood, a bench seat.
+      const black = '#1c1f1e', yellow = '#d8b23a', q = lite ? 10 : 18, arc = lite ? 6 : 12;
+      m.loft(sweep([[-1.24, .2, .5, .78], [-1.12, .34, .38, .98], [-.86, .42, .34, 1.06], [-.6, .58, .34, .94], [-.3, .66, .34, .8], [.4, .67, .34, .86], [1.05, .66, .36, .9], [1.17, .6, .42, .86]], q, 4), black);
+      m.loft(arch([[-.96, .62, 1.42, 1.86], [-.82, .69, 1.52, 1.96], [-.2, .71, 1.58, 1.99], [.6, .71, 1.58, 1.99], [1.08, .7, 1.5, 1.95], [1.17, .68, 1.0, 1.9]], arc, 5), black, false, false);
+      m.loft(arch([[-.84, .6, 1.95, 1.985], [-.2, .62, 1.99, 2.03], [.6, .62, 1.99, 2.03], [1.06, .6, 1.94, 1.975]], arc >> 1, 5, Math.PI * .22, Math.PI * .78), yellow, false, false);
+      m.rounded([1.3, .9, .05], [0, 1.42, 1.16], black); m.rounded([1.36, .1, .12], [0, 1.0, 1.18], yellow);
+      for (const s of [-1, 1]) { m.rod([s * .6, .98, -.9], [s * .65, 1.5, -.92], .03, black); m.rod([s * .66, .92, 1.0], [s * .69, 1.62, 1.05], .03, '#2a2a2a'); m.box([.03, .1, 1.95], [s * .705, 1.62, .1], yellow); }
+      m.taper([1.0, .5, .05], [0, 1.27, -1.0], glass, .92, 1, 0); m.rounded([1.08, .07, .1], [0, 1.5, -1.0], black);
+      m.rounded([1.16, .3, .5], [0, 1.0, .72], '#4a3a2c'); m.rounded([1.16, .48, .12], [0, 1.26, .97], '#4a3a2c');
+      m.rounded([.2, .12, .08], [0, .9, -1.22], lamp); m.rounded([.7, .1, .05], [0, .72, 1.19], '#e8d24a');
+      m.rod([-.32, 1.18, -.62], [.32, 1.18, -.62], .015, '#202020');
+      m.wheel(.25, .14, [0, .25, -.94]); for (const s of [-1, 1]) m.wheel(.255, .16, [s * .69, .255, .78]);
       if (rider) addDriver(m, `${seed}:auto`, 0, -.27, -.25); break;
     }
     case 'bike': case 'cycle': {
-      const scooter = kind === 'bike' && r() < .6;
+      const scooter = kind === 'bike' && r() < .6, q = lite ? 8 : 14;
       if (scooter) {
-        // A gearless scooter: step-through floorboard, front apron, swollen rear cowl.
-        const body = pick(['#e9e7e1', '#b52a24', '#8d9399', '#2b4f7a', '#1e1f21', '#c8b89a', '#5e6b52']), rad = .25;
+        // A gearless scooter: swollen rear cowl, step-through floor, curved front apron, handlebar cowl.
+        const body = pick(['#e9e7e1', '#b52a24', '#8d9399', '#2b4f7a', '#1e1f21', '#c8b89a', '#5e6b52']), rad = .22;
         m.wheel(rad, .1, [0, rad, -.62], tyre, '#9a9c98'); m.wheel(rad, .1, [0, rad, .6], tyre, '#9a9c98');
-        m.rounded([.34, .07, .56], [0, .3, .02], '#2a2b2c');
-        m.rounded([.4, .36, .74], [0, .52, .42], body); m.rounded([.3, .1, .64], [0, .75, .36], '#1b1b1c');
-        m.rounded([.42, .66, .12], [0, .6, -.3], body, [.22, 0, 0]); m.rounded([.2, .1, .4], [0, .55, -.6], body);
-        m.rod([0, .5, -.58], [0, .98, -.4], .025, '#3a3b3c');
-        m.rounded([.48, .13, .2], [0, 1.0, -.4], body); m.box([.14, .08, .04], [0, 1.0, -.51], lamp);
-        for (const sd of [-1, 1]) { m.rod([sd * .2, 1.03, -.38], [sd * .3, 1.0, -.36], .015, '#2a2a2a'); m.rod([sd * .17, 1.06, -.4], [sd * .2, 1.22, -.42], .008, '#2a2a2a'); m.box([.07, .05, .02], [sd * .2, 1.24, -.42], '#3d4448'); }
-        m.box([.16, .06, .03], [0, .62, .8], tail); m.rounded([.14, .12, .3], [.14, .32, .62], '#4b4d4f');
+        m.loft(sweep([[-.08, .1, .34, .5], [.08, .2, .3, .66], [.4, .23, .3, .74], [.72, .2, .34, .72], [.9, .1, .44, .64]], q, 2.6), body);
+        m.loft(sweep([[-.05, .16, .73, .79], [.35, .17, .74, .82], [.7, .14, .72, .79]], q, 3), '#1b1b1c');
+        m.rounded([.32, .06, .5], [0, .3, -.15], '#2a2b2c');
+        m.loft(sweep([[-.62, .08, .3, .62], [-.55, .2, .34, .9], [-.42, .2, .34, .98], [-.36, .1, .4, .92]], q, 3), body);
+        m.rod([0, .42, -.6], [0, 1.0, -.46], .025, '#3a3b3c');
+        m.loft(sweep([[-.56, .1, .93, 1.04], [-.47, .24, .94, 1.08], [-.36, .2, .95, 1.05]], q, 3), body); m.rounded([.12, .07, .04], [0, 1.0, -.565], lamp);
+        for (const sd of [-1, 1]) { m.rod([sd * .2, 1.05, -.44], [sd * .32, 1.04, -.42], .016, '#2a2a2a'); m.rod([sd * .16, 1.07, -.44], [sd * .2, 1.24, -.46], .008, '#2a2a2a'); m.rounded([.08, .05, .02], [sd * .2, 1.25, -.46], '#3d4448'); }
+        m.rounded([.16, .06, .03], [0, .62, .9], tail); m.rounded([.14, .12, .3], [.13, .3, .56], '#4b4d4f');
         if (rider) addDriver(m, `${seed}:rider`, 0, -.12, .25); break;
       }
       const frame = kind === 'bike' ? pick(['#1f2a44', '#7b1e1e', '#2b2b2b', '#5c6168']) : '#2a2f36', rad = kind === 'bike' ? .3 : .33;
       m.wheel(rad, kind === 'bike' ? .09 : .045, [0, rad, -.68], tyre, '#8a8c88'); m.wheel(rad, kind === 'bike' ? .1 : .045, [0, rad, .66], tyre, '#8a8c88');
       if (kind === 'bike') {
         // Commuter motorcycle: teardrop tank, finned engine, long seat, chrome exhaust.
-        m.rounded([.3, .22, .5], [0, .78, -.18], frame); m.rounded([.26, .1, .62], [0, .84, .3], '#1a1a1a');
-        m.rounded([.26, .26, .3], [0, .45, .0], '#5d6163'); for (let i = 0; i < 4; i++) m.box([.3, .02, .26], [0, .38 + i * .05, -.02], '#7d8183');
-        m.rod([.14, .36, .05], [.16, .4, .75], .035, chrome); m.rounded([.22, .14, .3], [0, .62, .62], frame);
+        m.loft(sweep([[-.44, .07, .72, .82], [-.34, .15, .66, .94], [-.1, .15, .68, .94], [.05, .09, .72, .86]], q, 2.4), frame);
+        m.loft(sweep([[.0, .11, .8, .86], [.2, .13, .8, .9], [.55, .1, .82, .88], [.66, .06, .82, .86]], q, 3), '#1a1a1a');
+        m.rounded([.26, .26, .3], [0, .45, .0], '#5d6163'); for (let i = 0; i < 4; i++) m.rounded([.3, .02, .26], [0, .38 + i * .05, -.02], '#7d8183');
+        m.rod([.14, .36, .05], [.16, .42, .75], .035, chrome); m.loft(sweep([[.45, .1, .58, .7], [.62, .11, .6, .74], [.78, .06, .66, .72]], q, 3), frame);
         m.rod([0, .95, -.5], [0, .32, -.68], .022, chrome); m.rod([-.32, 1.02, -.48], [.32, 1.02, -.48], .014, '#202020');
-        m.shape('sphere', [.09, .09, .07], [0, .9, -.6], lamp); m.rounded([.16, .06, .38], [0, .62, -.68], frame); m.box([.12, .05, .03], [0, .72, .78], tail);
+        m.shape('sphere', [.09, .09, .07], [0, .9, -.6], lamp); m.loft(sweep([[-.84, .07, .56, .62], [-.68, .09, .6, .7], [-.52, .07, .62, .66]], q, 3), frame); m.rounded([.12, .05, .03], [0, .72, .78], tail);
       } else {
         m.rod([0, .33, .66], [0, .82, .12], .02, frame); m.rod([0, .82, .12], [0, .9, -.5], .02, frame); m.rod([0, .33, -.68], [0, .95, -.55], .02, frame); m.rod([0, .33, .1], [0, .82, .12], .02, frame); m.rod([-.25, 1.0, -.55], [.25, 1.0, -.55], .015, '#202020');
         m.rounded([.14, .06, .26], [0, .92, .14], '#1d1d1d'); m.box([.42, .03, .3], [0, .82, .78], '#3a3a3a');

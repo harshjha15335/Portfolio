@@ -319,7 +319,7 @@ Vercel builds with `npm run build` and publishes `dist/`; Netlify uses the same 
 | Reel-level visuals | Close people, rigid clothing, repetitive proportions and terminal boundary still need art work; native first-person review has not approved parity |
 | Medium budget | Remove the remaining 1,164 submitted triangles in the worst captured view without reducing evidence render scale or raising the ceiling |
 | Hardware performance | Measure real laptop GPU/frame-time stability and mobile devices; software Chromium and Node profiles are insufficient |
-| Other districts | Seven physical districts and a walk-in Film City cinema remain unbuilt |
+| Other districts | Seven walkable districts exist (`docs/CITY_DISTRICTS.md`); a walk-in Film City cinema remains unbuilt, and the Rocketbox cast has few Indian outfits, so most sari, salwar and kurta roles are played by members in Western clothes |
 | Traffic | No complete physical collision response between ambient and passenger vehicles; no general road graph |
 | Crowd | No dynamic obstacle carving, visitor agent or full indoor routines |
 | Asset pipeline | No compressed downloaded models, skeletal LOD or streaming system; CSG still constructs at runtime |

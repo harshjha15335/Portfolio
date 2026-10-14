@@ -14,6 +14,7 @@ import { STREET_SPAWN, streetStops, streetPickupRoute, walkingVelocity, cityRide
 import { CityDistricts } from '../game/World/districts/CityDistricts';
 import { setCityDensity } from '../game/World/districts/District';
 import { createFortRoadTraffic } from '../game/World/districts/FortRoadTraffic';
+import { DistrictCast, districtCast, setDistrictCast } from '../game/World/districts/DistrictCast';
 import type { LaneTraffic } from '../game/World/districts/DistrictSystems';
 import { districts as directory } from '../data/city';
 
@@ -98,6 +99,8 @@ export class WorldEngine {
     const castPreview=preview==='idle'||preview==='walk'||preview==='cast';
     const refresh=()=>{if(!this.disposed){applyStreetAtmosphere(this.scene,this.atmosphere);this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}};
     void this.street.installCast(characterCast,castPreview).then(refresh).catch(error=>console.warn('Street cast unavailable; original figures retained',error));
+    // The same licensed people walk every district: one shared set of rigs, borrowing the street's uploaded textures.
+    void this.street.sharedAssetLibrary().then(library=>DistrictCast.load(library,characterCast)).then(cast=>{if(this.disposed){cast.dispose();return;}setDistrictCast(cast);this.city.adoptCast(cast);refresh();}).catch(error=>console.warn('District cast unavailable; procedural figures retained',error));
     void this.street.installDrivers(characterCast,[this.taxi,this.auto],castPreview).then(refresh).catch(error=>console.warn('Drivers unavailable; original drivers retained',error));
     if(stationCharacter&&(stationCharacter.status==='approved'&&stationCharacter.visualReview||preview==='idle'||preview==='walk'))void this.street.installStationCharacter(stationCharacter.asset,preview==='walk').then(refresh).catch(error=>console.warn('Character admission failed; existing host retained',error));
     this.visitor = createVisitor(STREET_SPAWN.x, STREET_SPAWN.z);
@@ -109,7 +112,7 @@ export class WorldEngine {
     document.addEventListener('visibilitychange', this.visibilityChanged); document.addEventListener('pointerlockchange', this.lockChanged);
     canvas.addEventListener('pointerdown', this.pointerDown); window.addEventListener('pointermove', this.pointerMove); window.addEventListener('pointerup', this.pointerUp); canvas.addEventListener('pointercancel', this.pointerUp);
     canvas.addEventListener('webglcontextlost', this.contextLost);
-    if (import.meta.env.DEV && new URLSearchParams(location.search).has('debug')) {window.addEventListener('street-review-view',this.reviewView); this.debug = document.createElement('div'); this.debug.className = 'world-debug'; this.debug.setAttribute('aria-label', 'Renderer diagnostics'); container.append(this.debug); }
+    if (import.meta.env.DEV && new URLSearchParams(location.search).has('debug')) {window.addEventListener('street-review-view',this.reviewView); this.debug = document.createElement('div'); this.debug.className = 'world-debug'; this.debug.setAttribute('aria-label', 'Renderer diagnostics'); container.append(this.debug); (window as unknown as {__world?:WorldEngine}).__world=this; }
     this.atmosphere.uShelterMin.value.copy(this.street.shelteredBounds.min);this.atmosphere.uShelterMax.value.copy(this.street.shelteredBounds.max);
     applyStreetAtmosphere(this.scene,this.atmosphere);this.syncSunBalance();
     // Public Three API primes light state before the first shadow pass, avoiding
@@ -200,6 +203,8 @@ export class WorldEngine {
     const index = zoneIndexAt(x); if (index === this.zone && (index === 0 || this.city.get(index)?.group.visible)) return;
     this.zone = index; const ox = cityZones[index].originX;
     this.street.group.visible = index === 0; this.fortTraffic.group.visible = index === 0; this.city.activate(index);
+    // The hidden street's people rebuild their bone textures on return; releasing them keeps a district's texture count to its own.
+    if (index !== 0) this.street.group.traverse(o => { const m = o as THREE.SkinnedMesh; if (m.isSkinnedMesh && m.skeleton?.boneTexture) m.skeleton.dispose(); });
     this.sun.position.set(STREET_MOOD.sunPosition[0] + ox, STREET_MOOD.sunPosition[1], STREET_MOOD.sunPosition[2]);
     this.sun.target.position.set(STREET_MOOD.sunTarget[0] + ox, STREET_MOOD.sunTarget[1], STREET_MOOD.sunTarget[2]); this.sun.target.updateMatrixWorld();
     this.sky.position.x = ox; this.renderer.shadowMap.needsUpdate = true; this.pausedFrameDirty = true;
@@ -364,7 +369,7 @@ export class WorldEngine {
     window.removeEventListener('street-review-view',this.reviewView);window.removeEventListener('keydown', this.keyDown); window.removeEventListener('keyup', this.keyUp); window.removeEventListener('blur', this.releaseInput);
     document.removeEventListener('visibilitychange', this.visibilityChanged); document.removeEventListener('pointerlockchange', this.lockChanged);
     const canvas = this.renderer.domElement; canvas.removeEventListener('pointerdown', this.pointerDown); window.removeEventListener('pointermove', this.pointerMove); window.removeEventListener('pointerup', this.pointerUp); canvas.removeEventListener('pointercancel', this.pointerUp); canvas.removeEventListener('webglcontextlost', this.contextLost);
-    window.removeEventListener('street-benchmark',this.benchmarkCommand);this.profiler?.dispose();this.street.dispose();this.city.dispose();this.fortTraffic.group.traverse(o=>{const m=o as THREE.Mesh;if(!m.isMesh)return;for(const g of new Set([m.geometry,...((m.userData.lodGeometries??[]) as THREE.BufferGeometry[])]))g.dispose();});this.rendering.dispose();this.environmentTarget.dispose();
+    window.removeEventListener('street-benchmark',this.benchmarkCommand);this.profiler?.dispose();this.city.dispose();districtCast()?.dispose();setDistrictCast(null);this.street.dispose();this.fortTraffic.group.traverse(o=>{const m=o as THREE.Mesh;if(!m.isMesh)return;for(const g of new Set([m.geometry,...((m.userData.lodGeometries??[]) as THREE.BufferGeometry[])]))g.dispose();});this.rendering.dispose();this.environmentTarget.dispose();
     const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>(), skeletons = new Set<THREE.Skeleton>();
     this.scene.traverse(object => { const mesh = object as THREE.SkinnedMesh; if (mesh.isSkinnedMesh) skeletons.add(mesh.skeleton); if (mesh.geometry) geometries.add(mesh.geometry); for(const g of (mesh.userData.lodGeometries??[]) as THREE.BufferGeometry[]) geometries.add(g); if (mesh.material) for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) { materials.add(m); for(const key of ['map','bumpMap','roughnessMap','normalMap'] as const)if((m as THREE.MeshStandardMaterial)[key])textures.add((m as THREE.MeshStandardMaterial)[key]!); } });
     skeletons.forEach(s => s.dispose()); geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); textures.forEach(t => t.dispose()); this.renderer.dispose(); canvas.remove(); this.debug?.remove();

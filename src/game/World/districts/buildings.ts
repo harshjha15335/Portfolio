@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { canopyTree, coconutPalm } from './nature';
 import type { DistrictKit } from './DistrictKit';
 import { placed, type SignAtlas, type SignStyle } from './DistrictSystems';
 import type { V3 } from './ColorMesh';
@@ -183,24 +184,10 @@ export function streetLight(c: Ctx, x: number, z: number, side: number) {
   kit.box([.55, .14, .26], [x - side * 2.05, 7.48, z], '#3d413f', 'metal'); kit.box([.45, .03, .2], [x - side * 2.05, 7.4, z], '#ffe5b0', 'glow');
   kit.solid([.3, 3, .3], [x, 1.5, z]);
 }
-export function tree(c: Ctx, x: number, z: number, h = 6, crown = '#5d7f43', size = 1) {
-  const { kit } = c; kit.cylinder(.16 * size, h * .7, [x, h * .35, z], '#5c4a38', 'wood', true); kit.solid([.4, 2, .4], [x, 1, z]);
-  for (let i = 0; i < 6; i++) { const a = i * 1.1, r = (1.2 + kit.rand() * .9) * size; kit.shape('sphere', [r, r * .7, r], [x + Math.cos(a) * size * 1.1, h * .72 + (i % 3) * .55 * size, z + Math.sin(a) * size * 1.1], shade(crown, .85 + kit.rand() * .3), 'foliage'); }
-}
-export function palm(c: Ctx, x: number, z: number, h = 7.5, lean = .3) {
-  const { kit } = c; let p: V3 = [x, 0, z];
-  for (let i = 1; i <= 6; i++) { const q: V3 = [x + Math.sin(i / 6 * 1.4) * lean * h * .3, i / 6 * h, z]; kit.rod(p, q, .18 - i * .014, '#7d6a52', 'wood'); p = q; }
-  // Arching fronds: three drooping segments each, laid flat and tapering.
-  for (let a = 0; a < 11; a++) {
-    const ang = a / 11 * Math.PI * 2 + kit.rand() * .3, dir = new THREE.Vector3(Math.cos(ang), 0, Math.sin(ang)); let from = new THREE.Vector3(...p).add(new THREE.Vector3(0, .1, 0));
-    for (let s = 0; s < 3; s++) {
-      const to = from.clone().addScaledVector(dir, .95).add(new THREE.Vector3(0, .35 - s * .55 - (a % 3) * .1, 0)), mid = from.clone().add(to).multiplyScalar(.5), len = from.distanceTo(to);
-      const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), to.clone().sub(from).normalize()), e = new THREE.Euler().setFromQuaternion(q);
-      kit.shape('box', [.5 - s * .12, .025, len + .05], mid.toArray() as V3, shade('#5f8a3a', .8 + kit.rand() * .35), 'foliage', [e.x, e.y, e.z]); from = to;
-    }
-  }
-  kit.shape('sphere', [.32, .28, .32], [p[0], p[1] - .05, p[2]], '#6b5a2c', 'foliage'); kit.solid([.5, 2, .5], [x, 1, z]);
-}
+/** A broad street tree; see nature.canopyTree. */
+export function tree(c: Ctx, x: number, z: number, h = 6, crown = '#5d7f43', size = 1) { canopyTree(c.kit, x, z, h, crown, size); }
+/** A coconut palm; see nature.coconutPalm. */
+export function palm(c: Ctx, x: number, z: number, h = 7.5, lean = .3) { coconutPalm(c.kit, x, z, h, lean); }
 export function bench(c: Ctx, x: number, z: number, rotationY = 0) {
   const { kit } = c; kit.frame([x, 0, z], rotationY, () => { kit.box([1.8, .07, .45], [0, .45, 0], '#7a6046', 'wood'); kit.box([1.8, .4, .06], [0, .72, .2], '#7a6046', 'wood'); for (const s of [-1, 1]) kit.box([.07, .45, .45], [s * .8, .22, 0], '#3e4240', 'metal'); });
 }
@@ -246,6 +233,19 @@ export function backdropBlock(c: Ctx, w: number, h: number, d: number, color: st
 }
 
 /* --------------------------------------------------------------- skyline and street clutter */
+/**
+ * Relief that makes a distant block read as a building: a floor ledge every 3 m casting a line
+ * of shadow, balcony fins down each face and a podium at the foot.
+ */
+export function towerRelief(c: Ctx, w: number, h: number, d: number, color: string) {
+  const { kit } = c, ledge = shade(color, 1.08), fin = shade(color, .9);
+  // Plain 'solid' boxes: twelve triangles each, where an aged surface would subdivide them.
+  for (let y = 3; y < h - 1; y += 3) kit.box([w + .5, .16, d + .5], [0, y, -d / 2], ledge, 'solid');
+  for (const x of [-w * .25, w * .25]) for (const z of [.25, -d - .25]) kit.box([.5, h - 4, .5], [x, h / 2 + 1, z], fin, 'solid');
+  for (const x of [-w / 2 - .25, w / 2 + .25]) kit.box([.5, h - 4, .5], [x, h / 2 + 1, -d / 2], fin, 'solid');
+  kit.box([w + 2, 6, d + 2], [0, 3, -d / 2], shade(color, .78), 'plaster');
+}
+
 /** Rooftop life on a block: Sintex water tanks, a stair head, dish antennas and a cell mast. */
 export function rooftop(c: Ctx, w: number, h: number, d: number) {
   const { kit } = c, r = () => kit.rand();

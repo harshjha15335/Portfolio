@@ -35,8 +35,12 @@ original Fort Road street (`MumbaiStreet`). The other seven are separate walkabl
   Colliders become cannon bodies plus the BVH used for camera and interaction queries.
 * Vehicles and props are single-draw vertex-coloured meshes (`ColorMesh`). Signs are drawn into one
   2048² canvas atlas per district (`SignAtlas`, shelf-packed) and drawn in one call.
-* People (`CityFolk`) are the street's skinned human with garments skinned to the same bones and merged:
-  sari, salwar, kurta, school uniform, worker, dabbawala, Koli, jogger, elder, vendor, office, shirt.
+* People are the street's licensed Rocketbox cast (`DistrictCast`). Each outfit maps to cast members
+  (sari → clerk, shopper, office woman; vendor → chai vendor, taxi driver, host, commuter; …) and
+  neighbours never repeat a member. Every figure is a `SkinnedMesh` bound to one combined skeleton
+  built from the cast's walk, idle, talk and sit drivers, so a whole district shares a handful of
+  bone textures. Far figures use a meshoptimizer-simplified index (20%). Until the cast has loaded,
+  the procedural `CityFolk` bodies stand in and are swapped out by `CityDistricts.adoptCast`.
   `Crowd` handles walkers, idlers (talk, sit, sell, wave, bowl, bat) and distance LOD.
 * `LaneTraffic` runs BEST buses, hatchbacks, sedans, SUVs, kaali-peeli taxis, autos, bikes, cycles,
   tempos and handcarts on two lanes, yielding to the visitor and the ride camera.
@@ -55,25 +59,42 @@ original Fort Road street (`MumbaiStreet`). The other seven are separate walkabl
 * Density follows the graphics preset through `setCityDensity`: crowd ×0.9 / 1.6 / 2.6 and traffic
   ×1 / 1.7 / 2.4 for Low / Medium / High, relative to the authored lists. A district keeps its
   density until it is rebuilt on the next visit.
-* LOD keeps that affordable: people switch to a ~300-triangle body on the same bones past 20 m,
-  and traffic switches to a low-segment vehicle past 32 m.
+* LOD keeps that affordable: cast figures drop to the simplified index past 12 m and hide past 46 m
+  (`CAST_LOD`), and traffic switches to a low-segment vehicle past 22 m. Parked cars use the
+  low-segment build.
+
+### Bodies and nature
+
+* Cars are lofted (`CarBodies.ts`): the shell is swept through superellipse sections along a side
+  profile (bonnet, windscreen, roof, rear glass, boot), with a tinted glasshouse, thin pillars, shut
+  lines, mirrors, bumpers and lathe-turned tyres with spoked rims (`ColorMesh.wheel`). Autos,
+  scooters, motorcycles and buses use the same `sweep`/`arch` lofts instead of stacked boxes.
+* `nature.ts` builds vertex-coloured geometry on the kit's merged surfaces, so it adds no textures:
+  rain trees with a dome of noise-shaped leaf clumps over a forked trunk, coconut palms with
+  feathered drooping fronds, noise-ridged hills (Powai, Film City) and the Dadar maidan's worn dust,
+  grass patches, walking paths and rolled pitch.
+* Skyline towers carry floor ledges, fins and a podium (`towerRelief`).
+* Lakes and the sea share one 256² canvas ripple normal map (cloned per body, one GPU texture) that
+  scrolls, on a glossy, slightly metallic surface that picks up the sky.
 
 Main-pass cost at each district's stop on Medium (SwiftShader, 1440×900, cached shadow map, from
 `scripts/capture-districts.mjs`):
 
-| District | Draws | Triangles |
-| --- | --- | --- |
-| BKC | 81 | 170k |
-| Andheri | 77 | 221k |
-| Powai | 66 | 126k |
-| Dadar | 89 | 196k |
-| Worli | 84 | 181k |
-| Juhu | 66 | 111k |
-| Film City | 81 | 175k |
+| District | Draws | Triangles | Textures |
+| --- | --- | --- | --- |
+| BKC | 68 | 219k | 28 |
+| Andheri | 56 | 227k | 30 |
+| Powai | 59 | 143k | 31 |
+| Dadar | 70 | 220k | 31 |
+| Worli | 75 | 211k | 31 |
+| Juhu | 69 | 138k | 31 |
+| Film City | 54 | 175k | 31 |
 
-All are inside the street's 110-draw / 230k-triangle budget. Texture counts (84–104) are well above
-the street's 32: each skinned person carries its own bone texture, so the count tracks the crowd.
-Programs are 35–39 because `renderer.info.programs` keeps the CST street's compiled programs.
+Every review pose is inside the street's 110-draw / 230k-triangle / 32-texture budget (worst:
+Andheri stop 227k, Dadar maidan 81 draws). Textures stay low because the cast shares one skeleton
+per district, and the CST street's per-person bone textures are released while a district is active.
+Programs are 43–45, over the street's 26: `renderer.info.programs` is cumulative and keeps the CST
+street's compiled programs (about 35 on their own with the Rocketbox cast).
 
 ### Cars and BEST buses
 

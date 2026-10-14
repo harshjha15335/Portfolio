@@ -67,6 +67,13 @@ export class DistrictKit {
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     const list = this.parts.get(surface) ?? []; list.push(g); this.parts.set(surface, list); return g;
   }
+  /** Merge a geometry that carries its own vertex colours (trees, terrain) in the current frame. */
+  addColored(source: THREE.BufferGeometry, surface: KitSurface, position: V3, scale: V3 = [1, 1, 1], rotation: V3 = [0, 0, 0]) {
+    const g = plain(source); g.setAttribute('color', source.getAttribute('color').clone());
+    const m = new THREE.Matrix4().compose(new THREE.Vector3(...position), new THREE.Quaternion().setFromEuler(new THREE.Euler(...rotation)), new THREE.Vector3(...scale));
+    g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(this.matrix, m));
+    const list = this.parts.get(surface) ?? []; list.push(g); this.parts.set(surface, list); return g;
+  }
   shape(kind: UnitShape | 'plane', size: V3, position: V3, color: string, surface: KitSurface = 'solid', rotation: V3 = [0, 0, 0]) {
     const source = kind === 'box' && AGED.has(surface) && Math.max(...size) > 3.5 ? segmentedBox(segments(size[0]), segments(size[1]), segments(size[2])) : unit[kind];
     return this.add(source, color, surface, position, size, rotation);

@@ -6,7 +6,7 @@ import { SpatialIndex } from '../spatial/SpatialIndex';
 import type { CityZone } from '../streetLayout';
 import { DistrictKit } from './DistrictKit';
 import { Crowd, LaneTraffic, SignAtlas, Water } from './DistrictSystems';
-import { backdropBlock, constructionSite, rooftop, skylineCrown, streetClutter, streetLight, PASTELS, type Ctx } from './buildings';
+import { backdropBlock, constructionSite, rooftop, skylineCrown, streetClutter, streetLight, towerRelief, PASTELS, type Ctx } from './buildings';
 import type { Outfit } from './CityFolk';
 import { createCityVehicle, VEHICLE_LENGTH, type CityVehicleKind } from './CityVehicles';
 import { paintMaterial, type V3 } from './ColorMesh';
@@ -16,9 +16,9 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
  * How full the districts are, set from the graphics preset before a district is built
  * (a district already built keeps its crowd until it is rebuilt on the next visit).
  */
-export const cityDensity = { crowd: 1.6, traffic: 1.7 };
+export const cityDensity = { crowd: 1.35, traffic: 1.7 };
 export function setCityDensity(preset: 'low' | 'medium' | 'high') {
-  Object.assign(cityDensity, preset === 'low' ? { crowd: .9, traffic: 1 } : preset === 'high' ? { crowd: 2.6, traffic: 2.4 } : { crowd: 1.6, traffic: 1.7 });
+  Object.assign(cityDensity, preset === 'low' ? { crowd: .9, traffic: 1 } : preset === 'high' ? { crowd: 2.6, traffic: 2.4 } : { crowd: 1.35, traffic: 1.7 });
 }
 
 export interface FrontageItem { w: number; setback?: number; gap?: number; build: (c: Ctx) => void }
@@ -87,15 +87,15 @@ export class District {
       }
     }
     // Skyline: a ring of mid-rises, slab blocks and the odd tall tower with a crown or a crane.
-    const tones = ['#9ba69e', '#afb1a2', '#97a4a0', '#a99c8c', '#b8ad9b', '#8f9aa3'];
+    const tones = ['#c9c3b4', '#d6c7b2', '#b9b8ae', '#cdb9a8', '#c2c7c4', '#d9d0bd', '#bfae9a', '#aeb7bd'];
     for (let i = 0; i < 34; i++) {
       const a = i * Math.PI * 2 / 34 + (this.kit.rand() - .5) * .05, ring = 118 + (i % 3) * 14, x = Math.sin(a) * ring, z = -22 + Math.cos(a) * ring;
       if (this.spec.skyline === 'east' && x < 10) continue;
       const pickType = this.kit.rand(), tone = tones[i % tones.length];
       kit.frame([x, 0, z], a + Math.PI, () => {
-        if (pickType < .28) { const h = 55 + this.kit.rand() * 45; backdropBlock(c, 16, h, 16, tone); skylineCrown(c, 16, h, this.kit.rand()); }
-        else if (pickType < .5) backdropBlock(c, 34, 24 + this.kit.rand() * 10, 12, tone);
-        else { const h = 18 + (i % 5) * 5; backdropBlock(c, 24, h, 12, tone); rooftop(c, 24, h, 12); }
+        if (pickType < .28) { const h = 55 + this.kit.rand() * 45; backdropBlock(c, 16, h, 16, tone); towerRelief(c, 16, h, 16, tone); skylineCrown(c, 16, h, this.kit.rand()); }
+        else if (pickType < .5) { const h = 24 + this.kit.rand() * 10; backdropBlock(c, 34, h, 12, tone); towerRelief(c, 34, h, 12, tone); }
+        else { const h = 18 + (i % 5) * 5; backdropBlock(c, 24, h, 12, tone); towerRelief(c, 24, h, 12, tone); rooftop(c, 24, h, 12); }
       });
     }
     // A tower going up somewhere on the horizon, with its crane.
@@ -126,7 +126,8 @@ export class District {
   }
   /** A parked vehicle: static, solid, no driver unless asked. */
   parked(kind: CityVehicleKind, x: number, z: number, yaw: number, rider = false) {
-    const mesh = createCityVehicle(kind, `${this.spec.id}:parked:${x}:${z}`, rider); mesh.position.set(x, .02, z); mesh.rotation.y = yaw; mesh.updateMatrix();
+    // Parked cars merge into one static mesh, so they use the far build (still lofted and round-wheeled).
+    const mesh = createCityVehicle(kind, `${this.spec.id}:parked:${x}:${z}`, rider, true); mesh.position.set(x, .02, z); mesh.rotation.y = yaw; mesh.updateMatrix();
     this.parkedParts.push(mesh.geometry.applyMatrix4(mesh.matrix));
     const length = VEHICLE_LENGTH[kind], width = kind === 'bus' ? 2.5 : kind === 'bike' || kind === 'cycle' ? .7 : 1.7;
     this.kit.solid([width, 1.4, length], [x, .7, z], yaw);
@@ -155,11 +156,14 @@ export class District {
       const knots = Math.round(4 * cityDensity.crowd * (this.spec.crowd ?? 1));
       for (let k = 0; k < knots; k++) {
         const z = 8 - (k + .3 + r() * .4) * (64 / knots), x = side * (5.9 + r() * .5); if (!this.clearOf(x, z)) continue;
-        const size = 2 + (r() > .6 ? 1 : 0);
+        // Leave room around people the district already placed (vendors, a queue).
+        if (this.crowd.standing().some(p => Math.hypot(p.group.position.x - x, p.group.position.z - z) < 2)) continue;
+        // Spread evenly round the knot at conversation distance, each turned to its centre.
+        const size = 2 + (r() > .6 ? 1 : 0), turn = r() * Math.PI * 2, radius = size === 2 ? .55 : .62;
         for (let i = 0; i < size; i++) {
-          const a = i / size * Math.PI * 2 + r(), px = x + Math.cos(a) * .42, pz = z + Math.sin(a) * .42;
-          const p = this.crowd.idle(mix[Math.floor(r() * mix.length)], [px, .03, pz], 0, r() > .5 ? 'talk' : 'stand');
-          p.group.rotation.y = Math.atan2(px - x, pz - z) + Math.PI;
+          const a = turn + i / size * Math.PI * 2, px = x + Math.cos(a) * radius, pz = z + Math.sin(a) * radius;
+          const p = this.crowd.idle(mix[Math.floor(r() * mix.length)], [px, .03, pz], 0, i === 0 || r() > .5 ? 'talk' : 'stand');
+          p.group.rotation.y = Math.atan2(px - x, pz - z);
         }
       }
       // Two-wheelers parked nose-in at the kerb, in clusters.
@@ -197,9 +201,13 @@ export class District {
   dispose() {
     for (const body of this.kit.bodies) this.physics.removeBody(body);
     this.spatial.dispose(); this.signs.texture.dispose(); this.group.removeFromParent();
+    for (const person of this.crowd.people()) person.cast?.dispose();
     const shared = paintMaterial();
     this.group.traverse(object => {
-      const mesh = object as THREE.SkinnedMesh; if (mesh.isSkinnedMesh) mesh.skeleton.dispose();
+      const mesh = object as THREE.SkinnedMesh;
+      // Licensed cast figures borrow the shared cast's geometry, material and skeleton.
+      if (mesh.userData?.districtCast) return;
+      if (mesh.isSkinnedMesh) mesh.skeleton.dispose();
       for (const g of [mesh.geometry, ...((mesh.userData?.lodGeometries ?? []) as THREE.BufferGeometry[])]) g?.dispose();
       for (const m of mesh.material ? (Array.isArray(mesh.material) ? mesh.material : [mesh.material]) : []) if (m !== shared) m.dispose();
     });
