@@ -139,4 +139,23 @@ export const projects: Project[] = [
     github: 'https://github.com/harshjha15335/rideflow', source: 'https://github.com/harshjha15335/rideflow/blob/main/README.md',
     worldPosition: [27, 0, 32], worldRotation: 0, landmarkType: 'garage', color: '#a1d9b6', priority: 6,
   },
+  {
+    id: 'repolens', title: 'RepoLens', subtitle: 'AST-aware hybrid code retrieval',
+    category: 'Applied AI · Retrieval Systems', year: '2026',
+    shortDescription: 'Ask questions about a codebase and get answers grounded in cited, line-accurate source chunks.',
+    longDescription: 'A FastAPI and Next.js retrieval-augmented tutor (published as CodeMentor-RAG) that parses repositories into AST chunks, ranks them with dense vectors and BM25, fuses the rankings with Reciprocal Rank Fusion, expands through a code graph and answers with citations.',
+    problem: 'Generic code search treats source as flat text, so questions about structure, call flow or a specific symbol return noisy, uncited matches.',
+    approach: 'Chunked code with Tree-sitter, indexed it twice (FAISS dense and a code-aware BM25), fused both rankings with weights chosen from the detected query intent, then expanded one hop through the call/import graph before generation.',
+    architecture: ['Zip / Git ingestion', 'Tree-sitter AST chunks', 'Dense + BM25 indexes', 'Intent-weighted RRF fusion', 'Graph expansion / MMR', 'Cited tutor answer'],
+    challenges: 'Keeping retrieval honest on a tiny evaluation set, defending ingestion against path traversal and zip bombs, and keeping embeddings deterministic when no model download is possible.',
+    results: 'The repository README reports one local run on its 12-question calculator dataset: BM25 MRR 0.783, Hybrid RRF 0.781, graph expansion 0.785. It labels these diagnostic figures from one small dataset, not general accuracy. The backend has 92 pytest test functions.',
+    ownership: 'Built the ingestion, retrieval, evaluation and tutor pipeline. The Powai exhibit runs a TypeScript port of its BM25, local embedding and RRF code on the repository\u2019s own sample calculator.',
+    metrics: [
+      { value: '0.785', label: 'MRR · graph expansion · one local run', source: 'https://github.com/harshjha15335/RepoLens/blob/main/README.md#evaluation' },
+      { value: '12', label: 'questions in the evaluation dataset', source: 'https://github.com/harshjha15335/RepoLens/blob/main/evaluation/datasets/default.json' },
+    ],
+    skills: ['Python', 'FastAPI', 'TypeScript', 'Next.js', 'Tree-sitter', 'FAISS', 'BM25', 'Retrieval'],
+    github: 'https://github.com/harshjha15335/RepoLens', source: 'https://github.com/harshjha15335/RepoLens/blob/main/README.md',
+    worldPosition: [31, 0, 32], worldRotation: 0, landmarkType: 'garage', color: '#9fc3d8', priority: 7,
+  },
 ];
