@@ -1,0 +1,52 @@
+[
+ {
+  "view": "spawn",
+  "main": {
+   "draws": 86,
+   "triangles": 229179,
+   "textures": 40,
+   "programs": 35
+  },
+  "debug": "idle · 159 draws · 404322 triangles · 40 textures · 35 shaders · 284 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "station",
+  "main": {
+   "draws": 68,
+   "triangles": 183811,
+   "textures": 41,
+   "programs": 35
+  },
+  "debug": "idle · 86 draws · 229179 triangles · 40 textures · 35 shaders · 271 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "fort",
+  "main": {
+   "draws": 33,
+   "triangles": 143500,
+   "textures": 42,
+   "programs": 35
+  },
+  "debug": "idle · 68 draws · 183811 triangles · 41 textures · 35 shaders · 272 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "fort-room",
+  "main": {
+   "draws": 33,
+   "triangles": 134956,
+   "textures": 42,
+   "programs": 35
+  },
+  "debug": "idle · 33 draws · 143500 triangles · 42 textures · 35 shaders · 272 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "return",
+  "main": {
+   "draws": 106,
+   "triangles": 222381,
+   "textures": 42,
+   "programs": 35
+  },
+  "debug": "idle · 33 draws · 134956 triangles · 42 textures · 35 shaders · 272 MB JS · scale 1.00 · eye 1.68m"
+ }
+]
