@@ -1,0 +1,30 @@
+
+> harsh-jha-world-portfolio@1.0.0 test
+> vitest run
+
+
+ RUN  v4.1.11 /workspace/Portfolio
+
+ ❯ tests/rendering-optimization.test.ts (3 tests | 1 failed) 12431ms
+   × the conservative humanoid culling sphere contains animated vertices across both LODs 12413ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/rendering-optimization.test.ts > the conservative humanoid culling sphere contains animated vertices across both LODs
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/rendering-optimization.test.ts:19:1
+     17| });
+     18|
+     19| it('the conservative humanoid culling sphere contains animated vertice…
+       | ^
+     20|  const human=createHuman('bounded-walking-host','#82725e');
+     21|  for(const close of [true,false])for(const walking of [true,false])for…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 13 passed (14)
+      Tests  1 failed | 77 passed (78)
+   Start at  05:54:55
+   Duration  21.10s (transform 1.86s, setup 0ms, import 5.07s, tests 28.60s, environment 2ms)

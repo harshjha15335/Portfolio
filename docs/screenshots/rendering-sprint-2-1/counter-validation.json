@@ -1,0 +1,110 @@
+[
+  {
+    "phase": "before",
+    "view": "spawn",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "before",
+    "view": "station",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "before",
+    "view": "junction",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "before",
+    "view": "hero-wide",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "before",
+    "view": "npc",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "before",
+    "view": "fort-room",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "before",
+    "view": "return",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "before",
+    "view": "taxi",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "before",
+    "view": "auto",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "after",
+    "view": "spawn",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "after",
+    "view": "station",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "after",
+    "view": "junction",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "after",
+    "view": "hero-wide",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "after",
+    "view": "npc",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "after",
+    "view": "fort-room",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "after",
+    "view": "return",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "after",
+    "view": "taxi",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  },
+  {
+    "phase": "after",
+    "view": "auto",
+    "exactCounterAgreement": true,
+    "mainPassUnchangedBetweenControlledRenders": true
+  }
+]

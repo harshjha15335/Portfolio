@@ -1,0 +1,258 @@
+{
+ "source": {
+  "repository": "https://github.com/microsoft/Microsoft-Rocketbox",
+  "commit": "0943055db6ec570bcef9f2c8b41c9e5467c808f9",
+  "license": "MIT",
+  "licenseEvidence": "https://github.com/microsoft/Microsoft-Rocketbox/blob/0943055db6ec570bcef9f2c8b41c9e5467c808f9/LICENSE.md",
+  "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+  "copyright": "Copyright (c) 2020 Microsoft",
+  "licenseReviewedOn": "2026-10-11"
+ },
+ "characters": [
+  {
+   "id": "host",
+   "role": "Station guide",
+   "height": 1.74,
+   "avatar": "Assets/Avatars/Professions/Business_Male_06",
+   "avatarSha256": "f0892405f3193c09c85a8391efd5219d8a6bc45ff293e6356175efd457e67b0b",
+   "atlas": 1024,
+   "normalMap": true,
+   "skinToneShift": 0.55,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_01.max.fbx",
+     "sha256": "818cc185af21390575f7fbfdeb3012ba2ce5969fbcb220ea725a2617b339a6e2"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_neutral_01.max.fbx",
+     "sha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0"
+    },
+    "Talk": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_gestic_talk_neutral_01.max.fbx",
+     "sha256": "4c2b9ff481a9538dafbbe7f6aa6ffd6b948b5d34bb16a1e2052e943bbbbd3cd8"
+    }
+   },
+   "trim": {
+    "Idle": 12,
+    "Talk": 9
+   },
+   "textureCode": "m025",
+   "hairCard": false
+  },
+  {
+   "id": "chai-vendor",
+   "role": "Chai vendor and shopkeeper",
+   "height": 1.7,
+   "avatar": "Assets/Avatars/Adults/Male_Adult_15",
+   "avatarSha256": "44b5ae914f20aa25f4ae2d4a5ead6a7a1516387f92ddd12cb2323961163da1f0",
+   "atlas": 1024,
+   "normalMap": true,
+   "skinToneShift": 0,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_02.max.fbx",
+     "sha256": "d6d13b12e1f8d677dfaffef342a5ffeacf5ee3b38036de83425ab68316cd4e5e"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_slow_01.max.fbx",
+     "sha256": "8c5e5ed18be9e1062a26d230677d2801a679c70fd67f8aa8de14ff37f6d20577"
+    },
+    "Talk": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_gestic_talk_neutral_01.max.fbx",
+     "sha256": "4c2b9ff481a9538dafbbe7f6aa6ffd6b948b5d34bb16a1e2052e943bbbbd3cd8"
+    }
+   },
+   "trim": {
+    "Idle": 12,
+    "Talk": 9
+   },
+   "textureCode": "m204",
+   "hairCard": false
+  },
+  {
+   "id": "taxi-driver",
+   "role": "Kaali-peeli taxi driver",
+   "height": 1.7,
+   "avatar": "Assets/Avatars/Adults/Male_Adult_14",
+   "avatarSha256": "9d3ecf5c94a84e22b081ddadebf57da18d79541e48e792fa598335553f2dc399",
+   "atlas": 1024,
+   "normalMap": true,
+   "skinToneShift": 0.55,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_01.max.fbx",
+     "sha256": "818cc185af21390575f7fbfdeb3012ba2ce5969fbcb220ea725a2617b339a6e2"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_neutral_01.max.fbx",
+     "sha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0"
+    },
+    "Sit": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_sit_chair_idle_neutral_01.max.fbx",
+     "sha256": "c5aeab85a7daa50770f70644b1651ff7811594500a702e8b454e7386566e1df2"
+    }
+   },
+   "trim": {
+    "Idle": 12,
+    "Sit": 10
+   },
+   "textureCode": "m012",
+   "hairCard": false
+  },
+  {
+   "id": "student",
+   "role": "College student; also drives the auto",
+   "height": 1.73,
+   "avatar": "Assets/Avatars/Adults/Male_Adult_17",
+   "avatarSha256": "c1f5f218684baae3fb505f9b100af97953ac868f03e6a9b6b2c7365c353c05bb",
+   "atlas": 1024,
+   "normalMap": true,
+   "skinToneShift": 0,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_look_around_01.max.fbx",
+     "sha256": "018b19ad26695c5ebbd4131e0506da69dc76f4001a8100a9e38fcdb9a202b7a4"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_neutral_01.max.fbx",
+     "sha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0"
+    },
+    "Sit": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_sit_chair_idle_neutral_01.max.fbx",
+     "sha256": "c5aeab85a7daa50770f70644b1651ff7811594500a702e8b454e7386566e1df2"
+    }
+   },
+   "trim": {
+    "Idle": 12,
+    "Sit": 10
+   },
+   "textureCode": "m022",
+   "hairCard": false
+  },
+  {
+   "id": "commuter",
+   "role": "Commuter in a hooded jacket",
+   "height": 1.76,
+   "avatar": "Assets/Avatars/Adults/Male_Adult_04",
+   "avatarSha256": "fe0d026bc59e7d7ea8f4049edf77ee8040e050224b44a10fb4727b9b3d6efba0",
+   "atlas": 512,
+   "normalMap": false,
+   "skinToneShift": 0,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_01.max.fbx",
+     "sha256": "818cc185af21390575f7fbfdeb3012ba2ce5969fbcb220ea725a2617b339a6e2"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_slow_01.max.fbx",
+     "sha256": "8c5e5ed18be9e1062a26d230677d2801a679c70fd67f8aa8de14ff37f6d20577"
+    }
+   },
+   "trim": {
+    "Idle": 12
+   },
+   "textureCode": "m006",
+   "hairCard": true
+  },
+  {
+   "id": "office-man",
+   "role": "Office worker in a suit",
+   "height": 1.75,
+   "avatar": "Assets/Avatars/Professions/Business_Male_05",
+   "avatarSha256": "9df6ccb0a2cd72118a6377b966263c570710808655ced1ff075b0bc71a8f2b5d",
+   "atlas": 512,
+   "normalMap": false,
+   "skinToneShift": 0,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_02.max.fbx",
+     "sha256": "d6d13b12e1f8d677dfaffef342a5ffeacf5ee3b38036de83425ab68316cd4e5e"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_neutral_01.max.fbx",
+     "sha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0"
+    }
+   },
+   "trim": {
+    "Idle": 12
+   },
+   "textureCode": "m016",
+   "hairCard": false
+  },
+  {
+   "id": "office-woman",
+   "role": "Office worker in a trouser suit",
+   "height": 1.62,
+   "avatar": "Assets/Avatars/Professions/Business_Female_01",
+   "avatarSha256": "7a13fa1e633d7718fe53bc5a26d96552fd271db7dd48a4fe3ab93f520df23fc2",
+   "atlas": 512,
+   "normalMap": false,
+   "skinToneShift": 0,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/f_idle_neutral_01.max.fbx",
+     "sha256": "fd68b33ea9e290dc734ca8c3a71ef5842bb2dfe719853ff84f6336d06d39fdcb"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/f_walk_neutral_01.max.fbx",
+     "sha256": "20238709c689d46f5864aebaa58918cc1233cb9045b24aa4d58cf2752786a73b"
+    }
+   },
+   "trim": {
+    "Idle": 12
+   },
+   "textureCode": "f014",
+   "hairCard": true
+  },
+  {
+   "id": "shopper",
+   "role": "Shopper in a blazer and jeans",
+   "height": 1.6,
+   "avatar": "Assets/Avatars/Adults/Female_Adult_05",
+   "avatarSha256": "fffbb46af5f0f0323abad47f04f6067ec6f8757a345d5e53804601bbb77feca4",
+   "atlas": 512,
+   "normalMap": false,
+   "skinToneShift": 0.6,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/f_idle_neutral_01.max.fbx",
+     "sha256": "fd68b33ea9e290dc734ca8c3a71ef5842bb2dfe719853ff84f6336d06d39fdcb"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/f_walk_neutral_01.max.fbx",
+     "sha256": "20238709c689d46f5864aebaa58918cc1233cb9045b24aa4d58cf2752786a73b"
+    }
+   },
+   "trim": {
+    "Idle": 12
+   },
+   "textureCode": "f005",
+   "hairCard": true
+  },
+  {
+   "id": "clerk",
+   "role": "Clerk in a shirt and skirt",
+   "height": 1.63,
+   "avatar": "Assets/Avatars/Adults/Female_Adult_15",
+   "avatarSha256": "49300e70f72ec0238a17ea583610d41fd34ae78135ee1c0fda5ed9493e49a56a",
+   "atlas": 512,
+   "normalMap": false,
+   "skinToneShift": 0.6,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/f_idle_neutral_01.max.fbx",
+     "sha256": "fd68b33ea9e290dc734ca8c3a71ef5842bb2dfe719853ff84f6336d06d39fdcb"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/f_walk_neutral_01.max.fbx",
+     "sha256": "20238709c689d46f5864aebaa58918cc1233cb9045b24aa4d58cf2752786a73b"
+    }
+   },
+   "trim": {
+    "Idle": 12
+   },
+   "textureCode": "f018",
+   "hairCard": true
+  }
+ ]
+}

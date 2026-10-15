@@ -1,3 +1,4 @@
+import {STREET_MOOD} from '../game/World/streetMood';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { portfolio } from '../data/portfolio';
 import { projects, type Project } from '../data/projects';
@@ -12,8 +13,12 @@ import { Annotation } from '../ui/Annotation';
 import { districts } from '../data/city';
 import { CityMap, DistrictExperience, RideMeter } from '../ui/CityExperience';
 import { idleRide, type Point, type TransitKind } from '../game/World/transit';
-import { streetStops, STREET_SPAWN } from '../game/World/streetLayout';
+import { streetStops, STREET_SPAWN, zoneAt } from '../game/World/streetLayout';
 import type { WorldEngine } from '../core/WorldEngine';
+import { record, loadProgress, saveProgress, emptyProgress, districtAt, type Achievement, type ProgressEvent } from '../game/progress';
+import { TOURS } from '../data/tours';
+import { ExhibitPanel, isExhibit } from '../ui/Exhibits';
+import { AchievementToasts, Journal, Orientation, TourCard, Waypoint } from '../ui/GameHud';
 
 const heroProjects = () => projects.filter(p => p.priority <= 4);
 
@@ -23,13 +28,21 @@ export default function App() {
   const [projectId, setProjectId] = useState<string | null>(route.project);
   const [placeId, setPlaceId] = useState<string | null>(route.district ?? null);
   const [ride, setRide] = useState(idleRide);
-  const [position, setPosition] = useState<Point>({ x: STREET_SPAWN.x, z: STREET_SPAWN.z });
+  const [position, setPosition] = useState<Point & { yaw?: number }>({ x: STREET_SPAWN.x, z: STREET_SPAWN.z, yaw: STREET_SPAWN.yaw });
   const [near, setNear] = useState<string | null>(null);
+  const [nearLabel, setNearLabel] = useState<string | undefined>();
+  const [progress, setProgress] = useState(loadProgress);
+  const [toasts, setToasts] = useState<{ key: number; achievement: Achievement }[]>([]);
+  const [exhibit, setExhibit] = useState<string | null>(null);
+  const [tour, setTour] = useState<{ id: string; step: number } | null>(null);
+  const [waypoint, setWaypoint] = useState<string | null>(null);
+  const [journal, setJournal] = useState(false);
   const [, setSpeed] = useState(0);
   const [ready, setReady] = useState(false);
   const [loadWorld, setLoadWorld] = useState(route.mode !== 'quick');
   const [fallback, setFallback] = useState('');
   const [palette, setPalette] = useState(false);
+  const [renderPreset,setRenderPreset]=useState<'high'|'medium'|'low'>('medium');
   const [sound, setSound] = useState(false);
   const [menu, setMenu] = useState(false);
   const [map, setMap] = useState(false);
@@ -54,7 +67,16 @@ export default function App() {
   fallbackRef.current = fallback;
   const selected = projects.find(p => p.id === projectId);
   const district = districts.find(d => d.id === placeId);
-  const overlayOpen = !!district || !!selected || palette || menu || map || contact || about || entering;
+  const overlayOpen = !!district || !!selected || palette || menu || map || contact || about || entering || !!exhibit || journal;
+  /** Journal, achievements and orientation: record an event, persist, and toast anything it unlocks. */
+  const progressRef = useRef(progress), toastKey = useRef(0);
+  const track = useCallback((event: ProgressEvent) => {
+    const { progress: next, unlocked } = record(progressRef.current, event);
+    if (next === progressRef.current) return;
+    progressRef.current = next; saveProgress(next); setProgress(next);
+    if (unlocked.length) setToasts(list => [...list, ...unlocked.map(achievement => ({ key: ++toastKey.current, achievement }))]);
+  }, []);
+  useEffect(() => { if (!toasts.length) return; const timer = window.setTimeout(() => setToasts(list => list.slice(1)), 4200); return () => clearTimeout(timer); }, [toasts]);
   const navigate = useCallback((next: Mode) => {
     if (fallbackRef.current && next === 'world') next = 'quick';
     if (next !== 'quick') setLoadWorld(true);
@@ -62,6 +84,8 @@ export default function App() {
     setMode(next); setProjectId(null); setPlaceId(null); setMap(false); setMenu(false); engine.current?.endRide();
   }, []);
   const openProject = useCallback((id: string) => {
+    track({ type: 'discover', id }); if (modeRef.current === 'world') track({ type: 'orientation', step: 'interact' });
+    if (isExhibit(id)) { setMap(false); setPalette(false); setExhibit(id); return; }
     if (districts.some(d => d.id === id)) {
       engine.current?.focusLandmark(id); setMap(false); setPalette(false); setPlaceId(id); setProjectId(null);
       history.pushState({ mode: modeRef.current }, '', `#/place/${id}`); return;
@@ -72,14 +96,15 @@ export default function App() {
     engine.current?.focusLandmark(id);
     setMap(false); setPalette(false); setPlaceId(null); setProjectId(id);
     history.pushState({ mode: modeRef.current }, '', `#/project/${id}`);
-  }, []);
+  }, [track]);
   const closeProject = () => { setProjectId(null); history.replaceState(null, '', mode === 'intro' ? window.location.pathname : `#${mode}`); };
   const closePlace = () => { setPlaceId(null); history.replaceState(null, '', `#${mode}`); };
   const hail = useCallback((kind: TransitKind, destination?: string) => {
     if (fallbackRef.current || !engine.current) return;
     setPlaceId(null); setProjectId(null); setMap(false); setPalette(false); navigate('world');
     engine.current.board(kind); if (destination) engine.current.rideTo(destination);
-  }, [navigate]);
+    track({ type: 'orientation', step: 'ride' }); setTour(null);
+  }, [navigate, track]);
   const toggleReduced = () => setReduced(value => !value);
   const enterWorld = () => {
     if (!reduced && mode === 'intro' && !fallback) setEntering(true);
@@ -115,7 +140,7 @@ export default function App() {
       import('../core/WorldEngine').then(({ WorldEngine }) => {
         if (cancelled || !container.current) return;
         try {
-          const instance = new WorldEngine(container.current, { onNear: setNear, onSpeed: setSpeed, onRide: setRide, onPosition: setPosition, onHail: hail, onError: fail, onSelect: openProject, reducedMotion: reducedRef.current, mobile });
+          const instance = new WorldEngine(container.current, { onNear: (id, label) => { setNear(id); setNearLabel(label); }, onLook: () => track({ type: 'orientation', step: 'look' }), onSpeed: setSpeed, onRide: setRide, onPosition: setPosition, onHail: hail, onError: fail, onSelect: openProject, reducedMotion: reducedRef.current, mobile });
           engine.current = instance;
           instance.setMode(modeRef.current);
           instance.setPaused(!!projectId);
@@ -124,7 +149,22 @@ export default function App() {
       }).catch(fail);
     }, 80);
     return () => { cancelled = true; clearTimeout(timer); engine.current?.dispose(); engine.current = null; };
-  }, [mobile, openProject, hail, loadWorld]);
+  }, [mobile, openProject, hail, loadWorld, track]);
+  // Visits, walking, arrivals at a waypoint and finished rides feed the journal.
+  const here = districtAt(zoneAt(position.x).id, position.z);
+  useEffect(() => { if (ready && mode === 'world' && !fallback) track({ type: 'visit', district: here }); }, [here, ready, mode, fallback, track]);
+  useEffect(() => { if (Math.hypot(position.x - STREET_SPAWN.x, position.z - STREET_SPAWN.z) > 4 && ride.phase === 'idle') track({ type: 'orientation', step: 'walk' }); }, [position, ride.phase, track]);
+  useEffect(() => { if (ride.phase === 'arrived') track({ type: 'ride-complete' }); }, [ride.phase, track]);
+  useEffect(() => { if (map) track({ type: 'orientation', step: 'map' }); }, [map, track]);
+  useEffect(() => { const stop = waypoint && streetStops[waypoint]; if (stop && ride.phase === 'idle' && Math.hypot(position.x - stop.x, position.z - stop.z) < 5) setWaypoint(null); }, [position, waypoint, ride.phase]);
+  // A guided tour frames each step's view; finishing the Fort tour counts as following the research.
+  const tourData = tour ? TOURS[tour.id] : null;
+  useEffect(() => { const view = tour && TOURS[tour.id].steps[tour.step].view; if (view) engine.current?.frameView(view); if (tour && tour.step === TOURS[tour.id].steps.length - 1) track({ type: 'discover', id: `${tour.id}-tour` }); }, [tour, track]);
+  const startTour = (id: string) => { setPlaceId(null); history.replaceState(null, '', `#${mode}`); setWaypoint(null); setTour({ id, step: 0 }); };
+  const departure = (id: string, action: 'mark' | 'go' | TransitKind) => {
+    setExhibit(null);
+    if (action === 'mark') setWaypoint(id); else if (action === 'go') { setWaypoint(null); travel(id); } else { setWaypoint(null); hail(action, id); }
+  };
   useEffect(() => {
     const onRoute = () => {
       const state = readRoute(location.hash);
@@ -136,6 +176,7 @@ export default function App() {
     window.addEventListener('hashchange', onRoute); window.addEventListener('popstate', onRoute);
     return () => { window.removeEventListener('hashchange', onRoute); window.removeEventListener('popstate', onRoute); };
   }, [fallback, reduced]);
+  useEffect(()=>{engine.current?.setRenderPreset(renderPreset);},[renderPreset,ready]);
   useEffect(() => { engine.current?.setSound(sound); }, [sound, ready]);
   useEffect(() => { engine.current?.setMode(mode); }, [mode, ready]);
   useEffect(() => { engine.current?.setPaused(overlayOpen); }, [overlayOpen, ready]);
@@ -174,6 +215,7 @@ export default function App() {
       if (overlayOpen) return;
       if (mode === 'world') {
         if (e.key.toLowerCase() === 'm') { e.preventDefault(); setMap(true); }
+        if (e.key.toLowerCase() === 'j') { e.preventDefault(); setJournal(true); }
         if (e.key === 'Escape' && !e.repeat) { e.preventDefault(); pendingMenu.current = true; }
       }
     };
@@ -200,6 +242,8 @@ export default function App() {
     ...heroProjects().map(project => ({ id: `travel-${project.id}`, label: `Go to ${project.title}`, detail: 'Fast travel to landmark', keywords: 'landmark world navigation', action: () => travel(project.id) })),
     ...experience.map((item, i) => ({ id: `experience-${i}`, label: item.title, detail: item.organization, keywords: item.highlights.join(' '), action: () => { setPalette(false); setAbout(true); } })),
     ...skills.flatMap(group => group.items.map(skill => ({ id: `skill-${skill}`, label: skill, detail: `${group.title} · project evidence`, keywords: 'skill engineering', action: () => { setPalette(false); navigate('quick'); setTimeout(() => document.getElementById('skills')?.scrollIntoView(), 0); } }))),
+    { id: 'journal', label: 'Open exploration journal', detail: 'Quest, achievements, districts visited', keywords: 'progress achievements quest badges', action: () => { setPalette(false); setJournal(true); } },
+    ...Object.values(TOURS).map(t => ({ id: `tour-${t.id}`, label: `Guided tour · ${t.place}`, detail: t.guide, keywords: 'guide tour walkthrough', action: () => { setPalette(false); if (fallback) openProject(t.id); else { navigate('world'); startTour(t.id); } } })),
     { id: 'quick', label: 'Open Quick View', detail: 'Recruiter portfolio', keywords: 'projects qualifications resume', action: () => { setPalette(false); navigate('quick'); } },
     { id: 'about', label: 'About & achievements', detail: 'Education and experience', keywords: 'gsoc google big code career', action: () => { setPalette(false); setAbout(true); } },
     { id: 'github', label: 'Open GitHub', detail: 'harshjha15335', keywords: 'code repositories', action: () => { setPalette(false); window.open(portfolio.github, '_blank', 'noopener,noreferrer'); } },
@@ -208,6 +252,7 @@ export default function App() {
     { id: 'motion', label: 'Toggle reduced motion', detail: reduced ? 'Currently reduced' : 'Currently full', keywords: 'accessibility animation', action: () => { setPalette(false); toggleReduced(); } },
   ];
   const filtered = filterCommands(commands, query);
+  const finale = useCallback(() => track({ type: 'discover', id: 'theatre-end' }), [track]);
   const nearDistrict = districts.find(d => d.id === near);
   const boardNear = near?.startsWith('hail-') ? (near.endsWith('taxi') ? 'taxi' : 'auto') : null;
 
@@ -229,13 +274,17 @@ export default function App() {
     {entering && <EntryTransition />}
     {mode === 'world' && <main className="world-ui" id="main-content" tabIndex={-1} aria-label="Interactive mini Mumbai portfolio city">
       {!ready && <div className="loader" role="status"><span className="status-dot" /><span>OPENING THE CITY</span><small>Warming renderer · Quick View is ready</small></div>}
-      <div className="street-location"><span className="street-live" /> CST / FORT ROAD <small>18:42 · MUMBAI</small></div>
+      <div className="street-location"><span className="street-live" /> {zoneAt(position.x).label} <small>{STREET_MOOD.clock} · {STREET_MOOD.label}</small></div>
       {near && <div className="street-reticle" aria-hidden="true" />}
-      {ride.phase === 'idle' && near && <button className="proximity-prompt" onClick={() => boardNear ? hail(boardNear) : openProject(near)}><kbd>{mobile ? '↗' : 'E'}</kbd><strong>{boardNear ? `Hail ${boardNear === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : near === 'ffprime' ? 'Read the FFprime research' : `Talk · ${nearDistrict?.guide}`}</strong></button>}
+      {ride.phase === 'idle' && near && <button className="proximity-prompt" onClick={() => boardNear ? hail(boardNear) : openProject(near)}><kbd>{mobile ? '↗' : 'E'}</kbd><strong>{boardNear ? `Hail ${boardNear === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : near === 'ffprime' ? 'Read the FFprime research' : nearDistrict ? `Talk · ${nearDistrict.guide}` : nearLabel ?? 'Inspect'}</strong></button>}
+      {ready && !progress.orientationDismissed && !tour && ride.phase === 'idle' && <Orientation progress={progress} onSkip={() => track({ type: 'dismiss-orientation' })} />}
+      {tourData && tour && <TourCard tour={tourData} step={tour.step} onStep={step => setTour({ ...tour, step })} onOpen={openProject} onNext={id => { setTour(null); setWaypoint(id); }} onLeave={() => setTour(null)} />}
+      {waypoint && !tour && ride.phase === 'idle' && <Waypoint target={waypoint} position={position} onRide={() => hail('taxi', waypoint)} onClear={() => setWaypoint(null)} />}
+      <AchievementToasts toasts={toasts} />
       <div className="city-transport-actions"><button disabled={!ready} onClick={() => hail('taxi')}>HAIL TAXI ↗</button><button disabled={!ready} onClick={() => hail('auto')}>HAIL AUTO ↗</button></div>
       {ride.phase === 'boarding' && !reduced && <div className="passenger-entry-fade" aria-hidden="true" />}
       <RideMeter ride={ride} onChoose={id => engine.current?.rideTo(id)} onSkip={() => engine.current?.skipRide()} onExit={() => engine.current?.endRide()} onOpen={openProject} />
-      <div className="world-bottom"><div className="controls">{mobile ? <span>DRAG TO LOOK · HOLD ARROWS TO WALK</span> : <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> WALK · CLICK / DRAG TO LOOK · <kbd>E</kbd> TALK</span>}<button onClick={() => setMap(true)}><kbd>M</kbd> MAP</button></div><nav aria-label="City navigation"><button onClick={() => setMap(true)}>CITY DIRECTORY ↗</button><button onClick={() => openProject('filmcity')}>TALKIES ↗</button><button onClick={() => setMenu(true)} aria-label="Open world menu">☰</button></nav></div>
+      <div className="world-bottom"><div className="controls">{mobile ? <span>DRAG TO LOOK · HOLD ARROWS TO WALK</span> : <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> WALK · CLICK / DRAG TO LOOK · <kbd>E</kbd> TALK</span>}<button onClick={() => setMap(true)}><kbd>M</kbd> MAP</button><button onClick={() => setJournal(true)}><kbd>J</kbd> JOURNAL</button></div><nav aria-label="City navigation"><button onClick={() => setMap(true)}>CITY DIRECTORY ↗</button><button onClick={() => openProject('filmcity')}>TALKIES ↗</button><button onClick={() => setMenu(true)} aria-label="Open world menu">☰</button></nav></div>
       {mobile && <div className="touch-walk" aria-label="Walking controls">{[['w','↑','Walk forward'],['a','←','Step left'],['s','↓','Walk backward'],['d','→','Step right']].map(([key,label,name]) => <button key={key} aria-label={name} onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); engine.current?.setMove(key,true); }} onPointerUp={() => engine.current?.setMove(key,false)} onPointerCancel={() => engine.current?.setMove(key,false)}>{label}</button>)}</div>}
 
     </main>}
@@ -251,8 +300,12 @@ export default function App() {
     {selected && <Modal title={`CASE STUDY / ${selected.title}`} onClose={closeProject} className={`project-modal project-${selected.id}`}><CaseStudy project={selected} world={mode === 'world'} onClose={closeProject} /></Modal>}
     {palette && <Modal title="COMMAND CENTER" onClose={() => setPalette(false)} className="palette-modal"><label className="search-input"><span>⌕</span><input autoFocus placeholder="Search projects, skills, or commands…" aria-label="Search commands" value={query} onChange={e => { setQuery(e.target.value); setCommandIndex(0); }} onKeyDown={e => { if (e.key === 'ArrowDown') { e.preventDefault(); setCommandIndex(i => Math.min(i + 1, filtered.length - 1)); } if (e.key === 'ArrowUp') { e.preventDefault(); setCommandIndex(i => Math.max(i - 1, 0)); } if (e.key === 'Enter') { e.preventDefault(); filtered[commandIndex]?.action(); } }} /></label><div className="command-results">{filtered.length ? filtered.map((command, i) => <button key={command.id} className={i === commandIndex ? 'active' : ''} onClick={command.action} onMouseEnter={() => setCommandIndex(i)}><span><strong>{command.label}</strong><small>{command.detail}</small></span><span>↗</span></button>) : <p className="empty-state">No matches. Try a project name or technology.</p>}</div><p className="palette-help caption">↑ ↓ NAVIGATE · ENTER OPEN · ESC CLOSE</p></Modal>}
     {map && <CityMap position={position} canRide={ready && !fallback} onTravel={travel} onOpen={openProject} onRide={hail} onClose={() => setMap(false)} />}
-    {district && <DistrictExperience key={district.id} district={district} reduced={reduced} resumeAvailable={resumeAvailable} onClose={closePlace} onProject={openProject} onQuick={() => navigate('quick')} onContact={() => { closePlace(); setContact(true); }} onDestination={id => { closePlace(); travel(id); }} />}
-    {menu && <Modal title="WORLD MENU" onClose={() => setMenu(false)} className="small-modal"><h2>Take a moment.</h2><div className="menu-actions"><button className="primary-button" onClick={() => setMenu(false)}>CONTINUE EXPLORING →</button><button onClick={() => navigate('quick')}>OPEN QUICK VIEW ↗</button><button onClick={() => { engine.current?.reset(); setMenu(false); }}>RETURN TO CST ↻</button><button aria-pressed={sound} onClick={() => setSound(value=>!value)}>{sound ? 'MUTE CITY SOUND' : 'ENABLE CITY SOUND'}</button><button onClick={toggleReduced}>{reduced ? 'USE FULL MOTION' : 'REDUCE MOTION'} ◐</button><button onClick={() => navigate('intro')}>RETURN TO INTRO ←</button></div></Modal>}
+    {district && <DistrictExperience key={district.id} district={district} reduced={reduced} resumeAvailable={resumeAvailable} onClose={closePlace} onProject={openProject} onQuick={() => navigate('quick')} onContact={() => { closePlace(); setContact(true); }} onDestination={id => { closePlace(); travel(id); }} onTour={TOURS[district.id] && mode === 'world' && !fallback ? () => startTour(district.id) : undefined} onFinale={finale} />}
+    {exhibit && <ExhibitPanel id={exhibit} onClose={() => setExhibit(null)} onSolved={id => track({ type: 'discover', id: `${id}:solved` })} onDeparture={departure}
+      onOpen={openProject} onProject={id => { setExhibit(null); openProject(id); }} onContact={() => { setExhibit(null); setContact(true); }} onFinale={finale}
+      reduced={reduced} resumeAvailable={resumeAvailable} discovered={progress.discovered} />}
+    {journal && <Journal progress={progress} onClose={() => setJournal(false)} onTravel={id => { setJournal(false); travel(id); }} onReset={() => { const fresh = { ...emptyProgress(), orientationDismissed: progress.orientationDismissed }; progressRef.current = fresh; saveProgress(fresh); setProgress(fresh); }} />}
+    {menu && <Modal title="WORLD MENU" onClose={() => setMenu(false)} className="small-modal"><h2>Take a moment.</h2><div className="menu-actions"><label>Street detail <select aria-label="Street detail" value={renderPreset} onChange={e=>setRenderPreset(e.target.value as typeof renderPreset)}><option value="high">High · contact shadows</option><option value="medium">Medium</option><option value="low">Low · lighter rendering</option></select></label><button className="primary-button" onClick={() => setMenu(false)}>CONTINUE EXPLORING →</button><button onClick={() => navigate('quick')}>OPEN QUICK VIEW ↗</button><button onClick={() => { engine.current?.reset(); setMenu(false); }}>RETURN TO CST ↻</button><button onClick={() => { setMenu(false); setJournal(true); }}>OPEN JOURNAL ✎</button><button aria-pressed={sound} onClick={() => setSound(value=>!value)}>{sound ? 'MUTE CITY SOUND' : 'ENABLE CITY SOUND'}</button><button onClick={toggleReduced}>{reduced ? 'USE FULL MOTION' : 'REDUCE MOTION'} ◐</button><button onClick={() => navigate('intro')}>RETURN TO INTRO ←</button></div></Modal>}
     {contact && <Modal title="CONTACT" onClose={() => setContact(false)} className="small-modal"><h2>Let’s build<br />something.</h2><p>For engineering opportunities, research, or a good technical conversation.</p><a className="contact-email" href={`mailto:${portfolio.email}`}>{portfolio.email} ↗</a><div className="contact-social"><a href={portfolio.linkedin} target="_blank" rel="noreferrer">LINKEDIN ↗</a><a href={portfolio.github} target="_blank" rel="noreferrer">GITHUB ↗</a>{resumeAvailable && <a href={portfolio.resume} target="_blank" rel="noreferrer">RÉSUMÉ ↓</a>}</div></Modal>}
     {about && <Modal title="ABOUT / CAREER" onClose={() => setAbout(false)} className="about-modal"><h2>Harsh Jha<span className="blue-period">.</span></h2><p className="case-lead">{portfolio.education}<br />Expected graduation: {portfolio.graduation}</p>{experience.map(item => <section className="about-experience" key={item.title}><span className="eyebrow">{item.period}</span><h3>{item.title}</h3><p>{item.organization}</p><p>{item.description}</p></section>)}<div className="about-recognition"><span className="eyebrow">SELECTED ACHIEVEMENTS</span>{achievements.slice(0, 2).map(item => <article key={item.title}><h3>{item.title}</h3><p>{item.detail}</p><a href={item.source} target="_blank" rel="noreferrer">SOURCE ↗</a></article>)}</div><div className="case-links"><a className="primary-button" href={portfolio.github} target="_blank" rel="noreferrer">GITHUB ↗</a>{resumeAvailable && <a className="text-button" href={portfolio.resume} target="_blank" rel="noreferrer">RÉSUMÉ ↓</a>}<button className="text-button" onClick={() => { setAbout(false); setContact(true); }}>CONTACT ↗</button></div></Modal>}
     {!mobile && <div id="cursor" className="custom-cursor" aria-hidden="true"><svg viewBox="0 0 20 24"><path d="M2 2 17 15 9 15 6 22Z" /></svg><span /></div>}

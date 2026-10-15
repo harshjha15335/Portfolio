@@ -1,0 +1,47 @@
+
+> harsh-jha-world-portfolio@1.0.0 test:browser
+> playwright test --config playwright.cloud.config.ts --workers=1 --timeout=180000 --grep taxi can be boarded|visitor walks through the research doorway
+
+
+Running 2 tests using 1 worker
+
+  ✓  1 tests/city.spec.ts:5:3 › taxi can be boarded, metered, routed and exited at its destination (1.8m)
+  ✘  2 tests/city.spec.ts:147:1 › visitor walks through the research doorway and opens the physical FFprime terminal (49.2s)
+
+
+  1) tests/city.spec.ts:147:1 › visitor walks through the research doorway and opens the physical FFprime terminal
+
+    Error: expect(received).toBeLessThan(expected)
+
+    Expected: < -9.7
+    Received:   -8.362
+
+    Call Log:
+    - Timeout 12000ms exceeded while waiting on the predicate
+
+      150 |   await page.keyboard.press('m'); await page.getByRole('button',{name:'Travel to Fort Research Institute',exact:true}).click();
+      151 |   await expect(canvas).toHaveAttribute('data-world-z','-35.000');
+    > 152 |   await page.keyboard.down('w'); await expect.poll(async()=>Number(await canvas.getAttribute('data-world-x'))).toBeLessThan(-9.7); await page.keyboard.up('w');
+          |                                                                                                                ^
+      153 |   await expect(page.locator('.proximity-prompt')).toContainText('Read the FFprime research');
+      154 |   await page.keyboard.press('e'); await expect(page.getByRole('dialog',{name:'CASE STUDY / FFprime'})).toBeVisible();
+      155 | });
+        at /workspace/Portfolio/tests/city.spec.ts:152:112
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/city-visitor-walks-through-5dbe6-e-physical-FFprime-terminal/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/city-visitor-walks-through-5dbe6-e-physical-FFprime-terminal/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/city-visitor-walks-through-5dbe6-e-physical-FFprime-terminal/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/city-visitor-walks-through-5dbe6-e-physical-FFprime-terminal/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/city.spec.ts:147:1 › visitor walks through the research doorway and opens the physical FFprime terminal
+  1 passed (2.7m)

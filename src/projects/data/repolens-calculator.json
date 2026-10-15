@@ -1,0 +1,878 @@
+{
+ "repository": "https://github.com/harshjha15335/RepoLens",
+ "commit": "28fef675642ca9cc6879ad7fb8c43b4916bc85e1",
+ "sampleRepo": "sample-repos/calculator",
+ "chunking": "one chunk per class header and per method (Python ast); RepoLens itself uses Tree-sitter",
+ "chunks": [
+  {
+   "file_path": "src/calculator.py",
+   "symbol_name": "Calculator",
+   "symbol_type": "class",
+   "parent_symbol": null,
+   "start_line": 4,
+   "end_line": 6,
+   "content": "class Calculator:\n    \"\"\"A basic calculator with history tracking.\"\"\""
+  },
+  {
+   "file_path": "src/calculator.py",
+   "symbol_name": "__init__",
+   "symbol_type": "method",
+   "parent_symbol": "Calculator",
+   "start_line": 7,
+   "end_line": 9,
+   "content": "    def __init__(self):\n        self.history: list[str] = []\n        self.last_result: float = 0"
+  },
+  {
+   "file_path": "src/calculator.py",
+   "symbol_name": "add",
+   "symbol_type": "method",
+   "parent_symbol": "Calculator",
+   "start_line": 11,
+   "end_line": 16,
+   "content": "    def add(self, a: float, b: float) -> float:\n        \"\"\"Add two numbers.\"\"\"\n        result = a + b\n        self._record(f\"{a} + {b} = {result}\")\n        self.last_result = result\n        return result"
+  },
+  {
+   "file_path": "src/calculator.py",
+   "symbol_name": "subtract",
+   "symbol_type": "method",
+   "parent_symbol": "Calculator",
+   "start_line": 18,
+   "end_line": 23,
+   "content": "    def subtract(self, a: float, b: float) -> float:\n        \"\"\"Subtract b from a.\"\"\"\n        result = a - b\n        self._record(f\"{a} - {b} = {result}\")\n        self.last_result = result\n        return result"
+  },
+  {
+   "file_path": "src/calculator.py",
+   "symbol_name": "multiply",
+   "symbol_type": "method",
+   "parent_symbol": "Calculator",
+   "start_line": 25,
+   "end_line": 30,
+   "content": "    def multiply(self, a: float, b: float) -> float:\n        \"\"\"Multiply two numbers.\"\"\"\n        result = a * b\n        self._record(f\"{a} * {b} = {result}\")\n        self.last_result = result\n        return result"
+  },
+  {
+   "file_path": "src/calculator.py",
+   "symbol_name": "divide",
+   "symbol_type": "method",
+   "parent_symbol": "Calculator",
+   "start_line": 32,
+   "end_line": 39,
+   "content": "    def divide(self, a: float, b: float) -> float:\n        \"\"\"Divide a by b. Raises ValueError for division by zero.\"\"\"\n        if b == 0:\n            raise ValueError(\"Cannot divide by zero\")\n        result = a / b\n        self._record(f\"{a} / {b} = {result}\")\n        self.last_result = result\n        return result"
+  },
+  {
+   "file_path": "src/calculator.py",
+   "symbol_name": "power",
+   "symbol_type": "method",
+   "parent_symbol": "Calculator",
+   "start_line": 41,
+   "end_line": 46,
+   "content": "    def power(self, base: float, exponent: float) -> float:\n        \"\"\"Raise base to the power of exponent.\"\"\"\n        result = base ** exponent\n        self._record(f\"{base} ^ {exponent} = {result}\")\n        self.last_result = result\n        return result"
+  },
+  {
+   "file_path": "src/calculator.py",
+   "symbol_name": "_record",
+   "symbol_type": "method",
+   "parent_symbol": "Calculator",
+   "start_line": 48,
+   "end_line": 50,
+   "content": "    def _record(self, entry: str) -> None:\n        \"\"\"Record an operation in history.\"\"\"\n        self.history.append(entry)"
+  },
+  {
+   "file_path": "src/calculator.py",
+   "symbol_name": "get_history",
+   "symbol_type": "method",
+   "parent_symbol": "Calculator",
+   "start_line": 52,
+   "end_line": 54,
+   "content": "    def get_history(self) -> list[str]:\n        \"\"\"Get the operation history.\"\"\"\n        return self.history.copy()"
+  },
+  {
+   "file_path": "src/calculator.py",
+   "symbol_name": "clear_history",
+   "symbol_type": "method",
+   "parent_symbol": "Calculator",
+   "start_line": 56,
+   "end_line": 59,
+   "content": "    def clear_history(self) -> None:\n        \"\"\"Clear the operation history.\"\"\"\n        self.history.clear()\n        self.last_result = 0"
+  },
+  {
+   "file_path": "src/parser.py",
+   "symbol_name": "ExpressionParser",
+   "symbol_type": "class",
+   "parent_symbol": null,
+   "start_line": 8,
+   "end_line": 18,
+   "content": "class ExpressionParser:\n    \"\"\"Parses and evaluates mathematical expressions.\"\"\"\n\n    OPERATORS = {\n        '+': ('add', 1),\n        '-': ('subtract', 1),\n        '*': ('multiply', 2),\n        '/': ('divide', 2),\n        '^': ('power', 3),\n    }"
+  },
+  {
+   "file_path": "src/parser.py",
+   "symbol_name": "__init__",
+   "symbol_type": "method",
+   "parent_symbol": "ExpressionParser",
+   "start_line": 19,
+   "end_line": 20,
+   "content": "    def __init__(self, calculator: Calculator):\n        self.calculator = calculator"
+  },
+  {
+   "file_path": "src/parser.py",
+   "symbol_name": "evaluate",
+   "symbol_type": "method",
+   "parent_symbol": "ExpressionParser",
+   "start_line": 22,
+   "end_line": 29,
+   "content": "    def evaluate(self, expression: str) -> float:\n        \"\"\"Evaluate a mathematical expression string.\n\n        Supports: +, -, *, /, ^, parentheses\n        \"\"\"\n        tokens = self._tokenize(expression)\n        result = self._parse_expression(tokens, 0)\n        return result[0]"
+  },
+  {
+   "file_path": "src/parser.py",
+   "symbol_name": "_tokenize",
+   "symbol_type": "method",
+   "parent_symbol": "ExpressionParser",
+   "start_line": 31,
+   "end_line": 49,
+   "content": "    def _tokenize(self, expression: str) -> list[str]:\n        \"\"\"Tokenize the expression into numbers and operators.\"\"\"\n        tokens = []\n        current = \"\"\n\n        for char in expression.replace(\" \", \"\"):\n            if char in \"0123456789.\":\n                current += char\n            else:\n                if current:\n                    tokens.append(current)\n                    current = \"\"\n                if char in self.OPERATORS or char in \"()\":\n                    tokens.append(char)\n\n        if current:\n            tokens.append(current)\n\n        return tokens"
+  },
+  {
+   "file_path": "src/parser.py",
+   "symbol_name": "_parse_expression",
+   "symbol_type": "method",
+   "parent_symbol": "ExpressionParser",
+   "start_line": 51,
+   "end_line": 67,
+   "content": "    def _parse_expression(\n        self, tokens: list[str], pos: int\n    ) -> tuple[float, int]:\n        \"\"\"Parse expression with operator precedence.\"\"\"\n        left, pos = self._parse_term(tokens, pos)\n\n        while pos < len(tokens) and tokens[pos] in ('+', '-'):\n            op = tokens[pos]\n            pos += 1\n            right, pos = self._parse_term(tokens, pos)\n\n            if op == '+':\n                left = self.calculator.add(left, right)\n            else:\n                left = self.calculator.subtract(left, right)\n\n        return left, pos"
+  },
+  {
+   "file_path": "src/parser.py",
+   "symbol_name": "_parse_term",
+   "symbol_type": "method",
+   "parent_symbol": "ExpressionParser",
+   "start_line": 69,
+   "end_line": 85,
+   "content": "    def _parse_term(\n        self, tokens: list[str], pos: int\n    ) -> tuple[float, int]:\n        \"\"\"Parse multiplication/division terms.\"\"\"\n        left, pos = self._parse_factor(tokens, pos)\n\n        while pos < len(tokens) and tokens[pos] in ('*', '/'):\n            op = tokens[pos]\n            pos += 1\n            right, pos = self._parse_factor(tokens, pos)\n\n            if op == '*':\n                left = self.calculator.multiply(left, right)\n            else:\n                left = self.calculator.divide(left, right)\n\n        return left, pos"
+  },
+  {
+   "file_path": "src/parser.py",
+   "symbol_name": "_parse_factor",
+   "symbol_type": "method",
+   "parent_symbol": "ExpressionParser",
+   "start_line": 87,
+   "end_line": 103,
+   "content": "    def _parse_factor(\n        self, tokens: list[str], pos: int\n    ) -> tuple[float, int]:\n        \"\"\"Parse atomic values and parenthesized expressions.\"\"\"\n        if pos >= len(tokens):\n            raise ValueError(\"Unexpected end of expression\")\n\n        if tokens[pos] == '(':\n            result, pos = self._parse_expression(tokens, pos + 1)\n            if pos < len(tokens) and tokens[pos] == ')':\n                pos += 1\n            return result, pos\n\n        try:\n            return float(tokens[pos]), pos + 1\n        except ValueError:\n            raise ValueError(f\"Invalid token: {tokens[pos]}\")"
+  },
+  {
+   "file_path": "src/parser.py",
+   "symbol_name": "format_result",
+   "symbol_type": "function",
+   "parent_symbol": null,
+   "start_line": 106,
+   "end_line": 110,
+   "content": "def format_result(value: float, precision: int = 6) -> str:\n    \"\"\"Format a numerical result for display.\"\"\"\n    if value == int(value):\n        return str(int(value))\n    return f\"{value:.{precision}f}\".rstrip('0').rstrip('.')"
+  },
+  {
+   "file_path": "src/scientific.py",
+   "symbol_name": "ScientificCalculator",
+   "symbol_type": "class",
+   "parent_symbol": null,
+   "start_line": 7,
+   "end_line": 9,
+   "content": "class ScientificCalculator(Calculator):\n    \"\"\"Extended calculator with scientific operations.\"\"\""
+  },
+  {
+   "file_path": "src/scientific.py",
+   "symbol_name": "__init__",
+   "symbol_type": "method",
+   "parent_symbol": "ScientificCalculator",
+   "start_line": 10,
+   "end_line": 12,
+   "content": "    def __init__(self):\n        super().__init__()\n        self.angle_mode = \"radians\"  # or \"degrees\""
+  },
+  {
+   "file_path": "src/scientific.py",
+   "symbol_name": "set_angle_mode",
+   "symbol_type": "method",
+   "parent_symbol": "ScientificCalculator",
+   "start_line": 14,
+   "end_line": 18,
+   "content": "    def set_angle_mode(self, mode: str) -> None:\n        \"\"\"Set angle mode to 'radians' or 'degrees'.\"\"\"\n        if mode not in (\"radians\", \"degrees\"):\n            raise ValueError(f\"Invalid angle mode: {mode}\")\n        self.angle_mode = mode"
+  },
+  {
+   "file_path": "src/scientific.py",
+   "symbol_name": "sqrt",
+   "symbol_type": "method",
+   "parent_symbol": "ScientificCalculator",
+   "start_line": 20,
+   "end_line": 27,
+   "content": "    def sqrt(self, x: float) -> float:\n        \"\"\"Calculate square root.\"\"\"\n        if x < 0:\n            raise ValueError(\"Cannot compute square root of negative number\")\n        result = math.sqrt(x)\n        self._record(f\"sqrt({x}) = {result}\")\n        self.last_result = result\n        return result"
+  },
+  {
+   "file_path": "src/scientific.py",
+   "symbol_name": "log",
+   "symbol_type": "method",
+   "parent_symbol": "ScientificCalculator",
+   "start_line": 29,
+   "end_line": 36,
+   "content": "    def log(self, x: float, base: float = math.e) -> float:\n        \"\"\"Calculate logarithm with optional base.\"\"\"\n        if x <= 0:\n            raise ValueError(\"Logarithm input must be positive\")\n        result = math.log(x, base)\n        self._record(f\"log_{base}({x}) = {result}\")\n        self.last_result = result\n        return result"
+  },
+  {
+   "file_path": "src/scientific.py",
+   "symbol_name": "sin",
+   "symbol_type": "method",
+   "parent_symbol": "ScientificCalculator",
+   "start_line": 38,
+   "end_line": 45,
+   "content": "    def sin(self, angle: float) -> float:\n        \"\"\"Calculate sine of angle.\"\"\"\n        if self.angle_mode == \"degrees\":\n            angle = math.radians(angle)\n        result = math.sin(angle)\n        self._record(f\"sin({angle}) = {result}\")\n        self.last_result = result\n        return result"
+  },
+  {
+   "file_path": "src/scientific.py",
+   "symbol_name": "cos",
+   "symbol_type": "method",
+   "parent_symbol": "ScientificCalculator",
+   "start_line": 47,
+   "end_line": 54,
+   "content": "    def cos(self, angle: float) -> float:\n        \"\"\"Calculate cosine of angle.\"\"\"\n        if self.angle_mode == \"degrees\":\n            angle = math.radians(angle)\n        result = math.cos(angle)\n        self._record(f\"cos({angle}) = {result}\")\n        self.last_result = result\n        return result"
+  },
+  {
+   "file_path": "src/scientific.py",
+   "symbol_name": "factorial",
+   "symbol_type": "method",
+   "parent_symbol": "ScientificCalculator",
+   "start_line": 56,
+   "end_line": 63,
+   "content": "    def factorial(self, n: int) -> int:\n        \"\"\"Calculate factorial of n.\"\"\"\n        if n < 0:\n            raise ValueError(\"Factorial is not defined for negative numbers\")\n        result = math.factorial(n)\n        self._record(f\"{n}! = {result}\")\n        self.last_result = float(result)\n        return result"
+  }
+ ],
+ "reference": [
+  {
+   "query": "where is divide defined",
+   "bm25": [
+    [
+     25,
+     5.333779
+    ],
+    [
+     5,
+     3.478813
+    ],
+    [
+     10,
+     2.451963
+    ],
+    [
+     15,
+     1.45963
+    ]
+   ],
+   "dense": [
+    [
+     20,
+     0.352487
+    ],
+    [
+     5,
+     0.238019
+    ],
+    [
+     12,
+     0.13535
+    ],
+    [
+     25,
+     0.124917
+    ],
+    [
+     10,
+     0.123871
+    ],
+    [
+     22,
+     0.111454
+    ],
+    [
+     6,
+     0.082175
+    ],
+    [
+     21,
+     0.052251
+    ],
+    [
+     19,
+     0.047551
+    ],
+    [
+     1,
+     0.042623
+    ],
+    [
+     17,
+     0.039217
+    ],
+    [
+     15,
+     0.037135
+    ],
+    [
+     9,
+     0.031143
+    ],
+    [
+     0,
+     0.023784
+    ],
+    [
+     13,
+     0.021929
+    ],
+    [
+     18,
+     0.021538
+    ],
+    [
+     7,
+     0.020009
+    ],
+    [
+     8,
+     0.013283
+    ],
+    [
+     11,
+     0.010603
+    ],
+    [
+     3,
+     0.007498
+    ]
+   ]
+  },
+  {
+   "query": "how does the expression parser handle operator precedence",
+   "bm25": [
+    [
+     14,
+     7.559836
+    ],
+    [
+     13,
+     4.831172
+    ],
+    [
+     10,
+     4.703304
+    ],
+    [
+     12,
+     4.383898
+    ],
+    [
+     16,
+     2.849015
+    ],
+    [
+     8,
+     2.178838
+    ],
+    [
+     9,
+     2.043485
+    ],
+    [
+     6,
+     1.837965
+    ],
+    [
+     11,
+     1.595703
+    ],
+    [
+     17,
+     1.147119
+    ],
+    [
+     15,
+     0.825715
+    ]
+   ],
+   "dense": [
+    [
+     12,
+     0.285657
+    ],
+    [
+     13,
+     0.198944
+    ],
+    [
+     14,
+     0.171287
+    ],
+    [
+     10,
+     0.158044
+    ],
+    [
+     16,
+     0.144104
+    ],
+    [
+     9,
+     0.054301
+    ],
+    [
+     17,
+     0.053947
+    ],
+    [
+     19,
+     0.053184
+    ],
+    [
+     15,
+     0.051011
+    ],
+    [
+     11,
+     0.040796
+    ],
+    [
+     18,
+     0.037366
+    ],
+    [
+     6,
+     0.03728
+    ],
+    [
+     8,
+     0.036122
+    ],
+    [
+     23,
+     0.034563
+    ],
+    [
+     24,
+     0.023263
+    ],
+    [
+     7,
+     0.022681
+    ],
+    [
+     22,
+     0.019727
+    ],
+    [
+     20,
+     0.01939
+    ],
+    [
+     4,
+     0.018498
+    ],
+    [
+     1,
+     0.017443
+    ]
+   ]
+  },
+  {
+   "query": "what happens on division by zero",
+   "bm25": [
+    [
+     5,
+     10.250846
+    ],
+    [
+     15,
+     1.700015
+    ]
+   ],
+   "dense": [
+    [
+     5,
+     0.253863
+    ],
+    [
+     10,
+     0.087633
+    ],
+    [
+     12,
+     0.048731
+    ],
+    [
+     9,
+     0.048168
+    ],
+    [
+     15,
+     0.047176
+    ],
+    [
+     17,
+     0.045907
+    ],
+    [
+     3,
+     0.029615
+    ],
+    [
+     0,
+     0.024669
+    ],
+    [
+     6,
+     0.022704
+    ],
+    [
+     2,
+     0.022203
+    ],
+    [
+     4,
+     0.020815
+    ],
+    [
+     8,
+     0.019076
+    ],
+    [
+     20,
+     0.014947
+    ],
+    [
+     22,
+     0.011525
+    ],
+    [
+     25,
+     0.010575
+    ],
+    [
+     21,
+     0.00769
+    ],
+    [
+     24,
+     0.00724
+    ],
+    [
+     23,
+     0.0072
+    ],
+    [
+     16,
+     -0.00026
+    ],
+    [
+     7,
+     -0.004572
+    ]
+   ]
+  },
+  {
+   "query": "history tracking",
+   "bm25": [
+    [
+     0,
+     6.583352
+    ],
+    [
+     8,
+     3.382481
+    ],
+    [
+     9,
+     3.318437
+    ],
+    [
+     7,
+     2.650581
+    ],
+    [
+     1,
+     1.987473
+    ]
+   ],
+   "dense": [
+    [
+     0,
+     0.448636
+    ],
+    [
+     8,
+     0.413996
+    ],
+    [
+     7,
+     0.396853
+    ],
+    [
+     9,
+     0.332873
+    ],
+    [
+     1,
+     0.209137
+    ],
+    [
+     16,
+     0.070278
+    ],
+    [
+     15,
+     0.065667
+    ],
+    [
+     22,
+     0.030392
+    ],
+    [
+     14,
+     0.025514
+    ],
+    [
+     10,
+     0.021249
+    ],
+    [
+     6,
+     0.018114
+    ],
+    [
+     25,
+     0.017417
+    ],
+    [
+     13,
+     0.015826
+    ],
+    [
+     19,
+     0.015807
+    ],
+    [
+     12,
+     0.011589
+    ],
+    [
+     24,
+     0.00953
+    ],
+    [
+     5,
+     0.006307
+    ],
+    [
+     3,
+     0.005223
+    ],
+    [
+     11,
+     0.003692
+    ],
+    [
+     20,
+     0.003182
+    ]
+   ]
+  }
+ ],
+ "embeddingProbe": {
+  "text": "getUserProfile parse_expression",
+  "nonzero": [
+   [
+    10,
+    0.094281
+   ],
+   [
+    11,
+    -0.094281
+   ],
+   [
+    12,
+    -0.188562
+   ],
+   [
+    20,
+    -0.094281
+   ],
+   [
+    22,
+    -0.094281
+   ],
+   [
+    29,
+    0.094281
+   ],
+   [
+    31,
+    -0.094281
+   ],
+   [
+    33,
+    -0.094281
+   ],
+   [
+    64,
+    0.235702
+   ],
+   [
+    84,
+    0.094281
+   ],
+   [
+    96,
+    -0.471405
+   ],
+   [
+    98,
+    0.094281
+   ],
+   [
+    103,
+    -0.094281
+   ],
+   [
+    109,
+    0.094281
+   ],
+   [
+    110,
+    0.094281
+   ],
+   [
+    112,
+    0.094281
+   ],
+   [
+    122,
+    -0.094281
+   ],
+   [
+    130,
+    -0.094281
+   ],
+   [
+    134,
+    -0.094281
+   ],
+   [
+    145,
+    0.094281
+   ],
+   [
+    158,
+    0.094281
+   ],
+   [
+    173,
+    -0.094281
+   ],
+   [
+    181,
+    -0.094281
+   ],
+   [
+    183,
+    0.094281
+   ],
+   [
+    184,
+    0.094281
+   ],
+   [
+    188,
+    -0.094281
+   ],
+   [
+    189,
+    0.471405
+   ],
+   [
+    200,
+    0.094281
+   ],
+   [
+    208,
+    0.094281
+   ],
+   [
+    209,
+    -0.094281
+   ],
+   [
+    228,
+    -0.235702
+   ],
+   [
+    243,
+    0.094281
+   ],
+   [
+    261,
+    0.094281
+   ],
+   [
+    269,
+    0.094281
+   ],
+   [
+    270,
+    -0.094281
+   ],
+   [
+    281,
+    -0.188562
+   ],
+   [
+    283,
+    -0.094281
+   ],
+   [
+    292,
+    -0.094281
+   ],
+   [
+    298,
+    -0.094281
+   ],
+   [
+    305,
+    0.094281
+   ],
+   [
+    307,
+    -0.094281
+   ],
+   [
+    311,
+    -0.094281
+   ],
+   [
+    314,
+    -0.094281
+   ],
+   [
+    317,
+    -0.094281
+   ],
+   [
+    320,
+    -0.094281
+   ],
+   [
+    329,
+    0.094281
+   ],
+   [
+    333,
+    -0.094281
+   ],
+   [
+    363,
+    -0.094281
+   ]
+  ]
+ },
+ "md5Probe": "95bd4d656164278daf3f83b7099a8529"
+}

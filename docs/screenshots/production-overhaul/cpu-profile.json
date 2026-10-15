@@ -1,0 +1,21 @@
+{
+  "profile": "Node CPU simulation only; no renderer/GPU or browser FPS claim",
+  "samples": 779,
+  "constructionMs": 1033.5427309999998,
+  "authoredNavigation": "ready",
+  "streetUpdate": {
+    "meanMs": 0.48135239537869706,
+    "p95Ms": 0.6491269999996803,
+    "p99Ms": 4.380036000000018
+  },
+  "crowdUpdate": {
+    "meanMs": 0.12663555712451363,
+    "p95Ms": 0.16404699999975492,
+    "p99Ms": 0.40910200000007535
+  },
+  "trafficUpdate": {
+    "meanMs": 0.02730257381258893,
+    "p95Ms": 0.037761999999929685,
+    "p99Ms": 0.09386900000026799
+  }
+}

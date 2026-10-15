@@ -1,0 +1,25 @@
+
+> harsh-jha-world-portfolio@1.0.0 build
+> tsc --noEmit && vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 177 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                          1.24 kB │ gzip:   0.60 kB
+dist/assets/index-Dqe9-Xkr.css                          60.64 kB │ gzip:  13.36 kB
+dist/assets/GLBCharacter-DAoesubs.js                     1.44 kB │ gzip:   0.75 kB
+dist/assets/GLBAssetLibrary-CpxFzbwg.js                  5.71 kB │ gzip:   2.46 kB
+dist/assets/GLTFLoader-Bgy3ZYov.js                      43.93 kB │ gzip:  12.95 kB
+dist/assets/physics-BaybpWiS.js                         85.56 kB │ gzip:  24.87 kB
+dist/assets/index-BIjkvGVR.js                          301.56 kB │ gzip:  95.28 kB
+dist/assets/WorldEngine-CQztk98f.js                    353.91 kB │ gzip: 107.04 kB
+dist/assets/three-BcaNwUvX.js                          583.87 kB │ gzip: 148.84 kB
+dist/assets/recast-navigation.wasm-compat-Dsoa_MD-.js  726.36 kB │ gzip: 217.70 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 6.52s

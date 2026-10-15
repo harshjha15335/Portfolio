@@ -1,0 +1,142 @@
+[
+ {
+  "view": "bkc",
+  "main": {
+   "draws": 64,
+   "triangles": 182577,
+   "textures": 31,
+   "programs": 50
+  },
+  "debug": "idle · 126 draws · 372750 triangles · 31 textures · 50 shaders · 331 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "bkc-plaza",
+  "main": {
+   "draws": 73,
+   "triangles": 192580,
+   "textures": 31,
+   "programs": 50
+  },
+  "debug": "1.1 fps · 73 draws · 192580 triangles · 31 textures · 50 shaders · 290 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "andheri",
+  "main": {
+   "draws": 54,
+   "triangles": 208307,
+   "textures": 31,
+   "programs": 52
+  },
+  "debug": "1.2 fps · 54 draws · 208307 triangles · 31 textures · 52 shaders · 327 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "andheri-stalls",
+  "main": {
+   "draws": 61,
+   "triangles": 231775,
+   "textures": 31,
+   "programs": 52
+  },
+  "debug": "idle · 54 draws · 208307 triangles · 31 textures · 52 shaders · 294 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "powai",
+  "main": {
+   "draws": 57,
+   "triangles": 124774,
+   "textures": 32,
+   "programs": 53
+  },
+  "debug": "1.0 fps · 57 draws · 124774 triangles · 32 textures · 53 shaders · 320 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "powai-towers",
+  "main": {
+   "draws": 48,
+   "triangles": 111634,
+   "textures": 32,
+   "programs": 53
+  },
+  "debug": "1.4 fps · 48 draws · 111634 triangles · 32 textures · 53 shaders · 319 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "dadar",
+  "main": {
+   "draws": 67,
+   "triangles": 199534,
+   "textures": 32,
+   "programs": 53
+  },
+  "debug": "1.2 fps · 67 draws · 199534 triangles · 32 textures · 53 shaders · 323 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "dadar-station",
+  "main": {
+   "draws": 58,
+   "triangles": 188049,
+   "textures": 32,
+   "programs": 53
+  },
+  "debug": "idle · 67 draws · 199534 triangles · 32 textures · 53 shaders · 318 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "worli",
+  "main": {
+   "draws": 74,
+   "triangles": 198760,
+   "textures": 32,
+   "programs": 53
+  },
+  "debug": "1.0 fps · 74 draws · 198760 triangles · 32 textures · 53 shaders · 325 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "worli-promenade",
+  "main": {
+   "draws": 61,
+   "triangles": 161454,
+   "textures": 32,
+   "programs": 53
+  },
+  "debug": "1.2 fps · 61 draws · 161454 triangles · 32 textures · 53 shaders · 294 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "juhu",
+  "main": {
+   "draws": 70,
+   "triangles": 124849,
+   "textures": 32,
+   "programs": 54
+  },
+  "debug": "1.3 fps · 70 draws · 124849 triangles · 32 textures · 54 shaders · 323 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "juhu-stalls",
+  "main": {
+   "draws": 72,
+   "triangles": 130289,
+   "textures": 32,
+   "programs": 54
+  },
+  "debug": "idle · 72 draws · 130289 triangles · 32 textures · 54 shaders · 291 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "filmcity",
+  "main": {
+   "draws": 51,
+   "triangles": 153840,
+   "textures": 32,
+   "programs": 52
+  },
+  "debug": "1.4 fps · 51 draws · 153840 triangles · 32 textures · 52 shaders · 318 MB JS · scale 1.00 · eye 1.68m"
+ },
+ {
+  "view": "filmcity-talkies",
+  "main": {
+   "draws": 48,
+   "triangles": 162510,
+   "textures": 32,
+   "programs": 52
+  },
+  "debug": "1.1 fps · 48 draws · 162510 triangles · 32 textures · 52 shaders · 292 MB JS · scale 1.00 · eye 1.68m"
+ }
+]

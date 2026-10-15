@@ -1,0 +1,13 @@
+
+Running 6 tests using 1 worker
+
+(node:1943) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/art-production.spec.ts:2:1 › Fort teaching exhibit is inspectable and sourced without WebGL (2.7s)
+  ✓  2 tests/art-production.spec.ts:12:1 › Fort exhibition remains readable and operable on mobile fallback (1.8s)
+  ✓  3 tests/browser.spec.ts:177:1 › first-person walking accelerates, stops, pauses in overlays, and resets at eye level (1.2m)
+  ✓  4 tests/city.spec.ts:5:3 › taxi can be boarded, metered, routed and exited at its destination (1.7m)
+  ✓  5 tests/city.spec.ts:5:3 › auto can be boarded, metered, routed and exited at its destination (1.5m)
+  ✓  6 tests/city.spec.ts:147:1 › visitor walks through the research doorway and opens the physical FFprime terminal (44.4s)
+
+  6 passed (5.2m)

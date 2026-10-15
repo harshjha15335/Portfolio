@@ -1,0 +1,9 @@
+import {describe,it,expect} from 'vitest';
+import * as THREE from 'three';
+import {SpatialIndex} from '../src/game/World/spatial/SpatialIndex';
+import {FacadePanels} from '../src/game/World/architecture/FacadePanels';
+describe('trusted architecture and spatial queries',()=>{
+ it('cuts a genuine opening and caches the generated geometry',()=>{const panels=new FacadePanels(),g=panels.window('heritage');expect(panels.window('heritage')).toBe(g);const index=new SpatialIndex([g]);expect(index.hit(new THREE.Vector3(0,0,2),new THREE.Vector3(0,0,-1),4)).toBeNull();expect(index.hit(new THREE.Vector3(1,0,2),new THREE.Vector3(0,0,-1),4)).not.toBeNull();index.dispose();panels.dispose();});
+ it('occludes interactions and detects ground',()=>{const floor=new THREE.BoxGeometry(10,.2,10).translate(0,-.1,0),wall=new THREE.BoxGeometry(1,3,1).translate(0,1.5,-2);const index=new SpatialIndex([floor,wall]);expect(index.ground(new THREE.Vector3(0,1.68,0))?.distance).toBeCloseTo(1.68);expect(index.visible(new THREE.Vector3(0,1.5,0),new THREE.Vector3(0,1.5,-4))).toBe(false);expect(index.visible(new THREE.Vector3(2,1.5,0),new THREE.Vector3(2,1.5,-4))).toBe(true);index.dispose();index.dispose();expect(()=>index.ground(new THREE.Vector3())).toThrow('disposed');});
+ it('rejects invalid or oversized buffers',()=>{const bad=new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute([NaN,0,0,1,0,0,0,1,0],3));expect(()=>new SpatialIndex([bad])).toThrow('Non-finite');const huge=new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(250001*3),3));expect(()=>new SpatialIndex([huge])).toThrow('budget');expect(()=>new SpatialIndex([])).toThrow();const invalid=new THREE.BoxGeometry().setIndex([0,1,999]);expect(()=>new SpatialIndex([invalid])).toThrow('Invalid spatial index');});
+});

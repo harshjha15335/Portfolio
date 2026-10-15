@@ -1,0 +1,371 @@
+{
+  "method": "Public Mesh shadow hooks and controlled cached/forced rendering at one frozen normally-animated state. Requested animation time at60Hz, no simulation steps between compared passes. MainAndOther = total minus measured shadow submissions; High includes normal/postprocessing passes.",
+  "browser": "151.0.7922.173",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "errors": [],
+  "results": [
+    {
+      "view": "spawn",
+      "cached": {
+        "kind": "cached",
+        "renderCpuMs": 3.7999999998137355,
+        "total": {
+          "draws": 81,
+          "triangles": 203225
+        },
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 81,
+        "mainAndOtherTriangles": 203225,
+        "casters": {},
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": 4.6,
+          "y": 1.6900000000000002,
+          "z": 11.5,
+          "yaw": 0.14,
+          "pitch": -0.015,
+          "animationTime": 8.4
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      },
+      "refresh": {
+        "kind": "refresh",
+        "renderCpuMs": 8,
+        "total": {
+          "draws": 153,
+          "triangles": 401364
+        },
+        "shadowDraws": 72,
+        "shadowTriangles": 198139,
+        "shadowDrawCpuMs": 1.700000001117587,
+        "mainAndOtherDraws": 81,
+        "mainAndOtherTriangles": 203225,
+        "casters": {
+          "Mesh": {
+            "draws": 59,
+            "triangles": 169707
+          },
+          "SkinnedMesh": {
+            "draws": 13,
+            "triangles": 28432
+          }
+        },
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": 4.6,
+          "y": 1.6900000000000002,
+          "z": 11.5,
+          "yaw": 0.14,
+          "pitch": -0.015,
+          "animationTime": 8.4
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      }
+    },
+    {
+      "view": "hero-wide",
+      "cached": {
+        "kind": "cached",
+        "renderCpuMs": 2.2999999998137355,
+        "total": {
+          "draws": 51,
+          "triangles": 184071
+        },
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 51,
+        "mainAndOtherTriangles": 184071,
+        "casters": {},
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": -2.5,
+          "y": 1.6900000000000002,
+          "z": 4,
+          "yaw": 1.5707963267948966,
+          "pitch": -0.015,
+          "animationTime": 8.4
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      },
+      "refresh": {
+        "kind": "refresh",
+        "renderCpuMs": 6.2000000001862645,
+        "total": {
+          "draws": 123,
+          "triangles": 382210
+        },
+        "shadowDraws": 72,
+        "shadowTriangles": 198139,
+        "shadowDrawCpuMs": 1.799999998882413,
+        "mainAndOtherDraws": 51,
+        "mainAndOtherTriangles": 184071,
+        "casters": {
+          "Mesh": {
+            "draws": 59,
+            "triangles": 169707
+          },
+          "SkinnedMesh": {
+            "draws": 13,
+            "triangles": 28432
+          }
+        },
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": -2.5,
+          "y": 1.6900000000000002,
+          "z": 4,
+          "yaw": 1.5707963267948966,
+          "pitch": -0.015,
+          "animationTime": 8.4
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      }
+    },
+    {
+      "view": "taxi",
+      "cached": {
+        "kind": "cached",
+        "renderCpuMs": 4.099999999627471,
+        "total": {
+          "draws": 64,
+          "triangles": 194000
+        },
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 64,
+        "mainAndOtherTriangles": 194000,
+        "casters": {},
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": -3.1199999999999997,
+          "y": 1.3900000000000001,
+          "z": -34.37,
+          "yaw": 1.5707963267948966,
+          "pitch": -0.015,
+          "animationTime": 8.4
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      },
+      "refresh": {
+        "kind": "refresh",
+        "renderCpuMs": 6.599999999627471,
+        "total": {
+          "draws": 147,
+          "triangles": 408927
+        },
+        "shadowDraws": 83,
+        "shadowTriangles": 214927,
+        "shadowDrawCpuMs": 1.599999999627471,
+        "mainAndOtherDraws": 64,
+        "mainAndOtherTriangles": 194000,
+        "casters": {
+          "Mesh": {
+            "draws": 70,
+            "triangles": 186495
+          },
+          "SkinnedMesh": {
+            "draws": 13,
+            "triangles": 28432
+          }
+        },
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": -3.1199999999999997,
+          "y": 1.3900000000000001,
+          "z": -34.37,
+          "yaw": 1.5707963267948966,
+          "pitch": -0.015,
+          "animationTime": 8.4
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      }
+    },
+    {
+      "view": "auto",
+      "cached": {
+        "kind": "cached",
+        "renderCpuMs": 3.5,
+        "total": {
+          "draws": 64,
+          "triangles": 188024
+        },
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 64,
+        "mainAndOtherTriangles": 188024,
+        "casters": {},
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": -2.46,
+          "y": 1.36,
+          "z": -34.37,
+          "yaw": 1.5707963267948966,
+          "pitch": -0.015,
+          "animationTime": 8.4
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      },
+      "refresh": {
+        "kind": "refresh",
+        "renderCpuMs": 5.5,
+        "total": {
+          "draws": 147,
+          "triangles": 396983
+        },
+        "shadowDraws": 83,
+        "shadowTriangles": 208959,
+        "shadowDrawCpuMs": 1.400000000372529,
+        "mainAndOtherDraws": 64,
+        "mainAndOtherTriangles": 188024,
+        "casters": {
+          "Mesh": {
+            "draws": 70,
+            "triangles": 180527
+          },
+          "SkinnedMesh": {
+            "draws": 13,
+            "triangles": 28432
+          }
+        },
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": -2.46,
+          "y": 1.36,
+          "z": -34.37,
+          "yaw": 1.5707963267948966,
+          "pitch": -0.015,
+          "animationTime": 8.4
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      }
+    }
+  ]
+}

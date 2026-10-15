@@ -20,6 +20,10 @@ describe('visual rebuild systems',()=>{
       expect((model.userData.wheelBatch as THREE.InstancedMesh).count).toBe(wheels.length);
     }
   });
+  it('budgets ambient vehicle geometry while preserving the boarded vehicle silhouette',()=>{
+    const triangles=(model:THREE.Group)=>{let count=0;model.traverse(object=>{const mesh=object as THREE.Mesh;if(mesh.isMesh)count+=(mesh.geometry.index?.count??mesh.geometry.attributes.position.count)/3*((mesh as THREE.InstancedMesh).isInstancedMesh?(mesh as THREE.InstancedMesh).count:1);});return count;};
+    for(const kind of ['taxi','auto'] as const){const street=createTransitModel(kind,'street'),close=createTransitModel(kind,'close');expect(triangles(street)).toBeLessThan(triangles(close)*.65);const a=new THREE.Box3().setFromObject(street),b=new THREE.Box3().setFromObject(close);expect(a.min.distanceTo(b.min)).toBeLessThan(.01);expect(a.max.distanceTo(b.max)).toBeLessThan(.01);}
+  });
   it('lowers quality only after sustained slow frames and bounds resolution',()=>{
     const quality=new AdaptiveQuality(false);for(let i=0;i<60;i++)quality.sample(1/60);expect(quality.scale).toBe(1);
     for(let i=0;i<900;i++)quality.sample(.1);expect(quality.low).toBe(true);expect(quality.scale).toBeCloseTo(.6);

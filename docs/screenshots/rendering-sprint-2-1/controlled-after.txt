@@ -1,0 +1,9 @@
+spawn { draws: 79, triangles: 200465 } { draws: 148, triangles: 347684 } shadow 69 147219
+station { draws: 54, triangles: 171199 } { draws: 123, triangles: 318418 } shadow 69 147219
+junction { draws: 68, triangles: 179314 } { draws: 137, triangles: 326533 } shadow 69 147219
+hero-wide { draws: 35, triangles: 153887 } { draws: 104, triangles: 301106 } shadow 69 147219
+npc { draws: 38, triangles: 136536 } { draws: 107, triangles: 283755 } shadow 69 147219
+fort-room { draws: 27, triangles: 139356 } { draws: 96, triangles: 286575 } shadow 69 147219
+return { draws: 90, triangles: 209085 } { draws: 159, triangles: 356304 } shadow 69 147219
+taxi { draws: 47, triangles: 161008 } { draws: 127, triangles: 325015 } shadow 80 164007
+auto { draws: 47, triangles: 155032 } { draws: 127, triangles: 313071 } shadow 80 158039

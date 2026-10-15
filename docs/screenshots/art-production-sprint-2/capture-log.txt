@@ -1,0 +1,13 @@
+spawn 1440 idle · 76 draws · 200249 triangles · 27 textures · 26 shaders · 81 MB JS · scale 1.00 · eye 1.68m
+station 1440 idle · 81 draws · 217703 triangles · 32 textures · 26 shaders · 74 MB JS · scale 1.00 · eye 1.68m
+junction 1440 idle · 70 draws · 202450 triangles · 32 textures · 26 shaders · 73 MB JS · scale 1.00 · eye 1.68m
+shops 1440 idle · 71 draws · 203170 triangles · 32 textures · 26 shaders · 74 MB JS · scale 1.00 · eye 1.68m
+hero 1440 idle · 50 draws · 190031 triangles · 32 textures · 26 shaders · 74 MB JS · scale 1.00 · eye 1.68m
+hero-wide 1440 idle · 51 draws · 204583 triangles · 32 textures · 26 shaders · 74 MB JS · scale 1.00 · eye 1.68m
+npc 1440 idle · 64 draws · 176000 triangles · 32 textures · 26 shaders · 74 MB JS · scale 1.00 · eye 1.68m
+fort 1440 idle · 50 draws · 195244 triangles · 32 textures · 26 shaders · 75 MB JS · scale 1.00 · eye 1.68m
+fort-room 1440 idle · 50 draws · 191020 triangles · 32 textures · 26 shaders · 74 MB JS · scale 1.00 · eye 1.68m
+return 1440 idle · 102 draws · 226429 triangles · 32 textures · 26 shaders · 74 MB JS · scale 1.00 · eye 1.68m
+north-limit 1440 idle · 28 draws · 117688 triangles · 32 textures · 26 shaders · 75 MB JS · scale 1.00 · eye 1.68m
+south-look 1440 idle · 35 draws · 134172 triangles · 32 textures · 26 shaders · 74 MB JS · scale 1.00 · eye 1.68m
+side-gap 1440 idle · 49 draws · 186736 triangles · 32 textures · 26 shaders · 74 MB JS · scale 1.00 · eye 1.68m

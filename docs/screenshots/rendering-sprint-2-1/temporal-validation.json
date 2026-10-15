@@ -1,0 +1,42 @@
+[
+  {
+    "view": "spawn",
+    "phase": "before",
+    "animationPixelsChanged": true
+  },
+  {
+    "view": "spawn",
+    "phase": "after",
+    "animationPixelsChanged": true
+  },
+  {
+    "view": "hero-wide",
+    "phase": "before",
+    "animationPixelsChanged": true
+  },
+  {
+    "view": "hero-wide",
+    "phase": "after",
+    "animationPixelsChanged": true
+  },
+  {
+    "view": "taxi",
+    "phase": "before",
+    "animationPixelsChanged": true
+  },
+  {
+    "view": "taxi",
+    "phase": "after",
+    "animationPixelsChanged": true
+  },
+  {
+    "view": "auto",
+    "phase": "before",
+    "animationPixelsChanged": true
+  },
+  {
+    "view": "auto",
+    "phase": "after",
+    "animationPixelsChanged": true
+  }
+]

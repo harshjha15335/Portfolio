@@ -32,7 +32,7 @@ test('intro enters a rendered world and supports menu and directory', async ({ p
 
 test('quick view exposes all projects, verifiable résumé and real code links', async ({ page, request }) => {
   await quick(page);
-  await expect(page.locator('.project-row')).toHaveCount(6);
+  await expect(page.locator('.project-row')).toHaveCount(7);
   await page.screenshot({ path: 'docs/screenshots/quick-desktop.png', fullPage: true });
   const resume = await request.get('/resume/Harsh-Jha-Resume.pdf');
   expect(resume.ok()).toBe(true);
@@ -98,21 +98,52 @@ test('keyboard skip link and native modal contain focus', async ({ page }) => {
   expect(await page.evaluate(() => !!document.activeElement?.closest('dialog'))).toBe(true);
 });
 
-test('four local demonstrations respond to input', async ({ page }) => {
+test('local demonstrations respond to input', async ({ page }) => {
   await page.goto('/#/project/ffprime');
   await page.getByRole('button', { name: '+ Quadrupole' }).click();
   await expect(page.getByRole('img', { name: 'Monopole, dipole and quadrupole potential contour visualization' })).toBeVisible();
-  await page.goto('/#/project/northstar');
-  await page.locator('.pipeline button').filter({ hasText: 'Deterministic risk engine' }).click();
-  await expect(page.locator('.pipeline-note strong')).toHaveText('Deterministic risk engine');
   await page.goto('/#/project/reco');
   await page.locator('.pipeline button').filter({ hasText: 'Deterministic guardrails' }).click();
   await expect(page.locator('.pipeline-note strong')).toHaveText('Deterministic guardrails');
+});
+
+test('Fort coordinate workstation converts, agrees and refuses a non-traceless tensor', async ({ page }) => {
+  await page.goto('/#/project/ffprime');
+  const station = page.getByRole('region', { name: 'Coordinate workstation: Cartesian to spherical multipoles' });
+  await expect(station.locator('tbody tr').first()).toContainText('0.7000');
+  await expect(station).toContainText('max |Θ − Θ′|');
+  await station.getByLabel('Let me set Θzz (break tracelessness)').check();
+  await expect(station.getByRole('alert')).toHaveText(/quadrupole tensor must be traceless, got trace = 3.000000e-01/);
+});
+
+test('Powai flagship labs run their ported project logic', async ({ page }) => {
+  await page.goto('/#/project/northstar');
+  const verdict = page.locator('.lab-verdict');
+  await expect(verdict).toHaveText(/All 29 checks pass/);
+  await page.getByLabel('Kill switch engaged').check();
+  await expect(verdict).toHaveText('1 of 29 checks fail: kill_switch.');
+  await expect(page.getByRole('button', { name: 'SEND TO PAPER BROKER →' })).toBeDisabled();
+  await page.getByLabel('Kill switch engaged').uncheck();
+  await page.getByRole('button', { name: 'SEND TO PAPER BROKER →' }).click();
+  await expect(page.locator('.lab-note[role=status]')).toHaveText('BUY 1 ITC @ ₹420 filled by the paper broker.');
   await page.goto('/#/project/moneymetrics');
-  const income = page.getByRole('slider', { name: 'Monthly income' });
-  await income.focus();
-  await income.press('ArrowRight');
-  await expect(page.locator('.balance > strong')).toHaveText('₹23,000');
+  await expect(page.locator('.lab-table tr.flagged')).toContainText('Food & Drinks');
+  await page.getByLabel('Make this week unusual for').selectOption('');
+  await expect(page.locator('.lab-table tr.flagged')).toHaveCount(0);
+  await page.getByRole('button', { name: 'PARSE SMS' }).click();
+  await expect(page.locator('output.lab-note')).toContainText('Expense · ₹1,250 · 2026-10-05 · HDFC Transaction');
+  await page.goto('/#/project/meeting-intelligence-service');
+  await page.getByLabel(/Send a malformed request/).check();
+  await expect(page.locator('.lab-json')).toContainText('VALIDATION_ERROR');
+  await page.locator('.cite', { hasText: '02:10' }).click();
+  await expect(page.locator('.transcript li.cited')).toContainText('release notes');
+  await page.goto('/#/project/rideflow');
+  await page.getByLabel('Preference').selectOption('cheapest');
+  await expect(page.locator('.route-results li').first()).toContainText('Transit Economizer');
+  await page.goto('/#/project/repolens');
+  await page.getByRole('button', { name: 'where is divide defined' }).click();
+  await expect(page.locator('.lab-columns > div').nth(2).locator('li').first()).toContainText('Calculator.divide');
+  await expect(page.locator('.code-chunk pre')).toContainText('Cannot divide by zero');
 });
 
 test('reduced motion follows system preference and user choice persists', async ({ page }) => {

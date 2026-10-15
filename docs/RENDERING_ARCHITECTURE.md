@@ -1,0 +1,33 @@
+# CST–Fort rendering
+
+WorldEngine preserves Cannon's dedicated walking body and ride lifecycle. Static physics proxies and the complex through-cut façade panels are converted once into bounded, trusted BVH geometry; interaction visibility uses this index to reject targets behind walls. Ground queries are available and tested; Cannon remains authoritative for grounding and movement. BVH does not replace dynamic physics or accept visitor geometry.
+
+FacadePanels caches CSG-generated wall sections with through-openings, shared per grammar. Existing shutters, frames, balcony rails, parapets, utilities and awnings remain. The operation runs at street construction, never in the frame loop. Build-time baking remains an optimization opportunity.
+
+Lighting uses a warm sun, cooler hemisphere, neutral atmospheric sky and modest haze. A Three.js RoomEnvironment-generated PMREM provides restrained PBR reflections without downloaded HDR assets. Its intensity is 0.22; it is an approximation, not a Mumbai HDR capture. The initial shadow refresh happens after world construction. Materials keep original procedural maps, rough plaster/stone, fabric, painted steel and glass; vegetation uses double-sided folded leaf profiles.
+
+StreetRenderer offers High (half-resolution nine-sample SSAO plus ACES/FXAA), Medium (direct ACES with native antialiasing and shadows) and Low (direct renderer ACES, without effect targets or directional shadows). The scene is tone-mapped exactly once. Reduced motion is an independent accessibility setting, freezing crowd/traffic animation and removing bob/ride animation. Adaptive low quality bypasses postprocessing and directional shadows, while keeping architecture/content. No bloom, vignette, grain, chromatic aberration or depth-of-field is used.
+
+Renderer diagnostics aggregate all passes rather than resetting statistics per pass. Composition targets, PMREM, BVH geometry, navmesh/crowd, cached façade geometry and world objects are disposed on teardown. Browser context loss retains accessible Quick View. Final screenshot measurements and hardware limitations live in PERFORMANCE_REPORT.md.
+
+Reduced-motion street rendering is on demand: camera movement, detail changes and dirty shadows request a frame. Input, physics and HUD updates continue. Idle frames are excluded from adaptive quality sampling, and diagnostics show `idle` rather than presenting animation-loop frequency as GPU FPS.
+
+World teardown explicitly disposes each distinct character skeleton and its GPU bone texture, alongside geometry, materials and image textures. Cached original garment geometry is bounded to one CPU source reused across worlds.
+
+The 2026-10-10 street polish retains this rendering pipeline and adds draped striped cloth, compound fronds, merged pier patina, warm shop lights, open station-side arcades and one shared woven upholstery map. Mapped vehicle panels retain their UVs through material batching; previously unmapped canopy geometry receives projected UVs. Original drivers are baked once from posed skins, and active pedestrians swap between two owned geometry detail levels. See CST_FORT_POLISH.md for verification and comparison evidence.
+
+## Art Production Sprint 1
+
+The current branch keeps render presets, exposure, reduced motion and the walking/transit camera contract. Shared `streetMood.ts` sets the fixed17:40 HUD/lighting state. Visible perimeter slabs are replaced by background context while their safety physics/BVH proxies remain. Identical through-cut window topology now shares one cached geometry across decorative grammars. Close people remain at garment resolution24; street-detail garments use12. A lazy `installStationCharacter` hook accepts verified assets through the GLB library, but no character descriptor is activated because binary acquisition is blocked. See ART_PRODUCTION_SPRINT_1.md and GLB_ASSET_PIPELINE.md.
+
+## Sprint 2 additions
+
+The café uses one opaque baked geometry batch with per-vertex finish attributes and a separate transparent glass batch. Original asphalt/plaster maps reuse shared texture objects after size/hash/dimension admission. Visible-mesh shader warm-up uses public Three.js compile with the existing scene light state. Optional GPU profiling runs only with `benchmark=1`; see [benchmark protocol](GPU_BENCHMARK.md).
+
+## Sprint 2.1 caster-aware submission
+
+Instanced batches preserve per-source caster flags with a casting prefix for the PCF depth pass and restore their full counts for the color/normal passes. Moving instances and wheel batches recompute conservative bounds; factory humanoids have validated fixed animation bounds. Opt-in public mesh shadow hooks separate shadow submissions from main-and-other work. No new shadow light, shadow cache texture or material program was introduced. See [performance review](ART_PRODUCTION_PERFORMANCE_REVIEW.md).
+
+## Golden-hour pass
+
+A low north-western sun with a light-space shadow box now covers the whole walkable street. `StreetAtmosphere.ts` adds one shared world-space weathering and sun-haze injection to every lit material, which keeps the program count unchanged, and a matching sun-glow sky. When directional shadows are off, sun and fill are rebalanced. See [GOLDEN_HOUR_PASS.md](GOLDEN_HOUR_PASS.md).

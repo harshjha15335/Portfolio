@@ -1,0 +1,462 @@
+{
+  "measurementClass": "software-rendered continuous cadence observation; not hardware or laptop evidence",
+  "browser": "151.0.7922.173",
+  "pose": {
+    "engine": "three.js r180",
+    "benchmarkReady": "true",
+    "ridePhase": "idle",
+    "renderMode": "continuous",
+    "worldX": "4.600",
+    "worldZ": "11.500",
+    "eyeHeight": "1.680",
+    "lookYaw": "0.140",
+    "renderScale": "1.00",
+    "quality": "high",
+    "navigation": "ready",
+    "surfaceMaps": "verified",
+    "characterStatus": "not-supplied",
+    "npcUpdateMs": "0.300",
+    "trafficUpdateMs": "0.100",
+    "renderPreset": "medium",
+    "cameraMode": "first-person"
+  },
+  "errors": [],
+  "report": {
+    "schema": 2,
+    "programVariants": [
+      {
+        "id": 5,
+        "usedTimes": 1,
+        "cacheKey": "2,3,highp,srgb,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,1,136193,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 6,
+        "usedTimes": 6,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,33,1027,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 7,
+        "usedTimes": 1,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,2081,134147,srgb,hero-finish-v1"
+      },
+      {
+        "id": 8,
+        "usedTimes": 1,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,2081,5123,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 9,
+        "usedTimes": 1,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,2081,1027,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 10,
+        "usedTimes": 1,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,uv,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,33,132099,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 11,
+        "usedTimes": 18,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,2081,132131,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 12,
+        "usedTimes": 1,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,33,134147,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 13,
+        "usedTimes": 25,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,33,132099,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 14,
+        "usedTimes": 5,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,33,5123,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 15,
+        "usedTimes": 5,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,33,132099,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 16,
+        "usedTimes": 6,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,2081,132099,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 17,
+        "usedTimes": 5,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,2083,132099,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 18,
+        "usedTimes": 3,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,uv,false,false,false,false,uv,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,167,132099,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 19,
+        "usedTimes": 5,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,uv,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,39,132099,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 20,
+        "usedTimes": 12,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,39,132099,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 21,
+        "usedTimes": 1,
+        "cacheKey": "basic,highp,srgb,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,7,132099,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 22,
+        "usedTimes": 4,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,uv,false,false,false,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,2087,134147,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 23,
+        "usedTimes": 1,
+        "cacheKey": "physical,STANDARD,,highp,srgb,306,1024,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,2087,134147,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 24,
+        "usedTimes": 2,
+        "cacheKey": "basic,highp,srgb,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,7,1027,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 25,
+        "usedTimes": 1,
+        "cacheKey": "basic,highp,srgb,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,0,,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,4,0,0,0,1,134147,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 26,
+        "usedTimes": 1,
+        "cacheKey": "depth,highp,srgb-linear,false,,uv,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,0,0,0,3201,1,142336,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 27,
+        "usedTimes": 1,
+        "cacheKey": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,0,0,0,3201,1,144416,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 28,
+        "usedTimes": 1,
+        "cacheKey": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,0,0,0,3201,1,144384,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 29,
+        "usedTimes": 1,
+        "cacheKey": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,0,0,0,3201,3,144384,srgb,onBeforeCompile() {\n  }"
+      },
+      {
+        "id": 30,
+        "usedTimes": 1,
+        "cacheKey": "depth,highp,srgb-linear,false,,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,false,,false,false,0,,1,4,0,0,1,0,1,0,0,0,0,2,0,0,0,3201,7,144384,srgb,onBeforeCompile() {\n  }"
+      }
+    ],
+    "scenario": "standing-crowd-shadow-cadence",
+    "startedAt": "2026-10-11T06:03:42.334Z",
+    "durationMs": 50126.10000000009,
+    "device": {
+      "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+      "platform": "Linux x86_64",
+      "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+      "vendor": "Google Inc. (Google)",
+      "softwareDetected": true,
+      "timerQueryAvailable": false,
+      "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+      "maxTextureSize": 8192,
+      "maxTextures": 32,
+      "devicePixelRatio": 1
+    },
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "framebuffer": {
+      "width": 1920,
+      "height": 1080
+    },
+    "shadowRefreshFrames": 2,
+    "shadowRefreshesPerSecond": 0.039899214583960695,
+    "cachedFrameCount": 6,
+    "cachedRenderCpuMs": {
+      "count": 6,
+      "min": 2.3000000002793968,
+      "mean": 3.2833333332867674,
+      "p50": 3.2999999998137355,
+      "p95": 4.5,
+      "p99": 4.5,
+      "max": 4.5
+    },
+    "cachedSubmittedTriangles": {
+      "count": 6,
+      "min": 200249,
+      "mean": 201805,
+      "p50": 202145,
+      "p95": 203009,
+      "p99": 203009,
+      "max": 203009
+    },
+    "refreshSubmittedTriangles": {
+      "count": 2,
+      "min": 393496,
+      "mean": 395408,
+      "p50": 393496,
+      "p95": 397320,
+      "p99": 397320,
+      "max": 397320
+    },
+    "cachedDrawCalls": {
+      "count": 6,
+      "min": 76,
+      "mean": 78.66666666666667,
+      "p50": 79,
+      "p95": 80,
+      "p99": 80,
+      "max": 80
+    },
+    "refreshDrawCalls": {
+      "count": 2,
+      "min": 143,
+      "mean": 145,
+      "p50": 143,
+      "p95": 147,
+      "p99": 147,
+      "max": 147
+    },
+    "shadowRefreshRenderCpuMs": {
+      "count": 2,
+      "min": 4.300000000279397,
+      "mean": 5.050000000279397,
+      "p50": 4.300000000279397,
+      "p95": 5.800000000279397,
+      "p99": 5.800000000279397,
+      "max": 5.800000000279397
+    },
+    "frameTimeMs": {
+      "count": 8,
+      "min": 6099.799999999988,
+      "mean": 6268.487499999999,
+      "p50": 6249.6999999999825,
+      "p95": 6399.700000000012,
+      "p99": 6399.700000000012,
+      "max": 6399.700000000012
+    },
+    "renderCpuMs": {
+      "count": 8,
+      "min": 2.3000000002793968,
+      "mean": 3.7250000000349246,
+      "p50": 3.2999999998137355,
+      "p95": 5.800000000279397,
+      "p99": 5.800000000279397,
+      "max": 5.800000000279397
+    },
+    "gpuTimeMs": null,
+    "cachedGpuTimeMs": null,
+    "refreshGpuTimeMs": null,
+    "gpuSamples": [],
+    "gpuDisjointEvents": 0,
+    "unresolvedGpuQueries": 0,
+    "drawCalls": {
+      "count": 8,
+      "min": 76,
+      "mean": 95.25,
+      "p50": 79,
+      "p95": 147,
+      "p99": 147,
+      "max": 147
+    },
+    "submittedTriangles": {
+      "count": 8,
+      "min": 200249,
+      "mean": 250205.75,
+      "p50": 202145,
+      "p95": 397320,
+      "p99": 397320,
+      "max": 397320
+    },
+    "peakTextures": 27,
+    "peakPrograms": 26,
+    "presets": [
+      "medium"
+    ],
+    "scales": [
+      1
+    ],
+    "phases": [
+      "idle"
+    ],
+    "samples": [
+      {
+        "frameMs": 6333,
+        "renderCpuMs": 3.2999999998137355,
+        "draws": 76,
+        "triangles": 200249,
+        "textures": 27,
+        "geometries": 71,
+        "programs": 26,
+        "scale": 1,
+        "preset": "medium",
+        "phase": "idle",
+        "worldX": 4.6,
+        "worldZ": 11.5,
+        "walkingSimulatedMs": 250,
+        "shadowRefreshed": false,
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 76,
+        "mainAndOtherTriangles": 200249
+      },
+      {
+        "frameMs": 6399.700000000012,
+        "renderCpuMs": 4.5,
+        "draws": 78,
+        "triangles": 200273,
+        "textures": 27,
+        "geometries": 72,
+        "programs": 26,
+        "scale": 1,
+        "preset": "medium",
+        "phase": "idle",
+        "worldX": 4.6,
+        "worldZ": 11.5,
+        "walkingSimulatedMs": 250,
+        "shadowRefreshed": false,
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 78,
+        "mainAndOtherTriangles": 200273
+      },
+      {
+        "frameMs": 6099.799999999988,
+        "renderCpuMs": 5.800000000279397,
+        "draws": 143,
+        "triangles": 393496,
+        "textures": 27,
+        "geometries": 73,
+        "programs": 26,
+        "scale": 1,
+        "preset": "medium",
+        "phase": "idle",
+        "worldX": 4.6,
+        "worldZ": 11.5,
+        "walkingSimulatedMs": 250,
+        "shadowRefreshed": true,
+        "shadowDraws": 64,
+        "shadowTriangles": 191351,
+        "shadowDrawCpuMs": 1.3999999994412065,
+        "mainAndOtherDraws": 79,
+        "mainAndOtherTriangles": 202145
+      },
+      {
+        "frameMs": 6333.100000000006,
+        "renderCpuMs": 2.3000000002793968,
+        "draws": 79,
+        "triangles": 202145,
+        "textures": 27,
+        "geometries": 73,
+        "programs": 26,
+        "scale": 1,
+        "preset": "medium",
+        "phase": "idle",
+        "worldX": 4.6,
+        "worldZ": 11.5,
+        "walkingSimulatedMs": 250,
+        "shadowRefreshed": false,
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 79,
+        "mainAndOtherTriangles": 202145
+      },
+      {
+        "frameMs": 6149.800000000003,
+        "renderCpuMs": 3.5,
+        "draws": 79,
+        "triangles": 202145,
+        "textures": 27,
+        "geometries": 73,
+        "programs": 26,
+        "scale": 1,
+        "preset": "medium",
+        "phase": "idle",
+        "worldX": 4.6,
+        "worldZ": 11.5,
+        "walkingSimulatedMs": 250,
+        "shadowRefreshed": false,
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 79,
+        "mainAndOtherTriangles": 202145
+      },
+      {
+        "frameMs": 6183.099999999991,
+        "renderCpuMs": 4.300000000279397,
+        "draws": 147,
+        "triangles": 397320,
+        "textures": 27,
+        "geometries": 73,
+        "programs": 26,
+        "scale": 1,
+        "preset": "medium",
+        "phase": "idle",
+        "worldX": 4.6,
+        "worldZ": 11.5,
+        "walkingSimulatedMs": 250,
+        "shadowRefreshed": true,
+        "shadowDraws": 68,
+        "shadowTriangles": 195175,
+        "shadowDrawCpuMs": 1.2000000001862645,
+        "mainAndOtherDraws": 79,
+        "mainAndOtherTriangles": 202145
+      },
+      {
+        "frameMs": 6399.700000000012,
+        "renderCpuMs": 3.2999999998137355,
+        "draws": 80,
+        "triangles": 203009,
+        "textures": 27,
+        "geometries": 74,
+        "programs": 26,
+        "scale": 1,
+        "preset": "medium",
+        "phase": "idle",
+        "worldX": 4.6,
+        "worldZ": 11.5,
+        "walkingSimulatedMs": 250,
+        "shadowRefreshed": false,
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 80,
+        "mainAndOtherTriangles": 203009
+      },
+      {
+        "frameMs": 6249.6999999999825,
+        "renderCpuMs": 2.7999999998137355,
+        "draws": 80,
+        "triangles": 203009,
+        "textures": 27,
+        "geometries": 74,
+        "programs": 26,
+        "scale": 1,
+        "preset": "medium",
+        "phase": "idle",
+        "worldX": 4.6,
+        "worldZ": 11.5,
+        "walkingSimulatedMs": 250,
+        "shadowRefreshed": false,
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 80,
+        "mainAndOtherTriangles": 203009
+      }
+    ]
+  }
+}

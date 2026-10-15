@@ -1,0 +1,2125 @@
+{
+  "method": "Public Mesh shadow hooks and controlled cached/forced rendering at one frozen normally-animated state. Eight seconds at60Hz, no simulation steps between compared passes. MainAndOther = total minus measured shadow submissions; High includes normal/postprocessing passes.",
+  "browser": "151.0.7922.173",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "errors": [],
+  "results": [
+    {
+      "view": "spawn",
+      "cached": {
+        "kind": "cached",
+        "renderCpuMs": 3.2000000001862645,
+        "total": {
+          "draws": 79,
+          "triangles": 200465
+        },
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 79,
+        "mainAndOtherTriangles": 200465,
+        "casters": {},
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": 4.6,
+          "y": 1.6900000000000002,
+          "z": 11.5,
+          "yaw": 0.14,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      },
+      "refresh": {
+        "kind": "refresh",
+        "renderCpuMs": 16.399999999906868,
+        "total": {
+          "draws": 148,
+          "triangles": 347684
+        },
+        "shadowDraws": 69,
+        "shadowTriangles": 147219,
+        "shadowDrawCpuMs": 1.900000000372529,
+        "mainAndOtherDraws": 79,
+        "mainAndOtherTriangles": 200465,
+        "casters": {
+          "hero-storefront-opaque": {
+            "draws": 1,
+            "triangles": 7963
+          },
+          "SkinnedMesh": {
+            "draws": 11,
+            "triangles": 24712
+          },
+          "taxi:street:24292c": {
+            "draws": 3,
+            "triangles": 4392
+          },
+          "taxi:street:c9a343": {
+            "draws": 3,
+            "triangles": 960
+          },
+          "taxi:street:a5b8ae": {
+            "draws": 3,
+            "triangles": 36
+          },
+          "taxi:street:9b9d92": {
+            "draws": 3,
+            "triangles": 4464
+          },
+          "taxi:street:fff1c8": {
+            "draws": 3,
+            "triangles": 1656
+          },
+          "taxi:street:a63e2d": {
+            "draws": 3,
+            "triangles": 648
+          },
+          "taxi:street:676c65": {
+            "draws": 3,
+            "triangles": 2592
+          },
+          "taxi:street:ffffff": {
+            "draws": 3,
+            "triangles": 5616
+          },
+          "Mesh": {
+            "draws": 4,
+            "triangles": 4560
+          },
+          "auto:street:24292c": {
+            "draws": 1,
+            "triangles": 572
+          },
+          "auto:street:c9a343": {
+            "draws": 1,
+            "triangles": 260
+          },
+          "auto:street:676c65": {
+            "draws": 1,
+            "triangles": 600
+          },
+          "auto:street:9b9d92": {
+            "draws": 1,
+            "triangles": 452
+          },
+          "auto:street:a5b8ae": {
+            "draws": 1,
+            "triangles": 4
+          },
+          "auto:street:fff1c8": {
+            "draws": 1,
+            "triangles": 276
+          },
+          "auto:street:a63e2d": {
+            "draws": 1,
+            "triangles": 216
+          },
+          "auto:street:ffffff": {
+            "draws": 1,
+            "triangles": 1848
+          },
+          "static:solid:BoxGeometry": {
+            "draws": 1,
+            "triangles": 16836
+          },
+          "static:plaster:BoxGeometry": {
+            "draws": 1,
+            "triangles": 2604
+          },
+          "static:stone:BoxGeometry": {
+            "draws": 1,
+            "triangles": 408
+          },
+          "static:glass:PlaneGeometry": {
+            "draws": 1,
+            "triangles": 1612
+          },
+          "static:solid:CylinderGeometry": {
+            "draws": 1,
+            "triangles": 16960
+          },
+          "static:fabric:BoxGeometry": {
+            "draws": 1,
+            "triangles": 624
+          },
+          "static:plaster:BufferGeometry": {
+            "draws": 1,
+            "triangles": 7800
+          },
+          "static:stone:ExtrudeGeometry": {
+            "draws": 2,
+            "triangles": 9572
+          },
+          "static:metal:BoxGeometry": {
+            "draws": 1,
+            "triangles": 4068
+          },
+          "static:glass:BoxGeometry": {
+            "draws": 1,
+            "triangles": 1248
+          },
+          "static:wood:BoxGeometry": {
+            "draws": 1,
+            "triangles": 456
+          },
+          "static:fabric:PlaneGeometry": {
+            "draws": 4,
+            "triangles": 4608
+          },
+          "static:solid:TorusGeometry": {
+            "draws": 1,
+            "triangles": 720
+          },
+          "static:metal:ConeGeometry": {
+            "draws": 1,
+            "triangles": 16
+          },
+          "static:metal:LatheGeometry": {
+            "draws": 1,
+            "triangles": 960
+          },
+          "static:foliage:BufferGeometry": {
+            "draws": 1,
+            "triangles": 14200
+          },
+          "static:solid:BufferGeometry": {
+            "draws": 1,
+            "triangles": 2700
+          }
+        },
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": 4.6,
+          "y": 1.6900000000000002,
+          "z": 11.5,
+          "yaw": 0.14,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      }
+    },
+    {
+      "view": "station",
+      "cached": {
+        "kind": "cached",
+        "renderCpuMs": 2.900000000372529,
+        "total": {
+          "draws": 54,
+          "triangles": 171199
+        },
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 54,
+        "mainAndOtherTriangles": 171199,
+        "casters": {},
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": 4.6,
+          "y": 1.6900000000000002,
+          "z": -4,
+          "yaw": 3.021592653589793,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      },
+      "refresh": {
+        "kind": "refresh",
+        "renderCpuMs": 4.600000000093132,
+        "total": {
+          "draws": 123,
+          "triangles": 318418
+        },
+        "shadowDraws": 69,
+        "shadowTriangles": 147219,
+        "shadowDrawCpuMs": 1.400000000372529,
+        "mainAndOtherDraws": 54,
+        "mainAndOtherTriangles": 171199,
+        "casters": {
+          "hero-storefront-opaque": {
+            "draws": 1,
+            "triangles": 7963
+          },
+          "SkinnedMesh": {
+            "draws": 11,
+            "triangles": 24712
+          },
+          "taxi:street:24292c": {
+            "draws": 3,
+            "triangles": 4392
+          },
+          "taxi:street:c9a343": {
+            "draws": 3,
+            "triangles": 960
+          },
+          "taxi:street:a5b8ae": {
+            "draws": 3,
+            "triangles": 36
+          },
+          "taxi:street:9b9d92": {
+            "draws": 3,
+            "triangles": 4464
+          },
+          "taxi:street:fff1c8": {
+            "draws": 3,
+            "triangles": 1656
+          },
+          "taxi:street:a63e2d": {
+            "draws": 3,
+            "triangles": 648
+          },
+          "taxi:street:676c65": {
+            "draws": 3,
+            "triangles": 2592
+          },
+          "taxi:street:ffffff": {
+            "draws": 3,
+            "triangles": 5616
+          },
+          "Mesh": {
+            "draws": 4,
+            "triangles": 4560
+          },
+          "auto:street:24292c": {
+            "draws": 1,
+            "triangles": 572
+          },
+          "auto:street:c9a343": {
+            "draws": 1,
+            "triangles": 260
+          },
+          "auto:street:676c65": {
+            "draws": 1,
+            "triangles": 600
+          },
+          "auto:street:9b9d92": {
+            "draws": 1,
+            "triangles": 452
+          },
+          "auto:street:a5b8ae": {
+            "draws": 1,
+            "triangles": 4
+          },
+          "auto:street:fff1c8": {
+            "draws": 1,
+            "triangles": 276
+          },
+          "auto:street:a63e2d": {
+            "draws": 1,
+            "triangles": 216
+          },
+          "auto:street:ffffff": {
+            "draws": 1,
+            "triangles": 1848
+          },
+          "static:solid:BoxGeometry": {
+            "draws": 1,
+            "triangles": 16836
+          },
+          "static:plaster:BoxGeometry": {
+            "draws": 1,
+            "triangles": 2604
+          },
+          "static:stone:BoxGeometry": {
+            "draws": 1,
+            "triangles": 408
+          },
+          "static:glass:PlaneGeometry": {
+            "draws": 1,
+            "triangles": 1612
+          },
+          "static:solid:CylinderGeometry": {
+            "draws": 1,
+            "triangles": 16960
+          },
+          "static:fabric:BoxGeometry": {
+            "draws": 1,
+            "triangles": 624
+          },
+          "static:plaster:BufferGeometry": {
+            "draws": 1,
+            "triangles": 7800
+          },
+          "static:stone:ExtrudeGeometry": {
+            "draws": 2,
+            "triangles": 9572
+          },
+          "static:metal:BoxGeometry": {
+            "draws": 1,
+            "triangles": 4068
+          },
+          "static:glass:BoxGeometry": {
+            "draws": 1,
+            "triangles": 1248
+          },
+          "static:wood:BoxGeometry": {
+            "draws": 1,
+            "triangles": 456
+          },
+          "static:fabric:PlaneGeometry": {
+            "draws": 4,
+            "triangles": 4608
+          },
+          "static:solid:TorusGeometry": {
+            "draws": 1,
+            "triangles": 720
+          },
+          "static:metal:ConeGeometry": {
+            "draws": 1,
+            "triangles": 16
+          },
+          "static:metal:LatheGeometry": {
+            "draws": 1,
+            "triangles": 960
+          },
+          "static:foliage:BufferGeometry": {
+            "draws": 1,
+            "triangles": 14200
+          },
+          "static:solid:BufferGeometry": {
+            "draws": 1,
+            "triangles": 2700
+          }
+        },
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": 4.6,
+          "y": 1.6900000000000002,
+          "z": -4,
+          "yaw": 3.021592653589793,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      }
+    },
+    {
+      "view": "junction",
+      "cached": {
+        "kind": "cached",
+        "renderCpuMs": 1.900000000372529,
+        "total": {
+          "draws": 68,
+          "triangles": 179314
+        },
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 68,
+        "mainAndOtherTriangles": 179314,
+        "casters": {},
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": 4.8,
+          "y": 1.6900000000000002,
+          "z": -8,
+          "yaw": 0.7,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      },
+      "refresh": {
+        "kind": "refresh",
+        "renderCpuMs": 5.100000000093132,
+        "total": {
+          "draws": 137,
+          "triangles": 326533
+        },
+        "shadowDraws": 69,
+        "shadowTriangles": 147219,
+        "shadowDrawCpuMs": 1.8000000002793968,
+        "mainAndOtherDraws": 68,
+        "mainAndOtherTriangles": 179314,
+        "casters": {
+          "hero-storefront-opaque": {
+            "draws": 1,
+            "triangles": 7963
+          },
+          "SkinnedMesh": {
+            "draws": 11,
+            "triangles": 24712
+          },
+          "taxi:street:24292c": {
+            "draws": 3,
+            "triangles": 4392
+          },
+          "taxi:street:c9a343": {
+            "draws": 3,
+            "triangles": 960
+          },
+          "taxi:street:a5b8ae": {
+            "draws": 3,
+            "triangles": 36
+          },
+          "taxi:street:9b9d92": {
+            "draws": 3,
+            "triangles": 4464
+          },
+          "taxi:street:fff1c8": {
+            "draws": 3,
+            "triangles": 1656
+          },
+          "taxi:street:a63e2d": {
+            "draws": 3,
+            "triangles": 648
+          },
+          "taxi:street:676c65": {
+            "draws": 3,
+            "triangles": 2592
+          },
+          "taxi:street:ffffff": {
+            "draws": 3,
+            "triangles": 5616
+          },
+          "Mesh": {
+            "draws": 4,
+            "triangles": 4560
+          },
+          "auto:street:24292c": {
+            "draws": 1,
+            "triangles": 572
+          },
+          "auto:street:c9a343": {
+            "draws": 1,
+            "triangles": 260
+          },
+          "auto:street:676c65": {
+            "draws": 1,
+            "triangles": 600
+          },
+          "auto:street:9b9d92": {
+            "draws": 1,
+            "triangles": 452
+          },
+          "auto:street:a5b8ae": {
+            "draws": 1,
+            "triangles": 4
+          },
+          "auto:street:fff1c8": {
+            "draws": 1,
+            "triangles": 276
+          },
+          "auto:street:a63e2d": {
+            "draws": 1,
+            "triangles": 216
+          },
+          "auto:street:ffffff": {
+            "draws": 1,
+            "triangles": 1848
+          },
+          "static:solid:BoxGeometry": {
+            "draws": 1,
+            "triangles": 16836
+          },
+          "static:plaster:BoxGeometry": {
+            "draws": 1,
+            "triangles": 2604
+          },
+          "static:stone:BoxGeometry": {
+            "draws": 1,
+            "triangles": 408
+          },
+          "static:glass:PlaneGeometry": {
+            "draws": 1,
+            "triangles": 1612
+          },
+          "static:solid:CylinderGeometry": {
+            "draws": 1,
+            "triangles": 16960
+          },
+          "static:fabric:BoxGeometry": {
+            "draws": 1,
+            "triangles": 624
+          },
+          "static:plaster:BufferGeometry": {
+            "draws": 1,
+            "triangles": 7800
+          },
+          "static:stone:ExtrudeGeometry": {
+            "draws": 2,
+            "triangles": 9572
+          },
+          "static:metal:BoxGeometry": {
+            "draws": 1,
+            "triangles": 4068
+          },
+          "static:glass:BoxGeometry": {
+            "draws": 1,
+            "triangles": 1248
+          },
+          "static:wood:BoxGeometry": {
+            "draws": 1,
+            "triangles": 456
+          },
+          "static:fabric:PlaneGeometry": {
+            "draws": 4,
+            "triangles": 4608
+          },
+          "static:solid:TorusGeometry": {
+            "draws": 1,
+            "triangles": 720
+          },
+          "static:metal:ConeGeometry": {
+            "draws": 1,
+            "triangles": 16
+          },
+          "static:metal:LatheGeometry": {
+            "draws": 1,
+            "triangles": 960
+          },
+          "static:foliage:BufferGeometry": {
+            "draws": 1,
+            "triangles": 14200
+          },
+          "static:solid:BufferGeometry": {
+            "draws": 1,
+            "triangles": 2700
+          }
+        },
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": 4.8,
+          "y": 1.6900000000000002,
+          "z": -8,
+          "yaw": 0.7,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      }
+    },
+    {
+      "view": "hero-wide",
+      "cached": {
+        "kind": "cached",
+        "renderCpuMs": 2.8000000002793968,
+        "total": {
+          "draws": 35,
+          "triangles": 153887
+        },
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 35,
+        "mainAndOtherTriangles": 153887,
+        "casters": {},
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": -2.5,
+          "y": 1.6900000000000002,
+          "z": 4,
+          "yaw": 1.5707963267948966,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      },
+      "refresh": {
+        "kind": "refresh",
+        "renderCpuMs": 3.5,
+        "total": {
+          "draws": 104,
+          "triangles": 301106
+        },
+        "shadowDraws": 69,
+        "shadowTriangles": 147219,
+        "shadowDrawCpuMs": 1,
+        "mainAndOtherDraws": 35,
+        "mainAndOtherTriangles": 153887,
+        "casters": {
+          "hero-storefront-opaque": {
+            "draws": 1,
+            "triangles": 7963
+          },
+          "SkinnedMesh": {
+            "draws": 11,
+            "triangles": 24712
+          },
+          "taxi:street:24292c": {
+            "draws": 3,
+            "triangles": 4392
+          },
+          "taxi:street:c9a343": {
+            "draws": 3,
+            "triangles": 960
+          },
+          "taxi:street:a5b8ae": {
+            "draws": 3,
+            "triangles": 36
+          },
+          "taxi:street:9b9d92": {
+            "draws": 3,
+            "triangles": 4464
+          },
+          "taxi:street:fff1c8": {
+            "draws": 3,
+            "triangles": 1656
+          },
+          "taxi:street:a63e2d": {
+            "draws": 3,
+            "triangles": 648
+          },
+          "taxi:street:676c65": {
+            "draws": 3,
+            "triangles": 2592
+          },
+          "taxi:street:ffffff": {
+            "draws": 3,
+            "triangles": 5616
+          },
+          "Mesh": {
+            "draws": 4,
+            "triangles": 4560
+          },
+          "auto:street:24292c": {
+            "draws": 1,
+            "triangles": 572
+          },
+          "auto:street:c9a343": {
+            "draws": 1,
+            "triangles": 260
+          },
+          "auto:street:676c65": {
+            "draws": 1,
+            "triangles": 600
+          },
+          "auto:street:9b9d92": {
+            "draws": 1,
+            "triangles": 452
+          },
+          "auto:street:a5b8ae": {
+            "draws": 1,
+            "triangles": 4
+          },
+          "auto:street:fff1c8": {
+            "draws": 1,
+            "triangles": 276
+          },
+          "auto:street:a63e2d": {
+            "draws": 1,
+            "triangles": 216
+          },
+          "auto:street:ffffff": {
+            "draws": 1,
+            "triangles": 1848
+          },
+          "static:solid:BoxGeometry": {
+            "draws": 1,
+            "triangles": 16836
+          },
+          "static:plaster:BoxGeometry": {
+            "draws": 1,
+            "triangles": 2604
+          },
+          "static:stone:BoxGeometry": {
+            "draws": 1,
+            "triangles": 408
+          },
+          "static:glass:PlaneGeometry": {
+            "draws": 1,
+            "triangles": 1612
+          },
+          "static:solid:CylinderGeometry": {
+            "draws": 1,
+            "triangles": 16960
+          },
+          "static:fabric:BoxGeometry": {
+            "draws": 1,
+            "triangles": 624
+          },
+          "static:plaster:BufferGeometry": {
+            "draws": 1,
+            "triangles": 7800
+          },
+          "static:stone:ExtrudeGeometry": {
+            "draws": 2,
+            "triangles": 9572
+          },
+          "static:metal:BoxGeometry": {
+            "draws": 1,
+            "triangles": 4068
+          },
+          "static:glass:BoxGeometry": {
+            "draws": 1,
+            "triangles": 1248
+          },
+          "static:wood:BoxGeometry": {
+            "draws": 1,
+            "triangles": 456
+          },
+          "static:fabric:PlaneGeometry": {
+            "draws": 4,
+            "triangles": 4608
+          },
+          "static:solid:TorusGeometry": {
+            "draws": 1,
+            "triangles": 720
+          },
+          "static:metal:ConeGeometry": {
+            "draws": 1,
+            "triangles": 16
+          },
+          "static:metal:LatheGeometry": {
+            "draws": 1,
+            "triangles": 960
+          },
+          "static:foliage:BufferGeometry": {
+            "draws": 1,
+            "triangles": 14200
+          },
+          "static:solid:BufferGeometry": {
+            "draws": 1,
+            "triangles": 2700
+          }
+        },
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": -2.5,
+          "y": 1.6900000000000002,
+          "z": 4,
+          "yaw": 1.5707963267948966,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      }
+    },
+    {
+      "view": "npc",
+      "cached": {
+        "kind": "cached",
+        "renderCpuMs": 2.2999999998137355,
+        "total": {
+          "draws": 38,
+          "triangles": 136536
+        },
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 38,
+        "mainAndOtherTriangles": 136536,
+        "casters": {},
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": 5.6,
+          "y": 1.6900000000000002,
+          "z": 6.8,
+          "yaw": 3.2615926535897932,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      },
+      "refresh": {
+        "kind": "refresh",
+        "renderCpuMs": 3.599999999627471,
+        "total": {
+          "draws": 107,
+          "triangles": 283755
+        },
+        "shadowDraws": 69,
+        "shadowTriangles": 147219,
+        "shadowDrawCpuMs": 1.6999999997206032,
+        "mainAndOtherDraws": 38,
+        "mainAndOtherTriangles": 136536,
+        "casters": {
+          "hero-storefront-opaque": {
+            "draws": 1,
+            "triangles": 7963
+          },
+          "SkinnedMesh": {
+            "draws": 11,
+            "triangles": 24712
+          },
+          "taxi:street:24292c": {
+            "draws": 3,
+            "triangles": 4392
+          },
+          "taxi:street:c9a343": {
+            "draws": 3,
+            "triangles": 960
+          },
+          "taxi:street:a5b8ae": {
+            "draws": 3,
+            "triangles": 36
+          },
+          "taxi:street:9b9d92": {
+            "draws": 3,
+            "triangles": 4464
+          },
+          "taxi:street:fff1c8": {
+            "draws": 3,
+            "triangles": 1656
+          },
+          "taxi:street:a63e2d": {
+            "draws": 3,
+            "triangles": 648
+          },
+          "taxi:street:676c65": {
+            "draws": 3,
+            "triangles": 2592
+          },
+          "taxi:street:ffffff": {
+            "draws": 3,
+            "triangles": 5616
+          },
+          "Mesh": {
+            "draws": 4,
+            "triangles": 4560
+          },
+          "auto:street:24292c": {
+            "draws": 1,
+            "triangles": 572
+          },
+          "auto:street:c9a343": {
+            "draws": 1,
+            "triangles": 260
+          },
+          "auto:street:676c65": {
+            "draws": 1,
+            "triangles": 600
+          },
+          "auto:street:9b9d92": {
+            "draws": 1,
+            "triangles": 452
+          },
+          "auto:street:a5b8ae": {
+            "draws": 1,
+            "triangles": 4
+          },
+          "auto:street:fff1c8": {
+            "draws": 1,
+            "triangles": 276
+          },
+          "auto:street:a63e2d": {
+            "draws": 1,
+            "triangles": 216
+          },
+          "auto:street:ffffff": {
+            "draws": 1,
+            "triangles": 1848
+          },
+          "static:solid:BoxGeometry": {
+            "draws": 1,
+            "triangles": 16836
+          },
+          "static:plaster:BoxGeometry": {
+            "draws": 1,
+            "triangles": 2604
+          },
+          "static:stone:BoxGeometry": {
+            "draws": 1,
+            "triangles": 408
+          },
+          "static:glass:PlaneGeometry": {
+            "draws": 1,
+            "triangles": 1612
+          },
+          "static:solid:CylinderGeometry": {
+            "draws": 1,
+            "triangles": 16960
+          },
+          "static:fabric:BoxGeometry": {
+            "draws": 1,
+            "triangles": 624
+          },
+          "static:plaster:BufferGeometry": {
+            "draws": 1,
+            "triangles": 7800
+          },
+          "static:stone:ExtrudeGeometry": {
+            "draws": 2,
+            "triangles": 9572
+          },
+          "static:metal:BoxGeometry": {
+            "draws": 1,
+            "triangles": 4068
+          },
+          "static:glass:BoxGeometry": {
+            "draws": 1,
+            "triangles": 1248
+          },
+          "static:wood:BoxGeometry": {
+            "draws": 1,
+            "triangles": 456
+          },
+          "static:fabric:PlaneGeometry": {
+            "draws": 4,
+            "triangles": 4608
+          },
+          "static:solid:TorusGeometry": {
+            "draws": 1,
+            "triangles": 720
+          },
+          "static:metal:ConeGeometry": {
+            "draws": 1,
+            "triangles": 16
+          },
+          "static:metal:LatheGeometry": {
+            "draws": 1,
+            "triangles": 960
+          },
+          "static:foliage:BufferGeometry": {
+            "draws": 1,
+            "triangles": 14200
+          },
+          "static:solid:BufferGeometry": {
+            "draws": 1,
+            "triangles": 2700
+          }
+        },
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": 5.6,
+          "y": 1.6900000000000002,
+          "z": 6.8,
+          "yaw": 3.2615926535897932,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      }
+    },
+    {
+      "view": "fort-room",
+      "cached": {
+        "kind": "cached",
+        "renderCpuMs": 5.899999999906868,
+        "total": {
+          "draws": 27,
+          "triangles": 139356
+        },
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 27,
+        "mainAndOtherTriangles": 139356,
+        "casters": {},
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": -9.8,
+          "y": 1.6900000000000002,
+          "z": -33.6,
+          "yaw": 1.5707963267948966,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      },
+      "refresh": {
+        "kind": "refresh",
+        "renderCpuMs": 6.099999999627471,
+        "total": {
+          "draws": 96,
+          "triangles": 286575
+        },
+        "shadowDraws": 69,
+        "shadowTriangles": 147219,
+        "shadowDrawCpuMs": 3.7999999998137355,
+        "mainAndOtherDraws": 27,
+        "mainAndOtherTriangles": 139356,
+        "casters": {
+          "hero-storefront-opaque": {
+            "draws": 1,
+            "triangles": 7963
+          },
+          "SkinnedMesh": {
+            "draws": 11,
+            "triangles": 24712
+          },
+          "taxi:street:24292c": {
+            "draws": 3,
+            "triangles": 4392
+          },
+          "taxi:street:c9a343": {
+            "draws": 3,
+            "triangles": 960
+          },
+          "taxi:street:a5b8ae": {
+            "draws": 3,
+            "triangles": 36
+          },
+          "taxi:street:9b9d92": {
+            "draws": 3,
+            "triangles": 4464
+          },
+          "taxi:street:fff1c8": {
+            "draws": 3,
+            "triangles": 1656
+          },
+          "taxi:street:a63e2d": {
+            "draws": 3,
+            "triangles": 648
+          },
+          "taxi:street:676c65": {
+            "draws": 3,
+            "triangles": 2592
+          },
+          "taxi:street:ffffff": {
+            "draws": 3,
+            "triangles": 5616
+          },
+          "Mesh": {
+            "draws": 4,
+            "triangles": 4560
+          },
+          "auto:street:24292c": {
+            "draws": 1,
+            "triangles": 572
+          },
+          "auto:street:c9a343": {
+            "draws": 1,
+            "triangles": 260
+          },
+          "auto:street:676c65": {
+            "draws": 1,
+            "triangles": 600
+          },
+          "auto:street:9b9d92": {
+            "draws": 1,
+            "triangles": 452
+          },
+          "auto:street:a5b8ae": {
+            "draws": 1,
+            "triangles": 4
+          },
+          "auto:street:fff1c8": {
+            "draws": 1,
+            "triangles": 276
+          },
+          "auto:street:a63e2d": {
+            "draws": 1,
+            "triangles": 216
+          },
+          "auto:street:ffffff": {
+            "draws": 1,
+            "triangles": 1848
+          },
+          "static:solid:BoxGeometry": {
+            "draws": 1,
+            "triangles": 16836
+          },
+          "static:plaster:BoxGeometry": {
+            "draws": 1,
+            "triangles": 2604
+          },
+          "static:stone:BoxGeometry": {
+            "draws": 1,
+            "triangles": 408
+          },
+          "static:glass:PlaneGeometry": {
+            "draws": 1,
+            "triangles": 1612
+          },
+          "static:solid:CylinderGeometry": {
+            "draws": 1,
+            "triangles": 16960
+          },
+          "static:fabric:BoxGeometry": {
+            "draws": 1,
+            "triangles": 624
+          },
+          "static:plaster:BufferGeometry": {
+            "draws": 1,
+            "triangles": 7800
+          },
+          "static:stone:ExtrudeGeometry": {
+            "draws": 2,
+            "triangles": 9572
+          },
+          "static:metal:BoxGeometry": {
+            "draws": 1,
+            "triangles": 4068
+          },
+          "static:glass:BoxGeometry": {
+            "draws": 1,
+            "triangles": 1248
+          },
+          "static:wood:BoxGeometry": {
+            "draws": 1,
+            "triangles": 456
+          },
+          "static:fabric:PlaneGeometry": {
+            "draws": 4,
+            "triangles": 4608
+          },
+          "static:solid:TorusGeometry": {
+            "draws": 1,
+            "triangles": 720
+          },
+          "static:metal:ConeGeometry": {
+            "draws": 1,
+            "triangles": 16
+          },
+          "static:metal:LatheGeometry": {
+            "draws": 1,
+            "triangles": 960
+          },
+          "static:foliage:BufferGeometry": {
+            "draws": 1,
+            "triangles": 14200
+          },
+          "static:solid:BufferGeometry": {
+            "draws": 1,
+            "triangles": 2700
+          }
+        },
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": -9.8,
+          "y": 1.6900000000000002,
+          "z": -33.6,
+          "yaw": 1.5707963267948966,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      }
+    },
+    {
+      "view": "return",
+      "cached": {
+        "kind": "cached",
+        "renderCpuMs": 2.5,
+        "total": {
+          "draws": 90,
+          "triangles": 209085
+        },
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 90,
+        "mainAndOtherTriangles": 209085,
+        "casters": {},
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": 4.7,
+          "y": 1.6900000000000002,
+          "z": -44,
+          "yaw": 3.3015926535897933,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      },
+      "refresh": {
+        "kind": "refresh",
+        "renderCpuMs": 3.8999999999068677,
+        "total": {
+          "draws": 159,
+          "triangles": 356304
+        },
+        "shadowDraws": 69,
+        "shadowTriangles": 147219,
+        "shadowDrawCpuMs": 1.1999999997206032,
+        "mainAndOtherDraws": 90,
+        "mainAndOtherTriangles": 209085,
+        "casters": {
+          "hero-storefront-opaque": {
+            "draws": 1,
+            "triangles": 7963
+          },
+          "SkinnedMesh": {
+            "draws": 11,
+            "triangles": 24712
+          },
+          "taxi:street:24292c": {
+            "draws": 3,
+            "triangles": 4392
+          },
+          "taxi:street:c9a343": {
+            "draws": 3,
+            "triangles": 960
+          },
+          "taxi:street:a5b8ae": {
+            "draws": 3,
+            "triangles": 36
+          },
+          "taxi:street:9b9d92": {
+            "draws": 3,
+            "triangles": 4464
+          },
+          "taxi:street:fff1c8": {
+            "draws": 3,
+            "triangles": 1656
+          },
+          "taxi:street:a63e2d": {
+            "draws": 3,
+            "triangles": 648
+          },
+          "taxi:street:676c65": {
+            "draws": 3,
+            "triangles": 2592
+          },
+          "taxi:street:ffffff": {
+            "draws": 3,
+            "triangles": 5616
+          },
+          "Mesh": {
+            "draws": 4,
+            "triangles": 4560
+          },
+          "auto:street:24292c": {
+            "draws": 1,
+            "triangles": 572
+          },
+          "auto:street:c9a343": {
+            "draws": 1,
+            "triangles": 260
+          },
+          "auto:street:676c65": {
+            "draws": 1,
+            "triangles": 600
+          },
+          "auto:street:9b9d92": {
+            "draws": 1,
+            "triangles": 452
+          },
+          "auto:street:a5b8ae": {
+            "draws": 1,
+            "triangles": 4
+          },
+          "auto:street:fff1c8": {
+            "draws": 1,
+            "triangles": 276
+          },
+          "auto:street:a63e2d": {
+            "draws": 1,
+            "triangles": 216
+          },
+          "auto:street:ffffff": {
+            "draws": 1,
+            "triangles": 1848
+          },
+          "static:solid:BoxGeometry": {
+            "draws": 1,
+            "triangles": 16836
+          },
+          "static:plaster:BoxGeometry": {
+            "draws": 1,
+            "triangles": 2604
+          },
+          "static:stone:BoxGeometry": {
+            "draws": 1,
+            "triangles": 408
+          },
+          "static:glass:PlaneGeometry": {
+            "draws": 1,
+            "triangles": 1612
+          },
+          "static:solid:CylinderGeometry": {
+            "draws": 1,
+            "triangles": 16960
+          },
+          "static:fabric:BoxGeometry": {
+            "draws": 1,
+            "triangles": 624
+          },
+          "static:plaster:BufferGeometry": {
+            "draws": 1,
+            "triangles": 7800
+          },
+          "static:stone:ExtrudeGeometry": {
+            "draws": 2,
+            "triangles": 9572
+          },
+          "static:metal:BoxGeometry": {
+            "draws": 1,
+            "triangles": 4068
+          },
+          "static:glass:BoxGeometry": {
+            "draws": 1,
+            "triangles": 1248
+          },
+          "static:wood:BoxGeometry": {
+            "draws": 1,
+            "triangles": 456
+          },
+          "static:fabric:PlaneGeometry": {
+            "draws": 4,
+            "triangles": 4608
+          },
+          "static:solid:TorusGeometry": {
+            "draws": 1,
+            "triangles": 720
+          },
+          "static:metal:ConeGeometry": {
+            "draws": 1,
+            "triangles": 16
+          },
+          "static:metal:LatheGeometry": {
+            "draws": 1,
+            "triangles": 960
+          },
+          "static:foliage:BufferGeometry": {
+            "draws": 1,
+            "triangles": 14200
+          },
+          "static:solid:BufferGeometry": {
+            "draws": 1,
+            "triangles": 2700
+          }
+        },
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": 4.7,
+          "y": 1.6900000000000002,
+          "z": -44,
+          "yaw": 3.3015926535897933,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      }
+    },
+    {
+      "view": "taxi",
+      "cached": {
+        "kind": "cached",
+        "renderCpuMs": 2,
+        "total": {
+          "draws": 47,
+          "triangles": 161008
+        },
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 47,
+        "mainAndOtherTriangles": 161008,
+        "casters": {},
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": -3.1199999999999997,
+          "y": 1.3900000000000001,
+          "z": -34.37,
+          "yaw": 1.5707963267948966,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      },
+      "refresh": {
+        "kind": "refresh",
+        "renderCpuMs": 4.300000000279397,
+        "total": {
+          "draws": 127,
+          "triangles": 325015
+        },
+        "shadowDraws": 80,
+        "shadowTriangles": 164007,
+        "shadowDrawCpuMs": 1.8999999994412065,
+        "mainAndOtherDraws": 47,
+        "mainAndOtherTriangles": 161008,
+        "casters": {
+          "hero-storefront-opaque": {
+            "draws": 1,
+            "triangles": 7963
+          },
+          "SkinnedMesh": {
+            "draws": 11,
+            "triangles": 24712
+          },
+          "taxi:street:24292c": {
+            "draws": 3,
+            "triangles": 4392
+          },
+          "taxi:street:c9a343": {
+            "draws": 3,
+            "triangles": 960
+          },
+          "taxi:street:a5b8ae": {
+            "draws": 3,
+            "triangles": 36
+          },
+          "taxi:street:9b9d92": {
+            "draws": 3,
+            "triangles": 4464
+          },
+          "taxi:street:fff1c8": {
+            "draws": 3,
+            "triangles": 1656
+          },
+          "taxi:street:a63e2d": {
+            "draws": 3,
+            "triangles": 648
+          },
+          "taxi:street:676c65": {
+            "draws": 3,
+            "triangles": 2592
+          },
+          "taxi:street:ffffff": {
+            "draws": 3,
+            "triangles": 5616
+          },
+          "Mesh": {
+            "draws": 5,
+            "triangles": 5776
+          },
+          "auto:street:24292c": {
+            "draws": 1,
+            "triangles": 572
+          },
+          "auto:street:c9a343": {
+            "draws": 1,
+            "triangles": 260
+          },
+          "auto:street:676c65": {
+            "draws": 1,
+            "triangles": 600
+          },
+          "auto:street:9b9d92": {
+            "draws": 1,
+            "triangles": 452
+          },
+          "auto:street:a5b8ae": {
+            "draws": 1,
+            "triangles": 4
+          },
+          "auto:street:fff1c8": {
+            "draws": 1,
+            "triangles": 276
+          },
+          "auto:street:a63e2d": {
+            "draws": 1,
+            "triangles": 216
+          },
+          "auto:street:ffffff": {
+            "draws": 1,
+            "triangles": 1848
+          },
+          "static:solid:BoxGeometry": {
+            "draws": 1,
+            "triangles": 16836
+          },
+          "static:plaster:BoxGeometry": {
+            "draws": 1,
+            "triangles": 2604
+          },
+          "static:stone:BoxGeometry": {
+            "draws": 1,
+            "triangles": 408
+          },
+          "static:glass:PlaneGeometry": {
+            "draws": 1,
+            "triangles": 1612
+          },
+          "static:solid:CylinderGeometry": {
+            "draws": 1,
+            "triangles": 16960
+          },
+          "static:fabric:BoxGeometry": {
+            "draws": 1,
+            "triangles": 624
+          },
+          "static:plaster:BufferGeometry": {
+            "draws": 1,
+            "triangles": 7800
+          },
+          "static:stone:ExtrudeGeometry": {
+            "draws": 2,
+            "triangles": 9572
+          },
+          "static:metal:BoxGeometry": {
+            "draws": 1,
+            "triangles": 4068
+          },
+          "static:glass:BoxGeometry": {
+            "draws": 1,
+            "triangles": 1248
+          },
+          "static:wood:BoxGeometry": {
+            "draws": 1,
+            "triangles": 456
+          },
+          "static:fabric:PlaneGeometry": {
+            "draws": 4,
+            "triangles": 4608
+          },
+          "static:solid:TorusGeometry": {
+            "draws": 1,
+            "triangles": 720
+          },
+          "static:metal:ConeGeometry": {
+            "draws": 1,
+            "triangles": 16
+          },
+          "static:metal:LatheGeometry": {
+            "draws": 1,
+            "triangles": 960
+          },
+          "static:foliage:BufferGeometry": {
+            "draws": 1,
+            "triangles": 14200
+          },
+          "static:solid:BufferGeometry": {
+            "draws": 1,
+            "triangles": 2700
+          },
+          "taxi:close:24292c": {
+            "draws": 1,
+            "triangles": 2344
+          },
+          "taxi:close:c9a343": {
+            "draws": 1,
+            "triangles": 320
+          },
+          "taxi:close:a5b8ae": {
+            "draws": 1,
+            "triangles": 12
+          },
+          "taxi:close:9b9d92": {
+            "draws": 1,
+            "triangles": 3776
+          },
+          "taxi:close:fff1c8": {
+            "draws": 1,
+            "triangles": 660
+          },
+          "taxi:close:a63e2d": {
+            "draws": 1,
+            "triangles": 216
+          },
+          "taxi:close:676c65": {
+            "draws": 1,
+            "triangles": 1836
+          },
+          "taxi:close:ffffff": {
+            "draws": 1,
+            "triangles": 6112
+          },
+          "taxi:close:8c8979": {
+            "draws": 1,
+            "triangles": 192
+          },
+          "taxi:close:1c2022": {
+            "draws": 1,
+            "triangles": 104
+          }
+        },
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": -3.1199999999999997,
+          "y": 1.3900000000000001,
+          "z": -34.37,
+          "yaw": 1.5707963267948966,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      }
+    },
+    {
+      "view": "auto",
+      "cached": {
+        "kind": "cached",
+        "renderCpuMs": 4,
+        "total": {
+          "draws": 47,
+          "triangles": 155032
+        },
+        "shadowDraws": 0,
+        "shadowTriangles": 0,
+        "shadowDrawCpuMs": 0,
+        "mainAndOtherDraws": 47,
+        "mainAndOtherTriangles": 155032,
+        "casters": {},
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": -2.46,
+          "y": 1.36,
+          "z": -34.37,
+          "yaw": 1.5707963267948966,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      },
+      "refresh": {
+        "kind": "refresh",
+        "renderCpuMs": 6.5,
+        "total": {
+          "draws": 127,
+          "triangles": 313071
+        },
+        "shadowDraws": 80,
+        "shadowTriangles": 158039,
+        "shadowDrawCpuMs": 1.8999999999068677,
+        "mainAndOtherDraws": 47,
+        "mainAndOtherTriangles": 155032,
+        "casters": {
+          "hero-storefront-opaque": {
+            "draws": 1,
+            "triangles": 7963
+          },
+          "SkinnedMesh": {
+            "draws": 11,
+            "triangles": 24712
+          },
+          "taxi:street:24292c": {
+            "draws": 3,
+            "triangles": 4392
+          },
+          "taxi:street:c9a343": {
+            "draws": 3,
+            "triangles": 960
+          },
+          "taxi:street:a5b8ae": {
+            "draws": 3,
+            "triangles": 36
+          },
+          "taxi:street:9b9d92": {
+            "draws": 3,
+            "triangles": 4464
+          },
+          "taxi:street:fff1c8": {
+            "draws": 3,
+            "triangles": 1656
+          },
+          "taxi:street:a63e2d": {
+            "draws": 3,
+            "triangles": 648
+          },
+          "taxi:street:676c65": {
+            "draws": 3,
+            "triangles": 2592
+          },
+          "taxi:street:ffffff": {
+            "draws": 3,
+            "triangles": 5616
+          },
+          "Mesh": {
+            "draws": 5,
+            "triangles": 5472
+          },
+          "auto:street:24292c": {
+            "draws": 1,
+            "triangles": 572
+          },
+          "auto:street:c9a343": {
+            "draws": 1,
+            "triangles": 260
+          },
+          "auto:street:676c65": {
+            "draws": 1,
+            "triangles": 600
+          },
+          "auto:street:9b9d92": {
+            "draws": 1,
+            "triangles": 452
+          },
+          "auto:street:a5b8ae": {
+            "draws": 1,
+            "triangles": 4
+          },
+          "auto:street:fff1c8": {
+            "draws": 1,
+            "triangles": 276
+          },
+          "auto:street:a63e2d": {
+            "draws": 1,
+            "triangles": 216
+          },
+          "auto:street:ffffff": {
+            "draws": 1,
+            "triangles": 1848
+          },
+          "static:solid:BoxGeometry": {
+            "draws": 1,
+            "triangles": 16836
+          },
+          "static:plaster:BoxGeometry": {
+            "draws": 1,
+            "triangles": 2604
+          },
+          "static:stone:BoxGeometry": {
+            "draws": 1,
+            "triangles": 408
+          },
+          "static:glass:PlaneGeometry": {
+            "draws": 1,
+            "triangles": 1612
+          },
+          "static:solid:CylinderGeometry": {
+            "draws": 1,
+            "triangles": 16960
+          },
+          "static:fabric:BoxGeometry": {
+            "draws": 1,
+            "triangles": 624
+          },
+          "static:plaster:BufferGeometry": {
+            "draws": 1,
+            "triangles": 7800
+          },
+          "static:stone:ExtrudeGeometry": {
+            "draws": 2,
+            "triangles": 9572
+          },
+          "static:metal:BoxGeometry": {
+            "draws": 1,
+            "triangles": 4068
+          },
+          "static:glass:BoxGeometry": {
+            "draws": 1,
+            "triangles": 1248
+          },
+          "static:wood:BoxGeometry": {
+            "draws": 1,
+            "triangles": 456
+          },
+          "static:fabric:PlaneGeometry": {
+            "draws": 4,
+            "triangles": 4608
+          },
+          "static:solid:TorusGeometry": {
+            "draws": 1,
+            "triangles": 720
+          },
+          "static:metal:ConeGeometry": {
+            "draws": 1,
+            "triangles": 16
+          },
+          "static:metal:LatheGeometry": {
+            "draws": 1,
+            "triangles": 960
+          },
+          "static:foliage:BufferGeometry": {
+            "draws": 1,
+            "triangles": 14200
+          },
+          "static:solid:BufferGeometry": {
+            "draws": 1,
+            "triangles": 2700
+          },
+          "auto:close:24292c": {
+            "draws": 1,
+            "triangles": 788
+          },
+          "auto:close:c9a343": {
+            "draws": 1,
+            "triangles": 260
+          },
+          "auto:close:676c65": {
+            "draws": 1,
+            "triangles": 924
+          },
+          "auto:close:9b9d92": {
+            "draws": 1,
+            "triangles": 1056
+          },
+          "auto:close:a5b8ae": {
+            "draws": 1,
+            "triangles": 4
+          },
+          "auto:close:fff1c8": {
+            "draws": 1,
+            "triangles": 276
+          },
+          "auto:close:a63e2d": {
+            "draws": 1,
+            "triangles": 216
+          },
+          "auto:close:ffffff": {
+            "draws": 1,
+            "triangles": 6072
+          },
+          "auto:close:8c8979": {
+            "draws": 1,
+            "triangles": 96
+          },
+          "auto:close:1c2022": {
+            "draws": 1,
+            "triangles": 216
+          }
+        },
+        "textures": 27,
+        "programs": 26,
+        "pose": {
+          "x": -2.46,
+          "y": 1.36,
+          "z": -34.37,
+          "yaw": 1.5707963267948966,
+          "pitch": -0.015,
+          "animationTime": 8
+        },
+        "preset": "medium",
+        "scale": 1,
+        "shadowMap": true,
+        "device": {
+          "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.0.0 Safari/537.36",
+          "platform": "Linux x86_64",
+          "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+          "vendor": "Google Inc. (Google)",
+          "softwareDetected": true,
+          "timerQueryAvailable": false,
+          "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+          "maxTextureSize": 8192,
+          "maxTextures": 32,
+          "devicePixelRatio": 1
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+[
+ {
+  "id": "bkc-brief",
+  "prompt": "ERead the internship brief",
+  "ok": true
+ },
+ {
+  "id": "bkc-ratelimit",
+  "prompt": "ERun the rate-limit console",
+  "ok": true
+ },
+ {
+  "id": "bkc-flow",
+  "prompt": "EFollow the request path",
+  "ok": true
+ },
+ {
+  "id": "andheri-shop-language",
+  "prompt": "EVisit Language Lane",
+  "ok": true
+ },
+ {
+  "id": "andheri-shop-frontend",
+  "prompt": "EVisit Frontend Studio",
+  "ok": true
+ },
+ {
+  "id": "andheri-shop-backend",
+  "prompt": "EVisit Backend Workshop",
+  "ok": true
+ },
+ {
+  "id": "andheri-shop-devops",
+  "prompt": "EVisit DevOps Garage",
+  "ok": true
+ },
+ {
+  "id": "andheri-shop-ai",
+  "prompt": "EVisit AI Integration Lab",
+  "ok": true
+ },
+ {
+  "id": "northstar",
+  "prompt": "EOpen NORTHSTAR",
+  "ok": true
+ },
+ {
+  "id": "reco",
+  "prompt": "EOpen RECO",
+  "ok": true
+ },
+ {
+  "id": "moneymetrics",
+  "prompt": "EOpen MoneyMetrics",
+  "ok": true
+ },
+ {
+  "id": "meeting-intelligence-service",
+  "prompt": "EOpen Meeting Intelligence",
+  "ok": true
+ },
+ {
+  "id": "rideflow",
+  "prompt": "EOpen RideFlow",
+  "ok": true
+ },
+ {
+  "id": "repolens",
+  "prompt": "EOpen RepoLens",
+  "ok": true
+ },
+ {
+  "id": "astflow",
+  "prompt": "EOpen the ASTFLOW lab",
+  "ok": true
+ },
+ {
+  "id": "dadar-stop-0",
+  "prompt": "EPlatform 1: Learning the foundations",
+  "ok": true
+ },
+ {
+  "id": "dadar-stop-1",
+  "prompt": "EPlatform 2: Ideas become working systems",
+  "ok": true
+ },
+ {
+  "id": "dadar-stop-2",
+  "prompt": "EPlatform 3: Open source, upstream",
+  "ok": true
+ },
+ {
+  "id": "dadar-stop-3",
+  "prompt": "EPlatform 4: Enterprise constraints",
+  "ok": true
+ },
+ {
+  "id": "dadar-stop-4",
+  "prompt": "EPlatform 5: A signal along the route",
+  "ok": true
+ },
+ {
+  "id": "dadar-stop-5",
+  "prompt": "EPlatform 6: Keep building, keep validating",
+  "ok": true
+ },
+ {
+  "id": "worli-case-0",
+  "prompt": "ECheck the receipt: Google Big Code 2026",
+  "ok": true
+ },
+ {
+  "id": "worli-case-1",
+  "prompt": "ECheck the receipt: Google Summer of Code 2026",
+  "ok": true
+ },
+ {
+  "id": "worli-case-2",
+  "prompt": "ECheck the receipt: Infosys Springboard",
+  "ok": true
+ },
+ {
+  "id": "worli-case-3",
+  "prompt": "ECheck the receipt: IBM · Coursera",
+  "ok": true
+ },
+ {
+  "id": "juhu-about",
+  "prompt": "ERead the studio notice board",
+  "ok": true
+ },
+ {
+  "id": "juhu-resume",
+  "prompt": "EPick up the résumé",
+  "ok": true
+ },
+ {
+  "id": "juhu-contact",
+  "prompt": "EUse the contact terminal",
+  "ok": true
+ },
+ {
+  "id": "filmcity-boxoffice",
+  "prompt": "EBuy a ticket at the box office",
+  "ok": true
+ },
+ {
+  "id": "filmcity-scenes",
+  "prompt": "ERead the scene board",
+  "ok": true
+ }
+]

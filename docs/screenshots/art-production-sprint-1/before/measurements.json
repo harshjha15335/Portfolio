@@ -1,0 +1,147 @@
+[
+  {
+    "view": "spawn",
+    "width": 1440,
+    "profile": "idle · 73 draws · 202956 triangles · 23 textures · 23 shaders · 74 MB JS · scale 1.00 · eye 1.68m",
+    "position": {
+      "engine": "three.js r180",
+      "worldX": "4.600",
+      "worldZ": "11.500",
+      "eyeHeight": "1.680",
+      "lookYaw": "0.140",
+      "renderScale": "1.00",
+      "quality": "high",
+      "renderMode": "on-demand",
+      "navigation": "ready",
+      "npcUpdateMs": "0.000",
+      "trafficUpdateMs": "0.100",
+      "renderPreset": "medium",
+      "cameraMode": "first-person"
+    }
+  },
+  {
+    "view": "station",
+    "width": 1440,
+    "profile": "idle · 82 draws · 224066 triangles · 28 textures · 24 shaders · 74 MB JS · scale 1.00 · eye 1.68m",
+    "position": {
+      "engine": "three.js r180",
+      "worldX": "4.600",
+      "worldZ": "-4.000",
+      "eyeHeight": "1.680",
+      "lookYaw": "3.022",
+      "renderScale": "1.00",
+      "quality": "high",
+      "renderMode": "on-demand",
+      "navigation": "ready",
+      "npcUpdateMs": "0.000",
+      "trafficUpdateMs": "0.200",
+      "renderPreset": "medium",
+      "cameraMode": "first-person"
+    }
+  },
+  {
+    "view": "junction",
+    "width": 1440,
+    "profile": "idle · 71 draws · 217712 triangles · 28 textures · 24 shaders · 73 MB JS · scale 1.00 · eye 1.68m",
+    "position": {
+      "engine": "three.js r180",
+      "worldX": "4.800",
+      "worldZ": "-8.000",
+      "eyeHeight": "1.680",
+      "lookYaw": "0.700",
+      "renderScale": "1.00",
+      "quality": "high",
+      "renderMode": "on-demand",
+      "navigation": "ready",
+      "npcUpdateMs": "0.000",
+      "trafficUpdateMs": "0.200",
+      "renderPreset": "medium",
+      "cameraMode": "first-person"
+    }
+  },
+  {
+    "view": "shops",
+    "width": 1440,
+    "profile": "idle · 72 draws · 218432 triangles · 28 textures · 24 shaders · 74 MB JS · scale 1.00 · eye 1.68m",
+    "position": {
+      "engine": "three.js r180",
+      "worldX": "-4.800",
+      "worldZ": "-9.000",
+      "eyeHeight": "1.680",
+      "lookYaw": "-0.200",
+      "renderScale": "1.00",
+      "quality": "high",
+      "renderMode": "on-demand",
+      "navigation": "ready",
+      "npcUpdateMs": "0.000",
+      "trafficUpdateMs": "0.100",
+      "renderPreset": "medium",
+      "cameraMode": "first-person"
+    }
+  },
+  {
+    "view": "npc",
+    "width": 1440,
+    "profile": "idle · 61 draws · 183615 triangles · 28 textures · 24 shaders · 73 MB JS · scale 1.00 · eye 1.68m",
+    "position": {
+      "engine": "three.js r180",
+      "worldX": "5.600",
+      "worldZ": "6.800",
+      "eyeHeight": "1.680",
+      "lookYaw": "3.262",
+      "renderScale": "1.00",
+      "quality": "high",
+      "renderMode": "on-demand",
+      "navigation": "ready",
+      "npcUpdateMs": "0.000",
+      "trafficUpdateMs": "0.200",
+      "renderPreset": "medium",
+      "cameraMode": "first-person"
+    }
+  },
+  {
+    "view": "fort",
+    "width": 1440,
+    "profile": "idle · 51 draws · 208202 triangles · 28 textures · 24 shaders · 73 MB JS · scale 1.00 · eye 1.68m",
+    "position": {
+      "engine": "three.js r180",
+      "worldX": "-5.100",
+      "worldZ": "-35.000",
+      "eyeHeight": "1.680",
+      "lookYaw": "1.571",
+      "renderScale": "1.00",
+      "quality": "high",
+      "renderMode": "on-demand",
+      "navigation": "ready",
+      "npcUpdateMs": "0.000",
+      "trafficUpdateMs": "0.200",
+      "renderPreset": "medium",
+      "cameraMode": "first-person"
+    }
+  },
+  {
+    "view": "return",
+    "width": 1440,
+    "profile": "0.3 fps · 102 draws · 231164 triangles · 28 textures · 24 shaders · 74 MB JS · scale 1.00 · eye 1.68m",
+    "position": {
+      "engine": "three.js r180",
+      "worldX": "4.700",
+      "worldZ": "-44.000",
+      "eyeHeight": "1.680",
+      "lookYaw": "3.302",
+      "renderScale": "1.00",
+      "quality": "high",
+      "renderMode": "on-demand",
+      "navigation": "ready",
+      "npcUpdateMs": "0.000",
+      "trafficUpdateMs": "0.000",
+      "renderPreset": "medium",
+      "cameraMode": "first-person"
+    }
+  },
+  {
+    "view": "mobile",
+    "width": 390,
+    "profile": "idle · 61 draws · 183800 triangles · 16 textures · 15 shaders · 78 MB JS · scale 0.85 · eye 1.68m"
+  }
+]

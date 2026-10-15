@@ -1,0 +1,4 @@
+spawn { draws: 79, triangles: 200465 } { draws: 148, triangles: 347684 } shadow 69 147219
+hero-wide { draws: 35, triangles: 153887 } { draws: 104, triangles: 301106 } shadow 69 147219
+taxi { draws: 47, triangles: 161008 } { draws: 127, triangles: 325015 } shadow 80 164007
+auto { draws: 47, triangles: 155032 } { draws: 127, triangles: 313071 } shadow 80 158039

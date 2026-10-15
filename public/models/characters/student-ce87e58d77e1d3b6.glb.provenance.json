@@ -1,0 +1,83 @@
+{
+ "status": "approved",
+ "visualReview": {
+  "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+  "date": "2026-10-11",
+  "notes": "Auto driver (hands on handlebar grips) and bench sitter; walk clip in place."
+ },
+ "asset": {
+  "id": "cast-student",
+  "url": "/models/characters/student-ce87e58d77e1d3b6.glb",
+  "sha256": "ce87e58d77e1d3b6b883820593d4009f404d33f82baedef69a1b46d30835f436",
+  "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_17",
+  "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+  "license": "MIT"
+ },
+ "provenance": {
+  "repository": "https://github.com/microsoft/Microsoft-Rocketbox",
+  "commit": "0943055db6ec570bcef9f2c8b41c9e5467c808f9",
+  "license": "MIT",
+  "licenseEvidence": "https://github.com/microsoft/Microsoft-Rocketbox/blob/0943055db6ec570bcef9f2c8b41c9e5467c808f9/LICENSE.md",
+  "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+  "copyright": "Copyright (c) 2020 Microsoft",
+  "licenseReviewedOn": "2026-10-11",
+  "avatar": "Assets/Avatars/Adults/Male_Adult_17",
+  "avatarSha256": "c1f5f218684baae3fb505f9b100af97953ac868f03e6a9b6b2c7365c353c05bb",
+  "clips": {
+   "Idle": {
+    "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_look_around_01.max.fbx",
+    "sha256": "018b19ad26695c5ebbd4131e0506da69dc76f4001a8100a9e38fcdb9a202b7a4"
+   },
+   "Walk": {
+    "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_neutral_01.max.fbx",
+    "sha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0"
+   },
+   "Sit": {
+    "file": "Assets/Animations/all_animations_max_motextr_static/m_sit_chair_idle_neutral_01.max.fbx",
+    "sha256": "c5aeab85a7daa50770f70644b1651ff7811594500a702e8b454e7386566e1df2"
+   }
+  },
+  "modifications": "Blender 4.2 FBX import; body and head maps packed into one 2048×1024 atlas with matching normal atlas; clips retargeted from the Rocketbox animation rig, trimmed ({\"Idle\":12,\"Sit\":10}) and resampled with gltf-transform 4.1.1; 30% decimated LOD mesh on the same rig."
+ },
+ "inspection": {
+  "triangles": 7084,
+  "lodTriangles": 2124,
+  "primitives": 1,
+  "materials": 1,
+  "joints": [
+   80
+  ],
+  "textures": [
+   {
+    "width": 2048,
+    "height": 1024,
+    "mimeType": "image/jpeg"
+   },
+   {
+    "width": 2048,
+    "height": 1024,
+    "mimeType": "image/jpeg"
+   }
+  ],
+  "clips": [
+   {
+    "name": "Idle",
+    "duration": 4.666666507720947,
+    "channels": 240
+   },
+   {
+    "name": "Walk",
+    "duration": 1.2333333492279053,
+    "channels": 240
+   }
+  ],
+  "visualReviewRequired": [
+   "human proportions",
+   "clothing and texture quality",
+   "human-scale floor alignment",
+   "Idle and Walk move the intended skeleton",
+   "foot sliding/facing direction",
+   "new Medium draw/triangle/texture/program counts"
+  ]
+ }
+}

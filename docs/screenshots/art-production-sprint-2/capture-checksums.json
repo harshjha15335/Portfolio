@@ -1,0 +1,314 @@
+{
+  "after/1440-auto.png": {
+    "bytes": 774112,
+    "sha256": "af149d57520d1dbaa682603e4e20b6f838523ec2ec9363983112d147eed9b70e"
+  },
+  "after/1440-fort-room.png": {
+    "bytes": 315835,
+    "sha256": "c963614e9a72dad2eed7ad77717958f638bc989149bd7401a0263690166f1ea9"
+  },
+  "after/1440-fort.png": {
+    "bytes": 523855,
+    "sha256": "ea865d1f8bb2d84844fa9215b351504a408cbde877e2cca50edf1c15ad52a1b7"
+  },
+  "after/1440-hero-wide.png": {
+    "bytes": 700641,
+    "sha256": "2af13921278b0ad3874d9b710da7731aa92ac9bdd93a0aa20332c2cb5aedd293"
+  },
+  "after/1440-hero.png": {
+    "bytes": 617996,
+    "sha256": "d22f34d55103682040aad4b3ddfc21ef814003f64f0d2e6361a97bffac7e26d5"
+  },
+  "after/1440-junction.png": {
+    "bytes": 897432,
+    "sha256": "ec75c2c8f5277ec1e68d30574c7b83bf5350691f889d753504f6f18249b4a4e3"
+  },
+  "after/1440-north-limit.png": {
+    "bytes": 626278,
+    "sha256": "de72710ca89fdc9a0f533e113d1130bf7c6e0051e6eecb56394617bd85351171"
+  },
+  "after/1440-npc.png": {
+    "bytes": 663553,
+    "sha256": "d5357545c5282b3052484eb2302d7b52e091002929d212afd2bebfa79ed73e23"
+  },
+  "after/1440-research-sources.png": {
+    "bytes": 114135,
+    "sha256": "ee2e85cfc0e64088292d6c20df688cbc56fe0a61fd3c2533432cf8ef9853afc9"
+  },
+  "after/1440-research.png": {
+    "bytes": 120728,
+    "sha256": "a1aa75d897d6ae336dad3842b280369fbe8d3277e0e5ca86bdf57051c90c8460"
+  },
+  "after/1440-return.png": {
+    "bytes": 789902,
+    "sha256": "c24d9934ae16a502f2e3b0cedd8b9d44dcceb3f5a7b496885bcb9518aea46e56"
+  },
+  "after/1440-shops.png": {
+    "bytes": 891069,
+    "sha256": "442f43a39c8d79195ae0909269f9d37b908ebd0ed1ddc784b2ec4615c019c51f"
+  },
+  "after/1440-side-gap.png": {
+    "bytes": 418848,
+    "sha256": "be0f3ca866c32f26a35ee6767eeeb4961e806bb09259f361ff1bf5b70bb52bfe"
+  },
+  "after/1440-south-look.png": {
+    "bytes": 645372,
+    "sha256": "d35f7032d802a3ab1a8aa85100ec832b1da198569f4bda9d804d6ee0b29199a4"
+  },
+  "after/1440-spawn.png": {
+    "bytes": 996712,
+    "sha256": "ed5b5ec1b231dcfadb54aae34e732b2e5a5f02672917e6290e032386ae76bd08"
+  },
+  "after/1440-station.png": {
+    "bytes": 876294,
+    "sha256": "49ff9d9fc1f7000cc21864c0228e92edcd4f0aecfecd45942251ba4d3f756224"
+  },
+  "after/1440-taxi.png": {
+    "bytes": 611010,
+    "sha256": "049ab7f21347ccc7c805e5a72f5ebf91587af329da39ac5797fd452ab50d2b7e"
+  },
+  "after/390-fallback-theatre.png": {
+    "bytes": 43507,
+    "sha256": "0a9f03bf28ce6ca753cc7491d904ca3e54f74326a46b5778e28d8a867dc50b13"
+  },
+  "after/390-mobile.png": {
+    "bytes": 255542,
+    "sha256": "1297a727466e202dd24b28861931411462b17ab3325fa82b0ec61e3245c4b50d"
+  },
+  "after/390-research.png": {
+    "bytes": 72084,
+    "sha256": "063297712cc769c2eda506182a78d8fc70cf42c82df13e3094ba90851f1aa0e2"
+  },
+  "before/1440-auto.png": {
+    "bytes": 800031,
+    "sha256": "342d1f665f49c815a9c5aa2c7d3b3e663d210b4b8e0b664c83020d7355aaa0d9"
+  },
+  "before/1440-fort-room.png": {
+    "bytes": 357952,
+    "sha256": "4ef31ac5763ec2ae1a401442d4aa797fc488973f77fa503dcd956d8f2c28b3a8"
+  },
+  "before/1440-fort.png": {
+    "bytes": 460023,
+    "sha256": "c570dbd63de5a46ae9af65d00051017b5b2144f3c3d02bdd0b3c74f7ae0ae279"
+  },
+  "before/1440-hero-wide.png": {
+    "bytes": 545340,
+    "sha256": "bc128c150c32ac519186f20b2013ec7dee3cee50708b631d57910e334db7bd70"
+  },
+  "before/1440-hero.png": {
+    "bytes": 381194,
+    "sha256": "38337b8f5e36e74084ff81e1bcdf7d0d33a1313b52f0e6b068acdb4d7df0e591"
+  },
+  "before/1440-junction.png": {
+    "bytes": 892414,
+    "sha256": "185622213099e8e1d3039bd5587a7e5e524d9406292e7494e04bb431065c019d"
+  },
+  "before/1440-north-limit.png": {
+    "bytes": 515452,
+    "sha256": "106e148a9117e6ed00e1bffb66adbcbfa298666b445ae1cbf5ab1864a112ed87"
+  },
+  "before/1440-npc.png": {
+    "bytes": 641901,
+    "sha256": "09a1fbc0ead0ac091ac14e86fa35815fec91a17f76195015a2eeec29dc917340"
+  },
+  "before/1440-research-sources.png": {
+    "bytes": 82024,
+    "sha256": "d437f0a16e904e1e53c897aa791fe29f320fd11774a50344ee619ae68daaaf5b"
+  },
+  "before/1440-research.png": {
+    "bytes": 80333,
+    "sha256": "9fe38b9965dd3c70b9938a59a799980bbec24b5612f318eae0b1c0cb26bfb32a"
+  },
+  "before/1440-return.png": {
+    "bytes": 796040,
+    "sha256": "2e1444f00767bd242d96fb9ec304eea11ae5569487bca756945f04951fe9f4f6"
+  },
+  "before/1440-shops.png": {
+    "bytes": 931366,
+    "sha256": "922d4694b99e6ed356a039965b192353073422da0b409badb5e664f21882dad7"
+  },
+  "before/1440-side-gap.png": {
+    "bytes": 408192,
+    "sha256": "d28fa7d3dc590267744ef21d8d9fefd01339cc95e7c7e06239d920e0d2bf45f2"
+  },
+  "before/1440-south-look.png": {
+    "bytes": 590789,
+    "sha256": "4b05b5a9caf8ca42f6b007225f7c53f88f914ae421f11def39aa6a43db1726f2"
+  },
+  "before/1440-spawn.png": {
+    "bytes": 969991,
+    "sha256": "b9ffcf499e2015bfc6b12a69f55aeb85faa5e82561f5ae6129687916c46505a9"
+  },
+  "before/1440-station.png": {
+    "bytes": 857361,
+    "sha256": "bf8fc964eb0c9486c47932ee515341322a02989dfe1354d30ddcff67a1e029a0"
+  },
+  "before/1440-taxi.png": {
+    "bytes": 630923,
+    "sha256": "e0ddc503b6c410d8417d4c7372d72426ae28520cca67b52cf3af57147839620c"
+  },
+  "before/390-fallback-theatre.png": {
+    "bytes": 43507,
+    "sha256": "0a9f03bf28ce6ca753cc7491d904ca3e54f74326a46b5778e28d8a867dc50b13"
+  },
+  "before/390-mobile.png": {
+    "bytes": 254195,
+    "sha256": "6bec9127376722e6e8618aa3b0c0c33d75ace4fe00e34c347449a4a462ded1a6"
+  },
+  "before/390-research.png": {
+    "bytes": 59532,
+    "sha256": "5fd6a573f946f0c006b18858f9b8cf1aee7d1642a2664f62e836b22db914a24a"
+  },
+  "iteration-1/1440-fort-room.png": {
+    "bytes": 357720,
+    "sha256": "7e59aa77778d7482a99213f919fb974afa8ce574f00ff80ef0d9e3e8648af18c"
+  },
+  "iteration-1/1440-fort.png": {
+    "bytes": 526890,
+    "sha256": "d6c900d31b8d3aad53cc4a9ae15fdaed5a01ace0e5142b6472497cd2656eb3c8"
+  },
+  "iteration-1/1440-hero.png": {
+    "bytes": 792195,
+    "sha256": "34348d23a31373f8a829dd37124cded6fe894c8295016e096f42df3312ab2050"
+  },
+  "iteration-1/1440-junction.png": {
+    "bytes": 916165,
+    "sha256": "43afc606ca62856dc8e2a6fc552fd5aead6f6e5c9ab7d3d2334f17c2b0f29cdc"
+  },
+  "iteration-1/1440-npc.png": {
+    "bytes": 662491,
+    "sha256": "a6ec69942fea4a56a15c15f2ea05c0f8b02d294e6bb40209a0bf617196e6dbe2"
+  },
+  "iteration-1/1440-return.png": {
+    "bytes": 21733,
+    "sha256": "754ec6b3e66c060f52ab2f3cc6c0fc80c82c2e66c1169599fdff55253ec23b3b"
+  },
+  "iteration-1/1440-shops.png": {
+    "bytes": 938973,
+    "sha256": "cec906bb2648d0924bd57db8497d8163fd30cf57243ee6392714b67d48813b31"
+  },
+  "iteration-1/1440-spawn.png": {
+    "bytes": 1025539,
+    "sha256": "aa20cfb10538e95ed6f5ca083d1c1c7c78e6af27f1bd234f666a6cee65aac048"
+  },
+  "iteration-1/1440-station.png": {
+    "bytes": 873508,
+    "sha256": "85f8e9f2fe45a021b1617a4703251683847704ca9b0662aea5b0ee48a11a9359"
+  },
+  "iteration-2/1440-fort-room.png": {
+    "bytes": 315764,
+    "sha256": "5fac4b82c26c11338fb12d1179a6c233582cac1a7b38b5ff9654f6df0f1b8854"
+  },
+  "iteration-2/1440-hero.png": {
+    "bytes": 518152,
+    "sha256": "32c2bb529817f1a3cbde9ed3c6e6b5abe042974f316abbfdf20f50824b406dd0"
+  },
+  "iteration-2/1440-return.png": {
+    "bytes": 789751,
+    "sha256": "51ac9eb333dda385496512495c6b00cd176e0b6f8e46c374cf52057ae2a21498"
+  },
+  "iteration-3/1440-fort-room.png": {
+    "bytes": 315835,
+    "sha256": "c963614e9a72dad2eed7ad77717958f638bc989149bd7401a0263690166f1ea9"
+  },
+  "iteration-3/1440-hero.png": {
+    "bytes": 518164,
+    "sha256": "94b36f3f22ce6871af2c42d88418da108e23b91bb1fc0a39012b9b532b06d06b"
+  },
+  "iteration-3/1440-return.png": {
+    "bytes": 789630,
+    "sha256": "77b5e6d13e8fded591ed32418e00f5c89fffe6e5ac647a3a7e32b7574df4ec14"
+  },
+  "iteration-4/1440-fort-room.png": {
+    "bytes": 315835,
+    "sha256": "c963614e9a72dad2eed7ad77717958f638bc989149bd7401a0263690166f1ea9"
+  },
+  "iteration-4/1440-hero.png": {
+    "bytes": 518152,
+    "sha256": "32c2bb529817f1a3cbde9ed3c6e6b5abe042974f316abbfdf20f50824b406dd0"
+  },
+  "iteration-4/1440-return.png": {
+    "bytes": 789630,
+    "sha256": "77b5e6d13e8fded591ed32418e00f5c89fffe6e5ac647a3a7e32b7574df4ec14"
+  },
+  "iteration-5/1440-auto.png": {
+    "bytes": 774112,
+    "sha256": "af149d57520d1dbaa682603e4e20b6f838523ec2ec9363983112d147eed9b70e"
+  },
+  "iteration-5/1440-fort-room.png": {
+    "bytes": 315835,
+    "sha256": "c963614e9a72dad2eed7ad77717958f638bc989149bd7401a0263690166f1ea9"
+  },
+  "iteration-5/1440-fort.png": {
+    "bytes": 523855,
+    "sha256": "ea865d1f8bb2d84844fa9215b351504a408cbde877e2cca50edf1c15ad52a1b7"
+  },
+  "iteration-5/1440-hero-wide.png": {
+    "bytes": 643294,
+    "sha256": "a657134a11961484d502bd24f29649f420d666c10549efd63037a71a879d47a0"
+  },
+  "iteration-5/1440-hero.png": {
+    "bytes": 518164,
+    "sha256": "94b36f3f22ce6871af2c42d88418da108e23b91bb1fc0a39012b9b532b06d06b"
+  },
+  "iteration-5/1440-junction.png": {
+    "bytes": 897432,
+    "sha256": "ec75c2c8f5277ec1e68d30574c7b83bf5350691f889d753504f6f18249b4a4e3"
+  },
+  "iteration-5/1440-north-limit.png": {
+    "bytes": 626278,
+    "sha256": "de72710ca89fdc9a0f533e113d1130bf7c6e0051e6eecb56394617bd85351171"
+  },
+  "iteration-5/1440-npc.png": {
+    "bytes": 663553,
+    "sha256": "d5357545c5282b3052484eb2302d7b52e091002929d212afd2bebfa79ed73e23"
+  },
+  "iteration-5/1440-research-sources.png": {
+    "bytes": 114135,
+    "sha256": "ee2e85cfc0e64088292d6c20df688cbc56fe0a61fd3c2533432cf8ef9853afc9"
+  },
+  "iteration-5/1440-research.png": {
+    "bytes": 120728,
+    "sha256": "a1aa75d897d6ae336dad3842b280369fbe8d3277e0e5ca86bdf57051c90c8460"
+  },
+  "iteration-5/1440-return.png": {
+    "bytes": 789630,
+    "sha256": "77b5e6d13e8fded591ed32418e00f5c89fffe6e5ac647a3a7e32b7574df4ec14"
+  },
+  "iteration-5/1440-shops.png": {
+    "bytes": 891069,
+    "sha256": "442f43a39c8d79195ae0909269f9d37b908ebd0ed1ddc784b2ec4615c019c51f"
+  },
+  "iteration-5/1440-side-gap.png": {
+    "bytes": 418848,
+    "sha256": "be0f3ca866c32f26a35ee6767eeeb4961e806bb09259f361ff1bf5b70bb52bfe"
+  },
+  "iteration-5/1440-south-look.png": {
+    "bytes": 645372,
+    "sha256": "d35f7032d802a3ab1a8aa85100ec832b1da198569f4bda9d804d6ee0b29199a4"
+  },
+  "iteration-5/1440-spawn.png": {
+    "bytes": 993458,
+    "sha256": "8657defbe3cf301cb8b5f875754ac43402d92c760fcdf48c99502b7df74539f2"
+  },
+  "iteration-5/1440-station.png": {
+    "bytes": 872253,
+    "sha256": "22c70a49479b1e6389a5417f53c39cece4e0d18e2a473a2b92cfca394ed49d72"
+  },
+  "iteration-5/1440-taxi.png": {
+    "bytes": 611010,
+    "sha256": "049ab7f21347ccc7c805e5a72f5ebf91587af329da39ac5797fd452ab50d2b7e"
+  },
+  "iteration-5/390-fallback-theatre.png": {
+    "bytes": 43507,
+    "sha256": "0a9f03bf28ce6ca753cc7491d904ca3e54f74326a46b5778e28d8a867dc50b13"
+  },
+  "iteration-5/390-mobile.png": {
+    "bytes": 255542,
+    "sha256": "1297a727466e202dd24b28861931411462b17ab3325fa82b0ec61e3245c4b50d"
+  },
+  "iteration-5/390-research.png": {
+    "bytes": 72084,
+    "sha256": "063297712cc769c2eda506182a78d8fc70cf42c82df13e3094ba90851f1aa0e2"
+  }
+}
