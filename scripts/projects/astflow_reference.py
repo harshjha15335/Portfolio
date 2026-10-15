@@ -2,10 +2,10 @@
 
 Usage: python3 -I scripts/projects/astflow_reference.py <astflow-checkout> <out.json>
 
-ASTFLOW is a team project (Samsung PRISM 2026, team ByteCoders). The lab shows Harsh's part of
-it: the E001 fusion experiment and the E002 reranker experiment. This script:
+ASTFLOW is a Samsung PRISM 2026 project by team ByteCoders. The lab replays its E001 fusion
+experiment and E002 reranker experiment from raw data. This script:
 - loads `load_ranks` (analyze_baseline.py) and `rrf_for_queries` / `evaluate_rankings`
-  (run_fusion_sweep.py, from Harsh's commit 0a60b37) from the checkout and runs them unchanged;
+  (run_fusion_sweep.py, from the E001 commit 0a60b37) from the checkout and runs them unchanged;
 - re-scores the E001 dev winner on all 1,859 dev queries and checks it equals the archived sweep;
 - picks a handful of dev queries (deterministically, by category) and records their frozen
   baseline-v1 BM25 and dense rankings, plus the fused ranking ASTFLOW's own code produces for a grid

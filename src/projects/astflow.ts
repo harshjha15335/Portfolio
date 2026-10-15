@@ -1,9 +1,7 @@
 /**
- * ASTFLOW (Samsung PRISM 2026, team ByteCoders: Aarush Shetty, Harsh Jha, Anuj Deshpande).
- * Repository: ANUJ-DESHPANDE/ASTFLOW. Harsh's commits there are the E001 fusion experiment, the
- * E002 cross-encoder reranker experiment and the baseline-v1 forensic diagnosis (24 Sep 2026).
+ * ASTFLOW (Samsung PRISM 2026, team ByteCoders). Repository: ANUJ-DESHPANDE/ASTFLOW.
  *
- * `rrf` is a port of `rrf_for_queries` in benchmark/run_fusion_sweep.py (Harsh's commit 0a60b37):
+ * `rrf` is a port of `rrf_for_queries` in benchmark/run_fusion_sweep.py (E001 commit 0a60b37):
  * score = w_bm25 / (k + rank) + w_dense / (k + rank) over each list cut to `depth`, sorted by
  * (-score, doc id), kept to 1,000. Tested against rankings that function produced on the frozen
  * baseline-v1 runs (scripts/projects/astflow_reference.py).
@@ -12,7 +10,7 @@ import data from './data/astflow.json';
 
 export const ASTFLOW_COMMIT = data.commit;
 export const astflowSource = (path: string) => `https://github.com/ANUJ-DESHPANDE/ASTFLOW/blob/${ASTFLOW_COMMIT}/${path}`;
-export const HARSH_COMMITS = { fusion: '0a60b37', reranker: 'cef22c9', forensics: 'b297069' } as const;
+export const EXPERIMENT_COMMITS = { fusion: '0a60b37', reranker: 'cef22c9', forensics: 'b297069' } as const;
 export const astflowCommit = (sha: string) => `https://github.com/ANUJ-DESHPANDE/ASTFLOW/commit/${sha}`;
 
 export interface Scored { doc: string; score: number; bm25Rank: number | null; denseRank: number | null }

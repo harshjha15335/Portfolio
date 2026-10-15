@@ -98,6 +98,8 @@ test('Powai ASTFLOW lab replays the fusion experiment', async ({ page }) => {
   await page.getByRole('button', { name: 'SHOW ME AROUND' }).click();
   const lab = page.getByRole('region', { name: 'ASTFLOW Engineering Lab' });
   await expect(lab).toContainText('team ByteCoders');
+  await expect(lab.locator('.astflow-stats')).toContainText('0.5509');
+  await expect(lab.locator('.astflow-ledger')).toHaveCount(2);
   // BM25 ranks this answer #73; the baseline 1:1 fusion pushes it to #169, BM25-only weights bring it back.
   await expect(lab.getByRole('status')).toHaveText('169');
   await lab.locator('label', { hasText: /^Weights/ }).locator('select').selectOption('1:0 (BM25 only)');
