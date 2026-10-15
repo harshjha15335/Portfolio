@@ -55,7 +55,7 @@ export function DistrictExperience({ district: d, reduced, resumeAvailable, onCl
   </Modal>;
 }
 
-const scenes = [
+export const scenes = [
   { name: 'Arrival', title: 'Harsh Jha. Builder, in motion.', body: portfolio.tagline, label: 'SOFTWARE / AI / SCIENTIFIC COMPUTING' },
   { name: 'Foundations', title: 'VIT. A place to start.', body: `${portfolio.education}. Expected graduation: ${portfolio.graduation}.`, label: 'CLASS OF 2028 / JOURNEY IN PROGRESS' },
   { name: 'The first builds', title: 'Ideas need working systems.', body: 'From personal finance tools to route planning and AI systems, projects make the learning tangible.', label: 'BUILD / TEST / ITERATE' },
@@ -66,9 +66,9 @@ const scenes = [
   { name: 'Next chapter', title: 'Keep building. Keep validating.', body: 'Scientific computing, useful AI, and software that stands up to real constraints. The next project starts with a good question.', label: 'AN INTEREST, NOT A CLAIM OF FUTURE WORK' },
   { name: 'Until next time', title: 'Let’s build something.', body: 'For engineering opportunities, research, or a good technical conversation. Thanks for taking the scenic route.', label: 'THE END / OR THE BEGINNING' },
 ];
-function Theatre({ reduced, onContact, onExit, onFinale }: { reduced: boolean; onContact: () => void; onExit: () => void; onFinale?: () => void }) {
+export function Theatre({ reduced, onContact, onExit, onFinale, initialScene = 0 }: { reduced: boolean; onContact: () => void; onExit: () => void; onFinale?: () => void; initialScene?: number }) {
   const root = useRef<HTMLElement>(null);
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(initialScene);
   const [playing, setPlaying] = useState(false);
   useEffect(() => { root.current?.focus({ preventScroll: true }); root.current?.scrollIntoView({ block: 'start', behavior: 'instant' }); }, []);
   useEffect(() => { if (reduced) setPlaying(false); }, [reduced]);

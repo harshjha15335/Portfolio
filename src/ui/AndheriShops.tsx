@@ -18,8 +18,8 @@ import type { RideStatus } from '../game/World/transit';
 const projectTitle = (id: string) => projects.find(p => p.id === id)?.title ?? id;
 
 /** Andheri Tech Bazaar: five shops; each skill opens what it does, where it was used, a demonstration and the evidence. */
-export function SkillShops({ onProject }: { onProject: (id: string) => void }) {
-  const [shopId, setShopId] = useState<Shop['id']>('language');
+export function SkillShops({ onProject, initialShop = 'language' }: { onProject: (id: string) => void; initialShop?: Shop['id'] }) {
+  const [shopId, setShopId] = useState<Shop['id']>(initialShop);
   const shop = SHOPS.find(s => s.id === shopId)!;
   const [skillName, setSkillName] = useState(shop.skills[0].name);
   const skill = shop.skills.find(s => s.name === skillName) ?? shop.skills[0];

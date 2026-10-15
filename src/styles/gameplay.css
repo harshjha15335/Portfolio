@@ -78,3 +78,34 @@ li.done > span:first-child { color:#2f7a5f; font-weight:700; }
 .journal-modal > :not(.modal-top), .exhibit-modal > :not(.modal-top) { padding-left:28px; padding-right:28px; }
 .journal-modal > :last-child, .exhibit-modal > :last-child { padding-bottom:28px; }
 @media (max-width:760px) { .journal-modal > :not(.modal-top), .exhibit-modal > :not(.modal-top) { padding-left:16px; padding-right:16px; } }
+
+/* District exhibits (BKC, Andheri, Powai, Dadar, Worli, Juhu, Film City) */
+.district-exhibit { display:grid; gap:12px; padding-bottom:20px; }
+.district-exhibit h2 { font:600 34px/1.05 var(--display); margin:0; }
+.district-exhibit p { max-width:62ch; line-height:1.55; margin:0; }
+.district-exhibit ul { margin:0; padding-left:18px; line-height:1.55; }
+.request-path ol { list-style:none; margin:0; padding:0; display:grid; gap:6px; }
+.request-path li button { width:100%; display:flex; gap:12px; align-items:baseline; text-align:left; padding:10px 12px; border:1px solid #283c4133; background:transparent; font:inherit; cursor:pointer; }
+.request-path li.done button { opacity:.6; }
+.request-path li.current button { border-color:#283c41; background:#f9c84733; }
+.request-path li b { font:11px var(--mono); }
+.request-path li p { padding:6px 12px 2px 44px; }
+.rate-console { display:grid; gap:14px; padding-bottom:20px; }
+.rate-console h2 { font:600 34px/1.05 var(--display); margin:6px 0; }
+.rate-console header p { max-width:66ch; line-height:1.55; }
+.rate-controls { display:flex; flex-wrap:wrap; gap:14px; align-items:center; }
+.rate-controls fieldset { display:flex; gap:6px; border:0; padding:0; margin:0; align-items:center; }
+.rate-controls legend { float:left; margin-right:8px; font:11px var(--mono); }
+.rate-controls button[aria-pressed="true"] { background:#283c41; color:#f3e5c7; }
+.rate-timeline { display:flex; flex-wrap:wrap; gap:2px; margin-bottom:8px; }
+.rate-timeline i { width:8px; height:14px; background:#4f8a5b; }
+.rate-timeline i.bad { background:#c0392b; }
+.rate-result output { font:12px var(--mono); }
+.rate-result output.pass, .rate-verdict.pass { color:#2f6b3e; }
+.rate-result output.fail, .rate-verdict.fail { color:#a2352a; }
+.rate-history { border-collapse:collapse; font:12px var(--mono); }
+.rate-history th, .rate-history td { padding:4px 12px 4px 0; text-align:left; }
+.scene-board { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:8px; }
+.scene-board button { width:100%; display:grid; grid-template-columns:32px 1fr; gap:2px 8px; text-align:left; padding:10px; border:1px solid #283c4133; background:transparent; font:inherit; cursor:pointer; }
+.scene-board button b { grid-row:span 2; font:12px var(--mono); }
+.scene-board small { color:#4d5a57; }

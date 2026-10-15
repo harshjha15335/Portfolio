@@ -11,6 +11,8 @@ import type { Outfit } from './CityFolk';
 import { createCityVehicle, VEHICLE_LENGTH, type CityVehicleKind } from './CityVehicles';
 import { paintMaterial, withFinish, type V3 } from './ColorMesh';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { buildExhibits } from './exhibits';
+import { exhibitsOf } from '../../../data/districtExhibits';
 
 /**
  * How full the districts are, set from the graphics preset before a district is built
@@ -50,13 +52,16 @@ export class District {
   spatial!: SpatialIndex;
   private waters: Water[] = []; private motion: Array<(time: number, delta: number) => void> = []; private previous = 0;
   readonly ctx: Ctx;
+  /** Exhibit boards' own atlas (null when the district has none). */
+  private exhibitSigns: SignAtlas | null = null;
   readonly buildMs: number;
   constructor(private physics: CANNON.World, surfaces: StreetMaterials, readonly zone: CityZone, readonly spec: DistrictSpec) {
     const started = performance.now(); this.origin = new THREE.Vector3(zone.originX, 0, 0); this.group.position.copy(this.origin); this.group.name = `district:${spec.id}`;
     this.kit = new DistrictKit(this.origin, physics, surfaces, spec.id); this.ctx = { kit: this.kit, signs: this.signs };
-    this.street(); spec.build(this); this.guide(); this.populateTraffic(); this.streetLife();
+    this.street(); spec.build(this); this.exhibitSigns = buildExhibits(this); this.guide(); this.populateTraffic(); this.streetLife();
     this.kit.build(); this.kit.group.children.slice().forEach(m => { this.group.add(m); m.position.set(0, 0, 0); });
     const signs = this.signs.build(); if (signs) this.group.add(signs);
+    const boards = this.exhibitSigns?.build(); if (boards) { boards.name = 'district:exhibits'; this.group.add(boards); }
     this.group.add(this.crowd.group, this.traffic.group); for (const w of this.waters) this.group.add(w.mesh);
     this.spatial = new SpatialIndex(this.kit.colliders); this.kit.colliders.forEach(g => g.dispose()); this.kit.colliders.length = 0;
     this.group.visible = false; this.buildMs = performance.now() - started;
@@ -146,7 +151,7 @@ export class District {
   }
   /** Is a pavement spot clear of the stop, the guide and the zebra crossing? */
   private clearOf(x: number, z: number) {
-    const s = this.zone.stop; return Math.hypot(x - s.x, z - s.z) > 6 && Math.abs(z + 12) > 3;
+    const s = this.zone.stop; return Math.hypot(x - s.x, z - s.z) > 6 && Math.abs(z + 12) > 3 && exhibitsOf(this.spec.id).every(e => Math.hypot(x - e.x, z - e.z) > 2.6);
   }
   /**
    * The life between the authored set pieces: knots of people chatting on the pavements and
@@ -205,7 +210,7 @@ export class District {
   /** Release physics bodies and every GPU resource this district owns (shared street maps stay). */
   dispose() {
     for (const body of this.kit.bodies) this.physics.removeBody(body);
-    this.spatial.dispose(); this.signs.texture.dispose(); this.group.removeFromParent();
+    this.spatial.dispose(); this.signs.texture.dispose(); this.exhibitSigns?.texture.dispose(); this.group.removeFromParent();
     for (const person of this.crowd.people()) person.cast?.dispose();
     this.traffic.dispose();
     const shared = paintMaterial();

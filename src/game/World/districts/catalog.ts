@@ -202,7 +202,7 @@ const worli: DistrictSpec = {
     hoarding(c, 9.4, 7, -55, -Math.PI / 2 + .35, 8, poster('#3a2f6a', '#e9a33c', 'PROOF, NOT ADJECTIVES', 'Big Code qualifier · five merged upstream PRs · metrics with sources'), 'AD');
     sign(c, 'WORLI SEA FACE', 3.2, [-5.6, 2.4, 9], { bg: '#1e4b6e', fg: '#ffffff', local: 'वरळी सी फेस' }, [768, 160], Math.PI / 2);
     kit.cylinder(.06, 2.5, [-5.6, 1.25, 9], '#5a5f5c', 'metal', true);
-    d.walkers(walkersOf(['jogger', 'jogger', 'salwar', 'elder', 'kurta', 'sari', 'jogger', 'office', 'school'], 18), [-6.2, -7.8, -9.6, -11.2], 12, -58, 1.2);
+    d.walkers(walkersOf(['jogger', 'jogger', 'salwar', 'elder', 'kurta', 'sari', 'jogger', 'office', 'school'], 18), [-6.2, -7.4, -8.6, -12.1], 12, -58, 1.2);
     d.walkers(walkersOf(['office', 'shirt', 'salwar'], 5), [5, 5.6]);
     for (let z = 8; z > -56; z -= 7) d.crowd.idle(z % 2 ? 'sari' : 'shirt', [-13.2, .55, z], -Math.PI / 2, 'sit');
     for (let z = 4.5; z > -56; z -= 14) d.crowd.idle('salwar', [-13.2, .55, z], -Math.PI / 2, 'sit');
