@@ -42,14 +42,20 @@ const FLAGSHIPS = [...projects.filter(p => p.id !== 'ffprime').map(p => p.id), '
 
 export interface Achievement { id: string; title: string; detail: string; earned: (p: Progress) => boolean }
 const has = (p: Progress, id: string) => p.discovered.includes(id);
+const any = (p: Progress, prefix: string) => p.discovered.some(id => id.startsWith(prefix));
+const count = (p: Progress, pattern: RegExp) => new Set(p.discovered.filter(id => pattern.test(id))).size;
+/** Activities record `<exhibit>:solved` when finished, separately from opening the exhibit. */
+const solved = (p: Progress, id: string) => has(p, `${id}:solved`);
 export const ACHIEVEMENTS: Achievement[] = [
   { id: 'first-steps', title: 'First Steps', detail: 'Met the station host or read the CST departure board.', earned: p => has(p, 'cst') || has(p, 'cst-board') },
   { id: 'research-explorer', title: 'Research Explorer', detail: 'Followed the five reviewed FFprime pull requests at Fort.', earned: p => has(p, 'fort-source') },
-  { id: 'gradient-check', title: 'Finite Differences', detail: 'Found the field implementation that passes the gradient check.', earned: p => has(p, 'fort-gradient') },
-  { id: 'systems-thinker', title: 'Systems Thinker', detail: 'Heard the BKC systems engineer out.', earned: p => has(p, 'bkc') },
-  { id: 'skill-collector', title: 'Skill Collector', detail: 'Inspected the evidence at the Andheri Tech Bazaar.', earned: p => has(p, 'andheri') },
+  { id: 'gradient-check', title: 'Finite Differences', detail: 'Found the field implementation that passes the gradient check.', earned: p => solved(p, 'fort-gradient') },
+  { id: 'systems-thinker', title: 'Systems Thinker', detail: 'Ingested every page at BKC without a single 429.', earned: p => solved(p, 'bkc-ratelimit') },
+  { id: 'skill-collector', title: 'Skill Collector', detail: 'Visited three skill shops at the Andheri Tech Bazaar.', earned: p => count(p, /^andheri-shop-/) >= 3 },
   { id: 'builder', title: 'Builder', detail: 'Opened a flagship project in Powai.', earned: p => FLAGSHIPS.some(id => has(p, id)) },
-  { id: 'time-traveler', title: 'Time Traveler', detail: 'Walked the Dadar platforms of the journey.', earned: p => has(p, 'dadar') },
+  { id: 'time-traveler', title: 'Time Traveler', detail: 'Read all six Dadar platforms of the journey.', earned: p => count(p, /^dadar-stop-\d$/) >= 6 },
+  { id: 'receipts', title: 'Receipts Checked', detail: 'Named the evidence behind all four claims on the Worli Proof Deck.', earned: p => count(p, /^worli-case-\d:solved$/) >= 4 },
+  { id: 'say-hello', title: 'Said Hello', detail: 'Used the contact terminal at Juhu Studio.', earned: p => has(p, 'juhu-contact') },
   { id: 'kaali-peeli', title: 'Kaali-Peeli Regular', detail: 'Finished a metered taxi or auto ride.', earned: p => p.rides > 0 },
   { id: 'film-buff', title: 'Film Buff', detail: 'Reached the final scene at Film City Talkies.', earned: p => has(p, 'theatre-end') },
   { id: 'city-explorer', title: 'City Explorer', detail: 'Stood in all nine districts.', earned: p => DISTRICT_IDS.every(id => p.visited.includes(id)) },
@@ -60,10 +66,10 @@ export const QUEST = {
   title: 'Discover the Engineer',
   steps: [
     { id: 'fort', label: 'Follow the research at Fort', done: (p: Progress) => has(p, 'fort-source') || has(p, 'fort-tour') },
-    { id: 'bkc', label: 'Inspect the BKC Systems Office', done: (p: Progress) => has(p, 'bkc') },
+    { id: 'bkc', label: 'Inspect the BKC Systems Office', done: (p: Progress) => has(p, 'bkc') || any(p, 'bkc-') },
     { id: 'powai', label: 'Explore one Powai project', done: (p: Progress) => FLAGSHIPS.some(id => has(p, id)) },
-    { id: 'andheri', label: 'Visit the Andheri Tech Bazaar', done: (p: Progress) => has(p, 'andheri') },
-    { id: 'juhu', label: 'Finish at Juhu Studio', done: (p: Progress) => has(p, 'juhu') },
+    { id: 'andheri', label: 'Visit the Andheri Tech Bazaar', done: (p: Progress) => has(p, 'andheri') || any(p, 'andheri-shop-') },
+    { id: 'juhu', label: 'Finish at Juhu Studio', done: (p: Progress) => has(p, 'juhu') || any(p, 'juhu-') },
   ],
 };
 export const questDone = (p: Progress) => QUEST.steps.every(step => step.done(p));

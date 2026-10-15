@@ -77,3 +77,27 @@ Main-pass counts with a cached shadow map (`scripts/capture-districts.mjs`, `?be
 - At the gameplay capture poses the debug overlay (main pass plus any shadow refresh) read: board-close 161 draws / 405,462 triangles (a shadow refresh frame, matching the base's 159 / 404,322 first frame), fort-room close-up 82 / 227,392, kiosk 54 / 163,969, contribution board 37 / 164,477.
 - World load in this container (time to the first canvas, then to the loader clearing), two runs each: base 12.0 / 25.0 s and 15.3 / 30.0 s; this branch 15.1 / 27.7 s and 14.1 / 27.2 s. With reduced motion: base 12.7 / 18.9 s and 13.8 / 20.0 s; this branch 13.3 / 19.9 s and 13.9 / 19.9 s. No measurable change. Several existing browser tests wait 12 s for the canvas or the loader and fail intermittently on both branches for that reason.
 - Interaction targeting now runs only after 5 cm of movement or a turn instead of every frame. No frame-time claim is made from software rendering.
+
+## District exhibits pass — 2026-10-15
+
+Main-pass counts with a cached shadow map (`scripts/capture-districts.mjs`, `?benchmark=1`, Medium, 1440×900, reduced motion, SwiftShader) at the district review poses, base `872ec34` against this branch. Raw data: `screenshots/district-exhibits/benchmark-base.json` and `benchmark-after.json`.
+
+| Pose | Draws | Triangles | Textures | Programs |
+|---|---|---|---|---|
+| bkc | 65 → 64 | 186,649 → 182,577 | 30 → 31 | 50 → 50 |
+| bkc-plaza | 73 → 73 | 194,373 → 192,580 | 30 → 31 | 50 → 50 |
+| andheri | 53 → 54 | 209,032 → 208,307 | 30 → 31 | 52 → 52 |
+| andheri-stalls | 60 → 61 | 241,861 → 231,775 | 30 → 31 | 52 → 52 |
+| powai | 57 → 57 | 125,365 → 124,774 | 31 → 32 | 53 → 53 |
+| powai-towers | 48 → 48 | 113,295 → 111,634 | 31 → 32 | 53 → 53 |
+| dadar | 67 → 67 | 203,307 → 199,534 | 31 → 32 | 53 → 53 |
+| dadar-station | 57 → 58 | 190,355 → 188,049 | 31 → 32 | 53 → 53 |
+| worli | 73 → 74 | 198,299 → 198,760 | 31 → 32 | 53 → 53 |
+| worli-promenade | 59 → 61 | 160,154 → 161,454 | 31 → 32 | 53 → 53 |
+| juhu | 68 → 70 | 123,325 → 124,849 | 31 → 32 | 54 → 54 |
+| juhu-stalls | 70 → 72 | 128,302 → 130,289 | 31 → 32 | 54 → 54 |
+| filmcity | 52 → 51 | 151,652 → 153,840 | 31 → 32 | 52 → 52 |
+| filmcity-talkies | 53 → 48 | 161,756 → 162,510 | 31 → 32 | 52 → 52 |
+
+- Each district gains exactly one texture: the 1024² atlas its exhibit boards paint into (the district sign atlas had no room in Andheri). Board frames merge into the district's existing surface batches and all boards share one draw, so draws move by −5 to +2, within the crowd's run-to-run variation (the pavement crowds also shift slightly because they now keep clear of the boards). Programs are unchanged.
+- Textures now reach the 32 ceiling at most poses and programs remain over it (50–54, cumulative and cast-driven, as before). No ceiling was raised.

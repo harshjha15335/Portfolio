@@ -6,6 +6,7 @@ import { CORRECT_FIELD, FIELD_CANDIDATES, finiteDifferenceCheck, type CheckResul
 import { DEPARTURES } from '../data/departures';
 import { districts } from '../data/city';
 import type { TransitKind } from '../game/World/transit';
+import { DISTRICT_EXHIBIT_TITLES, DistrictExhibitBody } from './DistrictExhibits';
 
 /** Physical exhibits in the world that open a focused panel instead of a whole district page. */
 export const EXHIBIT_TITLES: Record<string, string> = {
@@ -17,12 +18,15 @@ export const EXHIBIT_TITLES: Record<string, string> = {
   'fort-panel-0': 'FORT / PANEL 01',
   'fort-panel-1': 'FORT / PANEL 02',
   'fort-panel-2': 'FORT / PANEL 03',
+  ...DISTRICT_EXHIBIT_TITLES,
 };
 export const isExhibit = (id: string) => id in EXHIBIT_TITLES;
 
-export function ExhibitPanel({ id, onClose, onSolved, onDeparture }: {
+export function ExhibitPanel({ id, onClose, onSolved, onDeparture, onOpen, onProject, onContact, onFinale, reduced, resumeAvailable, discovered }: {
   id: string; onClose: () => void; onSolved: (id: string) => void;
   onDeparture: (district: string, action: 'mark' | 'go' | TransitKind) => void;
+  onOpen: (id: string) => void; onProject: (id: string) => void; onContact: () => void; onFinale: () => void;
+  reduced: boolean; resumeAvailable: boolean; discovered: string[];
 }) {
   const panel = /^fort-panel-(\d)$/.exec(id);
   return <Modal title={EXHIBIT_TITLES[id]} onClose={onClose} className={`exhibit-modal exhibit-${id}`}>
@@ -32,6 +36,7 @@ export function ExhibitPanel({ id, onClose, onSolved, onDeparture }: {
     {id === 'fort-source' && <ResearchExhibition focus="source" />}
     {id === 'fort-workstation' && <CoordinateWorkstation />}
     {id === 'fort-gradient' && <GradientCheck onSolved={() => onSolved('fort-gradient')} />}
+    {id in DISTRICT_EXHIBIT_TITLES && <DistrictExhibitBody key={id} id={id} reduced={reduced} resumeAvailable={resumeAvailable} discovered={discovered} onSolved={onSolved} onOpen={onOpen} onProject={onProject} onContact={onContact} onClose={onClose} onFinale={onFinale} />}
   </Modal>;
 }
 

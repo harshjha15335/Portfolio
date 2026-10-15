@@ -5,7 +5,9 @@ import { CORRECT_FIELD, FIELD_CANDIDATES, finiteDifferenceCheck } from '../src/r
 import { TOURS } from '../src/data/tours';
 import { DEPARTURES } from '../src/data/departures';
 import { districts } from '../src/data/city';
-import { streetStops } from '../src/game/World/streetLayout';
+import { streetStops, zoneAt } from '../src/game/World/streetLayout';
+import { DISTRICT_EXHIBITS } from '../src/data/districtExhibits';
+import { RATES, bestCleanRun, ingest, solves } from '../src/game/activities/rateLimit';
 
 const play = (...events: ProgressEvent[]) => events.reduce((p, e) => record(p, e).progress, emptyProgress());
 
@@ -47,6 +49,24 @@ describe('progress', () => {
     store.set('hj-progress-v1', 'not json'); expect(loadProgress(storage)).toEqual(emptyProgress());
     expect(loadProgress(null)).toEqual(emptyProgress());
   });
+  it('earns activity achievements by finishing the activity, not by opening it', () => {
+    const d = (id: string) => ({ type: 'discover', id }) as ProgressEvent;
+    expect(play(d('fort-gradient')).achievements).not.toContain('gradient-check');
+    expect(play(d('fort-gradient'), d('fort-gradient:solved')).achievements).toContain('gradient-check');
+    expect(play(d('bkc-ratelimit')).achievements).not.toContain('systems-thinker');
+    expect(play(d('bkc-ratelimit:solved')).achievements).toContain('systems-thinker');
+    expect(play(d('andheri-shop-ai'), d('andheri-shop-ai'), d('andheri-shop-devops')).achievements).not.toContain('skill-collector');
+    expect(play(d('andheri-shop-ai'), d('andheri-shop-devops'), d('andheri-shop-language')).achievements).toContain('skill-collector');
+    expect(play(...[0, 1, 2, 3, 4].map(i => d(`dadar-stop-${i}`))).achievements).not.toContain('time-traveler');
+    expect(play(...[0, 1, 2, 3, 4, 5].map(i => d(`dadar-stop-${i}`))).achievements).toContain('time-traveler');
+    expect(play(...[0, 1, 2, 3].map(i => d(`worli-case-${i}`))).achievements).not.toContain('receipts');
+    expect(play(...[0, 1, 2, 3].map(i => d(`worli-case-${i}:solved`))).achievements).toContain('receipts');
+    expect(play(d('juhu-contact')).achievements).toContain('say-hello');
+  });
+  it('counts district exhibits towards the quest', () => {
+    const p = play(...['fort-tour', 'bkc-brief', 'repolens', 'andheri-shop-ai', 'juhu-about'].map(id => ({ type: 'discover', id }) as ProgressEvent));
+    expect(questDone(p)).toBe(true);
+  });
   it('gives every achievement a unique id', () => { expect(new Set(ACHIEVEMENTS.map(a => a.id)).size).toBe(ACHIEVEMENTS.length); });
 });
 
@@ -86,12 +106,31 @@ describe('Fort gradient check', () => {
 describe('tours and departures', () => {
   it('only points at real places and exhibits', () => {
     for (const tour of Object.values(TOURS)) for (const step of tour.steps) {
-      if (step.exhibit) expect(['fort-field', 'fort-source', 'fort-gradient', 'fort-panel-0', 'fort-panel-1', 'fort-panel-2', 'fort-workstation', 'cst-board', 'ffprime']).toContain(step.exhibit);
+      if (step.exhibit) expect(['fort-field', 'fort-source', 'fort-gradient', 'fort-panel-0', 'fort-panel-1', 'fort-panel-2', 'fort-workstation', 'cst-board', 'ffprime', ...DISTRICT_EXHIBITS.map(e => e.id)]).toContain(step.exhibit);
       if (step.next) expect(districts.map(d => d.id)).toContain(step.next);
+      // Every framed view stands in the district the tour is about.
+      if (step.view && tour.id !== 'fort') expect(zoneAt(step.view.x).id).toBe(tour.id);
     }
+  });
+  it('gives every district a tour that ends by suggesting another stop', () => {
+    for (const d of districts) { expect(TOURS[d.id], d.id).toBeDefined(); expect(TOURS[d.id].steps.at(-1)!.next).toBeTruthy(); }
   });
   it('lists every other district once with a reachable stop', () => {
     expect(DEPARTURES.map(d => d.district).sort()).toEqual(districts.filter(d => d.id !== 'cst').map(d => d.id).sort());
     for (const d of DEPARTURES) expect(streetStops[d.district]).toBeTruthy();
+  });
+});
+
+describe('BKC rate-limit console', () => {
+  it('rejects requests sent faster than the bucket refills, and solves only at the refill rate', () => {
+    expect(ingest(8, false).rejected).toBeGreaterThan(0);
+    expect(ingest(4, true).rejected).toBeGreaterThan(0);
+    expect(ingest(1, false).rejected).toBe(0);
+    for (const r of RATES) for (const b of [false, true]) expect(ingest(r, b).timeline.filter(t => t === 'ok')).toHaveLength(40);
+    expect(bestCleanRun().rate).toBe(2);
+    expect(solves(ingest(2, false))).toBe(true);
+    expect(solves(ingest(1, false))).toBe(false);
+    expect(solves(ingest(8, true))).toBe(false);
+    expect(ingest(4, false)).toEqual(ingest(4, false));
   });
 });

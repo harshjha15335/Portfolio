@@ -3,6 +3,10 @@
  * Every step can be skipped, and the tour can be left at any time. Facts come from the same
  * sources as the exhibits themselves (src/research/evidence.json, src/data/experience.ts).
  */
+import { exhibitsOf, readingSpot } from './districtExhibits';
+import { cityZones } from '../game/World/streetLayout';
+import { districts } from './city';
+
 export interface TourView { x: number; z: number; yaw: number; pitch: number }
 export interface TourStep { title: string; body: string; view?: TourView; exhibit?: string; next?: string }
 export interface Tour { id: string; guide: string; place: string; steps: TourStep[] }
@@ -34,3 +38,28 @@ export const TOURS: Record<string, Tour> = {
     ],
   },
 };
+
+/** The other seven districts: the guide's greeting, then one step per exhibit board, then the next stop. */
+const DISTRICT_TOUR_ORDER = ['bkc', 'andheri', 'powai', 'dadar', 'worli', 'juhu', 'filmcity'];
+const INTROS: Record<string, string> = {
+  bkc: 'This stop is the CCIEeXpert internship: enterprise security tooling that integrates with Cisco Secure Access. The boards on the plaza walk through it, and one of them is a console you can run.',
+  andheri: 'Five shops, one per kind of skill. Each kiosk names the shop; inside, every skill links to the code that uses it, and a bench runs real logic from those repositories.',
+  powai: 'Seven workplaces, one per project. Each board on the paving opens a working demo that runs the project’s own logic, or the case study where there is no demo.',
+  dadar: 'The journey runs along this pavement as six platform boards, each with only the dates we can source. Read all six to travel the whole route.',
+  worli: 'Four claims, four evidence cases on the promenade. Before you trust a number, check what stands behind it: a public record you can open, or a line on the résumé.',
+  juhu: 'The studio is where the person lives, not the projects: a notice board, the résumé stand and a terminal to say hello.',
+  filmcity: 'The Talkies shows Harsh’s story in nine scenes. The box office seats you at the start; the scene board lets you start anywhere.',
+};
+for (const [i, id] of DISTRICT_TOUR_ORDER.entries()) {
+  const zone = cityZones.find(z => z.id === id)!, place = districts.find(d => d.id === id)!, next = DISTRICT_TOUR_ORDER[i + 1];
+  TOURS[id] = {
+    id, guide: place.guide, place: place.title,
+    steps: [
+      { title: place.title, body: INTROS[id], view: { x: zone.originX + zone.stop.x, z: zone.stop.z, yaw: zone.stop.yaw, pitch: 0 } },
+      ...exhibitsOf(id).map(e => { const v = readingSpot(e); return { title: e.tour.title, body: e.tour.body, exhibit: e.id, view: { ...v, x: zone.originX + v.x } }; }),
+      next ? { title: 'Where next?', body: `${districts.find(d => d.id === next)!.title}: ${districts.find(d => d.id === next)!.descriptor}. Hail a taxi or an auto, or open the map with M.`, next }
+        : { title: 'Where next?', body: 'That is the whole city. Juhu Studio has the résumé and a way to say hello, and Quick View has everything on one page.', next: 'juhu' },
+    ],
+  };
+}
+
