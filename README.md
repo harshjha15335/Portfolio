@@ -4,9 +4,9 @@ A first-person portfolio street inspired by the supplied Mumbai reel: tightly pa
 
 For the full current system description, scope, controls, architecture, test evidence and limitations, see [Current implementation](docs/CURRENT_IMPLEMENTATION.md).
 
-## Vertical slice first
+## What is built
 
-The current 3D world is **one CST-to-Fort street**, with 14 façades, shopfronts, a station host, taxi/auto stands, traffic, pavement detail and an open Fort research room. It replaces the earlier aerial diorama and personal driving experience. The remaining seven districts have their existing HTML portfolio experiences in the directory; their streets and interiors have deliberately **not** been generated before this street receives visual review. Film City currently retains its accessible slideshow; a walk-in cinema is a later expansion.
+All nine districts are walkable streets (CST and Fort share one street; the other seven stream in one at a time). CST and Fort are the quality benchmark: a station departure board that indexes the portfolio, a furnished research room whose exhibits each open their own panel, a gradient-check research activity, guided tours, gaze-based interaction, an exploration journal with achievements and a quest, and the metered taxi/auto loop. See [Gameplay mechanics](docs/GAMEPLAY_MECHANICS.md), the [district matrix](docs/DISTRICT_IMPLEMENTATION_MATRIX.md) and the [baseline audit](docs/GAMIFIED_PORTFOLIO_BASELINE.md).
 
 ## Run and check
 
@@ -32,7 +32,8 @@ The default browser config uses Edge. `playwright.cloud.config.ts` uses installe
 | Shift | Brisk walk |
 | Mouse | Click for pointer lock, or drag to look if lock is unavailable |
 | Comma / period | Turn with the keyboard |
-| E | Talk to the nearby guide, read a research terminal, hail a nearby vehicle |
+| E | Interact with what you are looking at: a guide, an exhibit, the departure board, a taxi or auto stand |
+| J | Exploration journal: quest, achievements, districts visited |
 | R | Return to CST |
 | M | Open the directory and pause walking |
 | Escape | Release the pointer / open the menu; close overlays |

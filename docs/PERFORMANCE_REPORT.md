@@ -59,3 +59,21 @@ Final five-scenario production software smoke completed without page errors. Obs
 ## Sprint 2.1 rendering categories
 
 See [production rendering review](ART_PRODUCTION_PERFORMANCE_REVIEW.md). Original cached-shadow limits remain110draws /230,000submitted triangles /32textures /26programs. Refreshed frames are now measured separately with exact public shadow-hook counts; a continuous budget is unapproved until hardware profiling. Preserved original caster flags reduce matched pedestrian shadow submissions198,139→147,219 (25.7%). Conservative moving-object culling reduces cached work; the repeated original review peaks97draws /208,637triangles /32textures /26programs. Hardware speedup is not claimed. Earlier Sprint 2 counts and its comparison against static ceilings remain historical evidence.
+
+## Gamified CST–Fort pass — 2026-10-15
+
+Main-pass counts with a cached shadow map (`scripts/capture-districts.mjs`, `?benchmark=1`, Medium, 1440×900, reduced motion, SwiftShader), base `7702bd3` against this branch at the same review poses. Raw data: `screenshots/gamified-after/benchmark-base.json` and `benchmark-after.json`.
+
+| Pose | Draws base → after | Triangles base → after | Textures | Programs base → after |
+|---|---|---|---|---|
+| spawn | 86 → 88 | 229,179 → 230,111 | 40 → 40 | 35 → 41 |
+| station | 68 → 68 | 183,811 → 184,639 | 41 → 41 | 35 → 41 |
+| fort (doorway) | 33 → 35 | 143,500 → 144,432 | 42 → 42 | 35 → 41 |
+| fort-room | 33 → 35 | 134,956 → 135,888 | 42 → 42 | 35 → 41 |
+| return | 106 → 106 | 222,381 → 223,209 | 42 → 42 | 35 → 41 |
+
+- Draws and triangles: the departure board, the furnished room and the four painted panels add at most 2 draws and about 930 triangles at these poses. Furniture is batched into the existing static surface batches, and every board, screen and cork panel shares the one sign-atlas texture and material, so **no texture was added**.
+- Programs rose by 6 in this run, and that is unresolved. Program counts are noisy here: they include whichever Rocketbox characters happen to be visible and the shadow-depth variants compiled so far, and two runs of the base at the same pose gave 26 and 29. A direct comparison of program cache keys at `fort-room` found one certain addition, the gold interaction marker: it uses the shared glow material, but its program differs from the batched glow program in the tone-mapping parameter. The remaining differences at spawn were shadow-depth variants and cast materials. Textures (40–42) and programs were already over the 32 / 26 ceilings before this pass because of the cast (see `STREET_CAST.md`); no ceiling was raised.
+- At the gameplay capture poses the debug overlay (main pass plus any shadow refresh) read: board-close 161 draws / 405,462 triangles (a shadow refresh frame, matching the base's 159 / 404,322 first frame), fort-room close-up 82 / 227,392, kiosk 54 / 163,969, contribution board 37 / 164,477.
+- World load in this container (time to the first canvas, then to the loader clearing), two runs each: base 12.0 / 25.0 s and 15.3 / 30.0 s; this branch 15.1 / 27.7 s and 14.1 / 27.2 s. With reduced motion: base 12.7 / 18.9 s and 13.8 / 20.0 s; this branch 13.3 / 19.9 s and 13.9 / 19.9 s. No measurable change. Several existing browser tests wait 12 s for the canvas or the loader and fail intermittently on both branches for that reason.
+- Interaction targeting now runs only after 5 cm of movement or a turn instead of every frame. No frame-time claim is made from software rendering.

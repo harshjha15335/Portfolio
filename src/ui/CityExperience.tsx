@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { districts, journey, type District } from '../data/city';
 import { experience, achievements } from '../data/experience';
 import { projects } from '../data/projects';
@@ -31,14 +31,16 @@ export function CityMap({ position, canRide, onTravel, onOpen, onRide, onClose }
   </Modal>;
 }
 
-export function DistrictExperience({ district: d, reduced, resumeAvailable, onClose, onProject, onQuick, onContact, onDestination }: {
+export function DistrictExperience({ district: d, reduced, resumeAvailable, onClose, onProject, onQuick, onContact, onDestination, onTour, onFinale }: {
   district: District; reduced: boolean; resumeAvailable: boolean; onClose: () => void;
   onProject: (id: string) => void; onQuick: () => void; onContact: () => void; onDestination: (id: string) => void;
+  /** Present when this guide offers an in-world guided tour. */
+  onTour?: () => void; onFinale?: () => void;
 }) {
   const [inside, setInside] = useState(false);
   return <Modal title={d.title} onClose={onClose} className={`district-modal district-${d.id}`}>
     <div className="district-heading" style={{ '--district-color': d.color } as CSSProperties}><span className="eyebrow">STOP {String(districts.indexOf(d) + 1).padStart(2, '0')} / MINI MUMBAI</span><h2>{d.title}</h2><p>{d.descriptor}</p></div>
-    <div className="guide-dialogue"><div className="guide-avatar" aria-hidden="true">☻</div><div><span className="eyebrow">{d.guide}</span><p>“{d.greeting}”</p><div className="guide-actions"><button className="primary-button" onClick={() => setInside(true)}>{d.id === 'filmcity' ? 'TAKE A SEAT →' : 'SHOW ME AROUND →'}</button><button className="text-button" onClick={onQuick}>QUICK VIEW ↗</button></div></div></div>
+    <div className="guide-dialogue"><div className="guide-avatar" aria-hidden="true">☻</div><div><span className="eyebrow">{d.guide}</span><p>“{d.greeting}”</p><div className="guide-actions"><button className="primary-button" onClick={() => setInside(true)}>{d.id === 'filmcity' ? 'TAKE A SEAT →' : 'SHOW ME AROUND →'}</button>{onTour && <button className="primary-button" onClick={onTour}>TAKE THE GUIDED TOUR ↗</button>}<button className="text-button" onClick={onQuick}>QUICK VIEW ↗</button></div></div></div>
     {inside && <div className="district-content">
       {d.id === 'cst' && <><h3>Welcome to Harsh’s city.</h3><p>{portfolio.tagline} {portfolio.education}. Expected graduation: {portfolio.graduation}.</p><div className="district-stop-list">{districts.filter(item => item.id !== 'cst').map(item => <button key={item.id} onClick={() => onDestination(item.id)}>{item.title}<span>↗</span></button>)}</div></>}
       {d.id === 'fort' && <><ResearchExhibition/><h3>Scientific Python, developed upstream.</h3><p>{experience[0].description}</p><ul>{experience[0].highlights.map(h => <li key={h}>{h}</li>)}</ul><div className="district-metrics">{projects[0].metrics.map(m => <a key={m.label} href={m.source} target="_blank" rel="noreferrer"><strong>{m.value}</strong><span>{m.label} ↗</span></a>)}</div><button className="primary-button" onClick={() => onProject('ffprime')}>OPEN FFPRIME CASE STUDY ↗</button></>}
@@ -48,7 +50,7 @@ export function DistrictExperience({ district: d, reduced, resumeAvailable, onCl
       {d.id === 'dadar' && <div className="journey-platforms">{journey.map((stop, i) => <article key={stop.title}><b>{String(i + 1).padStart(2, '0')}</b><div><span className="eyebrow">{stop.date}</span><h3>{stop.title}</h3><p>{stop.detail}</p></div></article>)}</div>}
       {d.id === 'worli' && <><h3>Numbers with their receipts.</h3><p>Résumé claims, upstream checks, and repository audits stay distinct. Seeded demos are never presented as production outcomes.</p><div className="signal-evidence">{achievements.map(a => <article key={a.title}><h3>{a.title}</h3><p>{a.detail}</p><a href={a.source} target="_blank" rel="noreferrer">SOURCE ↗</a></article>)}</div><div className="district-metrics">{[projects[0], projects[1]].flatMap(p => p.metrics.filter(m => m.source).map(m => <a key={p.id + m.label} href={m.source} target="_blank" rel="noreferrer"><strong>{m.value}</strong><span>{p.title} / {m.label} ↗</span></a>))}</div></>}
       {d.id === 'juhu' && <><h3>The person behind the systems.</h3><p>{portfolio.name}. {portfolio.education}. Expected graduation: {portfolio.graduation}.</p><p>Interested in scientific computing, software engineering, and applied AI. Building tools that make complicated ideas usable.</p><div className="case-links">{resumeAvailable && <a className="primary-button" href={portfolio.resume} target="_blank" rel="noreferrer">DOWNLOAD RÉSUMÉ ↓</a>}<a href={portfolio.github} target="_blank" rel="noreferrer">GITHUB ↗</a><a href={portfolio.linkedin} target="_blank" rel="noreferrer">LINKEDIN ↗</a><button onClick={onContact}>SAY HELLO ↗</button></div></>}
-      {d.id === 'filmcity' && <Theatre reduced={reduced} onContact={onContact} />}
+      {d.id === 'filmcity' && <Theatre reduced={reduced} onContact={onContact} onExit={onClose} onFinale={onFinale} />}
     </div>}
   </Modal>;
 }
@@ -64,7 +66,7 @@ const scenes = [
   { name: 'Next chapter', title: 'Keep building. Keep validating.', body: 'Scientific computing, useful AI, and software that stands up to real constraints. The next project starts with a good question.', label: 'AN INTEREST, NOT A CLAIM OF FUTURE WORK' },
   { name: 'Until next time', title: 'Let’s build something.', body: 'For engineering opportunities, research, or a good technical conversation. Thanks for taking the scenic route.', label: 'THE END / OR THE BEGINNING' },
 ];
-function Theatre({ reduced, onContact }: { reduced: boolean; onContact: () => void }) {
+function Theatre({ reduced, onContact, onExit, onFinale }: { reduced: boolean; onContact: () => void; onExit: () => void; onFinale?: () => void }) {
   const root = useRef<HTMLElement>(null);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -76,6 +78,13 @@ function Theatre({ reduced, onContact }: { reduced: boolean; onContact: () => vo
     const timer = window.setInterval(() => setIndex(current => Math.min(current + 1, scenes.length - 1)), 7000);
     return () => clearInterval(timer);
   }, [playing, index]);
+  useEffect(() => { if (index === scenes.length - 1) onFinale?.(); }, [index, onFinale]);
   const scene = scenes[index];
-  return <section ref={root} tabIndex={-1} className="talkies" aria-label="Film City story theatre"><div className="projector-beam" aria-hidden="true"/><div className="cinema-screen" aria-live={playing ? 'off' : 'polite'}><span className="caption">{scene.label}</span><span className="scene-number" aria-hidden="true">0{index + 1}</span><h3>{scene.title}</h3><p>{scene.body}</p>{index === scenes.length - 1 && <button className="primary-button" onClick={onContact}>GET IN TOUCH ↗</button>}</div><div className="cinema-seats" aria-hidden="true">▰ ▰ ▰ ▰ ▰ ▰ ▰</div><nav className="theatre-controls" aria-label="Story controls"><button disabled={index === 0} onClick={() => setIndex(i => i - 1)}>← PREVIOUS</button><button aria-pressed={playing} onClick={() => setPlaying(p => !p)}>{playing ? 'PAUSE' : 'AUTOPLAY'}</button><span>{index + 1} / {scenes.length} · {scene.name}</span><button disabled={index === scenes.length - 1} onClick={() => setIndex(i => i + 1)}>NEXT →</button></nav><div className="scene-selector">{scenes.map((s, i) => <button key={s.name} aria-label={`Scene ${i + 1}: ${s.name}`} aria-current={i === index ? 'step' : undefined} onClick={() => setIndex(i)}>{String(i + 1).padStart(2, '0')}</button>)}</div><p className="caption">TEXT-LED CINEMA / NO AUTOPLAY AUDIO · EXIT WITH ESC</p></section>;
+  // Keyboard: ← → step, Space plays or pauses, Home restarts, End skips to the final contact scene.
+  const onKey = (event: ReactKeyboardEvent) => {
+    if ((event.target as HTMLElement).closest('a,input')) return;
+    const keys: Record<string, () => void> = { ArrowRight: () => setIndex(i => Math.min(i + 1, scenes.length - 1)), ArrowLeft: () => setIndex(i => Math.max(i - 1, 0)), ' ': () => setPlaying(p => !p), Home: () => { setIndex(0); setPlaying(false); }, End: () => { setIndex(scenes.length - 1); setPlaying(false); } };
+    const action = keys[event.key]; if (action && !((event.target as HTMLElement).tagName === 'BUTTON' && event.key === ' ')) { event.preventDefault(); action(); }
+  };
+  return <section ref={root} tabIndex={-1} className="talkies" aria-label="Film City story theatre" onKeyDown={onKey}><div className="projector-beam" aria-hidden="true"/><div className="cinema-screen" aria-live={playing ? 'off' : 'polite'}><span className="caption">{scene.label}</span><span className="scene-number" aria-hidden="true">0{index + 1}</span><h3>{scene.title}</h3><p>{scene.body}</p>{index === scenes.length - 1 && <button className="primary-button" onClick={onContact}>GET IN TOUCH ↗</button>}</div><div className="cinema-seats" aria-hidden="true">▰ ▰ ▰ ▰ ▰ ▰ ▰</div><nav className="theatre-controls" aria-label="Story controls"><button disabled={index === 0} onClick={() => setIndex(i => i - 1)}>← PREVIOUS</button><button aria-pressed={playing} onClick={() => setPlaying(p => !p)}>{playing ? 'PAUSE' : 'AUTOPLAY'}</button><span>{index + 1} / {scenes.length} · {scene.name}</span><button disabled={index === scenes.length - 1} onClick={() => setIndex(i => i + 1)}>NEXT →</button><button onClick={() => { setIndex(0); setPlaying(false); }}>↺ RESTART</button><button disabled={index === scenes.length - 1} onClick={() => { setIndex(scenes.length - 1); setPlaying(false); }}>SKIP TO THE END ⇥</button><button onClick={onExit}>EXIT THEATRE</button></nav><div className="scene-selector">{scenes.map((s, i) => <button key={s.name} aria-label={`Scene ${i + 1}: ${s.name}`} aria-current={i === index ? 'step' : undefined} onClick={() => setIndex(i)}>{String(i + 1).padStart(2, '0')}</button>)}</div><p className="caption">TEXT-LED CINEMA / NO AUDIO · ← → STEP · SPACE PLAY · HOME RESTART · END SKIP · ESC EXIT</p></section>;
 }

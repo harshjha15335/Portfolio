@@ -45,3 +45,25 @@ Keep the validated systems and verified existing portfolio behavior. Do not expa
 ## Sprint 2 checkpoint
 
 See [Sprint 2 review](ART_PRODUCTION_SPRINT_2.md) for matched native captures, the authored café and interactive Fort exhibition. Realistic NPCs, scanned surface assets and representative laptop profiling remain acceptance blockers. Earlier sprint measurements remain historical.
+
+## Gamified CST–Fort pass — 2026-10-15
+
+Matched before/after captures (1440×900, Medium, reduced motion). Before: `screenshots/gamified-baseline/`. After: `screenshots/gamified-after/`.
+
+| Before | After |
+|---|---|
+| ![Fort room before](screenshots/gamified-baseline/1440-fort-room.jpg) | ![Fort room after](screenshots/gamified-after/1440-fort-wide.jpg) |
+| ![Station before](screenshots/gamified-baseline/1440-spawn.jpg) | ![Departure board](screenshots/gamified-after/1440-board-close.jpg) |
+
+More after captures: [kiosk](screenshots/gamified-after/1440-fort-kiosk.jpg), [contribution board](screenshots/gamified-after/1440-fort-pins.jpg), [workstation close-up](screenshots/gamified-after/1440-fort-room.jpg), [departure panel](screenshots/gamified-after/1440-panel-departures.jpg), [waypoint](screenshots/gamified-after/1440-waypoint.jpg), [gradient check](screenshots/gamified-after/1440-panel-gradient.jpg), [journal](screenshots/gamified-after/1440-journal.jpg).
+
+What changed, judged from the captures:
+
+- The Fort room reads as a working research office instead of an empty box: three pendant lamps, a layered dhurrie, two task chairs, banker's lamps, two monitors with live content (the Stone-convention Q₂ₘ table and the quadrupole's angular pattern; the FFprime case study strip), a cork board with the five merged PRs strung in order, and a kiosk by the door.
+- The CST pavement has a two-sided departure indicator in the style of a suburban-railway board, readable from the spawn approach.
+
+Still weak, honestly stated:
+
+- Furniture is primitive-built (boxes and cylinders). Chairs and lamps are recognisable but not realistic at close range.
+- Room lighting is the same baked-ambient setup; the pendants are emissive shapes, not light sources.
+- The orientation card covers part of the view on desktop until it is skipped or finished.

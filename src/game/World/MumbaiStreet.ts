@@ -8,6 +8,9 @@ import * as CANNON from 'cannon-es';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {sampleMultipole} from '../../research/multipoles';
+import {quadrupoleToSpherical,sphericalQuadrupolePotential,type Tensor} from '../../research/stone';
+import evidence from '../../research/evidence.json';
+import {DEPARTURES} from '../../data/departures';
 import {createHeroStorefront} from './architecture/HeroStorefront';
 import {createBenchmarkFacade} from './architecture/BenchmarkFacade';
 import {BakedKit} from './architecture/BakedKit';
@@ -28,7 +31,7 @@ import { RoadTraffic, pedestrianGreen, type LoopVehicle } from './traffic/RoadTr
 import type { CrowdAgent } from '@recast-navigation/core';
 
 type Triple = [number, number, number];
-export interface StreetInteraction { id: string; position: THREE.Vector3; label: string }
+export interface StreetInteraction { id: string; position: THREE.Vector3; label: string; /** Metres; the default is the street's 3.8. */ reach?: number }
 
 
 /** Original modular Mumbai-inspired CST/Fort lane. One art-directed vertical slice. */
@@ -179,6 +182,18 @@ export class MumbaiStreet {
     const key = 'sign-atlas';
     if (!this.materials.has(key)) this.materials.set(key, new THREE.MeshBasicMaterial({ map: this.signAtlas, side: THREE.DoubleSide }));
     const mesh = new THREE.Mesh(geometry, this.materials.get(key)!); mesh.position.set(...position); parent.add(mesh); this.signs.push(mesh); return mesh;
+  }
+  /** Rows 14–15 of the sign atlas hold up to four 512×256 painted panels (boards and screens); signs fill rows 0–13. */
+  private panelIndex = 0;
+  private panel(parent: THREE.Object3D, draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => void, position: Triple, width: number) {
+    const index = this.panelIndex++; if (index > 3) throw new Error('Sign atlas panel rows are full');
+    if (this.signIndex > 56 && import.meta.env.DEV) console.warn('[signs] atlas rows overlap the panel rows');
+    const ctx = this.signCanvas.getContext('2d')!, x = index * 512, y = 14 * 128;
+    ctx.save(); ctx.translate(x, y); ctx.beginPath(); ctx.rect(0, 0, 512, 256); ctx.clip(); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; draw(ctx, 512, 256); ctx.restore();
+    const geometry = new THREE.PlaneGeometry(width, width / 2), uv = geometry.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, (index + uv.getX(i)) / 4, 1 - (16 - uv.getY(i) * 2) / 16);
+    if (!this.materials.has('sign-atlas')) this.materials.set('sign-atlas', new THREE.MeshBasicMaterial({ map: this.signAtlas, side: THREE.DoubleSide }));
+    const mesh = new THREE.Mesh(geometry, this.materials.get('sign-atlas')!); mesh.position.set(...position); parent.add(mesh); this.signs.push(mesh); return mesh;
   }
   private makeArch() {
     const shape = new THREE.Shape();
@@ -550,11 +565,47 @@ export class MumbaiStreet {
     }
     this.stationHost=this.person([5.8,0,8.3],'#829382',false,false,'host');
     this.interactions.push({id:'cst',position:new THREE.Vector3(5.8,1.45,8.3),label:'Talk to the station host'});
+    this.departureBoard();
     const board=this.sign(this.group,'FORT ROAD →','फोर्ट',[6.3,2.9,7.8],1.2,'#3e5c51');board.rotation.y=-.1;
     // Arrival canopy, ribs and transport notice board.
     this.box([10,.09,1.4],[0,3.7,15.82],'#80765e');for(const x of [-4.5,4.5])this.cylinder(.06,3.65,[x,1.83,15.5],'#69756a');
     // A cared-for monument: lighter ageing than the street so arches and carving stay legible.
     for(const mesh of this.statics.slice(firstStatic))for(const material of [mesh.material].flat())if(material.userData.weather===undefined)material.userData.weather=.4;
+  }
+  /** A two-sided station indicator hung over the pavement: the portfolio's navigation system, in the world. */
+  private departureBoard() {
+    const g=new THREE.Group();g.position.set(4.95,0,5.6);this.group.add(g);
+    for(const x of [-.9,.9])this.cylinder(.045,3.25,[x,1.62,0],'#3d4a46',g);
+    this.box([1.94,.07,.1],[0,3.24,0],'#3d4a46',false,g,false,false,'metal');
+    this.box([1.86,.98,.12],[0,2.62,0],'#1c2422',false,g,false,false,'metal');
+    const draw=(ctx:CanvasRenderingContext2D,w:number,h:number)=>{
+      ctx.fillStyle='#0f1413';ctx.fillRect(0,0,w,h);ctx.fillStyle='#d9a441';ctx.fillRect(0,0,w,34);
+      ctx.fillStyle='#14110b';ctx.font='bold 19px Arial, sans-serif';ctx.textAlign='left';ctx.fillText('DEPARTURES · प्रस्थान · सुटणाऱ्या गाड्या',12,24);
+      ctx.textAlign='right';ctx.fillText('CST',w-12,24);
+      DEPARTURES.forEach((d,i)=>{const y=58+i*26.5;ctx.textAlign='left';ctx.fillStyle='#f0b64a';ctx.font='bold 17px "Courier New", monospace';ctx.fillText(d.time,12,y);
+        ctx.fillStyle='#f4e7c6';ctx.font='bold 18px Arial, sans-serif';ctx.fillText(d.category.toUpperCase(),84,y,150);ctx.fillStyle='#9fb5a8';ctx.font='15px Arial, sans-serif';ctx.fillText(d.marathi,246,y,110);
+        ctx.textAlign='right';ctx.fillStyle='#d6cfbd';ctx.font='15px Arial, sans-serif';ctx.fillText(d.via,w-12,y);ctx.fillStyle='#2b3532';ctx.fillRect(10,y+8,w-20,1);});
+    };
+    // Both faces show the same board; walking either way up Fort Road you can read it.
+    const front=this.panel(g,draw,[0,2.62,.065],1.78),back=new THREE.Mesh(front.geometry.clone(),front.material);back.position.set(0,2.62,-.065);back.rotation.y=Math.PI;g.add(back);this.signs.push(back);
+    for(const x of [-.86,.86])this.box([.06,.06,.06],[x,3.2,0],'#f4d590',false,g,true);
+    this.interactions.push({id:'cst-board',position:new THREE.Vector3(4.95,2.62,5.6),label:'Read the departure board',reach:4.6});
+  }
+  /** Office chair: five-star base, gas post, seat and back. Small enough to stay non-solid. */
+  private chair(parent:THREE.Object3D,x:number,z:number,turn:number) {
+    const c=new THREE.Group();c.position.set(x,0,z);c.rotation.y=turn;parent.add(c);
+    for(let i=0;i<5;i++){const leg=this.box([.04,.035,.3],[0,.06,0],'#2a2f2e',false,c,false,false,'metal');leg.rotation.y=i*Math.PI*2/5;leg.translateZ(.15);}
+    this.cylinder(.025,.36,[0,.25,0],'#5a5f5c',c);
+    this.box([.48,.07,.46],[0,.47,0],'#304a45',false,c,false,false,'fabric');
+    this.box([.44,.5,.06],[0,.8,.22],'#304a45',false,c,false,false,'fabric');
+    for(const sx of [-.24,.24])this.box([.04,.03,.3],[sx,.66,.02],'#2a2f2e',false,c,false,false,'metal');
+  }
+  /** Desk monitor: bezel, painted screen, neck and foot. The screen is a sign-atlas panel or sign strip. */
+  private monitor(parent:THREE.Object3D,x:number,y:number,z:number,screen:(at:Triple,width:number)=>THREE.Mesh) {
+    this.box([1.04,.62,.045],[x,y,z],'#16191a',false,parent,false,false,'metal');
+    screen([x,y,z+.026],.96);
+    this.box([.07,.24,.05],[x,y-.4,z-.03],'#2a2e2e',false,parent,false,false,'metal');
+    this.box([.36,.025,.22],[x,y-.52,z-.02],'#2a2e2e',false,parent,false,false,'metal');
   }
   private researchRoom() {
     const g = new THREE.Group(); g.position.set(-7, 0, -34); g.rotation.y = Math.PI / 2; this.group.add(g);
@@ -579,7 +630,16 @@ export class MumbaiStreet {
     this.box([8.5, 3, .3], [0, 1.5, -6.5], '#c4c2a9', true, g);
     for (const x of [-4.25, 4.25]) this.box([.3, 3, 6.5], [x, 1.5, -3.3], '#bbc0ac', true, g);
     this.box([8.5, .12, 6.5], [0, 3.1, -3.3], '#6b7875', false, g);
-    this.box([1.2, .08, .45], [0, 2.85, -2], '#eee1b1', false, g, true);
+    // Three warm pendant lamps over the work table replace a flat ceiling panel.
+    for (const x of [-2.2, 0, 2.2]) {
+      this.wire(new THREE.Vector3(x, 3.04, -3.6), new THREE.Vector3(x, 2.6, -3.6), .012, '#2e3331', g);
+      this.cylinder(.2, .16, [x, 2.52, -3.6], '#2f4a43', g);
+      this.cylinder(.16, .02, [x, 2.43, -3.6], '#ffe2b0', g, true);
+    }
+    // A worn dhurrie under the work area anchors the room and breaks up the stone floor.
+    this.box([3.4, .012, 2.3], [0, .048, -2.7], '#8a4434', false, g, false, false, 'fabric');
+    this.box([3.0, .013, 1.9], [0, .05, -2.7], '#b0814f', false, g, false, false, 'fabric');
+    this.box([2.7, .014, 1.6], [0, .052, -2.7], '#7c3b2f', false, g, false, false, 'fabric');
     this.sign(g, 'FFPRIME / OPEN SCIENCE', 'फोर्ट', [0, 2.76, -6.22], 2.5, '#344d48', '#dce2c8');
     this.sign(g, 'GSOC 2026 · THEOCHEM', 'Research, reviewed upstream', [-2.6, 2.76, -6.22], 2.5);
     this.sign(g, '5 MERGED PULL REQUESTS', 'GitHub verified · 10 Oct 2026', [2.6, 2.76, -6.22], 2.5);
@@ -615,17 +675,63 @@ export class MumbaiStreet {
       for(let n=0;n<10;n++){this.box([.31,.32,.09],[3.55,y+.18,-4.18+n*.23],['#87988c','#aa9271','#677e80'][n%3],false,g);this.box([.02,.018,.09],[3.385,y+.26,-4.18+n*.23],'#d3c7a9',false,g);}
     }
     const notebook=this.box([.28,.02,.2],[.25,.874,-4.6],'#c1b28f',false,g);notebook.rotation.y=.2;
-    this.box([.8,.09,.6],[2.7,.46,-4.4],'#6c7769',false,g);this.box([.8,.55,.08],[2.7,.75,-4.1],'#6c7769',false,g);
-    for(const x of [2.4,3])this.box([.055,.45,.45],[x,.225,-4.4],'#58655b',false,g);
-    this.cylinder(.12,.32,[-3.2,.16,-5.8],'#a88965',g);this.shape(this.leafGeometry,[.5,.7,.5],[-3.2,.68,-5.8],'#718763',g);
-    for (const x of [-1.25, 1.25]) {
-      this.box([1, .7, .07], [x, 1.25, -4.75], '#172e32', false, g);
-      this.sign(g, x < 0 ? 'INSPECT THE FIELD' : 'FOLLOW THE SOURCE', x < 0 ? 'Interactive teaching exhibit' : 'Five reviewed contributions', [x, 1.25, -4.69], .9);
-      this.box([.07, .3, .15], [x, .95, -4.75], '#283638', false, g);
+    for (const x of [-1.25, 1.25]) this.chair(g, x, -3.85, Math.PI + (x < 0 ? .25 : -.2));
+    // Banker's lamps between the monitors: brass stem, green shade, lit underside.
+    for (const x of [-.45, .45]) {
+      this.cylinder(.07, .02, [x, .87, -4.95], '#8f7445', g); this.cylinder(.012, .22, [x, .98, -4.95], '#8f7445', g);
+      this.box([.3, .07, .12], [x, 1.1, -4.9], '#2f5a48', false, g, false, false, 'glass'); this.box([.26, .012, .09], [x, 1.062, -4.9], '#ffe3a8', false, g, true);
     }
+    this.cylinder(.12,.32,[-3.2,.16,-5.8],'#a88965',g);this.shape(this.leafGeometry,[.5,.7,.5],[-3.2,.68,-5.8],'#718763',g);
+    // Left monitor: the coordinate workstation, showing the quadrupole's angular pattern from the Stone-convention formula.
+    this.monitor(g, -1.25, 1.42, -4.85, (at, width) => this.panel(g, (ctx, w, h) => {
+      ctx.fillStyle = '#0d1b1a'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#7fc4b0'; ctx.font = 'bold 17px "Courier New", monospace'; ctx.fillText('COORDINATE WORKSTATION', 16, 28);
+      ctx.fillStyle = '#9db5ad'; ctx.font = '14px "Courier New", monospace'; ctx.fillText('Θ (Cartesian) → Q₂ₘ (real spherical)', 16, 50);
+      const theta: Tensor = [[.4, .25, -.3], [.25, -1.1, .15], [-.3, .15, .7]], q = quadrupoleToSpherical(theta);
+      ['Q20', 'Q21c', 'Q21s', 'Q22c', 'Q22s'].forEach((name, i) => { ctx.fillStyle = '#c9dcd4'; ctx.fillText(`${name.padEnd(5)} ${q[i] >= 0 ? ' ' : ''}${q[i].toFixed(4)}`, 16, 84 + i * 24); });
+      ctx.fillStyle = '#6f8f86'; ctx.fillText('Stone convention · FFprime', 16, 232);
+      const pattern = Array.from({ length: 121 }, (_, i) => { const a = i / 120 * Math.PI * 2; return { a, v: sphericalQuadrupolePotential(q, [Math.sin(a), 0, Math.cos(a)]) }; }), peak = Math.max(...pattern.map(p => Math.abs(p.v)));
+      for (const [sign, colour] of [[1, '#4fb59a'], [-1, '#c8734a']] as const) { ctx.beginPath(); pattern.forEach(({ a, v }, i) => { const r = 14 + 84 * Math.max(0, sign * v) / peak, px = 385 + r * Math.sin(a), py = 132 - r * Math.cos(a); if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); }); ctx.closePath(); ctx.fillStyle = colour; ctx.globalAlpha = .75; ctx.fill(); ctx.globalAlpha = 1; }
+      ctx.strokeStyle = '#38524b'; ctx.beginPath(); ctx.moveTo(385, 26); ctx.lineTo(385, 238); ctx.moveTo(275, 132); ctx.lineTo(495, 132); ctx.stroke();
+    }, at, width));
+    // Right monitor: the FFprime terminal, the entry to the case study.
+    this.monitor(g, 1.25, 1.42, -4.85, (at, width) => { this.box([width, width / 2, .004], at, '#10201d', false, g, false, false, 'solid'); const strip = this.sign(g, 'FFPRIME · CASE STUDY', 'Electrostatics beyond atomic charges', [at[0], at[1] + .06, at[2] + .004], width * .94, '#10201d', '#e6dcbc'); return strip; });
+    // Contribution board on the left wall: the five merged upstream pull requests, pinned and strung in order.
+    const pins = new THREE.Group(); pins.position.set(-4.07, 0, -2.2); pins.rotation.y = Math.PI / 2; g.add(pins);
+    this.box([2.5, 1.36, .05], [0, 1.68, -.02], '#6d5236', false, pins, false, false, 'wood');
+    this.panel(pins, (ctx, w, h) => {
+      ctx.fillStyle = '#b8895a'; ctx.fillRect(0, 0, w, h); const grain = seededRandom('fort-cork'); for (let i = 0; i < 1400; i++) { ctx.fillStyle = i % 2 ? 'rgba(90,55,25,.2)' : 'rgba(255,230,190,.14)'; ctx.fillRect(grain() * w, grain() * h, 1 + grain() * 2, 1 + grain() * 2); }
+      ctx.fillStyle = '#20302c'; ctx.font = 'bold 18px Arial, sans-serif'; ctx.fillText('FOLLOW THE SOURCE · 5 MERGED PULL REQUESTS', 14, 26);
+      const cards = evidence.pullRequests.map((pr, i) => ({ pr, x: 14 + (i % 3) * 166, y: 44 + Math.floor(i / 3) * 104 }));
+      ctx.strokeStyle = '#a3242b'; ctx.lineWidth = 2; ctx.beginPath(); cards.forEach(({ x, y }, i) => { if (i) ctx.lineTo(x + 76, y + 8); else ctx.moveTo(x + 76, y + 8); }); ctx.stroke();
+      for (const { pr, x, y } of cards) {
+        ctx.fillStyle = '#f3ecd9'; ctx.fillRect(x, y, 152, 92); ctx.fillStyle = '#a3242b'; ctx.beginPath(); ctx.arc(x + 76, y + 8, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#2d3f39'; ctx.font = 'bold 20px Arial, sans-serif'; ctx.fillText(`#${pr.number}`, x + 8, y + 34);
+        ctx.font = '11px Arial, sans-serif'; const words = pr.title.replace(/^Add /, '').split(' '); let line = '', ly = y + 52;
+        for (const word of words) { if (ctx.measureText(`${line} ${word}`).width > 136) { ctx.fillText(line, x + 8, ly); line = word; ly += 13; } else line = line ? `${line} ${word}` : word; } if (ly < y + 88) ctx.fillText(line, x + 8, ly);
+      }
+      ctx.fillStyle = '#20302c'; ctx.font = '12px Arial, sans-serif'; ctx.fillText(`theochem/ffprime · verified ${evidence.verifiedOn}`, 346, 244);
+    }, [0, 1.68, .01], 2.36);
+    // Gradient-check kiosk by the door: the finite-difference activity.
+    const kiosk = new THREE.Group(); kiosk.position.set(3.55, 0, -1.0); kiosk.rotation.y = -Math.PI / 2; g.add(kiosk);
+    this.box([.5, .05, .4], [0, .025, 0], '#2a2e2e', true, kiosk, false, false, 'metal'); this.box([.12, 1.0, .12], [0, .52, 0], '#3c4643', false, kiosk, false, false, 'metal');
+    const head = new THREE.Group(); head.position.set(0, 1.28, .03); head.rotation.x = -.32; kiosk.add(head);
+    this.box([.86, .5, .06], [0, 0, 0], '#16191a', false, head, false, false, 'metal');
+    this.panel(head, (ctx, w, h) => {
+      ctx.fillStyle = '#121a19'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#e7c46a'; ctx.font = 'bold 20px "Courier New", monospace'; ctx.fillText('GRADIENT CHECK', 18, 34);
+      ctx.fillStyle = '#a8bdb5'; ctx.font = '14px "Courier New", monospace'; ctx.fillText('E = −∇V   ·   V = rᵀQr / r⁵', 18, 60); ctx.fillText('central differences, h = 1e-4', 18, 80);
+      ['A  5(rᵀQr)r/r⁷ −  Qr/r⁵', 'B  3(rᵀQr)r/r⁷ − 2Qr/r⁵', 'C  5(rᵀQr)r/r⁷ − 2Qr/r⁵'].forEach((line, i) => { ctx.fillStyle = '#d9e3de'; ctx.fillText(line, 18, 118 + i * 30); ctx.fillStyle = '#e7c46a'; ctx.fillText('[ ? ]', 430, 118 + i * 30); });
+      ctx.fillStyle = '#7e9790'; ctx.fillText('Which one passes?  Press E', 18, 226);
+    }, [0, 0, .032], .8);
     this.person([-5.9, 0, -35.8], '#718d86', false, false, 'office-woman');
     this.interactions.push({ id: 'fort', position: new THREE.Vector3(-5.9, 1.4, -35.8), label: 'Talk to the research fellow' });
-    this.interactions.push({ id: 'ffprime', position: new THREE.Vector3(-11.8, 1.3, -34), label: 'Read the FFprime research' });
+    g.updateMatrixWorld(true); const at = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyMatrix4(g.matrixWorld);
+    this.interactions.push(
+      { id: 'ffprime', position: at(1.25, 1.42, -4.85), label: 'Read the FFprime research' },
+      { id: 'fort-workstation', position: at(-1.25, 1.42, -4.85), label: 'Use the coordinate workstation' },
+      { id: 'fort-field', position: at(-2.45, 1.08, -4.46), label: 'Inspect the field table' },
+      { id: 'fort-source', position: at(-4.05, 1.68, -2.2), label: 'Follow the five merged pull requests' },
+      { id: 'fort-gradient', position: at(3.5, 1.3, -1.0), label: 'Run the gradient check' },
+      ...[0, 1, 2].map(i => ({ id: `fort-panel-${i}`, position: at([-2.8, 0, 2.8][i], 1.7, -6.2), label: `Read panel 0${i + 1} · ${['Moments → potential', 'Conventions → correctness', 'Derivative → validation'][i]}` })));
     const light = new THREE.PointLight('#ffe5ba', 10, 9, 2); light.position.set(-10, 2.5, -34); this.group.add(light);
   }
   private streetDetails() {

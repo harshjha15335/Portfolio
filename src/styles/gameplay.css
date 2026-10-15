@@ -1,0 +1,80 @@
+/* Gameplay layer: orientation, guided tours, wayfinding, achievements, journal and exhibit panels. Same ticket palette as city.css. */
+.sr-only { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.orientation-card { position:absolute; right:3.2%; top:136px; width:320px; padding:14px 16px; background:#f3e5c7f2; border:1px solid #283c41; color:#283c41; pointer-events:auto; box-shadow:4px 4px 0 #283c4122; }
+.orientation-head { display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:8px; }
+.orientation-head .text-button { font:9px var(--mono); text-decoration:underline; }
+.orientation-card ol { list-style:none; margin:0; padding:0; display:grid; gap:7px; }
+.orientation-card li { display:grid; grid-template-columns:16px 1fr; gap:6px; font-size:12px; line-height:1.3; }
+.orientation-card li small { display:block; color:#4d5a57; font-size:10.5px; }
+.orientation-card li.done { opacity:.55; }
+.orientation-card li.done strong { text-decoration:line-through; }
+.tour-card { position:absolute; left:50%; bottom:112px; transform:translateX(-50%); width:min(560px,92vw); padding:16px 18px; background:#283536f5; color:#f0e4c9; border:3px solid #f9c847; pointer-events:auto; box-shadow:6px 6px 0 #28353644; }
+.tour-head { display:flex; justify-content:space-between; align-items:center; }
+.tour-head .eyebrow { color:#f9c847; }
+.tour-card h3 { font:600 30px/1.05 var(--display); margin:6px 0 8px; outline:none; }
+.tour-card p { font-size:13.5px; line-height:1.5; }
+.tour-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.tour-actions button { border:1px solid #f0e4c9aa; padding:9px 12px; font:10px var(--mono); }
+.tour-actions button:disabled { opacity:.35; }
+.tour-actions .primary-button { background:#f9c847; color:#283536; border-color:#f9c847; }
+.waypoint { position:absolute; left:50%; top:76px; transform:translateX(-50%); display:flex; align-items:center; gap:12px; padding:8px 12px; background:#f3e5c7f2; border:1px solid #283c41; color:#283c41; pointer-events:auto; }
+.waypoint-arrow { display:inline-grid; place-items:center; width:30px; height:30px; border-radius:50%; background:#283c41; color:#f9c847; font:700 17px var(--mono); transition:transform 140ms linear; }
+.waypoint strong { display:block; font:600 19px/1.1 var(--display); }
+.waypoint small { display:block; font:10px var(--mono); }
+.waypoint button { font:10px var(--mono); padding:6px 8px; border:1px solid #283c41; }
+.achievement-toasts { position:absolute; right:3.2%; bottom:110px; display:grid; gap:8px; pointer-events:none; z-index:6; }
+.achievement-toast { width:270px; padding:12px 14px; background:#283536; color:#f0e4c9; border-left:5px solid #f9c847; animation:toast-in 360ms var(--ease); }
+.achievement-toast .eyebrow { color:#f9c847; }
+.achievement-toast strong { display:block; font:600 22px/1.1 var(--display); }
+.achievement-toast small { display:block; font-size:11.5px; color:#cbbf9f; }
+@keyframes toast-in { from { transform:translateY(12px); opacity:0; } }
+[data-motion="reduced"] .achievement-toast { animation:none; }
+.journal-modal, .exhibit-modal { width:min(980px,94vw); background:#f3e5c7; }
+.journal-head h2 { font:600 clamp(40px,5vw,64px)/1 var(--display); margin:8px 0; }
+.journal-modal section { margin-top:22px; }
+.journal-quest ol, .journal-districts, .journal-achievements { list-style:none; padding:0; margin:10px 0 0; display:grid; gap:6px; }
+.journal-quest li, .journal-districts li { display:grid; grid-template-columns:18px 1fr auto; gap:8px; align-items:center; font-size:14px; }
+.journal-districts li small { display:block; color:#5d655f; font-size:11px; }
+.journal-districts button { font:10px var(--mono); border:1px solid #283c41; padding:6px 9px; }
+.journal-achievements { grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); }
+.journal-achievements li { padding:10px; border:1px solid #283c4144; opacity:.55; }
+.journal-achievements li.done { opacity:1; background:#f9c84733; border-color:#283c41; }
+.journal-achievements small { display:block; font-size:11.5px; }
+li.done > span:first-child { color:#2f7a5f; font-weight:700; }
+.journal-summary { margin-top:12px; padding:12px; background:#283536; color:#f0e4c9; }
+.departure-board header h2, .gradient-check header h2 { font:600 clamp(36px,4.5vw,58px)/1 var(--display); margin:8px 0; }
+.departure-rows { list-style:none; padding:0; margin:18px 0 0; background:#0f1413; border:3px solid #283536; }
+.departure-rows button { width:100%; display:grid; grid-template-columns:70px 1.1fr 1.6fr; gap:12px; align-items:center; padding:11px 14px; text-align:left; color:#f4e7c6; border-bottom:1px solid #2b3532; }
+.departure-rows button:hover, .departure-rows button[aria-pressed="true"] { background:#d9a44133; }
+.departure-time { font:700 15px var(--mono); color:#f0b64a; }
+.departure-rows strong { font:700 15px var(--body); text-transform:uppercase; letter-spacing:.04em; }
+.departure-rows strong small, .departure-place small { display:block; font:11px var(--body); color:#9fb5a8; text-transform:none; letter-spacing:0; }
+.departure-place { font-size:13px; }
+.departure-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:14px; }
+.departure-actions p { width:100%; }
+.departure-actions button { border:1px solid #283c41; padding:11px 14px; font:10px var(--mono); }
+.gradient-candidates { list-style:none; padding:0; margin:16px 0; display:grid; gap:10px; }
+.gradient-candidates li { display:grid; grid-template-columns:1.6fr auto 1.3fr auto; gap:12px; align-items:center; padding:12px; background:#fffaf0; border:1px solid #283c4144; }
+.gradient-candidates code { display:block; font:13px var(--mono); margin-top:4px; }
+.gradient-candidates button { border:1px solid #283c41; padding:8px 10px; font:10px var(--mono); }
+.gradient-candidates button[aria-pressed="true"] { background:#283536; color:#f3e5c7; }
+.gradient-candidates output { font:11px var(--mono); }
+.gradient-candidates output.pass, .gradient-verdict.pass { color:#1f6b50; }
+.gradient-candidates output.fail, .gradient-verdict.fail { color:#a3402b; }
+.gradient-verdict { padding:12px; border-left:4px solid currentColor; background:#fffaf0; }
+.research-report { display:inline-block; margin-top:12px; font:10px var(--mono); text-decoration:underline; }
+@media (max-width:760px) {
+  /* Phones: one line under the ride buttons, so the card never covers the interaction prompt or the walk pad. */
+  .orientation-card { left:12px; right:12px; top:148px; width:auto; padding:9px 12px; }
+  .orientation-head { margin-bottom:4px; }
+  .orientation-card li:not(.next) { display:none; }
+  .orientation-card li small { display:none; }
+  .tour-card { bottom:100px; }
+  .waypoint { top:64px; max-width:92vw; }
+  .gradient-candidates li { grid-template-columns:1fr auto; }
+  .departure-rows button { grid-template-columns:52px 1fr; }
+  .departure-place { grid-column:2; }
+}
+.journal-modal > :not(.modal-top), .exhibit-modal > :not(.modal-top) { padding-left:28px; padding-right:28px; }
+.journal-modal > :last-child, .exhibit-modal > :last-child { padding-bottom:28px; }
+@media (max-width:760px) { .journal-modal > :not(.modal-top), .exhibit-modal > :not(.modal-top) { padding-left:16px; padding-right:16px; } }
