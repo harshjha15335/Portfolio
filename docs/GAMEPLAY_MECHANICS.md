@@ -77,18 +77,38 @@ The potential of a symmetric quadrupole is V = rᵀQr / r⁵ and the field is E 
 |---|---|
 | First Steps | Talking to the station host or reading the departure board |
 | Research Explorer | Opening the Fort contribution board |
-| Finite Differences | Solving the gradient check |
-| Systems Thinker | Hearing the BKC systems engineer out |
-| Skill Collector | Opening the Andheri Tech Bazaar |
+| Finite Differences | Solving the gradient check (opening the kiosk is not enough) |
+| Systems Thinker | A clean, fastest run on the BKC rate-limit console |
+| Skill Collector | Visiting three Andheri skill shops |
 | Builder | Opening any Powai flagship project or the ASTFLOW lab |
-| Time Traveler | Opening the Dadar journey |
+| Time Traveler | Reading all six Dadar platforms |
+| Receipts Checked | Naming the evidence behind all four Worli claims |
+| Said Hello | Using the Juhu contact terminal |
 | Kaali-Peeli Regular | Finishing a metered ride |
 | Film Buff | Reaching the last scene at Film City Talkies |
 | City Explorer | Standing in all nine districts |
 
 The **Discover the Engineer** quest (Fort research → BKC → a Powai project → Andheri → Juhu) ends with a short summary in the journal. It restricts nothing.
 
-The BKC, Andheri and Dadar achievements currently fire on opening the district's guide, because those districts do not yet have their own mechanic. They should move to the district activities when those are built.
+Activities record `<exhibit>:solved` separately from opening the exhibit, so an achievement for an activity needs the activity finished.
+
+## District exhibits (BKC, Andheri, Powai, Dadar, Worli, Juhu, Film City)
+
+`src/data/districtExhibits.ts` (what and where), `src/game/World/districts/exhibits.ts` (the boards), `src/ui/DistrictExhibits.tsx` (the panels).
+
+Every district beyond CST–Fort has free-standing boards facing the road: two posts, a framed board painted with its title, and a low solid base so the board stays visible from the reading spot. A district's boards paint into their own 1024² atlas and merge into one draw. The boards count as obstacles for the pavement crowds. `tests/district-exhibits.test.ts` builds every district and checks that each reading spot is open ground, sees its board and stays clear of the standing people and street lights.
+
+| District | Boards | Activity |
+|---|---|---|
+| BKC | Internship brief, request path, rate-limit console | **Rate-limit console** (`src/game/activities/rateLimit.ts`): a token bucket (burst 5, refill 2/s). Choose 1, 2, 4 or 8 requests a second and whether to back off for the Retry-After second, then ingest 40 pages. Solved by a run with no 429s that is as fast as the best clean run, which is sending at the refill rate. A teaching model, labelled as such, not the internship's code |
+| Andheri | One kiosk per skill shop | Opens that shop |
+| Powai | One board per project, plus ASTFLOW | Opens the project's demo or case study |
+| Dadar | Six platform boards | Step along the journey; read all six |
+| Worli | Four evidence cases | Say whether the claim is a public record or résumé reported, then open the source |
+| Juhu | Notice board, résumé stand, contact terminal | Contact terminal opens the contact card |
+| Film City | Box office, scene board | Seat at the start, or start at any scene |
+
+Each district's guided tour is generated from its boards (`src/data/tours.ts`): the guide's greeting, one framed step per board, then a suggestion for the next district.
 
 ## Film City theatre controls
 
