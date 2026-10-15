@@ -21,7 +21,7 @@ import { districts as directory } from '../data/city';
 import { pickTarget } from '../game/World/interactionTargeting';
 import type { TourView } from '../data/tours';
 import { VisitorBroadphase } from '../game/World/collision/VisitorBroadphase';
-import { resolveBlockers, vehicleBlocker, type Blocker } from '../game/World/collision/DynamicBlockers';
+import { collectStaticBlockers, resolveBlockers, vehicleBlocker, type Blocker } from '../game/World/collision/DynamicBlockers';
 
 interface WorldOptions {
   onNear: (id: string | null, label?: string) => void; onSpeed: (speed: number) => void;
@@ -38,6 +38,8 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 type Mode = 'intro' | 'world' | 'quick';
 /** Radius of the visitor's footprint against traffic and people (the physics body uses .32 m spheres). */
 const VISITOR_RADIUS = .3;
+/** Height of the visitor body's origin when standing on the street (its lowest .32 m sphere touches y = 0). */
+const FLOOR_Y = .33;
 const ORIGIN = new THREE.Vector3();
 
 /** First-person visitor and passenger camera. No personal vehicle or chase camera. */
@@ -339,14 +341,16 @@ export class WorldEngine {
   private pointerUp = () => { this.dragging = null; };
   private noteLook(amount: number) { if (this.looked > .6) return; this.looked += amount; if (this.looked > .6) this.options.onLook?.(); }
   /**
-   * Compile a subtree's shaders off the frame (in parallel where the driver allows) before it is first drawn:
+   * Compile a subtree's shaders before it is first drawn (in parallel where the driver allows):
    * a district built for an arriving ride, or the cast and vehicle models once they load. Compiling them
    * inside the first frame that shows them froze the game for a second or more on Windows drivers.
    */
   private warm(root: THREE.Object3D) {
     if (this.disposed) return;
     const group = new THREE.Group(); root.traverse(o => { if ((o as THREE.Mesh).isMesh) { const c = o.clone(false); c.visible = true; c.matrixWorld.copy(o.matrixWorld); group.add(c); } });
-    void this.renderer.compileAsync(group, this.camera, this.scene).catch(() => { /* Compiled on first draw instead. */ }).finally(() => group.clear());
+    // compile() only queues the programs (the driver links them in parallel where KHR_parallel_shader_compile exists);
+    // compileAsync's readiness polling throws if a material is disposed meanwhile, as retired stand-in figures are.
+    try { this.renderer.compile(group, this.camera, this.scene); } catch { /* Compiled on first draw instead. */ } finally { group.clear(); }
   }
   /** High keeps 1.5× sharpness on dense displays; Medium and phones stop at 1.25× (MSAA on a 1.5× canvas is 2.25× the fill of 1×). */
   private get maxPixelRatio() { return !this.options.mobile && this.renderPreset === 'high' ? 1.5 : 1.25; }
@@ -358,15 +362,33 @@ export class WorldEngine {
     this.renderer.shadowMap.enabled = !this.options.mobile && !this.quality.low && this.renderPreset !== 'low'; this.syncSunBalance(); this.renderer.shadowMap.needsUpdate = true; return true;
   }
   private blockers: Blocker[] = []; private jumpQueued = false;
-  /** Vehicles and people around the visitor this frame, in world space. */
+  /** Vehicles, people and nearby walls around the visitor this frame, in world space. */
   private collectBlockers() {
     const out = this.blockers; out.length = 0; const view = this.camera.position;
     if (this.zone === 0) { this.street.collectBlockers(out, view); this.fortTraffic.collectBlockers(out, ORIGIN, view); } else this.district?.collectBlockers(out, view);
     if (this.transit.visible) out.push(vehicleBlocker(this.ride.kind === 'auto' ? this.auto : this.taxi, undefined, undefined));
+    // Walls last, so a push out of a person never ends inside a wall.
+    const p = this.visitor.position; collectStaticBlockers(out, this.physics.bodies, p.x, p.z, p.y - FLOOR_Y);
     return out;
   }
+  /** True from a jump until the visitor is back on the street floor. */
+  private airborne = false;
+  /**
+   * One 1/60 s step of the visitor: jump, physics, then step out of traffic and people. On foot the visitor
+   * stays on the street floor: the stacked spheres would otherwise ride up the edge of a stall or kerb wall
+   * and climb onto it (and into the awning above). Only a jump leaves the floor.
+   */
+  stepVisitor(blockers: Blocker[]) {
+    const v = this.visitor;
+    if (this.jumpQueued && this.grounded()) { v.velocity.y = 5.4; v.wakeUp(); this.airborne = true; }
+    this.jumpQueued = false;
+    this.physics.step(1 / 60);
+    if (!this.airborne || (v.position.y <= FLOOR_Y + .005 && v.velocity.y <= 0)) { this.airborne = false; v.position.y = FLOOR_Y; if (v.velocity.y > 0) v.velocity.y = 0; }
+    // Traffic and people have no physics bodies: step back out of any the visitor walked into.
+    if (resolveBlockers(v.position, VISITOR_RADIUS, blockers, v.velocity)) v.previousPosition.copy(v.position);
+  }
   /** Standing on something: the lowest sphere rests on the floor or a solid, not rising or falling. */
-  private grounded() { return Math.abs(this.visitor.velocity.y) < .6 && this.visitor.position.y < 2.2 && this.contactBelow(); }
+  private grounded() { return !this.airborne || (Math.abs(this.visitor.velocity.y) < .6 && this.contactBelow()); }
   private contactBelow() {
     for (const c of this.physics.contacts) { const other = c.bi === this.visitor ? c.bj : c.bj === this.visitor ? c.bi : null; if (!other) continue; const n = c.bi === this.visitor ? -c.ni.y : c.ni.y; if (n > .5) return true; }
     return this.visitor.position.y < .36;
@@ -425,11 +447,7 @@ export class WorldEngine {
             if (forward || strafe) this.visitor.wakeUp();
             const blend = 1 - Math.exp(-12 / 60);
             this.visitor.velocity.x += (velocity.x - this.visitor.velocity.x) * blend; this.visitor.velocity.z += (velocity.z - this.visitor.velocity.z) * blend;
-            if (this.jumpQueued && this.grounded()) { this.visitor.velocity.y = 5.4; this.visitor.wakeUp(); }
-            this.jumpQueued = false;
-            this.physics.step(1 / 60); this.accumulator -= 1 / 60;
-            // Traffic and people have no physics bodies: step back out of any the visitor walked into.
-            if (resolveBlockers(this.visitor.position, VISITOR_RADIUS, blockers, this.visitor.velocity)) this.visitor.previousPosition.copy(this.visitor.position);
+            this.stepVisitor(blockers); this.accumulator -= 1 / 60;
           }
           if (this.visitor.position.y < -2) this.reset();
           this.gait += Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z) * physicsDelta * 3;

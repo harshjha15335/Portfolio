@@ -197,9 +197,9 @@ function RouteMap({ routes, route, from, to }: { routes: Route[]; route: Route; 
     {Array.from({ length: Math.floor(w / 40) + 1 }, (_, i) => <line key={`v${i}`} x1={minX + i * 40} x2={minX + i * 40} y1={minY} y2={minY + h} className="map-grid" />)}
     {Array.from({ length: Math.floor(h / 40) + 1 }, (_, i) => <line key={`h${i}`} y1={minY + i * 40} y2={minY + i * 40} x1={minX} x2={minX + w} className="map-grid" />)}
     {routes.map(r => <polyline key={r.routeId} points={r.mapPathPoints.map(p => `${p.x},${p.y}`).join(' ')} className={r === route ? 'route-on' : 'route-off'} />)}
-    {points.slice(1).map((p, i) => { const a = points[i], mx = (a.x + p.x) / 2, my = (a.y + p.y) / 2; return legs[i] ? <text key={i} x={mx + 6} y={my - 6} className="map-leg">{legs[i]}</text> : null; })}
+    {points.slice(1).map((p, i) => { const a = points[i], mx = (a.x + p.x) / 2, my = (a.y + p.y) / 2; return legs[i] ? <text key={i} x={mx + 10} y={my + 4} className="map-leg">{legs[i]}</text> : null; })}
     {points.slice(1, -1).map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="4" className="transfer" />)}
-    <circle cx={points[0].x} cy={points[0].y} r="8" className="stop" /><text x={points[0].x - 10} y={points[0].y - 14} className="map-stop" textAnchor="end">{from || 'Origin'}</text>
+    <circle cx={points[0].x} cy={points[0].y} r="8" className="stop" /><text x={points[0].x + 4} y={points[0].y + 28} className="map-stop">{from || 'Origin'}</text>
     <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="8" className="stop" /><text x={points[points.length - 1].x} y={points[points.length - 1].y + 26} className="map-stop" textAnchor="end">{to || 'Destination'}</text>
   </svg>;
 }

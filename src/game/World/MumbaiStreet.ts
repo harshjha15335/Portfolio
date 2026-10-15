@@ -59,7 +59,7 @@ export class MumbaiStreet {
   private scooters!:ParkedScooters;
   private scootersReady:Promise<void>=Promise.resolve();
   /** Scooters go to the authored-model set; motorcycles stay code-modelled in the prop batches. */
-  private parked(x:number,z:number,yaw:number,kind:TwoWheeler,body:string){if(kind==='scooter')this.scooterPlacements.push({x,z,yaw,body});else twoWheeler(this.props(z),x,z,yaw,kind,body);}
+  private parked(x:number,z:number,yaw:number,kind:TwoWheeler,body:string){this.parkedCollider(x,z,yaw);if(kind==='scooter')this.scooterPlacements.push({x,z,yaw,body});else twoWheeler(this.props(z),x,z,yaw,kind,body);}
   private patinaMaterial=Object.assign(new THREE.MeshStandardMaterial({vertexColors:true,roughness:.97,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}),{userData:{weather:.4}});
   private cylinderGeometry = new THREE.CylinderGeometry(1, 1, 1, 8);
   private sphereGeometry = new THREE.SphereGeometry(1, 8, 6);
@@ -159,6 +159,11 @@ export class MumbaiStreet {
       const q = mesh.getWorldQuaternion(new THREE.Quaternion()); body.quaternion.set(q.x, q.y, q.z, q.w); this.physics.addBody(body); this.recordCollider(size,p,q);
     }
     return mesh;
+  }
+  /** Parked two-wheelers are props without bodies of their own: one box from wheel to handlebar keeps the visitor from walking through. */
+  private parkedCollider(x:number,z:number,yaw:number){
+    const q=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),yaw),p=new THREE.Vector3(0,.55,-.05).applyQuaternion(q).add(new THREE.Vector3(x,0,z)),size:Triple=[.7,1.1,1.7];
+    const body=new CANNON.Body({mass:0,shape:new CANNON.Box(new CANNON.Vec3(size[0]/2,size[1]/2,size[2]/2)),position:new CANNON.Vec3(p.x,p.y,p.z)});body.quaternion.set(q.x,q.y,q.z,q.w);this.physics.addBody(body);this.recordCollider(size,p,q);
   }
   private solidProxy(size:Triple,position:Triple,parent:THREE.Object3D) {
     parent.updateWorldMatrix(true,false);const p=new THREE.Vector3(...position).applyMatrix4(parent.matrixWorld),q=parent.getWorldQuaternion(new THREE.Quaternion());

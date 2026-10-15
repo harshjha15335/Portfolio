@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
-import { footprint, personBlocker, resolveBlockers, type Blocker } from '../src/game/World/collision/DynamicBlockers';
+import { collectStaticBlockers, footprint, personBlocker, resolveBlockers, type Blocker } from '../src/game/World/collision/DynamicBlockers';
 import { Crowd, LaneTraffic } from '../src/game/World/districts/DistrictSystems';
 import { readFileSync } from 'node:fs';
+import * as CANNON from 'cannon-es';
 
 describe('dynamic blockers', () => {
   const car: Blocker = { x: 0, z: 0, yaw: 0, halfLength: 2, halfWidth: .9 };
@@ -30,6 +31,21 @@ describe('dynamic blockers', () => {
   it('measures a vehicle footprint once, in its own frame', () => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.4, 4.4)); mesh.rotation.y = 1; mesh.position.set(30, 0, 5);
     expect(footprint(mesh).halfLength).toBeCloseTo(2.2); expect(footprint(mesh).halfWidth).toBeCloseTo(.9);
+  });
+});
+
+describe('static walls', () => {
+  it('holds the visitor on the street side of a thin turned wall, ignoring kerbs and overhead signs', () => {
+    const wall = new CANNON.Body({ mass: 0, shape: new CANNON.Box(new CANNON.Vec3(.125, .8, 8)), position: new CANNON.Vec3(6, .8, 0) });
+    wall.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI / 2);
+    const kerb = new CANNON.Body({ mass: 0, shape: new CANNON.Box(new CANNON.Vec3(2, .1, 2)), position: new CANNON.Vec3(0, .1, 0) });
+    const sign = new CANNON.Body({ mass: 0, shape: new CANNON.Box(new CANNON.Vec3(2, .3, .1)), position: new CANNON.Vec3(0, 3, 0) });
+    const out: Blocker[] = []; collectStaticBlockers(out, [wall, kerb, sign], 6, .4, 0);
+    expect(out).toHaveLength(1);
+    // Turned a quarter, the wall runs along x at z = 0; a visitor 10 cm into its near face goes back out.
+    const p = { x: 6, z: .2 }; resolveBlockers(p, .3, out);
+    expect(p.z).toBeCloseTo(.425);
+    const far: Blocker[] = []; collectStaticBlockers(far, [wall], 30, 30, 0); expect(far).toHaveLength(0);
   });
 });
 

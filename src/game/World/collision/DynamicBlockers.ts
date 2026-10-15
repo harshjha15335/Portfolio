@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
 
 /**
  * Moving things the visitor must not walk through: vehicles (an oriented footprint) and people (a circle).
@@ -83,4 +84,35 @@ export function resolveBlockers(p: { x: number; z: number }, radius: number, blo
     if (velocity) { const into = velocity.x * nx + velocity.z * nz; if (into < 0) { velocity.x -= into * nx; velocity.z -= into * nz; } }
   }
   return moved;
+}
+
+/**
+ * Static walls as blockers too. The physics contact is soft: walking straight into a thin wall (a 25 cm
+ * compound wall, a facade face) the visitor's spheres sink 30–40 cm into it before being pushed back,
+ * far enough to see inside the building or pop out on the far side. A hard push-out after each step keeps
+ * the camera on the street side. Only upright boxes count; each body's footprint is measured once.
+ */
+interface StaticFootprint { blocker: Blocker; minY: number; maxY: number; minX: number; maxX: number; minZ: number; maxZ: number }
+const statics = new WeakMap<CANNON.Body, StaticFootprint | null>();
+function staticFootprint(body: CANNON.Body): StaticFootprint | null {
+  let f = statics.get(body);
+  if (f !== undefined) return f;
+  f = null;
+  const shape = body.shapes[0] as CANNON.Box | undefined, q = body.quaternion, offset = body.shapeOffsets[0];
+  if (body.shapes.length === 1 && shape instanceof CANNON.Box && Math.abs(q.x) < 1e-3 && Math.abs(q.z) < 1e-3 && (!offset || offset.length() < 1e-6) && body.collisionResponse) {
+    body.updateAABB(); const a = body.aabb, h = shape.halfExtents;
+    f = { blocker: { x: body.position.x, z: body.position.z, yaw: 2 * Math.atan2(q.y, q.w), halfLength: h.z, halfWidth: h.x },
+      minY: a.lowerBound.y, maxY: a.upperBound.y, minX: a.lowerBound.x, maxX: a.upperBound.x, minZ: a.lowerBound.z, maxZ: a.upperBound.z };
+  }
+  statics.set(body, f); return f;
+}
+/** Static boxes within `range` of (x, z) that stand between the visitor's knees and head. */
+export function collectStaticBlockers(out: Blocker[], bodies: CANNON.Body[], x: number, z: number, feetY: number, range = 3) {
+  for (const body of bodies) {
+    if (body.type !== CANNON.Body.STATIC) continue;
+    const f = staticFootprint(body); if (!f) continue;
+    if (f.maxY < feetY + .3 || f.minY > feetY + 1.7) continue;
+    if (x < f.minX - range || x > f.maxX + range || z < f.minZ - range || z > f.maxZ + range) continue;
+    out.push(f.blocker);
+  }
 }
