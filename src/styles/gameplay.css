@@ -64,7 +64,10 @@ li.done > span:first-child { color:#2f7a5f; font-weight:700; }
 .gradient-verdict { padding:12px; border-left:4px solid currentColor; background:#fffaf0; }
 .research-report { display:inline-block; margin-top:12px; font:10px var(--mono); text-decoration:underline; }
 @media (max-width:760px) {
-  .orientation-card { left:12px; right:12px; top:auto; bottom:150px; width:auto; }
+  /* Phones: one line under the ride buttons, so the card never covers the interaction prompt or the walk pad. */
+  .orientation-card { left:12px; right:12px; top:148px; width:auto; padding:9px 12px; }
+  .orientation-head { margin-bottom:4px; }
+  .orientation-card li:not(.next) { display:none; }
   .orientation-card li small { display:none; }
   .tour-card { bottom:100px; }
   .waypoint { top:64px; max-width:92vw; }

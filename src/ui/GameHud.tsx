@@ -9,9 +9,10 @@ import type { Tour } from '../data/tours';
 /** Optional first-visit orientation. Steps tick themselves off; Skip hides it for good. */
 export function Orientation({ progress, onSkip }: { progress: Progress; onSkip: () => void }) {
   const done = ORIENTATION_STEPS.filter(s => progress.orientation.includes(s.id)).length;
+  const upNext = ORIENTATION_STEPS.find(s => !progress.orientation.includes(s.id))?.id;
   return <aside className="orientation-card" aria-label="Orientation">
     <div className="orientation-head"><span className="eyebrow">ORIENTATION · {done}/{ORIENTATION_STEPS.length}</span><button className="text-button" onClick={onSkip}>SKIP INTRO / EXPLORE CITY</button></div>
-    <ol>{ORIENTATION_STEPS.map(step => { const ok = progress.orientation.includes(step.id); return <li key={step.id} className={ok ? 'done' : ''}><span aria-hidden="true">{ok ? '✓' : '○'}</span><span><strong>{step.label}</strong><small>{step.hint}</small></span><span className="sr-only">{ok ? 'done' : 'not done'}</span></li>; })}</ol>
+    <ol>{ORIENTATION_STEPS.map(step => { const ok = progress.orientation.includes(step.id); return <li key={step.id} className={ok ? 'done' : step.id === upNext ? 'next' : ''}><span aria-hidden="true">{ok ? '✓' : '○'}</span><span><strong>{step.label}</strong><small>{step.hint}</small></span><span className="sr-only">{ok ? 'done' : 'not done'}</span></li>; })}</ol>
   </aside>;
 }
 
