@@ -29,5 +29,7 @@ describe('visual rebuild systems',()=>{
     for(let i=0;i<900;i++)quality.sample(.1);expect(quality.low).toBe(true);expect(quality.scale).toBeCloseTo(.6);
     const before=quality.scale;expect(quality.sample(60)).toBe(false);expect(quality.sample(NaN)).toBe(false);expect(quality.scale).toBe(before);
     for(let i=0;i<3000;i++)quality.sample(1/65);expect(quality.scale).toBeGreaterThan(.8);expect(quality.scale).toBeLessThanOrEqual(1);
+    // The low tier never flips back on its own: that switch recompiles shaders mid-walk.
+    expect(quality.low).toBe(true);
   });
 });
