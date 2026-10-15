@@ -168,18 +168,21 @@ existing skill-evidence test now goes through Frontend Studio.
 
 ## 4. ASTFLOW Engineering Lab (brief §9, Powai)
 
-### What ASTFLOW is, and whose work this is
+### What ASTFLOW is
 
 [ASTFLOW](https://github.com/ANUJ-DESHPANDE/ASTFLOW) is a local, CPU-based code-retrieval engine built by team
-ByteCoders (Aarush Shetty, Harsh Jha, Anuj Deshpande, VIT Vellore) for Samsung PRISM 2026. Harsh authored 5 of its 155
-commits (23–24 September 2026): the baseline-v1 forensic diagnosis, the **E001 fusion experiment** (`0a60b37`) and the
-**E002 cross-encoder reranker experiment** (`cef22c9`, `cab4931`). The lab shows those experiments and says plainly that
-the shipped retrieval result (gte-modernbert-base, NDCG@10 0.5509 on the full MTEB AppsRetrieval test set) is the
-team's, not Harsh's.
+ByteCoders (VIT Vellore) for Samsung PRISM 2026. At Harsh's request (15 October 2026) the lab does not split credit
+between team members; it shows all of ASTFLOW's published stats.
 
 ### Implemented and tested
 
 The Powai panel's blocked placeholder is replaced by a working lab:
+- **Shipped retrieval.** gte-modernbert-base dense on the full MTEB AppsRetrieval test set (3,765 queries × 8,765
+  documents): NDCG@10 0.5509, MRR@10 0.5050, Recall@10–1000; the BM25, MiniLM hybrid and first official GTE test runs
+  beside it; CPU timings (4 → 8 threads) and product measurements from the README.
+- **Every retrieval experiment.** Phase 1 (E001–E005 and the final GTE gate) from `benchmark/EXPERIMENTS.md` and phase 2
+  (E004–E023) from `benchmark/results/campaign/LEDGER.md`, each with its result and decision. Data:
+  `src/projects/astflowRecord.ts`. Each number was checked to appear verbatim in its source file at the pinned commit.
 - **One dev query, live.** Five real dev queries, picked by category (both retrievers agree, BM25 only, dense only,
   fusion pushes the answer out of the top 100, neither finds it), with their frozen baseline-v1 BM25 and dense
   rankings. The visitor changes k, weights and depth; the lab fuses the two lists in the browser and shows where the
@@ -199,7 +202,7 @@ Tests: `tests/astflow.test.ts` matches every recorded top 10 and answer rank, AS
 invariants (315 rows, baseline row = baseline, winner = best row, every reranker depth worse).
 `tests/city.spec.ts` › "Powai ASTFLOW lab replays the fusion experiment" drives it in Chromium.
 
-Screenshot: [ASTFLOW lab, BM25-only weights recovering a lost answer](screenshots/powai/astflow-lab.png).
+Screenshots: [stats and experiment record](screenshots/powai/astflow-stats.png); [whole lab, BM25-only weights recovering a lost answer](screenshots/powai/astflow-lab.png).
 
 ### Notes
 

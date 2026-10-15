@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { BASELINE, DECISION, HARSH_COMMITS, RERANKER, SAMPLE_QUERIES, SPLITS, SWEEP_DEPTHS, SWEEP_K, SWEEP_RATIOS, WINNER, astflowCommit, astflowSource, rrf, sweepRow } from '../projects/astflow';
+import { BASELINE, DECISION, EXPERIMENT_COMMITS, RERANKER, SAMPLE_QUERIES, SPLITS, SWEEP_DEPTHS, SWEEP_K, SWEEP_RATIOS, WINNER, astflowCommit, astflowSource, rrf, sweepRow } from '../projects/astflow';
+import { PERFORMANCE, PHASES, SHIPPED, TEST_SYSTEMS } from '../projects/astflowRecord';
 
 const KIND_LABEL: Record<string, string> = {
   'both-top': 'Both retrievers rank the answer first',
@@ -12,7 +13,7 @@ const f4 = (n: number) => n.toFixed(4);
 const signed = (n: number) => `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(5)}`;
 const ratioWeights = (ratio: string) => { const [a, b] = ratio.split(' ')[0].split(':').map(Number); return [a, b] as const; };
 
-/** Powai: ASTFLOW Engineering Lab. Harsh's E001 fusion and E002 reranker experiments, replayed on the frozen runs. */
+/** Powai: ASTFLOW Engineering Lab. The shipped results, the whole experiment record, and E001/E002 replayed on the frozen runs. */
 export function AstflowLab() {
   const [qid, setQid] = useState(SAMPLE_QUERIES[3].id);
   const [k, setK] = useState(60);
@@ -28,12 +29,35 @@ export function AstflowLab() {
   const deltas = SWEEP_K.flatMap(kk => SWEEP_RATIOS.map(r => (sweepRow(kk, r, depth)!['ndcg@10'] - BASELINE.dev_ndcg10)));
   const span = Math.max(...deltas.map(Math.abs));
   return <section className="flagship-lab astflow-lab" aria-label="ASTFLOW Engineering Lab">
-    <header><span className="eyebrow">POWAI / ASTFLOW ENGINEERING LAB · TEAM PROJECT</span><h3>Can better fusion rescue lost answers?</h3>
-      <p>ASTFLOW is a local code-retrieval engine built by team ByteCoders (Aarush Shetty, Harsh Jha, Anuj Deshpande) for Samsung PRISM 2026. Harsh's part was the retrieval experiments below: the E001 fusion sweep, the E002 cross-encoder reranker and the baseline forensics. Both were rejected, and the lab replays why on the team's frozen benchmark runs.</p></header>
+    <header><span className="eyebrow">POWAI / ASTFLOW ENGINEERING LAB · SAMSUNG PRISM 2026</span><h3>Local code search, measured</h3>
+      <p>ASTFLOW is a local, CPU-only code retrieval and repository investigation engine built by team ByteCoders (VIT Vellore) for Samsung PRISM 2026. It needs no paid API and never runs the code it indexes. Below: its shipped benchmark results, every retrieval experiment in its log with the decision taken, and two of those experiments replayed live on the frozen data.</p></header>
 
+    <h4 className="lab-subhead">Shipped retrieval: full MTEB AppsRetrieval test set</h4>
+    <p className="caption">{SHIPPED.model.toUpperCase()} · {SHIPPED.setup.toUpperCase()} · {SHIPPED.queries} QUERIES × {SHIPPED.documents} DOCUMENTS</p>
+    <dl className="astflow-stats">{SHIPPED.metrics.map(m => <div key={m.label}><dt>{m.label}</dt><dd>{m.value}</dd></div>)}</dl>
+    <div className="lab-grid">
+      <figure className="astflow-bars" aria-label="NDCG@10 on the full test set by retrieval generation">
+        {TEST_SYSTEMS.map(t => <div key={t.name}><span>{t.name}</span><i style={{ width: `${(t.ndcg / 0.6) * 100}%` }} /><b>{t.ndcg}</b><small>MRR@10 {t.mrr}</small></div>)}
+        <figcaption className="caption">NDCG@10 ON ALL 3,765 TEST QUERIES (MTEB 2.21.0) · SOURCE: README</figcaption>
+      </figure>
+      <table className="lab-table"><caption className="caption">CPU PERFORMANCE AND PRODUCT MEASUREMENTS</caption><tbody>
+        {PERFORMANCE.map(p => <tr key={p.label}><th>{p.label}</th><td>{p.value}</td></tr>)}
+      </tbody></table>
+    </div>
+
+    <h4 className="lab-subhead">Every retrieval experiment</h4>
+    {PHASES.map(ph => <div key={ph.title} className="astflow-phase">
+      <p className="caption">{ph.title.toUpperCase()} · {ph.setup} <a href={astflowSource(ph.source)} target="_blank" rel="noopener noreferrer">SOURCE ↗</a></p>
+      <table className="lab-table astflow-ledger"><thead><tr><th>ID</th><th>Idea</th><th>Result (NDCG@10 change, 95% CI)</th><th>Decision</th></tr></thead><tbody>
+        {ph.experiments.map(e => <tr key={ph.title + e.id}><th>{e.id}</th><td>{e.idea}</td><td>{e.result}</td><td><span className={`decision ${e.decision === 'ACCEPT' || e.decision === 'CLOSED' ? 'pass' : e.decision === 'REJECT' ? 'fail' : ''}`}>{e.decision}</span></td></tr>)}
+      </tbody></table>
+    </div>)}
+    <p className="caption">PHASE 2 RESTARTS ITS IDS AT E004 IN THE REPOSITORY'S CAMPAIGN LEDGER. PHASE 1'S E004 PASSED ITS OWN GATE BUT WAS NOT SELECTED, BECAUSE THE GTE DENSE GATE ALSO PASSED.</p>
+
+    <h4 className="lab-subhead">Replay E001: one dev query, live</h4>
     <div className="lab-grid">
       <div className="lab-controls">
-        <span className="eyebrow">ONE DEV QUERY, LIVE</span>
+        <span className="eyebrow">CHANGE THE FUSION</span>
         <label>Query<select value={qid} onChange={e => setQid(e.target.value)}>{SAMPLE_QUERIES.map(x => <option key={x.id} value={x.id}>{x.id} · {KIND_LABEL[x.kind]}</option>)}</select></label>
         <label>k (rank damping)<select value={k} onChange={e => setK(+e.target.value)}>{SWEEP_K.map(v => <option key={v}>{v}</option>)}</select></label>
         <label>Weights (BM25 : dense)<select value={ratio} onChange={e => setRatio(e.target.value)}>{SWEEP_RATIOS.map(v => <option key={v}>{v}</option>)}</select></label>
@@ -73,10 +97,11 @@ export function AstflowLab() {
       {RERANKER.map(r => <tr key={r.depth}><th>{r.depth}</th><td>{f4(r.ndcg10)}</td><td>{signed(r.ndcg10 - r.baseline)} [{signed(r.ci[0])}, {signed(r.ci[1])}]</td></tr>)}
     </tbody></table>
     <p className="lab-verdict fail">E002: REJECT. A general-domain model ({RERANKER[0].model}) made every depth significantly worse, and worse the deeper it read, at about {(RERANKER[0].medianLatencyMs / 1000).toFixed(1)} s per query on CPU.</p>
-    <p className="lab-note">Both results pointed the team at the model, not the fusion. ASTFLOW's shipped retrieval is a code-trained dense model (gte-modernbert-base) that scores NDCG@10 0.5509 on the full MTEB AppsRetrieval test set. That is the team's result, reported in its README, and not one of Harsh's experiments.</p>
+    <p className="lab-note">Both pointed at the model rather than the fusion, which is what the final decision changed: the code-trained dense model lifted dev NDCG@10 by 0.2293 and became the shipped retrieval.</p>
     <footer>
-      <a href={astflowCommit(HARSH_COMMITS.fusion)} target="_blank" rel="noopener noreferrer">E001 COMMIT (HARSH) ↗</a>
-      <a href={astflowCommit(HARSH_COMMITS.reranker)} target="_blank" rel="noopener noreferrer">E002 COMMIT (HARSH) ↗</a>
+      <a href={astflowCommit(EXPERIMENT_COMMITS.fusion)} target="_blank" rel="noopener noreferrer">E001 COMMIT ↗</a>
+      <a href={astflowCommit(EXPERIMENT_COMMITS.reranker)} target="_blank" rel="noopener noreferrer">E002 COMMIT ↗</a>
+      <a href={astflowSource(SHIPPED.source)} target="_blank" rel="noopener noreferrer">RETRIEVAL BASELINE ↗</a>
       <a href={astflowSource('benchmark/run_fusion_sweep.py')} target="_blank" rel="noopener noreferrer">RUN_FUSION_SWEEP.PY ↗</a>
       <a href={astflowSource('benchmark/EXPERIMENTS.md')} target="_blank" rel="noopener noreferrer">EXPERIMENT LOG ↗</a>
       <a href={astflowSource('README.md')} target="_blank" rel="noopener noreferrer">README ↗</a>

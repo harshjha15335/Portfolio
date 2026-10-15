@@ -117,3 +117,17 @@
 .sweep-grid td { padding:1px; }
 .sweep-grid button { width:30px; height:24px; border:1px solid var(--border) !important; padding:0 !important; font-size:11px !important; text-align:center !important; color:var(--ink); }
 .sweep-grid button[aria-pressed=true] { outline:2px solid var(--ink); outline-offset:-2px; }
+.astflow-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:8px; margin:10px 0 4px; }
+.astflow-stats div { background:var(--paper); border:1px solid var(--border); padding:10px 12px; }
+.astflow-stats dt { font:500 10px var(--mono); text-transform:uppercase; color:var(--muted); }
+.astflow-stats dd { margin:4px 0 0; font:600 24px/1 var(--display); }
+.astflow-bars { margin:14px 0; display:grid; gap:10px; }
+.astflow-bars div { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 8px; font-size:12px; }
+.astflow-bars i { grid-column:1 / -1; display:block; height:12px; background:var(--blue); min-width:2px; }
+.astflow-bars b { font:600 12px var(--mono); grid-row:1; grid-column:2; }
+.astflow-bars small { grid-column:1 / -1; font:10px var(--mono); color:var(--muted); }
+.astflow-ledger td, .astflow-ledger th { vertical-align:top; }
+.astflow-ledger .decision { font:600 10px var(--mono); padding:2px 6px; background:var(--paper); white-space:nowrap; }
+.astflow-ledger .decision.pass { background:#dce8d6; } .astflow-ledger .decision.fail { background:#f2d9cf; }
+.astflow-phase .caption a { text-decoration:underline; }
+@media (max-width:760px) { .astflow-ledger thead { display:none; } .astflow-ledger tr { display:grid; grid-template-columns:48px minmax(0,1fr); } .astflow-ledger td:nth-child(n+3), .astflow-ledger td:nth-child(3) { grid-column:2; } }
