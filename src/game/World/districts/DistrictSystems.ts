@@ -5,6 +5,7 @@ import { VEHICLE_LENGTH, VEHICLE_SPEED, type CityVehicleKind, createCityVehicleL
 import type { V3 } from './ColorMesh';
 import type { LoopVehicle } from '../traffic/RoadTraffic';
 import { CAST_LOD, districtCast, type CastAct, type CastFigure, type DistrictCast } from './DistrictCast';
+import { footprint, personBlocker, PERSON_RADIUS, type Blocker } from '../collision/DynamicBlockers';
 
 /* ------------------------------------------------------------------ signs */
 export interface SignStyle { bg?: string; fg?: string; border?: string; font?: string; local?: string; draw?: (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => void }
@@ -114,14 +115,18 @@ const SEAT = .515;
  * procedural stand-in until the cast has loaded (or when it cannot load, e.g. in tests).
  */
 export interface Person { group: THREE.Group; outfit: Outfit; act: Act; scale: number; key: string; folk: CityPerson | null; cast: CastFigure | null }
-interface Walker { person: Person; path: THREE.Vector3[]; lengths: number[]; total: number; s: number; speed: number; dir: number; pause: number; loop: boolean }
+interface Walker { person: Person; path: THREE.Vector3[]; lengths: number[]; total: number; s: number; speed: number; dir: number; pause: number; loop: boolean; offset: number }
+/** A walker's widest step to either side of its line, metres (pavements are about 3 m wide). */
+const SIDESTEP = .75;
 interface Idler { person: Person; act: Act; phase: number }
 /** Scripted pedestrians: walkers follow authored pavement paths, idlers hold a pose or a small loop. */
 export class Crowd {
   readonly group = new THREE.Group(); private walkers: Walker[] = []; private idlers: Idler[] = []; private frame = 0; private count = 0;
+  /** Static solids walkers must not pass through (local axis boxes), set by the district from its colliders. */
+  readonly obstacles: Array<{ minX: number; maxX: number; minZ: number; maxZ: number }> = [];
   walker(outfit: Outfit, path: V3[], speed = 1, start = Math.random(), loop = false, scale = 1) {
     const person = this.make(outfit, 'stand', scale, path[0], true), pts = path.map(p => new THREE.Vector3(...p)), lengths = pts.slice(1).map((p, i) => p.distanceTo(pts[i]));
-    const total = lengths.reduce((a, b) => a + b, 0), w: Walker = { person, path: pts, lengths, total, s: start * total, speed: person.cast?.walkSpeed ?? speed, dir: this.count % 2 ? 1 : -1, pause: 0, loop };
+    const total = lengths.reduce((a, b) => a + b, 0), w: Walker = { person, path: pts, lengths, total, s: start * total, speed: person.cast?.walkSpeed ?? speed, dir: this.count % 2 ? 1 : -1, pause: 0, loop, offset: 0 };
     this.walkers.push(w); this.place(w); return person;
   }
   idle(outfit: Outfit, position: V3, yaw: number, act: Act = 'stand', scale = 1) {
@@ -162,20 +167,20 @@ export class Crowd {
   private place(w: Walker) {
     let s = w.s, i = 0; while (i < w.lengths.length - 1 && s > w.lengths[i]) { s -= w.lengths[i]; i++; }
     const a = w.path[i], b = w.path[i + 1], t = w.lengths[i] ? Math.min(1, s / w.lengths[i]) : 0;
-    w.person.group.position.lerpVectors(a, b, t); const d = b.clone().sub(a).multiplyScalar(w.dir);
-    const yaw = Math.atan2(-d.x, -d.z), turn = Math.atan2(Math.sin(yaw - w.person.group.rotation.y), Math.cos(yaw - w.person.group.rotation.y)); w.person.group.rotation.y += turn * .2;
+    w.person.group.position.lerpVectors(a, b, t); const dx = (b.x - a.x) * w.dir, dz = (b.z - a.z) * w.dir;
+    const yaw = Math.atan2(-dx, -dz), turn = Math.atan2(Math.sin(yaw - w.person.group.rotation.y), Math.cos(yaw - w.person.group.rotation.y)); w.person.group.rotation.y += turn * .2;
   }
   update(time: number, delta: number, view: THREE.Vector3) {
     this.frame++;
     for (const w of this.walkers) {
-      const g = w.person.group, ahead = new THREE.Vector3(-Math.sin(g.rotation.y), 0, -Math.cos(g.rotation.y)), rel = view.clone().setY(0).sub(g.position);
-      const blocked = rel.length() < 1.6 && rel.dot(ahead) > 0;
+      const g = w.person.group, rx = view.x - g.position.x, rz = view.z - g.position.z;
+      const blocked = Math.hypot(rx, rz) < 1.6 && -rx * Math.sin(g.rotation.y) - rz * Math.cos(g.rotation.y) > 0;
       if (w.pause > 0) w.pause -= delta;
       else if (!blocked) {
         w.s += w.dir * w.speed * delta;
         if (w.s > w.total || w.s < 0) { if (w.loop) w.s = (w.s + w.total) % w.total; else { w.dir *= -1; w.s = THREE.MathUtils.clamp(w.s, 0, w.total); w.pause = 1 + (w.total % 3); } }
       }
-      this.place(w);
+      this.place(w); this.steer(w, delta, view);
       // Step around the visitor instead of walking through them.
       const gap = Math.hypot(view.x - g.position.x, view.z - g.position.z);
       if (gap < 1.6) { const ax = g.position.x - view.x, az = g.position.z - view.z, n = Math.max(gap, .01); g.position.x += ax / n * (1.6 - gap); g.position.z += az / n * (1.6 - gap); }
@@ -193,6 +198,36 @@ export class Crowd {
     // The cast's shared rigs advance once per frame for everyone bound to them.
     if (this.walkers.some(w => w.person.cast) || this.idlers.some(i => i.person.cast)) districtCast()?.update(delta);
   }
+  /**
+   * Keep a walker out of people and solids ahead on its line: it drifts to its own left (Mumbai keeps left)
+   * around people, and to whichever side clears a stall or bench. A solid too wide to pass turns it back.
+   */
+  private steer(w: Walker, delta: number, view: THREE.Vector3) {
+    const g = w.person.group, fx = -Math.sin(g.rotation.y), fz = -Math.cos(g.rotation.y);
+    // Walker paths are lines; the left of the direction of travel is (fz, −fx) rotated: (−fz… ) in x/z terms.
+    const lx = -fz, lz = fx, baseX = g.position.x, baseZ = g.position.z;
+    let want = 0, turn = false;
+    const consider = (x: number, z: number, radius: number) => {
+      const rx = x - baseX, rz = z - baseZ, front = rx * fx + rz * fz, side = rx * lx + rz * lz;
+      if (front > 0 && front < 2.4 && Math.abs(side - w.offset) < radius + PERSON_RADIUS + .15) want = Math.max(want, Math.min(SIDESTEP, side + radius + PERSON_RADIUS + .2));
+    };
+    for (const o of this.walkers) if (o !== w && o.pause <= 0) consider(o.person.group.position.x, o.person.group.position.z, PERSON_RADIUS);
+    for (const i of this.idlers) consider(i.person.group.position.x, i.person.group.position.z, i.act === 'sit' ? .45 : PERSON_RADIUS);
+    for (const b of this.obstacles) {
+      // The stretch of this walker's line just ahead, against the box grown by a body's width.
+      const ahead = { x: baseX + fx * 1.2, z: baseZ + fz * 1.2 }, r = PERSON_RADIUS + .05;
+      if (ahead.x + lx * w.offset < b.minX - r - .6 || ahead.x + lx * w.offset > b.maxX + r + .6 || ahead.z < b.minZ - r - 1.2 || ahead.z > b.maxZ + r + 1.2) continue;
+      // Offsets (along the left axis) that clear the box on either side.
+      const lo = (lx ? (lx > 0 ? b.minX - r - baseX : baseX - (b.maxX + r)) / Math.abs(lx) * Math.sign(lx) : 0), hi = (lx ? (lx > 0 ? b.maxX + r - baseX : baseX - (b.minX - r)) / Math.abs(lx) * Math.sign(lx) : 0);
+      const a = Math.min(lo, hi), c = Math.max(lo, hi);
+      if (w.offset <= a || w.offset >= c) continue;
+      const pick = Math.abs(a) < Math.abs(c) ? a : c;
+      if (Math.abs(pick) > SIDESTEP) turn = true; else want = Math.abs(pick) > Math.abs(want) ? pick : want;
+    }
+    if (turn && w.pause <= 0) { w.dir *= -1; w.pause = .6; }
+    w.offset += (want - w.offset) * Math.min(1, delta * 3);
+    g.position.x += lx * w.offset; g.position.z += lz * w.offset;
+  }
   /** Distance LOD; returns whether a procedural person should animate this frame. */
   private lod(p: Person, time: number, walking: boolean, seated: boolean, view: THREE.Vector3, walker = false) {
     const d = p.group.position.distanceTo(view);
@@ -208,6 +243,13 @@ export class Crowd {
     folk.animate(time, walking, seated); return true;
   }
   people() { return [...this.walkers.map(w => w.person), ...this.idlers.map(i => i.person)]; }
+  /** Everyone within `range` of `view` (local), as world-space blockers the visitor cannot walk through. */
+  collectBlockers(out: Blocker[], origin: THREE.Vector3, view: THREE.Vector3, range = 12) {
+    for (const p of this.people()) {
+      const g = p.group.position; if (Math.abs(g.x - view.x) > range || Math.abs(g.z - view.z) > range) continue;
+      out.push(personBlocker(g.x + origin.x, g.z + origin.z, p.act === 'sit' ? .38 : undefined));
+    }
+  }
   /** People who stay put (vendors, talkers, sitters). */
   standing() { return this.idlers.map(i => i.person); }
   get size() { return this.walkers.length + this.idlers.length; }
@@ -227,6 +269,7 @@ const RIDER_HIDDEN = 30;
  * none past VEHICLE_HIDDEN, deep in the haze (fog is about 70% there), so they fade out instead of popping;
  * keeps traffic inside the Medium triangle budget.
  */
+const FORWARD = new THREE.Vector3();
 const VEHICLE_NEAR = 16, VEHICLE_FAR = 40, VEHICLE_HIDDEN = 115;
 const RIDER_OUTFIT: Partial<Record<CityVehicleKind, Outfit>> = { auto: 'vendor', bike: 'shirt', cycle: 'worker', bus: 'office', tempo: 'worker' };
 
@@ -321,7 +364,7 @@ export class LaneTraffic {
       for (const b of lane.shared()) { const d = ahead(b.s); if (d >= 0 && d < lane.length / 2) gap = Math.min(gap, d - (a.length + b.length) / 2); }
       target = Math.min(target, Math.max(0, (gap - 2.2) * .9));
       for (const stop of this.stops) if (stop.lane === a.lane && stop.active(time)) { let toLine = stop.s - a.s - a.length / 2; if (lane.closed && toLine < -lane.length / 2) toLine += lane.length; if (toLine > -.3 && toLine < 14) target = Math.min(target, Math.max(0, toLine * .8)); }
-      const f = new THREE.Vector3(-Math.sin(a.mesh.rotation.y), 0, -Math.cos(a.mesh.rotation.y));
+      const f = FORWARD.set(-Math.sin(a.mesh.rotation.y), 0, -Math.cos(a.mesh.rotation.y));
       const avoid = (o: THREE.Vector3, room: number) => {
         const rx = o.x - a.mesh.position.x, rz = o.z - a.mesh.position.z, front = rx * f.x + rz * f.z, side = Math.abs(rx * f.z - rz * f.x);
         if (front > 0 && front < a.length / 2 + room + 8 && side < 1.5) target = Math.min(target, Math.max(0, (front - a.length / 2 - room) * .9));
@@ -337,4 +380,12 @@ export class LaneTraffic {
     }
   }
   get size() { return this.agents.length; }
+  /** Vehicles on the road within `range` of `view` (local), as world-space blockers. */
+  collectBlockers(out: Blocker[], origin: THREE.Vector3, view: THREE.Vector3, range = 18) {
+    for (const a of this.agents) {
+      const p = a.mesh.position; if (!a.active || Math.abs(p.x - view.x) > range || Math.abs(p.z - view.z) > range) continue;
+      const f = footprint(a.mesh);
+      out.push({ x: p.x + origin.x, z: p.z + origin.z, yaw: a.mesh.rotation.y, halfLength: Math.max(f.halfLength, a.length / 2), halfWidth: f.halfWidth });
+    }
+  }
 }

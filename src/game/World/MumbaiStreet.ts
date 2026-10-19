@@ -26,6 +26,9 @@ import { facadeSpec, seededRandom } from './StreetArchitecture';
 import { FacadePanels } from './architecture/FacadePanels';
 import { SpatialIndex } from './spatial/SpatialIndex';
 import { createHuman, type Human } from './npc/NPCFactory';
+import { personBlocker, vehicleBlocker, type Blocker } from './collision/DynamicBlockers';
+/** A zero-scale instance matrix: hides one instance of a batch without reallocating it. */
+const COLLAPSED = new THREE.Matrix4().makeScale(0, 0, 0);
 import { NavMeshManager, type Obstacle } from './navigation/NavMeshManager';
 import { RoadTraffic, pedestrianGreen, type LoopVehicle } from './traffic/RoadTraffic';
 import type { CrowdAgent } from '@recast-navigation/core';
@@ -56,7 +59,7 @@ export class MumbaiStreet {
   private scooters!:ParkedScooters;
   private scootersReady:Promise<void>=Promise.resolve();
   /** Scooters go to the authored-model set; motorcycles stay code-modelled in the prop batches. */
-  private parked(x:number,z:number,yaw:number,kind:TwoWheeler,body:string){if(kind==='scooter')this.scooterPlacements.push({x,z,yaw,body});else twoWheeler(this.props(z),x,z,yaw,kind,body);}
+  private parked(x:number,z:number,yaw:number,kind:TwoWheeler,body:string){this.parkedCollider(x,z,yaw);if(kind==='scooter')this.scooterPlacements.push({x,z,yaw,body});else twoWheeler(this.props(z),x,z,yaw,kind,body);}
   private patinaMaterial=Object.assign(new THREE.MeshStandardMaterial({vertexColors:true,roughness:.97,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}),{userData:{weather:.4}});
   private cylinderGeometry = new THREE.CylinderGeometry(1, 1, 1, 8);
   private sphereGeometry = new THREE.SphereGeometry(1, 8, 6);
@@ -156,6 +159,11 @@ export class MumbaiStreet {
       const q = mesh.getWorldQuaternion(new THREE.Quaternion()); body.quaternion.set(q.x, q.y, q.z, q.w); this.physics.addBody(body); this.recordCollider(size,p,q);
     }
     return mesh;
+  }
+  /** Parked two-wheelers are props without bodies of their own: one box from wheel to handlebar keeps the visitor from walking through. */
+  private parkedCollider(x:number,z:number,yaw:number){
+    const q=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),yaw),p=new THREE.Vector3(0,.55,-.05).applyQuaternion(q).add(new THREE.Vector3(x,0,z)),size:Triple=[.7,1.1,1.7];
+    const body=new CANNON.Body({mass:0,shape:new CANNON.Box(new CANNON.Vec3(size[0]/2,size[1]/2,size[2]/2)),position:new CANNON.Vec3(p.x,p.y,p.z)});body.quaternion.set(q.x,q.y,q.z,q.w);this.physics.addBody(body);this.recordCollider(size,p,q);
   }
   private solidProxy(size:Triple,position:Triple,parent:THREE.Object3D) {
     parent.updateWorldMatrix(true,false);const p=new THREE.Vector3(...position).applyMatrix4(parent.matrixWorld),q=parent.getWorldQuaternion(new THREE.Quaternion());
@@ -926,6 +934,13 @@ export class MumbaiStreet {
     results.filter(r=>r.status==='rejected').forEach(r=>console.warn('Driver character failed; original driver retained',(r as PromiseRejectedResult).reason));
     return results.filter(r=>r.status==='fulfilled'&&r.value).length;
   }
+  /** Traffic and people near `view` that the visitor cannot walk through. */
+  collectBlockers(out:Blocker[],view:THREE.Vector3,range=18){
+    const near=(p:THREE.Vector3)=>Math.abs(p.x-view.x)<range&&Math.abs(p.z-view.z)<range;
+    for(let i=0;i<this.trafficSystem.active;i++){const v=this.trafficVehicles[i];if(v.parent?.visible!==false&&near(v.position))out.push(vehicleBlocker(v));}
+    for(const g of this.pedestrians)if(g.visible&&near(g.position))out.push(personBlocker(g.position.x,g.position.z));
+    if(this.dense.visible)for(const w of this.denseWalkers)if(near(w.group.position))out.push(personBlocker(w.group.position.x,w.group.position.z));
+  }
   /** Animate live drivers (only the boarded cabin's driver is live). */
   updateDrivers(delta:number,steering:number){for(const d of this.drivers)if(d.live&&d.vehicle.visible)d.update(delta,steering);}
   private retireHuman(human:Human){human.mesh.visible=false;human.mesh.removeFromParent();for(const g of new Set(human.mesh.userData.lodGeometries as THREE.BufferGeometry[]))g.dispose();(human.mesh.material as THREE.Material).dispose();human.mesh.skeleton.dispose();}
@@ -946,6 +961,6 @@ export class MumbaiStreet {
     this.trafficVehicles.forEach((vehicle,i)=>{if(i>=this.trafficSystem.active)return;const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y+=turn*(1-Math.exp(-8*delta));animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);});this.trafficUpdateMs=performance.now()-trafficStart;
     for (const animate of this.motion) animate(reduced ? 0 : time);
     this.group.updateMatrixWorld(true);
-    for (const { instance, meshes } of this.dynamicBatches) { meshes.forEach((mesh, i) => { let visible=true; for(let p:THREE.Object3D|null=mesh.parent;p&&p!==this.group;p=p.parent)if(!p.visible)visible=false; instance.setMatrixAt(i,visible?mesh.matrixWorld:new THREE.Matrix4().makeScale(0,0,0)); }); instance.instanceMatrix.needsUpdate = true;instance.computeBoundingSphere(); }
+    for (const { instance, meshes } of this.dynamicBatches) { meshes.forEach((mesh, i) => { let visible=true; for(let p:THREE.Object3D|null=mesh.parent;p&&p!==this.group;p=p.parent)if(!p.visible)visible=false; instance.setMatrixAt(i,visible?mesh.matrixWorld:COLLAPSED); }); instance.instanceMatrix.needsUpdate = true;instance.computeBoundingSphere(); }
   }
 }

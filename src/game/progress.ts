@@ -22,7 +22,7 @@ export interface Progress {
 export type OrientationStep = 'look' | 'walk' | 'interact' | 'map' | 'ride';
 export const ORIENTATION_STEPS: { id: OrientationStep; label: string; hint: string }[] = [
   { id: 'look', label: 'Look around', hint: 'Click the street, then move the mouse (or drag)' },
-  { id: 'walk', label: 'Walk a few steps', hint: 'W A S D or the arrow keys · Shift for a brisk walk' },
+  { id: 'walk', label: 'Walk a few steps', hint: 'W A S D or the arrow keys · Shift to run · Space to jump' },
   { id: 'interact', label: 'Talk or inspect', hint: 'Face the station host or the departure board and press E' },
   { id: 'map', label: 'Open the city map', hint: 'Press M' },
   { id: 'ride', label: 'Hail a ride', hint: 'Use the taxi or auto stand, or HAIL TAXI / HAIL AUTO' },

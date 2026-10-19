@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { COMPANIES, DEFAULT_CONFIG, UNIVERSE, dailyTrend, equity, evaluateRisk, mockHistory, newLedger, northstarSource, paperFill, smaSeries, type Ledger, type Proposal, type Symbol } from '../projects/northstar';
 import { alerts, monthTotals, moneymetricsSource, parseBankSMS, syntheticLedger, weeklyAnomalies, CATEGORY_BUDGETS } from '../projects/moneymetrics';
 import { SAMPLE_ANALYSIS, SAMPLE_MEETING, meetingSource, reminderOutcome, validateMeeting, type Status } from '../projects/meeting';
-import { EXPLANATIONS, LOCATIONS, calculateScore, rideflowSource, searchRoutes, type Preference } from '../projects/rideflow';
+import { EXPLANATIONS, LOCATIONS, calculateScore, rideflowSource, searchRoutes, type Preference, type Route } from '../projects/rideflow';
 import { BM25Index, embed, hybridSearch, repolensSample } from '../projects/repolens';
 
 /** Powai flagship facilities. Each lab runs a port of the project's own logic, pinned to a commit. */
@@ -166,15 +166,42 @@ function RideFlowDepot() {
         <label>To<select value={to} onChange={e => setTo(e.target.value)}><option value="">—</option>{LOCATIONS.map(l => <option key={l}>{l}</option>)}</select></label>
         <label>Preference<select value={preference} onChange={e => { setPreference(e.target.value as Preference); setPicked(0); }}>{['recommended', 'fastest', 'cheapest', 'safest', 'greenest'].map(p => <option key={p}>{p}</option>)}</select></label>
         {result.status === 400 && <pre className="lab-json" role="alert">{`HTTP 400\n{ "detail": "${result.detail}" }`}</pre>}
+        {route && <dl className="route-facts" aria-label={`${route.name} details`}>
+          <div><dt>Legs</dt><dd>{route.summary}</dd></div>
+          <div><dt>Time</dt><dd>{route.totalTime} min</dd></div>
+          <div><dt>Fare</dt><dd>₹{route.totalFare}</dd></div>
+          <div><dt>Walking</dt><dd>{route.walkingDistance} m</dd></div>
+          <div><dt>Carbon</dt><dd>{route.carbonScore}</dd></div>
+          <div><dt>Safety</dt><dd>{route.safetyScore}</dd></div>
+          <div><dt>Reliability</dt><dd>{route.reliability}</dd></div>
+          <div><dt>routes.json tag</dt><dd>{route.tag} · stored score {route.score}</dd></div>
+        </dl>}
       </div>
       {route && <div>
         <ol className="route-results">{routes.map((r, i) => { const s = calculateScore(r); return <li key={r.routeId}><button aria-pressed={r === route} onClick={() => setPicked(i)}><b>{i + 1}. {r.name}</b><span>{r.summary}</span><small>{r.totalTime} min · ₹{r.totalFare} · {r.transfers} transfers · score {s.total} = time {s.time} + fare {s.fare} + reliability {s.reliability} + safety {s.safety}</small></button></li>; })}</ol>
-        <figure className="lab-chart"><svg viewBox="0 0 560 420" role="img" aria-label={`${route.name} sample path`}><rect width="560" height="420" className="map-bg" />{routes.map(r => <polyline key={r.routeId} points={r.mapPathPoints.map(p => `${p.x},${p.y}`).join(' ')} className={r === route ? 'route-on' : 'route-off'} />)}<circle cx="120" cy="150" r="8" className="stop" /><circle cx="480" cy="350" r="8" className="stop" /></svg>
+        <figure className="lab-chart"><RouteMap routes={routes} route={route} from={from} to={to} />
           <figcaption className="caption">{route.routeId} · {EXPLANATIONS[route.routeId]}</figcaption></figure>
         <p className="lab-note">The repository's routes.json tags RF-R1 “Recommended” with a stored score of 78, but calculate_score recomputes 51.8 for it, so the API's recommended order puts RF-R3 first. The depot shows the computed order.</p>
       </div>}
     </div>
   </Lab>;
+}
+
+/** The sample routes' own map coordinates, framed to the paths, with the endpoints named and each leg labelled by its mode. */
+function RouteMap({ routes, route, from, to }: { routes: Route[]; route: Route; from: string; to: string }) {
+  const points = route.mapPathPoints, legs = route.summary.split('→').map(l => l.trim());
+  const all = routes.flatMap(r => r.mapPathPoints), pad = 46;
+  const minX = Math.min(...all.map(p => p.x)) - pad, minY = Math.min(...all.map(p => p.y)) - pad, w = Math.max(...all.map(p => p.x)) + pad - minX, h = Math.max(...all.map(p => p.y)) + pad - minY;
+  return <svg viewBox={`${minX} ${minY} ${w} ${h}`} role="img" aria-label={`${route.name} sample path from ${from || 'origin'} to ${to || 'destination'}: ${route.summary}`}>
+    <rect x={minX} y={minY} width={w} height={h} className="map-bg" />
+    {Array.from({ length: Math.floor(w / 40) + 1 }, (_, i) => <line key={`v${i}`} x1={minX + i * 40} x2={minX + i * 40} y1={minY} y2={minY + h} className="map-grid" />)}
+    {Array.from({ length: Math.floor(h / 40) + 1 }, (_, i) => <line key={`h${i}`} y1={minY + i * 40} y2={minY + i * 40} x1={minX} x2={minX + w} className="map-grid" />)}
+    {routes.map(r => <polyline key={r.routeId} points={r.mapPathPoints.map(p => `${p.x},${p.y}`).join(' ')} className={r === route ? 'route-on' : 'route-off'} />)}
+    {points.slice(1).map((p, i) => { const a = points[i], mx = (a.x + p.x) / 2, my = (a.y + p.y) / 2; return legs[i] ? <text key={i} x={mx + 10} y={my + 4} className="map-leg">{legs[i]}</text> : null; })}
+    {points.slice(1, -1).map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="4" className="transfer" />)}
+    <circle cx={points[0].x} cy={points[0].y} r="8" className="stop" /><text x={points[0].x + 4} y={points[0].y + 28} className="map-stop">{from || 'Origin'}</text>
+    <circle cx={points[points.length - 1].x} cy={points[points.length - 1].y} r="8" className="stop" /><text x={points[points.length - 1].x} y={points[points.length - 1].y + 26} className="map-stop" textAnchor="end">{to || 'Destination'}</text>
+  </svg>;
 }
 
 const PRESETS = repolensSample.reference.map(r => r.query);

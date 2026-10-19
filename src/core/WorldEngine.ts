@@ -20,6 +20,8 @@ import type { LaneTraffic } from '../game/World/districts/DistrictSystems';
 import { districts as directory } from '../data/city';
 import { pickTarget } from '../game/World/interactionTargeting';
 import type { TourView } from '../data/tours';
+import { VisitorBroadphase } from '../game/World/collision/VisitorBroadphase';
+import { collectStaticBlockers, resolveBlockers, vehicleBlocker, type Blocker } from '../game/World/collision/DynamicBlockers';
 
 interface WorldOptions {
   onNear: (id: string | null, label?: string) => void; onSpeed: (speed: number) => void;
@@ -34,6 +36,11 @@ import { StreetAudio } from './StreetAudio';
 import { StreetRenderer, type RenderPreset } from './StreetRenderer';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 type Mode = 'intro' | 'world' | 'quick';
+/** Radius of the visitor's footprint against traffic and people (the physics body uses .32 m spheres). */
+const VISITOR_RADIUS = .3;
+/** Height of the visitor body's origin when standing on the street (its lowest .32 m sphere touches y = 0). */
+const FLOOR_Y = .33;
+const ORIGIN = new THREE.Vector3();
 
 /** First-person visitor and passenger camera. No personal vehicle or chase camera. */
 export class WorldEngine {
@@ -88,29 +95,29 @@ export class WorldEngine {
   private fill = new THREE.HemisphereLight(STREET_MOOD.skyColor, STREET_MOOD.groundColor, STREET_MOOD.hemisphereIntensity);
 
   constructor(private container: HTMLElement, private options: WorldOptions) {
-    this.reducedMotion = options.reducedMotion; this.quality=new AdaptiveQuality(options.mobile);
+    this.reducedMotion = options.reducedMotion; this.quality=new AdaptiveQuality(options.mobile);this.appliedLow=this.quality.low;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, options.mobile ? 1.25 : 1.5));this.renderer.info.autoReset=false;
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.25));this.renderer.info.autoReset=false;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.toneMappingExposure = STREET_MOOD.exposure;
     this.renderer.shadowMap.enabled = !options.mobile; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; this.renderer.shadowMap.autoUpdate = false; this.renderer.shadowMap.needsUpdate = true;
     const canvas = this.renderer.domElement;
-    canvas.setAttribute('aria-label', 'First-person Mumbai street. WASD or arrows to walk, Shift for a brisk walk, E to interact. Click to look with the mouse. Escape releases the mouse.');
+    canvas.setAttribute('aria-label', 'First-person Mumbai street. WASD or arrows to walk, Shift to run, Space to jump, E to interact. Click to look with the mouse. Escape releases the mouse.');
     canvas.tabIndex = 0; canvas.style.touchAction = 'none'; canvas.style.display = 'block'; container.appendChild(canvas);
     this.lighting();
     const pmrem=new THREE.PMREMGenerator(this.renderer),room=new RoomEnvironment();this.environmentTarget=pmrem.fromScene(room,.04);this.scene.environment=this.environmentTarget.texture;this.scene.environmentIntensity=.14;room.dispose();pmrem.dispose();
     this.rendering=new StreetRenderer(this.renderer,this.scene,this.camera,this.benchmarkEnabled);this.renderPreset=options.mobile?'low':'medium';this.rendering.setPreset(this.renderPreset);
-    this.physics.broadphase = new CANNON.SAPBroadphase(this.physics); this.physics.allowSleep = true;
+    this.physics.broadphase = new VisitorBroadphase(); this.physics.allowSleep = true;
     this.physics.defaultContactMaterial.friction = 0; this.physics.defaultContactMaterial.restitution = 0;
     this.street = new MumbaiStreet(this.physics); this.scene.add(this.street.group);
     // Districts are built on first need and receive the same weathering/haze patch as the street.
     setCityDensity(this.renderPreset);
     // Modelled district traffic loads in the background; lofted bodies stand in until it arrives.
-    this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.fortTraffic = createFortRoadTraffic(() => this.street.loopVehicles); applyStreetAtmosphere(this.fortTraffic.group, this.atmosphere); this.scene.add(this.fortTraffic.group); if (typeof location !== 'undefined') void preloadCityVehicleModels(location.origin).then(() => { if (this.disposed) return; this.fortTraffic.refresh(); this.city.refreshVehicles(); this.pausedFrameDirty = true; }); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}});
+    this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); this.warm(district.group); if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.fortTraffic = createFortRoadTraffic(() => this.street.loopVehicles); applyStreetAtmosphere(this.fortTraffic.group, this.atmosphere); this.scene.add(this.fortTraffic.group); if (typeof location !== 'undefined') void preloadCityVehicleModels(location.origin).then(() => { if (this.disposed) return; this.fortTraffic.refresh(); this.city.refreshVehicles(); this.warm(this.scene); this.pausedFrameDirty = true; }); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}});
     const preview=import.meta.env.DEV?new URLSearchParams(location.search).get('characterPreview'):null;
     // Licensed street cast: approved characters load at runtime; DEV ?characterPreview also shows candidates.
     const castPreview=preview==='idle'||preview==='walk'||preview==='cast';
-    const refresh=()=>{if(!this.disposed){applyStreetAtmosphere(this.scene,this.atmosphere);this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}};
+    const refresh=()=>{if(!this.disposed){applyStreetAtmosphere(this.scene,this.atmosphere);this.warm(this.scene);this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}};
     void this.street.installCast(characterCast,castPreview).then(refresh).catch(error=>console.warn('Street cast unavailable; original figures retained',error));
     // The same licensed people walk every district: one shared set of rigs, borrowing the street's uploaded textures.
     void this.street.sharedAssetLibrary().then(library=>DistrictCast.load(library,characterCast)).then(cast=>{if(this.disposed){cast.dispose();return;}setDistrictCast(cast);this.city.adoptCast(cast);this.fortTraffic.adopt(cast);refresh();}).catch(error=>console.warn('District cast unavailable; procedural figures retained',error));
@@ -293,7 +300,7 @@ export class WorldEngine {
     }
   }
   private resize = () => {
-    const w = Math.max(this.container.clientWidth, 1), h = Math.max(this.container.clientHeight, 1); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,this.options.mobile?1.25:1.5)*this.quality.scale); this.renderer.setSize(w, h, false);this.rendering?.resize(w,h);this.pausedFrameDirty=true;
+    const w = Math.max(this.container.clientWidth, 1), h = Math.max(this.container.clientHeight, 1); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,this.maxPixelRatio)*this.quality.scale); this.renderer.setSize(w, h, false);this.rendering?.resize(w,h);this.pausedFrameDirty=true;
   };
   private releaseInput = () => { this.keys.clear(); this.touchKeys.clear(); this.dragging = null; };
   private unlock() { if (document.pointerLockElement === this.renderer.domElement) document.exitPointerLock(); }
@@ -304,6 +311,7 @@ export class WorldEngine {
     if ((event.target as HTMLElement)?.closest('input, textarea, select, [contenteditable="true"]') || this.mode !== 'world' || this.paused) return;
     const key = event.key.toLowerCase();
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', ',', '.'].includes(key)) { event.preventDefault(); this.keys.add(key); if (key !== 'shift') this.tween = null; if (key === ',' || key === '.') this.noteLook(1); }
+    if (key === ' ' && !event.repeat && this.ride.phase === 'idle' && !this.tween) { event.preventDefault(); this.jumpQueued = true; }
     if (key === 'r' && !event.repeat) this.reset();
     if (key === 'e' && !event.repeat && this.ride.phase === 'idle' && this.nearest) this.interact();
   };
@@ -332,6 +340,59 @@ export class WorldEngine {
   };
   private pointerUp = () => { this.dragging = null; };
   private noteLook(amount: number) { if (this.looked > .6) return; this.looked += amount; if (this.looked > .6) this.options.onLook?.(); }
+  /**
+   * Compile a subtree's shaders before it is first drawn (in parallel where the driver allows):
+   * a district built for an arriving ride, or the cast and vehicle models once they load. Compiling them
+   * inside the first frame that shows them froze the game for a second or more on Windows drivers.
+   */
+  private warm(root: THREE.Object3D) {
+    if (this.disposed) return;
+    const group = new THREE.Group(); root.traverse(o => { if ((o as THREE.Mesh).isMesh) { const c = o.clone(false); c.visible = true; c.matrixWorld.copy(o.matrixWorld); group.add(c); } });
+    // compile() only queues the programs (the driver links them in parallel where KHR_parallel_shader_compile exists);
+    // compileAsync's readiness polling throws if a material is disposed meanwhile, as retired stand-in figures are.
+    try { this.renderer.compile(group, this.camera, this.scene); } catch { /* Compiled on first draw instead. */ } finally { group.clear(); }
+  }
+  /** High keeps 1.5× sharpness on dense displays; Medium and phones stop at 1.25× (MSAA on a 1.5× canvas is 2.25× the fill of 1×). */
+  private get maxPixelRatio() { return !this.options.mobile && this.renderPreset === 'high' ? 1.5 : 1.25; }
+  private appliedLow = false;
+  /** Switch street detail, post-processing and shadows to the low tier once AdaptiveQuality asks for it. Returns whether it did. */
+  private applyLowTier() {
+    if (this.quality.low === this.appliedLow) return false; this.appliedLow = this.quality.low;
+    this.street.setQuality(this.quality.low); this.street.setDensity(this.renderPreset === 'high' && !this.quality.low); this.rendering.setPreset(this.quality.low ? 'low' : this.renderPreset); this.resize();
+    this.renderer.shadowMap.enabled = !this.options.mobile && !this.quality.low && this.renderPreset !== 'low'; this.syncSunBalance(); this.renderer.shadowMap.needsUpdate = true; return true;
+  }
+  private blockers: Blocker[] = []; private jumpQueued = false;
+  /** Vehicles, people and nearby walls around the visitor this frame, in world space. */
+  private collectBlockers() {
+    const out = this.blockers; out.length = 0; const view = this.camera.position;
+    if (this.zone === 0) { this.street.collectBlockers(out, view); this.fortTraffic.collectBlockers(out, ORIGIN, view); } else this.district?.collectBlockers(out, view);
+    if (this.transit.visible) out.push(vehicleBlocker(this.ride.kind === 'auto' ? this.auto : this.taxi, undefined, undefined));
+    // Walls last, so a push out of a person never ends inside a wall.
+    const p = this.visitor.position; collectStaticBlockers(out, this.physics.bodies, p.x, p.z, p.y - FLOOR_Y);
+    return out;
+  }
+  /** True from a jump until the visitor is back on the street floor. */
+  private airborne = false;
+  /**
+   * One 1/60 s step of the visitor: jump, physics, then step out of traffic and people. On foot the visitor
+   * stays on the street floor: the stacked spheres would otherwise ride up the edge of a stall or kerb wall
+   * and climb onto it (and into the awning above). Only a jump leaves the floor.
+   */
+  stepVisitor(blockers: Blocker[]) {
+    const v = this.visitor;
+    if (this.jumpQueued && this.grounded()) { v.velocity.y = 5.4; v.wakeUp(); this.airborne = true; }
+    this.jumpQueued = false;
+    this.physics.step(1 / 60);
+    if (!this.airborne || (v.position.y <= FLOOR_Y + .005 && v.velocity.y <= 0)) { this.airborne = false; v.position.y = FLOOR_Y; if (v.velocity.y > 0) v.velocity.y = 0; }
+    // Traffic and people have no physics bodies: step back out of any the visitor walked into.
+    if (resolveBlockers(v.position, VISITOR_RADIUS, blockers, v.velocity)) v.previousPosition.copy(v.position);
+  }
+  /** Standing on something: the lowest sphere rests on the floor or a solid, not rising or falling. */
+  private grounded() { return !this.airborne || (Math.abs(this.visitor.velocity.y) < .6 && this.contactBelow()); }
+  private contactBelow() {
+    for (const c of this.physics.contacts) { const other = c.bi === this.visitor ? c.bj : c.bj === this.visitor ? c.bi : null; if (!other) continue; const n = c.bi === this.visitor ? -c.ni.y : c.ni.y; if (n > .5) return true; }
+    return this.visitor.position.y < .36;
+  }
   private nearPose = new THREE.Vector4(Infinity, 0, 0, 0);
   /** Re-test targets only after the visitor moves 5 cm or turns, as Bruno Simon's InteractivePoints does; each test casts rays. */
   private updateNearIfMoved() {
@@ -381,11 +442,12 @@ export class WorldEngine {
           const velocity = walkingVelocity(forward, strafe, this.yaw, held('shift') ? 4 : 2.7);
           const physicsDelta=walkingSimulationDelta(elapsed);simulatedWalkingMs=physicsDelta*1000;
           this.accumulator += physicsDelta;
+          const blockers = this.collectBlockers();
           while (this.accumulator >= 1 / 60) {
             if (forward || strafe) this.visitor.wakeUp();
             const blend = 1 - Math.exp(-12 / 60);
             this.visitor.velocity.x += (velocity.x - this.visitor.velocity.x) * blend; this.visitor.velocity.z += (velocity.z - this.visitor.velocity.z) * blend;
-            this.physics.step(1 / 60); this.accumulator -= 1 / 60;
+            this.stepVisitor(blockers); this.accumulator -= 1 / 60;
           }
           if (this.visitor.position.y < -2) this.reset();
           this.gait += Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z) * physicsDelta * 3;
@@ -398,7 +460,7 @@ export class WorldEngine {
       if (this.zone === 0) { this.street.loopTraffic = this.fortTraffic.onLane(FORT_LOOP_LANE); this.street.update(this.time, this.reducedMotion,this.camera.position); this.updateFortTraffic(others); }
       else this.district?.update(this.time, this.reducedMotion, this.camera.position, others);
       const needsRender=!this.reducedMotion||forceRender||this.camera.position.distanceToSquared(this.lastRenderPosition)>1e-8||this.camera.quaternion.angleTo(this.lastRenderRotation)>.0001||(this.renderer.shadowMap.enabled&&this.renderer.shadowMap.needsUpdate);
-      if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)){this.resize();this.street.setQuality(this.quality.low);this.street.setDensity(this.renderPreset==='high'&&!this.quality.low);this.rendering.setPreset(this.quality.low?'low':this.renderPreset);this.resize();this.renderer.shadowMap.enabled=!this.options.mobile&&!this.quality.low&&this.renderPreset!=='low';this.syncSunBalance();this.renderer.shadowMap.needsUpdate=true;}
+      if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)&&!this.applyLowTier())this.resize();
       if(!this.reducedMotion&&!this.paused&&this.time-this.lastShadow>.2&&this.renderer.shadowMap.enabled){this.renderer.shadowMap.needsUpdate=true;this.lastShadow=this.time;}
       this.audio?.update(this.ride.phase==='riding'?this.rideSpeed:Math.hypot(this.visitor.velocity.x,this.visitor.velocity.z),this.ride.phase!=='idle'&&this.ride.phase!=='hailing',this.ride.kind==='auto');
       if(needsRender){this.renderer.info.reset();this.profiler?.beforeRender();const renderStart=performance.now();this.rendering.render(delta);this.profiler?.afterRender({frameMs:elapsed*1000,renderCpuMs:performance.now()-renderStart,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,geometries:this.renderer.info.memory.geometries,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,preset:this.renderPreset,phase:this.ride.phase,worldX:this.visitor.position.x,worldZ:this.visitor.position.z,walkingSimulatedMs:simulatedWalkingMs,shadowRefreshed:this.rendering.frameCost.shadowDraws>0,shadowDraws:this.rendering.frameCost.shadowDraws,shadowTriangles:this.rendering.frameCost.shadowTriangles,shadowDrawCpuMs:this.rendering.frameCost.shadowDrawCpuMs,mainAndOtherDraws:this.rendering.frameCost.mainAndOtherDraws,mainAndOtherTriangles:this.rendering.frameCost.mainAndOtherTriangles});this.lastRenderPosition.copy(this.camera.position);this.lastRenderRotation.copy(this.camera.quaternion);this.debugFrames++;}
