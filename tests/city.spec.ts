@@ -114,11 +114,11 @@ test('reduced-motion transport arrives directly and can be reboarded', async ({ 
   await expect(page.locator('.loader')).toHaveCount(0);
   await page.getByRole('button', { name: 'HAIL AUTO' }).click();
   await page.getByLabel('Ride destination').selectOption('fort');
-  await expect(page.getByRole('status')).toContainText('Arrived');
+  await expect(page.getByRole('region', { name: 'Portfolio Meter' }).getByRole('status')).toContainText('Arrived');
   await page.getByRole('button', { name: 'Exit ride', exact: true }).click();
   await page.getByRole('button', { name: 'HAIL TAXI' }).click();
   await page.getByLabel('Ride destination').selectOption('cst');
-  await expect(page.getByRole('status')).toContainText('Arrived');
+  await expect(page.getByRole('region', { name: 'Portfolio Meter' }).getByRole('status')).toContainText('Arrived');
 });
 
 test('city content survives WebGL fallback on a phone and map labels fit', async ({ page }) => {
