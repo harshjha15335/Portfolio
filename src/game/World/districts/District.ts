@@ -1,3 +1,4 @@
+import type { Blocker } from '../collision/DynamicBlockers';
 import * as THREE from 'three';
 import type * as CANNON from 'cannon-es';
 import type { StreetMaterials } from '../StreetMaterials';
@@ -63,6 +64,8 @@ export class District {
     const signs = this.signs.build(); if (signs) this.group.add(signs);
     const boards = this.exhibitSigns?.build(); if (boards) { boards.name = 'district:exhibits'; this.group.add(boards); }
     this.group.add(this.crowd.group, this.traffic.group); for (const w of this.waters) this.group.add(w.mesh);
+    // Low solids (stalls, benches, posts, parked rows) are what walkers on the pavement must step around.
+    for (const b of this.kit.lowSolids) this.crowd.obstacles.push({ minX: b.min.x, maxX: b.max.x, minZ: b.min.z, maxZ: b.max.z });
     this.spatial = new SpatialIndex(this.kit.colliders); this.kit.colliders.forEach(g => g.dispose()); this.kit.colliders.length = 0;
     this.group.visible = false; this.buildMs = performance.now() - started;
   }
@@ -207,6 +210,12 @@ export class District {
     if (!reduced) for (const w of this.waters) w.update(time);
     for (const m of this.motion) m(reduced ? 0 : time, delta);
   }
+  /** People and moving vehicles near `view` (world space) that the visitor cannot walk through. */
+  collectBlockers(out: Blocker[], view: THREE.Vector3) {
+    const local = this.blockView.copy(view).sub(this.origin);
+    this.crowd.collectBlockers(out, this.origin, local); this.traffic.collectBlockers(out, this.origin, local);
+  }
+  private blockView = new THREE.Vector3();
   /** Release physics bodies and every GPU resource this district owns (shared street maps stay). */
   dispose() {
     for (const body of this.kit.bodies) this.physics.removeBody(body);

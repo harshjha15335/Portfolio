@@ -10,6 +10,9 @@ import { FACADE_PLAIN_V, FACADE_TILE, facadeTexture } from './FacadeTexture';
 export type KitSurface = Surface | 'facade';
 /** Surfaces whose walls are subdivided and aged: baked contact shadow and grime need vertices to live on. */
 const AGED = new Set<KitSurface>(['plaster', 'stone', 'facade']);
+/** Surfaces underfoot or overhead that never block the visitor. */
+const WALK_THROUGH = new Set<KitSurface>(['paving', 'asphalt', 'glow']);
+const SOLID_KINDS = new Set<string>(['box', 'rounded', 'cylinder', 'cylinderLow']);
 const boxes = new Map<string, THREE.BufferGeometry>();
 function segmentedBox(sx: number, sy: number, sz: number) {
   const key = `${sx},${sy},${sz}`; let g = boxes.get(key);
@@ -76,7 +79,35 @@ export class DistrictKit {
   }
   shape(kind: UnitShape | 'plane', size: V3, position: V3, color: string, surface: KitSurface = 'solid', rotation: V3 = [0, 0, 0]) {
     const source = kind === 'box' && AGED.has(surface) && Math.max(...size) > 3.5 ? segmentedBox(segments(size[0]), segments(size[1]), segments(size[2])) : unit[kind];
-    return this.add(source, color, surface, position, size, rotation);
+    const g = this.add(source, color, surface, position, size, rotation);
+    if (SOLID_KINDS.has(kind) && !WALK_THROUGH.has(surface)) this.consider(g, kind === 'box' || kind === 'rounded' ? 1 : 4, size);
+    return g;
+  }
+  /**
+   * Ground-level parts the builders drew without a collider (stalls, kiosks, plinths, hedges, counters):
+   * an upright, axis-aligned box or cylinder spanning knee to head height becomes solid at build time.
+   */
+  private consider(g: THREE.BufferGeometry, fill: number, size: V3) {
+    // `fill`: how much bigger than size³ the unit shape's bounds are (a radius-1 cylinder spans 2 × 2).
+    g.computeBoundingBox(); const b = g.boundingBox!;
+    if (b.min.y > 1.5 || b.max.y < .35 || b.max.y - b.min.y < .3) return;
+    // Only parts whose bounds are their own footprint (turned in quarter turns): a leaning rod's bounds are mostly air.
+    const volume = (b.max.x - b.min.x) * (b.max.y - b.min.y) * (b.max.z - b.min.z), own = Math.abs(size[0] * size[1] * size[2]) * fill;
+    if (!own || volume > own * 1.05) return;
+    this.candidates.push(b.clone());
+  }
+  private candidates: THREE.Box3[] = []; private solids: THREE.Box3[] = [];
+  /** Local (district-space) bounds of every low solid, for crowds to walk around. */
+  readonly lowSolids: THREE.Box3[] = [];
+  private solidifyCandidates() {
+    const inside = (b: THREE.Box3) => this.solids.some(s => s.min.x <= b.min.x + .05 && s.min.z <= b.min.z + .05 && s.max.x >= b.max.x - .05 && s.max.z >= b.max.z - .05 && s.max.y >= Math.min(b.max.y, 1.6) - .05);
+    for (const b of this.candidates) {
+      if (inside(b)) continue;
+      const size = b.getSize(new THREE.Vector3()), c = b.getCenter(new THREE.Vector3());
+      const body = new CANNON.Body({ mass: 0, shape: new CANNON.Box(new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2)), position: new CANNON.Vec3(c.x + this.origin.x, c.y, c.z + this.origin.z) });
+      this.physics.addBody(body); this.bodies.push(body); this.lowSolids.push(b); this.solids.push(b);
+    }
+    this.candidates = [];
   }
   box(size: V3, position: V3, color: string, surface: KitSurface = 'solid', rotationY = 0) { return this.shape('box', size, position, color, surface, [0, rotationY, 0]); }
   cylinder(radius: number, height: number, position: V3, color: string, surface: KitSurface = 'solid', low = false) { return this.shape(low ? 'cylinderLow' : 'cylinder', [radius, height, radius], position, color, surface); }
@@ -92,13 +123,16 @@ export class DistrictKit {
     const p = new THREE.Vector3(), q = new THREE.Quaternion(); m.decompose(p, q, new THREE.Vector3());
     const body = new CANNON.Body({ mass: 0, shape: new CANNON.Box(new CANNON.Vec3(size[0] / 2, size[1] / 2, size[2] / 2)), position: new CANNON.Vec3(p.x, p.y, p.z) });
     body.quaternion.set(q.x, q.y, q.z, q.w); this.physics.addBody(body); this.bodies.push(body);
-    this.colliders.push(new THREE.BoxGeometry(...size).applyMatrix4(new THREE.Matrix4().compose(p, q, new THREE.Vector3(1, 1, 1))));
+    const collider = new THREE.BoxGeometry(...size).applyMatrix4(new THREE.Matrix4().compose(p, q, new THREE.Vector3(1, 1, 1))); this.colliders.push(collider);
+    collider.computeBoundingBox(); const local = collider.boundingBox!.clone().translate(this.origin.clone().negate()); this.solids.push(local);
+    if (local.min.y < 1.6 && local.max.y > .2) this.lowSolids.push(local);
   }
   /** A visible box that is also solid. */
   wall(size: V3, position: V3, color: string, surface: KitSurface = 'plaster', rotationY = 0) { this.box(size, position, color, surface, rotationY); this.solid(size, position, rotationY); }
   readonly bodies: CANNON.Body[] = [];
   /** Merge everything into one mesh per surface. Returns the number of meshes created. */
   build() {
+    this.solidifyCandidates();
     let meshes = 0;
     for (const [surface, list] of this.parts) {
       if (!list.length) continue;
