@@ -4,6 +4,7 @@ import type { District, DistrictSpec } from './District';
 import { bench, bungalow, busStop, glassTower, hangar, hoarding, midrise, neoclassical, palm, sign, stall, streetLight, tetrapods, tree, backdropBlock, type Ctx } from './buildings';
 import type { Outfit } from './CityFolk';
 import type { V3 } from './ColorMesh';
+import { bkcOffice, juhuStudio, studioBungalow, systemsOffice, talkies, talkiesInterior } from './interiors';
 
 /* Painted hoardings and posters. Plain canvas calls only: original artwork, no assets. */
 type Draw = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => void;
@@ -23,24 +24,36 @@ const filmPoster = (bg: string, title: string, tag: string, hue: string): Draw =
   ctx.font = `${Math.round(h * .07)}px Arial, sans-serif`; ctx.fillText(tag, x + w * .95, y + h * .56, w * .55);
   ctx.font = `bold ${Math.round(h * .07)}px Arial, sans-serif`; ctx.fillText('NOW SHOWING · FILM CITY TALKIES', x + w * .95, y + h * .9, w * .8);
 };
+/** The Talkies screen between shows: the title card of tonight's film. */
+const titleCard: Draw = (ctx, x, y, w, h) => {
+  const g = ctx.createLinearGradient?.(x, y, x, y + h); if (g) { g.addColorStop(0, '#2a1d18'); g.addColorStop(1, '#0d0a09'); ctx.fillStyle = g; } else ctx.fillStyle = '#1a1210';
+  ctx.fillRect(x, y, w, h); ctx.fillStyle = '#f7e2b0'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = `${Math.round(h * .07)}px Arial, sans-serif`; ctx.fillText('FILM CITY TALKIES PRESENTS', x + w / 2, y + h * .26, w * .8);
+  ctx.font = `bold ${Math.round(h * .2)}px Georgia, serif`; ctx.fillText('NINE SCENES', x + w / 2, y + h * .47, w * .86);
+  ctx.font = `${Math.round(h * .065)}px Arial, sans-serif`; ctx.fillText('one engineering story · you control the pace', x + w / 2, y + h * .64, w * .8);
+  ctx.fillStyle = '#d8a84a'; ctx.font = `bold ${Math.round(h * .055)}px Arial, sans-serif`; ctx.fillText('STAND IN THE AISLE AND PRESS E', x + w / 2, y + h * .82, w * .8);
+};
 const railBoard: Draw = (ctx, x, y, w, h) => {
   ctx.fillStyle = '#f2c52e'; ctx.fillRect(x, y, w, h); ctx.strokeStyle = '#111'; ctx.lineWidth = h * .05; ctx.strokeRect(x + h * .05, y + h * .05, w - h * .1, h - h * .1);
   ctx.fillStyle = '#111'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = `bold ${Math.round(h * .3)}px Arial, sans-serif`;
   ctx.fillText('दादर', x + w * .2, y + h * .5, w * .3); ctx.fillText('DADAR', x + w * .55, y + h * .5, w * .35); ctx.fillText('दादर', x + w * .85, y + h * .5, w * .25);
 };
 
+/** Yaw that turns a standing or seated person to face (fx, fz). */
+const face = (fx: number, fz: number) => Math.atan2(-fx, -fz);
 const walkersOf = (mix: Outfit[], n: number) => Array.from({ length: n }, (_, i) => mix[(i * 7 + 3) % mix.length]);
 
 /* ============================================================ BKC */
 const bkc: DistrictSpec = {
   id: 'bkc', guide: 'the systems engineer', guideOutfit: 'office', palette: ['#c7c3b8', '#b8bdb9', '#d1cbbd', '#aeb5b6'],
   traffic: ['sedan', 'suv', 'hatch', 'bus', 'taxi', 'sedan', 'auto', 'suv', 'bike', 'hatch', 'sedan', 'taxi', 'suv', 'bike'],
+  eastOpen: [[-7.8, 13.8]],
   build(d) {
     const c = d.ctx, { kit } = c;
     const plaza = (side: number, z0: number, z1: number, depth: number) => kit.box([depth, .07, z0 - z1], [side * (6.8 + depth / 2), .02, (z0 + z1) / 2], '#cfc8ba', 'paving');
     plaza(1, 14, -58, 5); plaza(-1, 14, -58, 5);
     d.frontage(1, [
-      { w: 22, setback: 4.5, build: c => glassTower(c, { w: 22, d: 20, h: 58, glass: '#4d6977', name: 'BKC SYSTEMS OFFICE', nameLocal: 'बीकेसी · CCIEeXpert internship floor' }) },
+      { w: 22, setback: 4.5, build: systemsOffice },
       { w: 10, setback: 4.5, gap: 0, build: c => { const k = c.kit; k.box([8, .5, 8], [0, .25, -4], '#bdb6a6', 'stone'); k.cylinder(2.6, .6, [0, .5, -4], '#a9a395', 'stone'); k.cylinder(2.3, .1, [0, .78, -4], '#5d7d86', 'glass'); for (let i = 0; i < 6; i++) k.rod([Math.cos(i) * .8, .8, -4 + Math.sin(i) * .8], [Math.cos(i) * .3, 2.2, -4 + Math.sin(i) * .3], .05, '#cfe3ea', 'glass'); k.solid([5.4, 1, 5.4], [0, .5, -4]); } },
       { w: 20, setback: 4.5, build: c => glassTower(c, { w: 20, d: 18, h: 74, glass: '#3f6168', frame: '#b8bebb', name: 'TRADE CENTRE' }) },
       { w: 18, setback: 4.5, build: c => glassTower(c, { w: 18, d: 16, h: 46, glass: '#5b7681', frame: '#d6d3cb', name: 'G BLOCK · TOWER 3' }) },
@@ -63,6 +76,11 @@ const bkc: DistrictSpec = {
     d.crowd.idle('vendor', [-6.9, .03, 6.2], -Math.PI / 2, 'sell'); d.crowd.idle('office', [-5.2, .03, 4.8], Math.PI / 2, 'talk'); d.crowd.idle('office', [-5.2, .03, 7.4], Math.PI / 2 + .4, 'talk');
     d.crowd.idle('shirt', [9.9, .03, -11.3], -Math.PI / 2, 'stand');
     d.crowd.idle('office', [8.8, .03, -2], -1.2, 'talk'); d.crowd.idle('office', [9.6, .03, -1.2], 2.2, 'talk');
+    // Inside the Systems Office: reception, three people at their desks, a meeting in the glass room.
+    bkcOffice(c);
+    d.crowd.idle('office', [16.6, .03, 10], face(-1, 0), 'stand');
+    for (const [x, z] of [[19.65, 8.2], [22.85, 10.4], [19.65, 12.6]] as const) d.crowd.idle('office', [x, .03, z], face(1, 0), 'sit');
+    d.crowd.idle('office', [21.8, .03, -3.55], face(0, -1), 'sit'); d.crowd.idle('salwar', [24.4, .03, -5.65], face(0, 1), 'sit');
   },
 };
 
@@ -212,7 +230,7 @@ const worli: DistrictSpec = {
 
 /* ============================================================ JUHU */
 const juhu: DistrictSpec = {
-  id: 'juhu', guide: 'the studio neighbour', guideOutfit: 'kurta', west: 'open', westLimit: 37.5, skyline: 'east',
+  id: 'juhu', guide: 'the studio neighbour', guideOutfit: 'kurta', west: 'open', westLimit: 37.5, skyline: 'east', eastOpen: [[-2.8, 12.8]],
   traffic: ['suv', 'sedan', 'auto', 'bus', 'taxi', 'hatch', 'sedan', 'suv', 'bike', 'sedan', 'auto', 'hatch'],
   build(d) {
     const c = d.ctx, { kit } = c;
@@ -228,7 +246,7 @@ const juhu: DistrictSpec = {
     for (let z = 10; z > -58; z -= 9) palm(c, -9.5 - (Math.abs(z) % 4), z, 8.5, .35);
     for (let i = 0; i < 6; i++) { const z = -16 - i * 6, x = -24 - (i % 3) * 3; kit.cylinder(.04, 2.3, [x, 1.15, z], '#ddd', 'metal', true); kit.shape('cone', [1.5, .6, 1.5], [x, 2.4, z], ['#d64b3a', '#2d6fb0', '#e7b33a'][i % 3], 'fabric'); }
     d.frontage(1, [
-      { w: 18, setback: 2, build: c => bungalow(c, { w: 16, d: 12, studio: true, color: '#f1ece1', name: ['JUHU STUDIO', 'हॅलो · say hello'] }) },
+      { w: 18, setback: 2, build: studioBungalow },
       { w: 15, setback: 2, build: c => bungalow(c, { w: 13, d: 11, color: '#efe1c9', name: ['SEA BREEZE'] }) },
       { w: 16, setback: 2, build: c => midrise(c, { w: 16, d: 13, floors: 3, style: 'deco', ground: 'wall', color: '#f0e4d0', name: ['SANDCASTLE'] }) },
       { w: 15, setback: 2, build: c => bungalow(c, { w: 13, d: 11, color: '#e9dcc4' }) },
@@ -239,12 +257,15 @@ const juhu: DistrictSpec = {
     d.walkers(walkersOf(['shirt', 'salwar', 'jogger'], 5), [-5, -5.6]);
     for (let i = 0; i < 6; i++) d.crowd.idle(i % 2 ? 'vendor' : 'kurta', [-12.6, .03, 6 - i * 6.2], -Math.PI / 2, 'sell');
     for (const [x, z, o, act] of [[-28, -4, 'school', 'wave'], [-29.3, -4.6, 'school', 'stand'], [-22, 2, 'sari', 'stand'], [-21.2, 2.6, 'kurta', 'talk'], [-33, -20, 'shirt', 'stand'], [-15.8, -8, 'salwar', 'talk'], [-15.6, -9.2, 'school', 'stand']] as Array<[number, number, Outfit, 'wave' | 'talk' | 'stand']>) d.crowd.idle(o, [x, .03, z], Math.PI / 2 - (x + z) * .05, act, o === 'school' ? .72 : 1);
+    // The studio: someone at the work table, a friend on the sofa.
+    juhuStudio(c);
+    d.crowd.idle('shirt', [17.3, .03, 5.9], face(1, 0), 'sit'); d.crowd.idle('salwar', [11.25, .03, 10.4], face(1, 0), 'sit');
   },
 };
 
 /* ============================================================ FILM CITY */
 const filmcity: DistrictSpec = {
-  id: 'filmcity', guide: 'the projectionist', guideOutfit: 'shirt', palette: ['#c9c2b0', '#b8b29e', '#d0c4ad'],
+  id: 'filmcity', guide: 'the projectionist', guideOutfit: 'shirt', palette: ['#c9c2b0', '#b8b29e', '#d0c4ad'], eastOpen: [[-7.8, 13.8]],
   traffic: ['suv', 'bus', 'sedan', 'auto', 'hatch', 'sedan', 'tempo', 'suv', 'bike', 'hatch'],
   build(d) {
     const c = d.ctx, { kit } = c;
@@ -253,16 +274,7 @@ const filmcity: DistrictSpec = {
     kit.box([14, 1.6, .9], [0, 7.6, 15], '#7a2c38', 'plaster'); for (const s of [-1, 1]) sign(c, 'FILM CITY · GOREGAON', 11, [0, 7.6, 15 + s * .46], { bg: '#7a2c38', fg: '#f4d488', local: 'दादासाहेब फाळके चित्रनगरी' }, [1024, 160], s < 0 ? Math.PI : 0);
     // Film City Talkies: an Art Deco single-screen with a bulb-lit marquee.
     d.frontage(1, [
-      { w: 22, setback: 1, build: c => {
-        const k = c.kit, H = midrise(c, { w: 22, d: 16, floors: 3, style: 'deco', ground: 'lobby', color: '#d9b98f' });
-        k.box([16, 1.6, 3], [0, 3.6, 1.6], '#2b2220', 'solid');
-        for (let x = -7.8; x <= 7.8; x += .4) for (const y of [2.84, 4.36]) k.shape('sphere', [.06, .06, .06], [x, y, 3.12], '#ffe3a0', 'glow');
-        sign(c, 'FILM CITY TALKIES', 14, [0, 3.6, 3.12], { bg: '#2b2220', fg: '#ffd56a', border: 'none', local: 'आज का शो · tonight: one engineering story' }, [1024, 128]);
-        k.box([2.4, H - 3, .8], [7.5, (H + 3) / 2 + 1, .6], '#8a2f36', 'plaster'); sign(c, 'TALKIES', H - 5, [8.72, (H + 3) / 2 + 1, .6], { bg: '#8a2f36', fg: '#ffe6a6', border: 'none' }, [768, 160], Math.PI / 2);
-        for (const x of [-9.6, 9.6]) { k.box([2.6, 3.6, .1], [x, 2.2, .3], '#222', 'solid'); }
-        sign(c, 'SCENE 1', 2.4, [-9.6, 2.2, .37], { draw: filmPoster('#3a1f4a', 'THE ROUTE', 'from student to builder', '#e05a3a') }, [384, 528]);
-        sign(c, 'SCENE 2', 2.4, [9.6, 2.2, .37], { draw: filmPoster('#173a4a', 'UPSTREAM', 'five pull requests, one summer', '#e0b03a') }, [384, 528]);
-      } },
+      { w: 22, setback: 1, build: c => talkies(c, { screen: titleCard }) },
       { w: 26, setback: 3, build: c => hangar(c, { w: 26, d: 30, h: 14, label: 'STAGE 3' }) },
       { w: 24, setback: 3, build: c => hangar(c, { w: 24, d: 30, h: 13, label: 'STAGE 7', color: '#bfb9a6' }) },
     ]);
@@ -272,6 +284,13 @@ const filmcity: DistrictSpec = {
       { w: 20, setback: 4, build: c => { const k = c.kit; k.box([20, .06, 12], [0, .03, -6], '#9a8e78', 'wood'); for (const x of [-6, 0, 6]) { k.box([4, 3, 3.5], [x, 1.5, -8], '#b78a5a', 'plaster'); k.solid([4, 3, 3.5], [x, 1.5, -8]); k.box([1, 1.9, .06], [x, .95, -6.22], '#4a3524', 'wood'); k.shape('cone', [3.4, 2, 3.4], [x, 4.0, -8], '#b59c5a', 'fabric', [0, Math.PI / 4, 0]); } sign(c, 'VILLAGE SET · QUIET PLEASE', 6, [0, 5.8, -1], { bg: '#222', fg: '#f04a3a', border: 'none' }, [1024, 128]); } },
       { w: 22, setback: 3, build: c => hangar(c, { w: 22, d: 26, h: 12, label: 'STAGE 9', color: '#c4bca9' }) },
     ]);
+    // Inside the Talkies: the posters that used to hang outside now line the lobby; a few people are early for the show.
+    talkiesInterior(c);
+    sign(c, 'SCENE 1', 1.5, [9.8, 1.9, -7.59], { draw: filmPoster('#3a1f4a', 'THE ROUTE', 'from student to builder', '#e05a3a') }, [256, 352]);
+    sign(c, 'SCENE 2', 1.5, [12.6, 1.9, -7.59], { draw: filmPoster('#173a4a', 'UPSTREAM', 'five pull requests, one summer', '#e0b03a') }, [256, 352]);
+    for (const [x, title, tag, bg, hue] of [[9.8, 'SIGNALS', 'what the receipts say', '#3a2a14', '#e05a3a'], [12.6, 'NEXT CHAPTER', 'still being written', '#14303a', '#f0b03a']] as const) sign(c, title, 1.5, [x, 1.9, 13.59], { draw: filmPoster(bg, title, tag, hue) }, [256, 352], Math.PI);
+    d.crowd.idle('sari', [21.2, .03, 5.82], face(1, 0), 'sit'); d.crowd.idle('kurta', [21.2, .03, 7.06], face(1, 0), 'sit'); d.crowd.idle('school', [24.5, .03, -4.74], face(1, 0), 'sit', .72);
+    d.crowd.idle('worker', [14.7, .03, 11.2], face(-1, 0), 'stand');
     // A film unit mid-shoot: camera crane, lights, director's chair.
     const rig = (x: number, z: number) => { kit.rod([x, 0, z], [x, 2.6, z], .03, '#222', 'metal'); kit.box([.6, .5, .3], [x, 2.8, z], '#1e1e1e', 'metal'); kit.box([.5, .4, .02], [x, 2.8, z + .16], '#fff3c8', 'glow'); for (let a = 0; a < 3; a++) kit.rod([x, 1.2, z], [x + Math.cos(a * 2.1) * .5, 0, z + Math.sin(a * 2.1) * .5], .02, '#222', 'metal'); };
     rig(-12.2, -17.5); rig(-12.4, -27.5); kit.box([.8, 1.0, .8], [-8.6, .5, -22], '#2b2b2b', 'metal'); kit.solid([.8, 1, .8], [-8.6, .5, -22]); kit.rod([-8.6, 1, -22], [-11.6, 3.2, -22.6], .08, '#3a3a3a', 'metal'); kit.box([.7, .45, .5], [-11.6, 3.3, -22.6], '#111', 'metal');

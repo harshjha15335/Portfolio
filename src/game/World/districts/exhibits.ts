@@ -25,9 +25,9 @@ function painter(e: DistrictExhibit, accent: string) {
 }
 
 /**
- * Free-standing exhibit boards for one district: two posts, a framed board facing the road,
+ * Exhibit boards for one district: by default two posts, a framed board facing the road,
  * a solid base (low, so line of sight to the board stays clear) and an interaction just in
- * front of the face. Boards paint into their own small atlas so the district's sign atlas
+ * front of the face. Wall boards hang on a wall instead, and markers are only the interaction. Boards paint into their own small atlas so the district's sign atlas
  * keeps its space; all boards in a district merge into one draw.
  */
 export function buildExhibits(d: District) {
@@ -35,8 +35,15 @@ export function buildExhibits(d: District) {
   const atlas = new SignAtlas(1024), { kit } = d, accent = districts.find(x => x.id === d.spec.id)?.color ?? '#2f4a4a';
   const { width, height, centre } = EXHIBIT_PANEL;
   for (const e of list) {
-    const nx = e.x > 0 ? -1 : 1, yaw = nx < 0 ? -Math.PI / 2 : Math.PI / 2;
-    kit.frame([e.x, 0, e.z], yaw, () => {
+    const nx = e.x > 0 ? -1 : 1, yaw = nx < 0 ? -Math.PI / 2 : Math.PI / 2, mount = e.mount ?? 'board';
+    if (mount !== 'marker') kit.frame([e.x, 0, e.z], yaw, () => {
+      if (mount === 'wall') {
+        // Flush on the wall behind: a frame and an accent rail, nothing on the floor.
+        kit.box([width + .16, height + .14, .05], [0, centre, -.04], '#2b3233', 'metal');
+        kit.box([width + .3, .06, .1], [0, centre + height / 2 + .12, -.02], accent, 'metal');
+        atlas.add(e.panel.title, width, placed([0, centre, -.01], 0, kit.here), { draw: painter(e, accent) }, [512, 256]);
+        return;
+      }
       // Local frame: +z is the board's facing direction.
       for (const sx of [-1, 1]) kit.box([.07, centre + height / 2 + .2, .07], [sx * (width / 2 + .06), (centre + height / 2 + .2) / 2, -.03], '#2b3233', 'metal');
       kit.box([width + .16, height + .14, .05], [0, centre, -.04], '#2b3233', 'metal');

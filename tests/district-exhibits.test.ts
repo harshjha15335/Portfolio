@@ -46,3 +46,28 @@ describe('district exhibits', () => {
 it('keep clear of the street lights (every 16 m from z = 10 at |x| = 6.4)', () => {
   for (const e of DISTRICT_EXHIBITS) if (Math.abs(Math.abs(e.x) - 6.4) < 1) for (let z = 10; z > -60; z -= 16) expect(Math.abs(e.z - z), e.id).toBeGreaterThan(2);
 });
+it('can be walked to from the pavement, through the doors of the walk-in buildings', () => {
+  const physics = new CANNON.World(), street = new MumbaiStreet(physics), city = new CityDistricts(physics, street.surfaceLibrary, new THREE.Group(), () => {});
+  // Pavement → doorway → inside, then on to each reading spot (local frame).
+  const routes: Record<string, { entry: Array<[number, number]>; via?: Record<string, Array<[number, number]>> }> = {
+    bkc: { entry: [[6.5, 3], [13, 3]] },
+    juhu: { entry: [[6, 5], [12, 5]] },
+    filmcity: { entry: [[6, 3], [12, 3]], via: { 'filmcity-screen': [[17, 3]] } },
+  };
+  for (const [id, route] of Object.entries(routes)) {
+    const i = cityZones.findIndex(z => z.id === id), zone = cityZones[i], d = city.activate(i)!;
+    // The opened stretch of the district limit is closed again by the building's own back wall.
+    expect(d.spatial.hit(new THREE.Vector3(zone.originX + 14, 1.3, route.entry[1][1]), new THREE.Vector3(1, 0, 0), 30), `${id} open at the back`).toBeTruthy();
+    for (const e of exhibitsOf(id)) {
+      const spot = readingSpot(e), path = [...route.entry, ...(route.via?.[e.id] ?? []), [spot.x, spot.z] as [number, number]];
+      for (let k = 1; k < path.length; k++) {
+        const [ax, az] = path[k - 1], [bx, bz] = path[k], length = Math.hypot(bx - ax, bz - az), dir = new THREE.Vector3(bx - ax, 0, bz - az).normalize();
+        // Shoulders either side and two heights: knees and chest.
+        for (const side of [-.25, 0, .25]) for (const y of [.6, 1.3]) {
+          const origin = new THREE.Vector3(zone.originX + ax - dir.z * side, y, az + dir.x * side);
+          expect(d.spatial.hit(origin, dir, length), `${e.id}: leg ${k} blocked`).toBeFalsy();
+        }
+      }
+    }
+  }
+}, 120_000);

@@ -15,13 +15,13 @@ Two ways into the same portfolio:
 | --- | --- | --- |
 | CST Arrival Terminus | Intro, orientation, departure board indexing every district | Station front, Radio House benchmark façade, taxi and auto stands, Rocketbox crowd, modelled traffic |
 | Fort Research Institute | GSoC 2026, QC-Devs/Theochem, FFprime | Furnished research room: gradient-check activity, coordinate workstation, FFprime terminal, contribution board |
-| BKC Systems Office | CCIEeXpert internship | Boulevard and plaza with a rate-limit console |
+| BKC Systems Office | CCIEeXpert internship | Boulevard, plaza and a walk-in lobby floor: reception, open-plan desks, a glass meeting room, the brief and request path on the wall, a rate-limit console |
 | Andheri Tech Bazaar | Skills with evidence | Lane with five skill shops running real logic |
 | Powai Builder's District | Flagship projects | Lakeside towers; working demo labs for NORTHSTAR, MoneyMetrics, Meeting Intelligence, RideFlow, RepoLens and ASTFLOW |
 | Dadar Junction | Education and timeline | Station, chawl and maidan; six platform boards |
 | Worli Proof Deck | Achievements | Sea face with four evidence cases |
-| Juhu Studio | About, résumé, contact | Beach, stalls and three boards in front of the studio |
-| Film City Talkies | Nine-scene journey | Studio lot, box office and scene board; the theatre itself is an HTML slideshow |
+| Juhu Studio | About, résumé, contact | Beach, stalls and a walk-in studio behind a garden gate: work table, bookshelf, sofa, notice board, résumé stand, contact terminal |
+| Film City Talkies | Nine-scene journey | Studio lot and a walk-in cinema: lobby with box office, scene board and snack counter, a ten-row auditorium whose screen starts the film (the film itself is the HTML slideshow) |
 
 Every district has a guide, exhibits opened with E, a generated guided tour, and journal entries. Progress (journal, achievements, quest) is stored locally under `hj-progress-v1`.
 
@@ -94,7 +94,7 @@ Tracked from the 20 October gap audit:
 
 - Real-device frame times (laptop GPU, Android phone) are unmeasured.
 - Texture and shader-program budgets are exceeded on Medium.
-- BKC and Juhu have no walk-in interiors; Film City has no physical auditorium.
+- Only BKC, Juhu and Film City have walk-in interiors. Rooms have no lights of their own: walls and ceilings use the unlit `glow` surface as stand-in bounce light, because a point light would change every district program (`districts/interiors.ts`).
 - Powai's flagship projects share generic towers rather than distinct buildings.
 - Pedestrians and traffic can overlap at crossings; vehicles do not stop at signals.
 - The map does not draw the active objective or waypoint.

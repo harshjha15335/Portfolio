@@ -34,6 +34,8 @@ export interface DistrictSpec {
   palette?: string[]; skyline?: 'all' | 'east';
   /** Walkable limit on that side (default 19.5 m from the road centre). */
   westLimit?: number; eastLimit?: number;
+  /** Stretches of the east limit (z ranges) left open because a walk-in building's own walls enclose them. */
+  eastOpen?: Array<[number, number]>;
   traffic: CityVehicleKind[];
   /** Scales this district's share of the crowd (the bazaar is already packed with stalls). */
   crowd?: number;
@@ -86,7 +88,13 @@ export class District {
       streetClutter(c, side, this.zone.stop);
     }
     // The walkable envelope. Invisible; the road visibly continues past it.
-    for (const side of [-1, 1]) kit.solid([1, 4, 86], [side * ((side < 0 ? this.spec.westLimit : this.spec.eastLimit) ?? 19.5), 2, -22]);
+    for (const side of [-1, 1]) {
+      const x = side * ((side < 0 ? this.spec.westLimit : this.spec.eastLimit) ?? 19.5);
+      // The limit runs z −65…21, broken where a walk-in building takes over.
+      const open = side > 0 ? [...(this.spec.eastOpen ?? [])].sort((a, b) => b[1] - a[1]) : [];
+      let top = 21;
+      for (const [z0, z1] of [...open, [-65, -65] as [number, number]]) { if (top - z1 > .01) kit.solid([1, 4, top - z1], [x, 2, (top + z1) / 2]); top = Math.min(top, z0); }
+    }
     kit.solid([40, 4, 1], [0, 2, -64]); kit.solid([40, 4, 1], [0, 2, 21]);
     // Continuation blocks beyond the walkable ends, facing the road.
     for (const side of [-1, 1]) {
