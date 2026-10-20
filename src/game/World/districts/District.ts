@@ -40,7 +40,8 @@ export interface DistrictSpec {
   traffic: CityVehicleKind[];
   /** Scales this district's share of the crowd (the bazaar is already packed with stalls). */
   crowd?: number;
-  build: (d: District) => void;
+  /** Yields between pieces so the district can be built over several frames. */
+  build: (d: District) => Generator<void> | void;
 }
 
 /**
@@ -84,8 +85,8 @@ export class District {
   }
   finish() { this.step(Infinity); }
   private *construct(): Generator<void> {
-    this.street(); yield;
-    this.spec.build(this); yield;
+    yield* this.street();
+    const spec = this.spec.build(this); if (spec) yield* spec; yield;
     while (this.queued.length) { this.queued.shift()!(); yield; }
     this.exhibitSigns = buildExhibits(this); this.guide(); yield;
     yield* this.populateTraffic(); this.crossing(); yield;
@@ -99,7 +100,7 @@ export class District {
     this.spatial = new SpatialIndex(this.kit.colliders); this.kit.colliders.forEach(g => g.dispose()); this.kit.colliders.length = 0;
   }
   /** Shared road, pavements, lights, limits and backdrop. */
-  private street() {
+  private *street(): Generator<void> {
     const { kit } = this, c = this.ctx, palette = this.spec.palette ?? PASTELS;
     kit.box([300, .1, 340], [0, -.12, -22], '#6d6f69', 'asphalt');
     kit.box([7.8, .04, 340], [0, -.03, -22], '#55585a', 'asphalt');
@@ -112,7 +113,7 @@ export class District {
       for (let z = 118; z > -160; z -= 1.7) kit.box([.24, .14, 1.6], [side * 3.98, .06, z], Math.floor(z / 1.7) % 2 ? '#c7a84f' : '#2f2e2b');
       for (let z = 10; z > -60; z -= 16) streetLight(c, side * 6.4, z, side);
       for (let z = 9; z > -60; z -= 4.5) kit.box([.65, .015, .45], [side * 3.45, .005, z], '#2a2e33', 'metal');
-      streetClutter(c, side, this.zone.stop);
+      streetClutter(c, side, this.zone.stop); yield;
     }
     // The walkable envelope. Invisible; the road visibly continues past it.
     for (const side of [-1, 1]) {
@@ -130,6 +131,7 @@ export class District {
         const h = 10 + Math.abs(Math.sin(z * 1.7 + side)) * 16, w = 13.5;
         kit.frame([side * (8.5 + (Math.abs(z) % 3)), 0, z + (z0 > 0 ? 7 : -7)], side > 0 ? -Math.PI / 2 : Math.PI / 2, () => { backdropBlock(c, w, h, 12, palette[Math.abs(Math.round(z)) % palette.length]); rooftop(c, w, h, 12); });
       }
+      yield;
     }
     // Skyline: a ring of mid-rises, slab blocks and the odd tall tower with a crown or a crane.
     const tones = ['#c9c3b4', '#d6c7b2', '#b9b8ae', '#cdb9a8', '#c2c7c4', '#d9d0bd', '#bfae9a', '#aeb7bd'];
@@ -142,7 +144,9 @@ export class District {
         else if (pickType < .5) { const h = 24 + this.kit.rand() * 10; backdropBlock(c, 34, h, 12, tone); towerRelief(c, 34, h, 12, tone); }
         else { const h = 18 + (i % 5) * 5; backdropBlock(c, 24, h, 12, tone); towerRelief(c, 24, h, 12, tone); rooftop(c, 24, h, 12); }
       });
+      if (i % 4 === 3) yield;
     }
+    yield;
     // A tower going up somewhere on the horizon, with its crane.
     const ca = (this.spec.skyline === 'east' ? .6 : -.9) + this.kit.rand() * .4;
     kit.frame([Math.sin(ca) * 132, 0, -22 + Math.cos(ca) * 132], ca + Math.PI, () => constructionSite(c));
@@ -236,6 +240,7 @@ export class District {
           const p = this.crowd.idle(mix[Math.floor(r() * mix.length)], [px, .03, pz], 0, i === 0 || r() > .5 ? 'talk' : 'stand');
           p.group.rotation.y = Math.atan2(px - x, pz - z);
         }
+        yield;
       }
       // Two-wheelers parked in line along the kerb, in clusters. Nose-in rows would reach into the traffic lane
       // (a 2 m bike from the kerb ends where a passing car's flank is), so they stand parallel, clear of it.
@@ -243,11 +248,11 @@ export class District {
       for (let z = 10 - r() * 4; z > -58; z -= 16 + r() * 8) {
         const count = 2 + Math.floor(r() * 3), span = count * 2.2;
         if (!this.clearOf(side * 3.45, z) || !this.clearOf(side * 3.45, z - span)) continue;
-        for (let i = 0; i < count; i++) this.parkedLite(kinds[Math.floor(r() * kinds.length)], side * 3.45, z - 1.1 - i * 2.2, (side > 0 ? Math.PI : 0) + (r() - .5) * .12);
+        for (let i = 0; i < count; i++) { this.parkedLite(kinds[Math.floor(r() * kinds.length)], side * 3.45, z - 1.1 - i * 2.2, (side > 0 ? Math.PI : 0) + (r() - .5) * .12); yield; }
         this.kit.solid([.8, 1.2, span], [side * 3.45, .6, z - span / 2]); yield;
       }
     }
-    this.flushParked();
+    yield; this.flushParked();
   }
   private parkedParts: THREE.BufferGeometry[] = [];
   /** Queue a static vehicle into the district's single merged parked-vehicle mesh. */
