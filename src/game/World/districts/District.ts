@@ -14,7 +14,7 @@ import { paintMaterial, withFinish, type V3 } from './ColorMesh';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { buildExhibits } from './exhibits';
 import { exhibitsOf } from '../../../data/districtExhibits';
-import { crossingHeld, pedestrianGreen } from '../traffic/RoadTraffic';
+import { crossingHeld, pedestrianGreen, zebraBusy } from '../traffic/RoadTraffic';
 
 /**
  * How full the districts are, set from the graphics preset before a district is built
@@ -22,6 +22,18 @@ import { crossingHeld, pedestrianGreen } from '../traffic/RoadTraffic';
  */
 /** Where district traffic enters and leaves the road (z): far enough out that vehicles appear and vanish beyond the haze. */
 const LANE_END = [150, -190] as const;
+/**
+ * A district street's through traffic: a northbound lane on the east side and a southbound one on the west
+ * (Mumbai drives on the left), vehicles of `kinds` spread along both (scaled by cityDensity), and stop lines
+ * either side of the zebra. A generator, one vehicle per step, so the build can be time-sliced.
+ */
+export function* districtTraffic(traffic: LaneTraffic, mix: CityVehicleKind[], id: string): Generator<void> {
+  const n = Math.round(mix.length * cityDensity.traffic), kinds = Array.from({ length: n }, (_, i) => mix[(i * 7) % mix.length]);
+  const north = traffic.lane([[1.6, 0, LANE_END[0]], [1.6, 0, LANE_END[1]]], false, () => [], 'north'), south = traffic.lane([[-1.6, 0, LANE_END[1]], [-1.6, 0, LANE_END[0]]], false, () => [], 'south');
+  for (const [i, kind] of kinds.entries()) { traffic.vehicle(i % 2 ? south : north, kind, ((i >> 1) + (i % 2) * .5) / Math.ceil(kinds.length / 2), `${id}:${i}`); yield; }
+  // Both lanes stop short of the zebra (z −13.3…−10.7) while the crossing is held.
+  traffic.stopLine(north, ZEBRA_Z + 2.8, crossingHeld); traffic.stopLine(south, ZEBRA_Z - 2.8, crossingHeld);
+}
 export const cityDensity = { crowd: 1.35, traffic: 1.7 };
 export function setCityDensity(preset: 'low' | 'medium' | 'high') {
   Object.assign(cityDensity, preset === 'low' ? { crowd: .9, traffic: 1 } : preset === 'high' ? { crowd: 2.6, traffic: 2.4 } : { crowd: 1.35, traffic: 1.7 });
@@ -159,10 +171,7 @@ export class District {
     this.interactions.push({ id: this.spec.id, label: `Talk to ${this.spec.guide}`, position: new THREE.Vector3(this.origin.x + gx, 1.45, gz) });
   }
   private *populateTraffic(): Generator<void> {
-    const n = Math.round(this.spec.traffic.length * cityDensity.traffic), kinds = Array.from({ length: n }, (_, i) => this.spec.traffic[(i * 7) % this.spec.traffic.length]), north = this.traffic.lane([[1.6, 0, LANE_END[0]], [1.6, 0, LANE_END[1]]]), south = this.traffic.lane([[-1.6, 0, LANE_END[1]], [-1.6, 0, LANE_END[0]]]);
-    for (const [i, kind] of kinds.entries()) { this.traffic.vehicle(i % 2 ? south : north, kind, ((i >> 1) + (i % 2) * .5) / Math.ceil(kinds.length / 2), `${this.spec.id}:${i}`); yield; }
-    // Both lanes stop short of the zebra (z −13.3…−10.7) while the crossing is held.
-    this.traffic.stopLine(north, ZEBRA_Z + 2.8, crossingHeld); this.traffic.stopLine(south, ZEBRA_Z - 2.8, crossingHeld);
+    for (const _ of districtTraffic(this.traffic, this.spec.traffic, this.spec.id)) yield;
   }
   /** The zebra's signals and the people who use it. */
   private crossing() {
@@ -179,7 +188,7 @@ export class District {
     // Two people use the zebra, one from each side, at a walking pace that clears the road inside the hold.
     this.crowd.crosser(mix[1 % mix.length], ZEBRA_Z - .5, -4.4, 4.4); this.crowd.crosser(mix[3 % mix.length], ZEBRA_Z + .5, 4.4, -4.4);
     // A slow cart or bus can still be on the stripes when the walk signal comes; nobody steps out in front of it.
-    this.crowd.crossingBusy = () => this.traffic.moving.some(v => Math.abs(v.position.z - ZEBRA_Z) < v.length / 2 + 1.8);
+    this.crowd.crossingBusy = () => zebraBusy(this.traffic.moving.map(v => ({ x: v.position.x, z: v.position.z, yaw: v.yaw, speed: v.speed, halfLength: v.length / 2 })), ZEBRA_Z);
   }
   private signalLamps: { walk: THREE.Mesh; wait: THREE.Mesh } | null = null;
   /* --------- helpers used by district builders --------- */
@@ -202,7 +211,7 @@ export class District {
     const mesh = createCityVehicle(kind, `${this.spec.id}:parked:${x}:${z}`, rider, true); mesh.position.set(x, .02, z); mesh.rotation.y = yaw; mesh.updateMatrix();
     this.parkedParts.push(mesh.geometry.applyMatrix4(mesh.matrix));
     const length = VEHICLE_LENGTH[kind], width = kind === 'bus' ? 2.5 : kind === 'bike' || kind === 'cycle' ? .7 : 1.7;
-    this.kit.solid([width, 1.4, length], [x, .7, z], yaw);
+    this.kit.solid([width, 1.4, length], [x, .7, z], yaw); this.traffic.parkedAt(kind, x, z, yaw);
   }
   water(width: number, depth: number, center: V3, color: string, amplitude?: number) { const w = new Water(width, depth, center, color, amplitude); this.waters.push(w); return w; }
   animate(step: (time: number, delta: number) => void) { this.motion.push(step); }
@@ -266,11 +275,11 @@ export class District {
     mesh.name = 'district:parked'; mesh.castShadow = mesh.receiveShadow = true; this.group.add(mesh);
   }
   setActive(active: boolean) { this.group.visible = active; }
-  update(time: number, reduced: boolean, view: THREE.Vector3, others: THREE.Vector3[] = []) {
+  update(time: number, reduced: boolean, view: THREE.Vector3, others: THREE.Vector3[] = [], context: Parameters<LaneTraffic['update']>[4] = {}) {
     const delta = reduced ? 0 : Math.min(.08, Math.max(0, time - this.previous)); this.previous = time;
     const local = view.clone().sub(this.origin);
     this.crowd.update(reduced ? 0 : time, delta, local);
-    this.traffic.update(time, delta, [local, ...others.map(o => o.clone().sub(this.origin))], this.crowd.onRoad());
+    this.traffic.update(time, delta, [local, ...others.map(o => o.clone().sub(this.origin))], this.crowd.onRoad(), context);
     if (this.signalLamps) { const walk = pedestrianGreen(reduced ? 0 : time); this.signalLamps.walk.visible = walk; this.signalLamps.wait.visible = !walk; }
     if (!reduced) for (const w of this.waters) w.update(time);
     for (const m of this.motion) m(reduced ? 0 : time, delta);

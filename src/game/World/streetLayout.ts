@@ -14,13 +14,26 @@ export function streetRideRoute(start: Point, destination: string): Point[] {
   const ox = Math.round(target.x / 600) * 600;
   return localRoute({ x: start.x - ox, z: start.z }, { x: target.x - ox, z: target.z }).map(p => ({ x: p.x + ox, z: p.z }));
 }
+/** Lane centres the rides use (local x): northbound (−z) on the east side, southbound on the west, as Mumbai drives on the left. */
+const RIDE_LANE = 1.8;
+/** Where a ride pulls out of or into the kerb: over a few metres of road, never sideways on the spot. */
+const pull = (span: number) => Math.max(4, Math.min(6, Math.abs(span) / 3));
 function localRoute(start: Point, end: Point): Point[] {
-  // A two-lane U-turn at either end. Stops remain on the pedestrian side.
-  const north = -52, south = 12, lane = 1.8;
-  if (end.z < start.z && end.x > 0) return [start, { x: lane, z: start.z }, { x: lane, z: end.z }, { x: 3.2, z: end.z }];
-  if (end.z >= start.z && end.x < 0) return [start, { x: -lane, z: start.z }, { x: -lane, z: end.z }, { x: -3.2, z: end.z }];
-  if (end.z < start.z) return [start, { x: lane, z: start.z }, { x: lane, z: north }, { x: 0, z: north - 2 }, { x: -lane, z: north }, { x: -lane, z: end.z }, { x: -3.2, z: end.z }];
-  return [start, { x: -lane, z: start.z }, { x: -lane, z: south }, { x: 0, z: south + 2 }, { x: lane, z: south }, { x: lane, z: end.z }, { x: 3.2, z: end.z }];
+  // Keeping to the left: a cab at an east kerb faces north (−z), one at a west kerb south. It turns round only
+  // at the U-turns at either end of the street (as the Fort Road loop does). Stops remain on the pedestrian side.
+  const north = -52, south = 12, lane = RIDE_LANE, fromEast = start.x >= 0, toEast = end.x >= 0;
+  const out: Point[] = [start, fromEast ? { x: lane, z: Math.max(north + 2, start.z - 4) } : { x: -lane, z: Math.min(south - 2, start.z + 4) }];
+  const northTurn = [{ x: lane, z: north }, { x: 0, z: north - 2 }, { x: -lane, z: north }], southTurn = [{ x: -lane, z: south }, { x: 0, z: south + 2 }, { x: lane, z: south }];
+  // Heading north on the east lane, the stop is ahead if it is on the east side and north of here; similarly south.
+  let heading: 'north' | 'south' = fromEast ? 'north' : 'south', at = out[1].z;
+  for (let turns = 0; turns < 3; turns++) {
+    if (heading === 'north' && toEast && end.z + 7.5 <= at) break;
+    if (heading === 'south' && !toEast && end.z - 7.5 >= at) break;
+    // CST's forecourt stop is right where the south U-turn comes out: a wide turn, so the body stays on the road.
+    if (heading === 'south' && toEast && end.z + 4 >= south) return [...out, { x: -lane, z: south - 1 }, { x: -.6, z: south + 2.2 }, { x: 1.6, z: south + 2 }, { x: 2.6, z: end.z + .5 }, { x: 2.8, z: end.z - .8 }];
+    if (heading === 'north') { out.push(...northTurn); heading = 'south'; at = north; } else { out.push(...southTurn); heading = 'north'; at = south; }
+  }
+  return toEast ? [...out, { x: lane, z: end.z + 7.5 }, { x: 3.2, z: end.z + 1.5 }, { x: 3.2, z: end.z }] : [...out, { x: -lane, z: end.z - 7.5 }, { x: -3.2, z: end.z - 1.5 }, { x: -3.2, z: end.z }];
 }
 export function walkingVelocity(forward: number, strafe: number, yaw: number, speed: number): Point {
   const length = Math.max(1, Math.hypot(forward, strafe));
@@ -28,12 +41,36 @@ export function walkingVelocity(forward: number, strafe: number, yaw: number, sp
 }
 
 
-/** Pickup stays clear of the station frontage, including the full vehicle length. */
-export function streetPickupRoute(visitor:Point):Point[] {
-  const ox=Math.round(visitor.x/600)*600,x=ox+(visitor.x-ox<0?-2.8:2.8),z=Math.max(-49,Math.min(11,visitor.z));
-  return [{x,z:z+(z>6?-8:8)},{x,z}];
+/** The last `keep` metres of a polyline. */
+function tail(points: Point[], keep: number): Point[] {
+  const out: Point[] = [points[points.length - 1]]; let left = keep;
+  for (let i = points.length - 1; i > 0 && left > 0; i--) {
+    const a = points[i - 1], b = points[i], len = Math.hypot(b.x - a.x, b.z - a.z);
+    if (len >= left) { const t = left / len; out.unshift({ x: b.x + (a.x - b.x) * t, z: b.z + (a.z - b.z) * t }); left = 0; } else { out.unshift(a); left -= len; }
+  }
+  return out;
 }
-
+/** How far up the lane (m) a hailed cab may start, farthest first: out of the near field, ideally out of sight. */
+export const PICKUP_STARTS = [55, 46, 38, 30];
+/**
+ * Routes a hailed cab can take to the kerb beside the visitor, farthest start first. The cab drives in along
+ * its lane with the traffic (on Fort Road round the forecourt or the north U-turn of the loop) and pulls in
+ * over the last metres, stopping at x = ±2.8 on the visitor's side. `clear(x, z)` rejects kerb spots taken by
+ * parked vehicles; the stop moves along the kerb to the nearest free one.
+ */
+export function pickupRoutes(visitor: Point, clear: (x: number, z: number) => boolean = () => true): Point[][] {
+  const ox = Math.round(visitor.x / 600) * 600, east = visitor.x - ox >= 0, fort = ox === 0, side = east ? 1 : -1;
+  const [lo, hi] = fort ? (east ? [-45, 6] : [-45, 11]) : [-60, 40];
+  let z = Math.max(lo, Math.min(hi, visitor.z));
+  for (const offset of [0, 2, -2, 4, -4, 6, -6, 8, -8, 10, -10, 12, -12]) { const c = Math.max(lo, Math.min(hi, z + offset)); if (clear(ox + side * 2.8, c)) { z = c; break; } }
+  const kerb = { x: side * 2.8, z }, settle = { x: side * 2.8, z: z + (east ? 1.5 : -1.5) }, entry = east ? { x: 1.75, z: z + 6 } : { x: -1.75, z: z - 6 };
+  const lane: Point[] = fort
+    ? (east ? [{ x: -1.75, z: -51 }, { x: -1.75, z: 12 }, { x: 0, z: 14 }, { x: 1.75, z: 12 }, entry] : [{ x: 1.75, z: 12 }, { x: 1.75, z: -51 }, { x: 0, z: -54 }, { x: -1.75, z: -51 }, entry])
+    : (east ? [{ x: 1.6, z: 150 }, { x: 1.6, z: entry.z }] : [{ x: -1.6, z: -190 }, { x: -1.6, z: entry.z }]);
+  return PICKUP_STARTS.map(start => shift([...tail(lane, start), settle, kerb], ox));
+}
+/** The usual pickup route (the second-farthest start). */
+export function streetPickupRoute(visitor: Point): Point[] { return pickupRoutes(visitor)[1]; }
 /**
  * The seven other districts are separate walkable streets, each laid out on the same
  * local frame as Fort Road (road along Z, pavements at |x|≈5) and placed DISTRICT_SPACING
@@ -63,11 +100,17 @@ export function cityRideLegs(start: Point, destination: string): Point[][] {
   const from = zoneAt(start.x), to = zoneAt(end.x);
   if (from === to) return [streetRideRoute(start, destination)];
   const s = { x: start.x - from.originX, z: start.z }, e = { x: end.x - to.originX, z: end.z };
-  // Leave by the nearer end of the road, on the visitor's side, as a real cab would.
-  const north = s.z < -18, lane = north ? 1.8 : -1.8;
-  const exit = north ? [s, { x: lane, z: s.z - 1 }, { x: lane, z: -57 }] : [s, { x: lane, z: s.z + 1 }, { x: lane, z: 17 }];
-  const kerb = e.x < 0 ? -1.8 : 1.8;
-  const arrival = [{ x: kerb, z: 24 }, { x: kerb, z: e.z + 7 }, { x: e.x < 0 ? -3.2 : 3.2, z: e.z }];
+  // Leave the way the cab faces, keeping to the left: from an east kerb north, from a west kerb south. Fort Road
+  // ends at the station, so from its west kerb the cab turns in the forecourt and leaves north too.
+  const east = s.x >= 0, p = pull(20);
+  const exit = east ? [s, { x: RIDE_LANE, z: s.z - p }, { x: RIDE_LANE, z: -57 }]
+    : from.originX === 0 ? [s, { x: -RIDE_LANE, z: Math.min(9, s.z + p) }, { x: -RIDE_LANE, z: 11 }, { x: 0, z: 14 }, { x: RIDE_LANE, z: 11 }, { x: RIDE_LANE, z: -57 }]
+      : [s, { x: -RIDE_LANE, z: s.z + p }, { x: -RIDE_LANE, z: 17 + Math.max(0, s.z + p + 4 - 17) }];
+  // Arrive along the lane that runs past the stop's kerb: northbound to an east kerb, southbound to a west one.
+  // Fort Road is entered from the cross street; CST's forecourt stop is reached round the forecourt turn.
+  const arrival = to.originX === 0
+    ? (e.x < 0 ? [{ x: -RIDE_LANE, z: -50 }, { x: -RIDE_LANE, z: e.z - 7.5 }, { x: -3.2, z: e.z - 1.5 }, { x: -3.2, z: e.z }] : [{ x: -RIDE_LANE, z: -40 }, { x: -RIDE_LANE, z: 11 }, { x: 0, z: 14 }, { x: 3.0, z: e.z - .8 }])
+    : (e.x < 0 ? [{ x: -RIDE_LANE, z: e.z - 26 }, { x: -RIDE_LANE, z: e.z - 7.5 }, { x: -3.2, z: e.z - 1.5 }, { x: -3.2, z: e.z }] : [{ x: RIDE_LANE, z: e.z + 26 }, { x: RIDE_LANE, z: e.z + 7.5 }, { x: 3.2, z: e.z + 1.5 }, { x: 3.2, z: e.z }]);
   return [shift(exit, from.originX), shift(arrival, to.originX)];
 }
 

@@ -3,7 +3,7 @@ import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 import { createVisitor } from '../src/game/World/WalkingBody';
 import { MumbaiStreet } from '../src/game/World/MumbaiStreet';
-import { STREET_SPAWN, streetStops, streetRideRoute, streetPickupRoute, walkingVelocity } from '../src/game/World/streetLayout';
+import { STREET_SPAWN, streetStops, streetRideRoute, streetPickupRoute, pickupRoutes, walkingVelocity } from '../src/game/World/streetLayout';
 import { pointAtDistance, routeLength } from '../src/game/World/transit';
 
 // Any 2D-context call is a no-op; measureText reports a plausible width so word wrapping terminates.
@@ -74,10 +74,16 @@ describe('first-person street slice', () => {
   it('keeps the entire incoming taxi clear of the station at the spawn pickup',()=>{
     const world=new CANNON.World();new MumbaiStreet(world);
     for(const point of [STREET_SPAWN,streetStops.fort,{x:-5,z:12}]){
-      const route=streetPickupRoute(point);expect(route).toHaveLength(2);
-      for(const p of route)for(const edge of [-1.1,1.1]){
-        const hit=new CANNON.RaycastResult();world.raycastClosest(new CANNON.Vec3(p.x+edge,1,p.z-1.9),new CANNON.Vec3(p.x+edge,1,p.z+1.9),{},hit);expect(hit.hasHit).toBe(false);
+      // Every candidate start: the cab drives in along the lane (round the forecourt or the north turn) and pulls in.
+      for(const route of pickupRoutes(point)){
+        expect(route.length).toBeGreaterThan(2);expect(routeLength(route)).toBeGreaterThan(30);
+        const end=route[route.length-1];expect(Math.abs(end.x)).toBeCloseTo(2.8);expect(Math.abs(end.z-point.z)).toBeLessThan(12);
+        for(const p of route){expect(p.z+1.9).toBeLessThan(16.5);expect(Math.abs(p.x)).toBeLessThan(3);}
+        for(let i=1;i<route.length;i++)for(const edge of [-.92,0,.92]){
+          const hit=new CANNON.RaycastResult();world.raycastClosest(new CANNON.Vec3(route[i-1].x+edge,1,route[i-1].z),new CANNON.Vec3(route[i].x+edge,1,route[i].z),{},hit);expect(hit.hasHit).toBe(false);
+        }
       }
+      expect(streetPickupRoute(point)).toEqual(pickupRoutes(point)[1]);
     }
   });
   it('routes taxis along the authored road with enough clearance for a full-width vehicle', () => {
@@ -86,7 +92,8 @@ describe('first-person street slice', () => {
       const route=streetRideRoute({x:2.8,z:10},destination), length=routeLength(route);
       if (destination === 'cst') expect(Math.max(...route.map(p=>p.z)) + 1.85).toBeLessThan(16.5);
       expect(length).toBeGreaterThan(5); expect(length).toBeLessThan(150);
-      expect(pointAtDistance(route,length).z).toBeCloseTo(streetStops[destination].z);
+      // The cab pulls up beside the stop (at the forecourt, just short of it, out of the turn).
+      expect(Math.abs(pointAtDistance(route,length).z-streetStops[destination].z)).toBeLessThan(1);
       for(let i=1;i<route.length;i++) for(const edge of [-.92,0,.92]) {
         const hit=new CANNON.RaycastResult(); world.raycastClosest(new CANNON.Vec3(route[i-1].x+edge,1,route[i-1].z),new CANNON.Vec3(route[i].x+edge,1,route[i].z),{},hit);
         expect(hit.hasHit,`${destination} segment ${i}`).toBe(false);

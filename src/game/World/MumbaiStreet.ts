@@ -30,7 +30,8 @@ import { personBlocker, vehicleBlocker, type Blocker } from './collision/Dynamic
 /** A zero-scale instance matrix: hides one instance of a batch without reallocating it. */
 const COLLAPSED = new THREE.Matrix4().makeScale(0, 0, 0);
 import { NavMeshManager, type Obstacle } from './navigation/NavMeshManager';
-import { RoadTraffic, pedestrianGreen, type LoopVehicle } from './traffic/RoadTraffic';
+import { RoadTraffic, pedestrianGreen, zebraBusy, type LoopVehicle } from './traffic/RoadTraffic';
+import type { JunctionReservations, TrafficSpace } from './traffic/TrafficSafety';
 import type { CrowdAgent } from '@recast-navigation/core';
 
 type Triple = [number, number, number];
@@ -109,6 +110,12 @@ export class MumbaiStreet {
   /** Through traffic driven outside the street (cars, BEST buses) that the loop taxis must queue behind. */
   /** Other traffic on the Fort Road loop (the through cars), queued with the taxis and autos bumper to bumper. */
   loopTraffic: LoopVehicle[] = [];
+  /** The stretch of road this frame shared with the through traffic and the passenger ride, and its U-turn holds (set by the engine). */
+  trafficSpace: TrafficSpace | null = null; trafficJunctions: JunctionReservations | null = null;
+  /** Put the loop's taxis and autos into the shared space before anything moves. */
+  publishTraffic(space: TrafficSpace) { this.trafficSystem.publish(space); }
+  /** The loop's drivers (diagnostics). */
+  get loopDrivers() { return this.trafficSystem.drivers.slice(0, this.trafficSystem.active); }
   /** People crossing the carriageway this frame, for other traffic to stop for. */
   readonly roadWalkers: THREE.Vector3[] = [];
   /** The taxis and autos on the loop, for the through cars to queue behind. */
@@ -937,7 +944,7 @@ export class MumbaiStreet {
   /** Traffic and people near `view` that the visitor cannot walk through. */
   collectBlockers(out:Blocker[],view:THREE.Vector3,range=18){
     const near=(p:THREE.Vector3)=>Math.abs(p.x-view.x)<range&&Math.abs(p.z-view.z)<range;
-    for(let i=0;i<this.trafficSystem.active;i++){const v=this.trafficVehicles[i];if(v.parent?.visible!==false&&near(v.position))out.push(vehicleBlocker(v));}
+    for(let i=0;i<this.trafficSystem.active;i++){const v=this.trafficVehicles[i];if(this.trafficSystem.live[i]&&v.parent?.visible!==false&&near(v.position))out.push(vehicleBlocker(v));}
     for(const g of this.pedestrians)if(g.visible&&near(g.position))out.push(personBlocker(g.position.x,g.position.z));
     if(this.dense.visible)for(const w of this.denseWalkers)if(near(w.group.position))out.push(personBlocker(w.group.position.x,w.group.position.z));
   }
@@ -949,16 +956,18 @@ export class MumbaiStreet {
     if(viewPosition)this.viewPosition.copy(viewPosition);const delta=reduced?0:Math.min(.08,Math.max(0,time-this.previousTime));this.previousTime=time;
     const start=performance.now();
     if(this.navigation&&delta){
+      // Walkers wait at the kerb while the signal is red, or while a vehicle is still on or committed to the zebra (Fort's stop lines are 3.2 m out).
+      const busy=this.trafficSpace?zebraBusy(this.trafficSpace.entries,-12,3.2):false;
       for(const w of [...this.walkers,...this.denseWalkers]){if(!w.agent)continue;const p=w.agent.position(),v=w.agent.velocity();
         if(Math.hypot(p.x-this.destinations[w.target].x,p.z-this.destinations[w.target].z)<.65){w.agent.resetMoveTarget();w.wait+=delta;if(w.wait>3+(w.target%3)){w.target=(w.target+1)%this.destinations.length;w.wait=0;w.agent.requestMoveTarget(this.destinations[w.target]);}}
         const approaching=Math.abs(p.z+12)<2.8&&Math.abs(p.x)>3.9&&Math.abs(p.x)<4.8;
-        w.agent.maxSpeed=approaching&&!pedestrianGreen(time)?0:Math.hypot(p.x-this.viewPosition.x,p.z-this.viewPosition.z)<.75?0:1;
+        w.agent.maxSpeed=approaching&&(!pedestrianGreen(time)||busy)?0:Math.hypot(p.x-this.viewPosition.x,p.z-this.viewPosition.z)<.75?0:1;
         w.group.position.set(p.x,.04,p.z);if(Math.hypot(v.x,v.z)>.05){const yaw=Math.atan2(-v.x,-v.z),turn=Math.atan2(Math.sin(yaw-w.group.rotation.y),Math.cos(yaw-w.group.rotation.y));w.group.rotation.y+=turn*(1-Math.exp(-7*delta));}
       }
       this.navigation.crowd.update(1/30,delta,3);
     }
-    this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.roadWalkers.length=0;for(const w of [...this.walkers,...this.denseWalkers])if(w.agent&&w.group.visible!==false&&Math.abs(w.group.position.x)<3.9)this.roadWalkers.push(w.group.position);this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...this.roadWalkers.map(p=>({x:p.x,z:p.z}))],this.loopTraffic);
-    this.trafficVehicles.forEach((vehicle,i)=>{if(i>=this.trafficSystem.active)return;const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y+=turn*(1-Math.exp(-8*delta));animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);});this.trafficUpdateMs=performance.now()-trafficStart;
+    this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.roadWalkers.length=0;for(const w of [...this.walkers,...this.denseWalkers])if(w.agent&&w.group.visible!==false&&Math.abs(w.group.position.x)<3.9)this.roadWalkers.push(w.group.position);this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...this.roadWalkers.map(p=>({x:p.x,z:p.z}))],this.loopTraffic,this.trafficSpace??undefined,this.trafficJunctions?{reservations:this.trafficJunctions,time}:undefined);
+    this.trafficVehicles.forEach((vehicle,i)=>{vehicle.visible=this.trafficSystem.live[i];if(!vehicle.visible)return;const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y=p.heading;animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);});this.trafficUpdateMs=performance.now()-trafficStart;
     for (const animate of this.motion) animate(reduced ? 0 : time);
     this.group.updateMatrixWorld(true);
     for (const { instance, meshes } of this.dynamicBatches) { meshes.forEach((mesh, i) => { let visible=true; for(let p:THREE.Object3D|null=mesh.parent;p&&p!==this.group;p=p.parent)if(!p.visible)visible=false; instance.setMatrixAt(i,visible?mesh.matrixWorld:COLLAPSED); }); instance.instanceMatrix.needsUpdate = true;instance.computeBoundingSphere(); }
