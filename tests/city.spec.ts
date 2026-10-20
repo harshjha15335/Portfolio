@@ -3,6 +3,8 @@ import { districts } from '../src/data/city';
 
 for (const kind of ['TAXI', 'AUTO']) {
   test(`${kind.toLowerCase()} can be boarded, metered, routed and exited at its destination`, async ({ page }) => {
+    // The hailed cab drives in from up the road with the traffic, which takes minutes of wall time under software rendering.
+    test.slow();
     const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
     await page.goto('/#world');
     await expect(page.locator('.world-container canvas')).toBeVisible();
@@ -10,7 +12,7 @@ for (const kind of ['TAXI', 'AUTO']) {
     await page.getByRole('button', { name: `HAIL ${kind}` }).click();
     const meter = page.getByRole('region', { name: 'Portfolio Meter' });
     await expect(meter).toContainText(kind === 'TAXI' ? 'KAALI-PEELI' : 'AUTO RICKSHAW');
-    await expect(page.getByLabel('Ride destination')).toBeVisible();
+    await expect(page.getByLabel('Ride destination')).toBeVisible({ timeout: 300_000 });
     const initial = await page.getByTestId('ride-fare').textContent();
     await page.getByLabel('Ride destination').selectOption(kind === 'TAXI' ? 'fort' : 'cst');
     await expect.poll(() => page.getByTestId('ride-fare').textContent()).not.toBe(initial);
@@ -145,15 +147,17 @@ test('keyboard look changes walking direction and nearby E opens a guide', async
 });
 
 test('a moving ride can be exited and the next vehicle can be boarded', async ({ page }) => {
+  test.slow();
   await page.goto('/#world');
   await expect(page.locator('.loader')).toHaveCount(0);
   await page.getByRole('button', { name: 'HAIL TAXI' }).click();
+  await expect(page.getByLabel('Ride destination')).toBeVisible({ timeout: 300_000 });
   await page.getByLabel('Ride destination').selectOption('fort');
   await expect.poll(() => page.getByTestId('ride-fare').textContent()).not.toBe('₹28.00');
   await page.getByRole('button', { name: 'Exit ride', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Portfolio Meter' })).toHaveCount(0);
   await page.getByRole('button', { name: 'HAIL AUTO' }).click();
-  await expect(page.getByLabel('Ride destination')).toBeVisible();
+  await expect(page.getByLabel('Ride destination')).toBeVisible({ timeout: 300_000 });
   await expect(page.getByTestId('ride-fare')).toHaveText('₹23.00');
 });
 

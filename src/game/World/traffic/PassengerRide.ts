@@ -18,7 +18,7 @@ export const RIDE_BODY: Record<TransitKind, { length: number; width: number }> =
 /** Every street's zebra lies across the road at this local z; the ride stops this far either side of its centre while it is held. */
 export const ZEBRA_Z = -12, ZEBRA_HOLD = 3.0;
 /** How long (s) a hailed cab waits for an unseen, clear place to start before it accepts the farthest clear one in view. */
-export const DISPATCH_PATIENCE = 4;
+export const DISPATCH_PATIENCE = 2.5;
 /** A hailed cab never starts nearer the visitor than this (m). */
 export const DISPATCH_MIN_DISTANCE = 24;
 

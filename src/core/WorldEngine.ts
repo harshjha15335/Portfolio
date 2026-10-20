@@ -336,6 +336,13 @@ export class WorldEngine {
   private updateFortTraffic(delta: number) {
     this.fortTraffic.update(this.time, delta, [this.camera.position], this.street.roadWalkers, { space: this.traffic, view: this.viewCone(0) });
   }
+  /** Move the current street's traffic, people and signals on by `delta` (the world clock is already advanced). */
+  private advanceTraffic(delta: number) {
+    if (this.zone !== this.trafficZone) { this.trafficZone = this.zone; this.prepareTraffic(); }
+    if (this.zone === 0) { this.street.loopTraffic = this.fortTraffic.onLane(FORT_LOOP_LANE); this.street.update(this.time, this.reducedMotion, this.camera.position); this.updateFortTraffic(this.reducedMotion ? 0 : delta); }
+    else this.district?.update(this.time, this.reducedMotion, this.camera.position, [], { space: this.traffic, view: this.viewCone(cityZones[this.zone].originX) });
+    this.junctions[this.zone].sweep(this.time, id => this.traffic.get(id) !== undefined);
+  }
   private get district() { return this.zone ? this.city.get(this.zone) : null; }
   private finishRide() {
     if (!streetStops[this.ride.destination ?? '']) return;
@@ -533,10 +540,14 @@ export class WorldEngine {
     const forceRender=this.pausedFrameDirty;this.pausedFrameDirty = false;
     let simulatedWalkingMs=0;
     try {
+      // On a ride, world time catches up as walking does (at most 0.25 s a frame) in steps of at most 0.08 s, so a
+      // slow device does not make the cab crawl; a stall still never jumps anything.
+      const steps = this.ride.phase === 'idle' || this.paused ? 1 : Math.max(1, Math.ceil(walkingSimulationDelta(elapsed) / .08 - 1e-9)), step = steps > 1 ? walkingSimulationDelta(elapsed) / steps : delta;
       if (!this.paused) {
-        this.time += delta;
+        for (let k = 1; k < steps && this.ride.phase !== 'idle'; k++) { this.time += step; this.prepareTraffic(); this.updateRide(step); this.syncZone(this.ride.phase === 'hailing' ? this.visitor.position.x : this.transit.position.x); this.advanceTraffic(step); }
+        this.time += step;
         this.prepareTraffic();
-        if (this.ride.phase !== 'idle') this.updateRide(delta);
+        if (this.ride.phase !== 'idle') this.updateRide(step);
         else if (this.tween) this.updateTween();
         else {
           const held = (key: string) => this.keys.has(key) || this.touchKeys.has(key);
@@ -561,11 +572,7 @@ export class WorldEngine {
       this.syncZone(this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? this.visitor.position.x : this.transit.position.x);
       this.updateCamera(); this.street.nearDetail=this.ride.phase==='idle'||this.ride.phase==='hailing';
       this.marker.visible = !!this.nearest && this.ride.phase === 'idle' && !this.tween; if (this.marker.visible) { this.marker.position.copy(this.markerBase); if (!this.reducedMotion) { this.marker.position.y += Math.sin(this.time * 3) * .025; this.marker.rotation.y = this.time * 1.4; } } 
-      if (this.zone !== this.trafficZone) { this.trafficZone = this.zone; this.prepareTraffic(); }
-      const trafficDelta = this.reducedMotion || this.paused ? 0 : delta;
-      if (this.zone === 0) { this.street.loopTraffic = this.fortTraffic.onLane(FORT_LOOP_LANE); this.street.update(this.time, this.reducedMotion,this.camera.position); this.updateFortTraffic(trafficDelta); }
-      else this.district?.update(this.time, this.reducedMotion, this.camera.position, [], { space: this.traffic, view: this.viewCone(cityZones[this.zone].originX) });
-      this.junctions[this.zone].sweep(this.time, id => this.traffic.get(id) !== undefined);
+      this.advanceTraffic(this.paused ? 0 : step);
       const needsRender=!this.reducedMotion||forceRender||this.camera.position.distanceToSquared(this.lastRenderPosition)>1e-8||this.camera.quaternion.angleTo(this.lastRenderRotation)>.0001||(this.renderer.shadowMap.enabled&&this.renderer.shadowMap.needsUpdate);
       if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)&&!this.applyLowTier())this.resize();
       if(!this.reducedMotion&&!this.paused&&this.time-this.lastShadow>.2&&this.renderer.shadowMap.enabled){this.renderer.shadowMap.needsUpdate=true;this.lastShadow=this.time;}

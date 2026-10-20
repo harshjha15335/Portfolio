@@ -51,7 +51,7 @@ function tail(points: Point[], keep: number): Point[] {
   return out;
 }
 /** How far up the lane (m) a hailed cab may start, farthest first: out of the near field, ideally out of sight. */
-export const PICKUP_STARTS = [55, 46, 38, 30];
+export const PICKUP_STARTS = [52, 47, 42, 37, 32, 28];
 /**
  * Routes a hailed cab can take to the kerb beside the visitor, farthest start first. The cab drives in along
  * its lane with the traffic (on Fort Road round the forecourt or the north U-turn of the loop) and pulls in
