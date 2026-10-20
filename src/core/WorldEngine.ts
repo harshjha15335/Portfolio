@@ -10,14 +10,16 @@ import * as CANNON from 'cannon-es';
 import { createVisitor } from '../game/World/WalkingBody';
 import { MumbaiStreet } from '../game/World/MumbaiStreet';
 import { createTransitModel, animateTransit } from '../game/World/TransitModel';
-import { idleRide, pointAtDistance, routeLength, storyFare, type Point, type RideStatus, type TransitKind } from '../game/World/transit';
+import { idleRide, storyFare, type Point, type RideStatus, type TransitKind } from '../game/World/transit';
+import { DISTRICT_JUNCTIONS, FORT_JUNCTIONS, PassengerRide, kerbRoom } from '../game/World/traffic/PassengerRide';
+import { JunctionReservations, TrafficSpace, onCarriageway, type ViewCone } from '../game/World/traffic/TrafficSafety';
 import { preloadCityVehicleModels } from '../game/World/districts/CityVehicleModels';
-import { STREET_SPAWN, streetStops, streetPickupRoute, walkingVelocity, cityRideLegs, cityZones, zoneIndexAt, districtViews } from '../game/World/streetLayout';
+import { STREET_SPAWN, streetStops, pickupRoutes, walkingVelocity, cityRideLegs, cityZones, zoneIndexAt, districtViews } from '../game/World/streetLayout';
 import { CityDistricts } from '../game/World/districts/CityDistricts';
 import { setCityDensity } from '../game/World/districts/District';
 import { createFortRoadTraffic, FORT_LOOP_LANE } from '../game/World/districts/FortRoadTraffic';
 import { DistrictCast, districtCast, setDistrictCast } from '../game/World/districts/DistrictCast';
-import type { LaneTraffic } from '../game/World/districts/DistrictSystems';
+import { VEHICLE_HIDDEN, type LaneTraffic } from '../game/World/districts/DistrictSystems';
 import { districts as directory } from '../data/city';
 import { pickTarget } from '../game/World/interactionTargeting';
 import type { TourView } from '../data/tours';
@@ -61,7 +63,12 @@ export class WorldEngine {
   /** Index into cityZones of the district being drawn; 0 is CST–Fort. */
   private zone = 0;
   private sky!: THREE.Mesh;
-  private rideLegs: Point[][] = []; private legIndex = 0; private legStart = 0;
+  /** The hailed or boarded cab: a collision-safe vehicle in the traffic (see PassengerRide). */
+  private cab = new PassengerRide();
+  /** The current district's road this frame: every vehicle, the cab, the visitor and people on the carriageway (local). */
+  private traffic = new TrafficSpace();
+  /** U-turn areas the cab shares with the traffic, per district (index as cityZones). */
+  private junctions = cityZones.map((_, i) => new JunctionReservations(i === 0 ? FORT_JUNCTIONS : DISTRICT_JUNCTIONS, (a, b) => a !== b && (a === 'ride' || b === 'ride')));
   private pausedFrameDirty = true;
   private mode: Mode = 'intro'; private paused = false; private disposed = false;
   private reducedMotion: boolean;
@@ -77,7 +84,6 @@ export class WorldEngine {
   private environmentTarget!:THREE.WebGLRenderTarget;
   private audio: StreetAudio | null=null;
   private soundEnabled=false;
-  private rideSpeed=0;
   private keys = new Set<string>(); private touchKeys = new Set<string>();
   private yaw = STREET_SPAWN.yaw; private pitch = -.015;
   private rideYaw = 0; private ridePitch = 0; private gait = 0;
@@ -90,8 +96,7 @@ export class WorldEngine {
   /** Guided-tour camera move: the visitor is carried to a framing pose instead of walking. */
   private tween: { from: TourView; to: TourView; start: number; duration: number } | null = null;
   private looked = 0;
-  private ride = idleRide(); private ridePath: Point[] = []; private rideLength = 0;
-  private pickupDistance = 0; private queuedDestination: string | null = null;
+  private ride = idleRide(); private queuedDestination: string | null = null;
   private transit = new THREE.Group(); private taxi = createTransitModel('taxi','close'); private auto = createTransitModel('auto','close');
   private lastRenderPosition=new THREE.Vector3(Infinity,Infinity,Infinity);
   private lastRenderRotation=new THREE.Quaternion();
@@ -258,28 +263,37 @@ export class WorldEngine {
   board(kind: TransitKind) {
     this.cancelArrival(); this.endRide(); this.releaseInput(); this.visitor.velocity.setZero(); this.rideYaw = 0; this.ridePitch = 0;
     this.ride = { ...idleRide(), phase: this.reducedMotion ? 'boarding' : 'hailing', kind, fare: this.reducedMotion ? storyFare(kind, 0) : 0 };
-    this.taxi.visible = kind === 'taxi'; this.auto.visible = kind === 'auto'; this.transit.visible = true; this.queuedDestination = null;
-    // Pull in from the same lane, parallel to the pavement. No vehicle crosses a building.
-    this.ridePath = streetPickupRoute({x:this.visitor.position.x,z:this.visitor.position.z}); this.rideLength = routeLength(this.ridePath); this.clearPickup(); this.pickupDistance = 0; this.rideSpeed=0;
-    const p = pointAtDistance(this.ridePath, this.reducedMotion ? this.rideLength : 0); this.transit.position.set(p.x, .02, p.z); this.transit.rotation.y = p.heading;
-    this.options.onRide({ ...this.ride });
+    this.taxi.visible = kind === 'taxi'; this.auto.visible = kind === 'auto'; this.queuedDestination = null;
+    // The cab comes up the lane with the traffic, from out of sight where it can, and pulls in at a free kerb spot.
+    const routes = pickupRoutes({ x: this.visitor.position.x, z: this.visitor.position.z }, (x, z) => this.kerbClear(x, z, kind));
+    if (this.reducedMotion) {
+      // No motion: the cab is simply there; anything standing on its spot makes way.
+      const route = routes[routes.length - 1], ox = cityZones[zoneIndexAt(route[0].x)].originX;
+      this.trafficAt(zoneIndexAt(route[0].x))?.clearAround(route.slice(-2).map(p => ({ x: p.x - ox, z: p.z })), 2.2, true);
+      this.cab.standAt(kind, route); this.transit.visible = true;
+    } else { this.cab.hail(kind, routes); this.transit.visible = false; }
+    this.placeTransit(0); this.options.onRide({ ...this.ride });
   }
-  /** District or Fort Road traffic standing where the hailed cab pulls in makes way, so the cab never appears inside a car. */
-  private clearPickup() {
-    const ox = cityZones[zoneIndexAt(this.ridePath[0].x)].originX, local = this.ridePath.map(p => ({ x: p.x - ox, z: p.z }));
-    (this.zone ? this.district?.traffic : this.fortTraffic)?.clearAround(local, 2.2);
-  }
+  /** True when a cab of `kind` standing at the kerb at (x, z) (world) would not touch a parked vehicle. */
+  private kerbClear(x: number, z: number, kind: TransitKind) { const index = zoneIndexAt(x); return kerbRoom(this.trafficAt(index)?.parked ?? [], x - cityZones[index].originX, z, kind); }
+  /** The through traffic of district `index` (Fort Road's when 0), if it is built. */
+  private trafficAt(index: number) { return index === 0 ? this.fortTraffic : this.city.peek(index)?.traffic ?? null; }
   rideTo(id: string) {
     if (!streetStops[id] || this.ride.phase === 'idle') return;
     if (this.ride.phase === 'hailing') { this.queuedDestination = id; return; }
-    this.rideLegs = cityRideLegs({ x: this.transit.position.x, z: this.transit.position.z }, id); this.legIndex = 0; this.legStart = 0; this.ridePath = this.rideLegs[0];
-    this.rideLength = this.rideLegs.reduce((total, leg) => total + routeLength(leg), 0) + this.hopDistance(id);
+    this.cab.depart(cityRideLegs({ x: this.cab.pose.x, z: this.cab.pose.z }, id), this.hopDistance(id));
     // Build the destination district now, while the cab is still pulling away.
     this.city.prepare(zoneIndexAt(streetStops[id].x));
     this.ride = { ...this.ride, phase: 'riding', destination: id, elapsed: 0, distance: 0, progress: 0 };
     if (this.reducedMotion) this.skipRide(); else this.options.onRide({ ...this.ride });
   }
-  skipRide() { if (this.ride.phase === 'riding') { this.ride.distance = this.rideLength; this.legIndex = this.rideLegs.length - 1; this.ridePath = this.rideLegs[this.legIndex]; this.finishRide(); } }
+  skipRide() {
+    if (this.ride.phase !== 'riding') return;
+    this.cab.finish(); this.syncZone(this.cab.pose.x);
+    // A cut to the stop: whatever stands on the cab's spot there makes way (the visitor was not looking at it).
+    const ox = cityZones[this.zone].originX; this.trafficAt(this.zone)?.clearAround([{ x: this.cab.pose.x - ox, z: this.cab.pose.z }], 2.4, true);
+    this.placeTransit(0); this.finishRide();
+  }
   /** Virtual city distance a cross-district ride adds to the meter at the cut between legs. */
   private hopDistance(id: string) {
     const from = cityZones[zoneIndexAt(this.transit.position.x)].id, to = cityZones[zoneIndexAt(streetStops[id]?.x ?? 0)].id;
@@ -298,53 +312,82 @@ export class WorldEngine {
     this.sun.target.position.set(STREET_MOOD.sunTarget[0] + ox, STREET_MOOD.sunTarget[1], STREET_MOOD.sunTarget[2]); this.sun.target.updateMatrixWorld();
     this.sky.position.x = ox; this.renderer.shadowMap.needsUpdate = true; this.pausedFrameDirty = true;
   }
-  private fortPrevious = 0;
-  private updateFortTraffic(others: THREE.Vector3[]) {
-    const delta = this.reducedMotion ? 0 : Math.min(.08, Math.max(0, this.time - this.fortPrevious)); this.fortPrevious = this.time;
-    this.fortTraffic.update(this.time, delta, [this.camera.position, ...others], this.street.roadWalkers);
+  /** What the visitor can see now, in district `originX`'s local frame (spawn and despawn rules). */
+  private viewCone(originX: number): ViewCone {
+    const f = this.camera.getWorldDirection(this.viewDirection), h = Math.hypot(f.x, f.z) || 1;
+    const half = Math.atan(Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * this.camera.aspect) + .2;
+    return { x: this.camera.position.x - originX, z: this.camera.position.z, fx: f.x / h, fz: f.z / h, halfAngle: half, range: VEHICLE_HIDDEN };
+  }
+  private viewDirection = new THREE.Vector3(); private trafficZone = -1;
+  /** Fill the shared traffic space for this frame: the district's vehicles, the cab, the visitor and people on the road. */
+  private prepareTraffic() {
+    const space = this.traffic, ox = cityZones[this.zone].originX; space.clear(); this.trafficZone = this.zone;
+    if ((this.ride.phase === 'idle' || this.ride.phase === 'hailing') && onCarriageway(this.visitor.position.x - ox, this.visitor.position.z)) space.add({ id: 'visitor', x: this.visitor.position.x - ox, z: this.visitor.position.z, yaw: 0, halfLength: .35, halfWidth: .35, category: 'visitor', speed: 0 });
+    if (this.zone === 0) {
+      this.street.trafficSpace = space; this.street.trafficJunctions = this.junctions[0];
+      this.street.publishTraffic(space); this.fortTraffic.junctions = this.junctions[0]; this.fortTraffic.publish(space);
+      this.street.roadWalkers.forEach((w, k) => space.add({ id: `walker:${k}`, x: w.x, z: w.z, yaw: 0, halfLength: .3, halfWidth: .3, category: 'person', speed: 0 }));
+    } else {
+      this.street.trafficSpace = null; const district = this.district; if (!district) return;
+      district.traffic.junctions = this.junctions[this.zone]; district.traffic.publish(space);
+      district.crowd.onRoad().forEach((w, k) => space.add({ id: `walker:${k}`, x: w.x, z: w.z, yaw: 0, halfLength: .3, halfWidth: .3, category: 'person', speed: 0 }));
+    }
+  }
+  private updateFortTraffic(delta: number) {
+    this.fortTraffic.update(this.time, delta, [this.camera.position], this.street.roadWalkers, { space: this.traffic, view: this.viewCone(0) });
+  }
+  /** Move the current street's traffic, people and signals on by `delta` (the world clock is already advanced). */
+  private advanceTraffic(delta: number) {
+    if (this.zone !== this.trafficZone) { this.trafficZone = this.zone; this.prepareTraffic(); }
+    if (this.zone === 0) { this.street.loopTraffic = this.fortTraffic.onLane(FORT_LOOP_LANE); this.street.update(this.time, this.reducedMotion, this.camera.position); this.updateFortTraffic(this.reducedMotion ? 0 : delta); }
+    else this.district?.update(this.time, this.reducedMotion, this.camera.position, [], { space: this.traffic, view: this.viewCone(cityZones[this.zone].originX) });
+    this.junctions[this.zone].sweep(this.time, id => this.traffic.get(id) !== undefined);
   }
   private get district() { return this.zone ? this.city.get(this.zone) : null; }
   private finishRide() {
-    const stop = streetStops[this.ride.destination ?? '']; if (!stop) return;
-    const p = pointAtDistance(this.ridePath, routeLength(this.ridePath)); this.transit.position.set(p.x, .02, p.z); this.transit.rotation.y = p.heading; this.syncZone(p.x);
-    this.ride = { ...this.ride, phase: 'arrived', distance: this.rideLength, fare: storyFare(this.ride.kind, this.rideLength), progress: 1 }; this.options.onRide({ ...this.ride });
+    if (!streetStops[this.ride.destination ?? '']) return;
+    this.syncZone(this.cab.pose.x);
+    this.ride = { ...this.ride, phase: 'arrived', distance: this.cab.driven, fare: storyFare(this.ride.kind, this.cab.driven), progress: 1 }; this.options.onRide({ ...this.ride });
   }
   endRide() {
     if (this.ride.phase === 'idle') return;
     const destination = this.ride.destination && streetStops[this.ride.destination];
-    const phase = this.ride.phase;
-    this.ride = idleRide(); this.rideSpeed=0; this.transit.visible = false;
+    const phase = this.ride.phase, wasPlaced = this.cab.active;
+    this.ride = idleRide(); this.transit.visible = false;
     if (phase === 'arrived' && destination) this.placeVisitor(destination.x, destination.z, destination.yaw);
-    else if (phase !== 'hailing') { const ox = cityZones[zoneIndexAt(this.transit.position.x)].originX; this.placeVisitor(ox + (this.transit.position.x - ox < 0 ? -4.9 : 4.9), this.transit.position.z, this.transit.rotation.y); }
+    else if (phase !== 'hailing' && wasPlaced) { const ox = cityZones[zoneIndexAt(this.cab.pose.x)].originX; this.placeVisitor(ox + (this.cab.pose.x - ox < 0 ? -4.9 : 4.9), this.cab.pose.z, this.cab.pose.yaw); }
+    this.cab.end(); this.junctions.forEach(j => j.forget('ride'));
     this.options.onRide({ ...this.ride }); this.releaseInput(); this.updateNear();
   }
+  /** Put the cab model where the cab is; `turn` is this frame's heading change (wheels and lean). */
+  private placeTransit(turn: number) {
+    const p = this.cab.pose; this.transit.position.set(p.x, .02, p.z); this.transit.rotation.y = p.yaw;
+    this.transit.rotation.z = this.reducedMotion || this.ride.phase !== 'riding' ? 0 : Math.sin(this.ride.elapsed * 9) * .0018 * Math.min(1, this.cab.speed) + THREE.MathUtils.clamp(turn * 8, -.3, .3) * .025;
+  }
+  private cabTravelled = 0;
   private updateRide(delta: number) {
-    if (this.ride.phase === 'hailing') {
-      this.pickupDistance = Math.min(this.rideLength, this.pickupDistance + delta * Math.max(.6,Math.min(4,(this.rideLength-this.pickupDistance)*2,this.pickupDistance*2+1)));
-      const p = pointAtDistance(this.ridePath, this.pickupDistance); this.transit.position.set(p.x, .02, p.z);animateTransit(this.ride.kind==='taxi'?this.taxi:this.auto,this.pickupDistance);
-      if (this.pickupDistance >= this.rideLength) {
-        this.ride = { ...this.ride, phase: 'boarding', fare: storyFare(this.ride.kind, 0) }; this.options.onRide({ ...this.ride });
-        if (this.queuedDestination) { const id = this.queuedDestination; this.queuedDestination = null; this.rideTo(id); }
-      }
-    } else if (this.ride.phase === 'riding') {
-      this.ride.elapsed += delta;
-      const target=Math.min(this.ride.kind==='auto'?4.2:5.2,Math.max(.65,(this.rideLength-this.ride.distance)*1.4));
-      this.rideSpeed+=(target-this.rideSpeed)*(1-Math.exp(-2*delta));
-      this.ride.distance = Math.min(this.rideLength, this.ride.distance + delta * this.rideSpeed);
-      this.ride.fare = storyFare(this.ride.kind, this.ride.distance); this.ride.progress = this.rideLength ? this.ride.distance / this.rideLength : 1;
-      // Crossing the city: at the end of the outbound leg, cut to the arrival road in the next district.
-      if (this.legIndex < this.rideLegs.length - 1 && this.ride.distance - this.legStart >= routeLength(this.ridePath)) {
-        const hop = this.rideLength - this.rideLegs.reduce((total, leg) => total + routeLength(leg), 0);
-        this.legStart += routeLength(this.ridePath) + hop; this.ride.distance = this.legStart; this.legIndex++; this.ridePath = this.rideLegs[this.legIndex];
-        const start = pointAtDistance(this.ridePath, 0); this.transit.position.set(start.x, .02, start.z); this.transit.rotation.y = start.heading; this.syncZone(start.x);
-      }
-      const p = pointAtDistance(this.ridePath, this.ride.distance - this.legStart); this.transit.position.set(p.x, .02, p.z);
-      const turn = Math.atan2(Math.sin(p.heading - this.transit.rotation.y), Math.cos(p.heading - this.transit.rotation.y));
-      this.transit.rotation.y += turn * (1 - Math.exp(-6 * delta));
-      animateTransit(this.ride.kind==='taxi'?this.taxi:this.auto,this.ride.distance,turn);this.street.updateDrivers(this.reducedMotion?0:delta,turn);
-      this.transit.rotation.z=this.reducedMotion?0:Math.sin(this.ride.elapsed*9)*.0018+THREE.MathUtils.clamp(turn,-.3,.3)*.025;
-      if (this.ride.distance >= this.rideLength) this.finishRide();
+    const before = this.cab.pose.yaw, zone = zoneIndexAt(this.cab.active ? this.cab.pose.x : this.visitor.position.x), ox = cityZones[zone].originX;
+    if (zone !== this.zone) return;
+    const was = this.cab.driven, event = this.cab.step(delta, { space: this.traffic, originX: ox, time: this.time, junctions: this.junctions[zone], view: this.viewCone(ox) });
+    if (event === 'dispatched') this.transit.visible = true;
+    if (event === 'cut') {
+      this.syncZone(this.cab.pose.x);
+      // The arrival road was out of sight until now: anything on the cab's first metres of it makes way.
+      const nx = cityZones[this.zone].originX, path = this.cab.path, ahead = [0, 6, 12, 18, 24].map(d => { const q = path.at(d); return { x: q.x - nx, z: q.z }; });
+      this.trafficAt(this.zone)?.clearAround(ahead, 2.4, true);
     }
+    const turn = Math.atan2(Math.sin(this.cab.pose.yaw - before), Math.cos(this.cab.pose.yaw - before));
+    this.cabTravelled += Math.max(0, this.cab.driven - was) + (this.ride.phase === 'hailing' ? this.cab.speed * delta : 0);
+    this.placeTransit(turn); animateTransit(this.ride.kind === 'taxi' ? this.taxi : this.auto, this.cabTravelled, turn * 8);
+    if (this.ride.phase === 'riding') {
+      this.ride.elapsed += delta; this.street.updateDrivers(this.reducedMotion ? 0 : delta, turn * 8);
+      this.ride.distance = this.cab.driven; this.ride.fare = storyFare(this.ride.kind, this.ride.distance); this.ride.progress = this.cab.tripLength ? Math.min(1, this.ride.distance / this.cab.tripLength) : 1;
+    }
+    if (event === 'pulled-up') {
+      this.ride = { ...this.ride, phase: 'boarding', fare: storyFare(this.ride.kind, 0) }; this.options.onRide({ ...this.ride });
+      if (this.queuedDestination) { const id = this.queuedDestination; this.queuedDestination = null; this.rideTo(id); }
+    }
+    if (event === 'arrived') this.finishRide();
   }
   private resize = () => {
     const w = Math.max(this.container.clientWidth, 1), h = Math.max(this.container.clientHeight, 1); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); this.renderer.setPixelRatio(Math.min(devicePixelRatio||1,this.maxPixelRatio)*this.quality.scale); this.renderer.setSize(w, h, false);this.rendering?.resize(w,h);this.pausedFrameDirty=true;
@@ -497,9 +540,14 @@ export class WorldEngine {
     const forceRender=this.pausedFrameDirty;this.pausedFrameDirty = false;
     let simulatedWalkingMs=0;
     try {
+      // On a ride, world time catches up as walking does (at most 0.25 s a frame) in steps of at most 0.08 s, so a
+      // slow device does not make the cab crawl; a stall still never jumps anything.
+      const steps = this.ride.phase === 'idle' || this.paused ? 1 : Math.max(1, Math.ceil(walkingSimulationDelta(elapsed) / .08 - 1e-9)), step = steps > 1 ? walkingSimulationDelta(elapsed) / steps : delta;
       if (!this.paused) {
-        this.time += delta;
-        if (this.ride.phase !== 'idle') this.updateRide(Math.min(elapsed, .25));
+        for (let k = 1; k < steps && this.ride.phase !== 'idle'; k++) { this.time += step; this.prepareTraffic(); this.updateRide(step); this.syncZone(this.ride.phase === 'hailing' ? this.visitor.position.x : this.transit.position.x); this.advanceTraffic(step); }
+        this.time += step;
+        this.prepareTraffic();
+        if (this.ride.phase !== 'idle') this.updateRide(step);
         else if (this.tween) this.updateTween();
         else {
           const held = (key: string) => this.keys.has(key) || this.touchKeys.has(key);
@@ -523,18 +571,17 @@ export class WorldEngine {
       }
       this.syncZone(this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? this.visitor.position.x : this.transit.position.x);
       this.updateCamera(); this.street.nearDetail=this.ride.phase==='idle'||this.ride.phase==='hailing';
-      this.marker.visible = !!this.nearest && this.ride.phase === 'idle' && !this.tween; if (this.marker.visible) { this.marker.position.copy(this.markerBase); if (!this.reducedMotion) { this.marker.position.y += Math.sin(this.time * 3) * .025; this.marker.rotation.y = this.time * 1.4; } } const others = this.transit.visible ? [this.transit.position] : [];
-      if (this.zone === 0) { this.street.loopTraffic = this.fortTraffic.onLane(FORT_LOOP_LANE); this.street.update(this.time, this.reducedMotion,this.camera.position); this.updateFortTraffic(others); }
-      else this.district?.update(this.time, this.reducedMotion, this.camera.position, others);
+      this.marker.visible = !!this.nearest && this.ride.phase === 'idle' && !this.tween; if (this.marker.visible) { this.marker.position.copy(this.markerBase); if (!this.reducedMotion) { this.marker.position.y += Math.sin(this.time * 3) * .025; this.marker.rotation.y = this.time * 1.4; } } 
+      this.advanceTraffic(this.paused ? 0 : step);
       const needsRender=!this.reducedMotion||forceRender||this.camera.position.distanceToSquared(this.lastRenderPosition)>1e-8||this.camera.quaternion.angleTo(this.lastRenderRotation)>.0001||(this.renderer.shadowMap.enabled&&this.renderer.shadowMap.needsUpdate);
       if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)&&!this.applyLowTier())this.resize();
       if(!this.reducedMotion&&!this.paused&&this.time-this.lastShadow>.2&&this.renderer.shadowMap.enabled){this.renderer.shadowMap.needsUpdate=true;this.lastShadow=this.time;}
-      this.audio?.update(this.ride.phase==='riding'?this.rideSpeed:Math.hypot(this.visitor.velocity.x,this.visitor.velocity.z),this.ride.phase!=='idle'&&this.ride.phase!=='hailing',this.ride.kind==='auto');
+      this.audio?.update(this.ride.phase==='riding'?this.cab.speed:Math.hypot(this.visitor.velocity.x,this.visitor.velocity.z),this.ride.phase!=='idle'&&this.ride.phase!=='hailing',this.ride.kind==='auto');
       if(needsRender){this.renderer.info.reset();this.profiler?.beforeRender();const renderStart=performance.now();this.rendering.render(delta);this.frameObserver?.({tickMs,renderMs:performance.now()-renderStart,frameMs:elapsed*1000,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,low:this.quality.low});this.profiler?.afterRender({frameMs:elapsed*1000,renderCpuMs:performance.now()-renderStart,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,geometries:this.renderer.info.memory.geometries,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,preset:this.renderPreset,phase:this.ride.phase,worldX:this.visitor.position.x,worldZ:this.visitor.position.z,walkingSimulatedMs:simulatedWalkingMs,shadowRefreshed:this.rendering.frameCost.shadowDraws>0,shadowDraws:this.rendering.frameCost.shadowDraws,shadowTriangles:this.rendering.frameCost.shadowTriangles,shadowDrawCpuMs:this.rendering.frameCost.shadowDrawCpuMs,mainAndOtherDraws:this.rendering.frameCost.mainAndOtherDraws,mainAndOtherTriangles:this.rendering.frameCost.mainAndOtherTriangles});this.lastRenderPosition.copy(this.camera.position);this.lastRenderRotation.copy(this.camera.quaternion);this.debugFrames++;}
       if (timestamp - this.lastHud > 125) {
         if (this.benchmarkEnabled){this.renderer.domElement.dataset.benchmarkReady='true';this.renderer.domElement.dataset.ridePhase=this.ride.phase;this.renderer.domElement.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';}
         if (this.debug) { const canvas = this.renderer.domElement; canvas.dataset.worldX = this.visitor.position.x.toFixed(3); canvas.dataset.cast = this.street.castStatus; canvas.dataset.worldZ = this.visitor.position.z.toFixed(3); canvas.dataset.eyeHeight = this.camera.position.y.toFixed(3); canvas.dataset.lookYaw = this.yaw.toFixed(3); canvas.dataset.renderScale=this.quality.scale.toFixed(2); canvas.dataset.quality=this.quality.low?'low':'high'; canvas.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';canvas.dataset.navigation=this.street.navigationStatus;canvas.dataset.surfaceMaps=this.street.surfaceStatus;canvas.dataset.streetAssets=this.street.assetStatus;canvas.dataset.characterStatus=this.street.characterStatus;canvas.dataset.npcUpdateMs=this.street.npcUpdateMs.toFixed(3);canvas.dataset.trafficUpdateMs=this.street.trafficUpdateMs.toFixed(3);canvas.dataset.renderPreset=this.renderPreset; canvas.dataset.cameraMode = this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? 'first-person' : 'passenger'; }
-        this.options.onSpeed(this.ride.phase === 'riding' ? this.rideSpeed * 3.6 : Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z) * 3.6);
+        this.options.onSpeed(this.ride.phase === 'riding' ? this.cab.speed * 3.6 : Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z) * 3.6);
         this.options.onPosition(this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? { x: this.visitor.position.x, z: this.visitor.position.z, yaw: this.yaw } : { x: this.transit.position.x, z: this.transit.position.z, yaw: this.transit.rotation.y + this.rideYaw });
         if (this.ride.phase !== 'idle') this.options.onRide({ ...this.ride }); this.lastHud = timestamp;
       }
