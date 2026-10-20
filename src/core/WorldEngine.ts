@@ -188,6 +188,9 @@ export class WorldEngine {
   setFrameObserver(observer: ((frame: BenchFrame) => void) | null) { this.frameObserver = observer; }
   setView(yaw: number, pitch = -.015) { this.yaw = yaw; this.pitch = pitch; this.updateCamera(); }
   pinQuality(pinned: boolean) { this.reviewQuality = pinned; }
+  /** Advance the world by a fixed step per rendered frame instead of wall time, so a slow renderer can still record smooth motion (review captures). 0 restores real time. */
+  setFixedStep(seconds: number) { this.fixedStep = Math.max(0, seconds); }
+  private fixedStep = 0;
   get gpu() { return gpuName(this.renderer.getContext()); }
   /** Textures and programs the visible scene binds now, with bone textures split from image textures. */
   viewResources(): ViewResources {
@@ -446,7 +449,7 @@ export class WorldEngine {
   }
   private frame = (timestamp: number) => {
     if (this.disposed) return; this.frameId = requestAnimationFrame(this.frame);if(this.inspectionFrozen)return;
-    const elapsed = this.lastTime ? (timestamp - this.lastTime) / 1000 : 0; const delta = Math.min(elapsed, .08); this.lastTime = timestamp;
+    const elapsed = this.fixedStep || (this.lastTime ? (timestamp - this.lastTime) / 1000 : 0); const delta = Math.min(elapsed, .08); this.lastTime = timestamp;
     if (document.hidden || this.mode !== 'world') return;
     if (this.paused && !this.pausedFrameDirty) return;
     const forceRender=this.pausedFrameDirty;this.pausedFrameDirty = false;

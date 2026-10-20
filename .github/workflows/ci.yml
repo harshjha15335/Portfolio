@@ -26,9 +26,19 @@ jobs:
       - run: npx vite build
 
   smoke:
-    name: Browser smoke (Chromium)
+    name: Browser smoke (${{ matrix.browser }})
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - browser: chromium
+            projects: --project=chromium --project=mobile-chrome
+          - browser: firefox
+            projects: --project=firefox
+          - browser: webkit
+            projects: --project=webkit --project=mobile-safari
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,5 +46,5 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npx playwright test -c playwright.ci.config.ts tests/browser.spec.ts
+      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      - run: npx playwright test -c playwright.ci.config.ts ${{ matrix.projects }} tests/browser.spec.ts tests/a11y.spec.ts
