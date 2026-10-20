@@ -40,7 +40,8 @@ export interface DistrictSpec {
   traffic: CityVehicleKind[];
   /** Scales this district's share of the crowd (the bazaar is already packed with stalls). */
   crowd?: number;
-  build: (d: District) => void;
+  /** Yields between pieces so the district can be built over several frames. */
+  build: (d: District) => Generator<void> | void;
 }
 
 /**
@@ -58,22 +59,48 @@ export class District {
   readonly ctx: Ctx;
   /** Exhibit boards' own atlas (null when the district has none). */
   private exhibitSigns: SignAtlas | null = null;
-  readonly buildMs: number;
-  constructor(private physics: CANNON.World, surfaces: StreetMaterials, readonly zone: CityZone, readonly spec: DistrictSpec) {
-    const started = performance.now(); this.origin = new THREE.Vector3(zone.originX, 0, 0); this.group.position.copy(this.origin); this.group.name = `district:${spec.id}`;
+  /** Main-thread time spent building so far (summed over the frames a deferred build was spread across). */
+  buildMs = 0;
+  private job: Generator<void> | null;
+  /** Buildings (`frontage`) and people (`walkers`, `idle`) queued while the district's builder runs, one per slice. */
+  private queued: Array<() => void> = [];
+  /**
+   * A deferred district builds in small slices through `step` (a ride or a directory jump spreads it over
+   * frames instead of freezing for a second); otherwise it is complete when the constructor returns.
+   */
+  constructor(private physics: CANNON.World, surfaces: StreetMaterials, readonly zone: CityZone, readonly spec: DistrictSpec, deferred = false) {
+    this.origin = new THREE.Vector3(zone.originX, 0, 0); this.group.position.copy(this.origin); this.group.name = `district:${spec.id}`; this.group.visible = false;
     this.kit = new DistrictKit(this.origin, physics, surfaces, spec.id); this.ctx = { kit: this.kit, signs: this.signs };
-    this.street(); spec.build(this); this.exhibitSigns = buildExhibits(this); this.guide(); this.populateTraffic(); this.crossing(); this.streetLife();
-    this.kit.build(); this.kit.group.children.slice().forEach(m => { this.group.add(m); m.position.set(0, 0, 0); });
+    this.job = this.construct();
+    if (!deferred) this.finish();
+  }
+  get ready() { return !this.job; }
+  /** Build for about `budgetMs` (at least one slice). Returns true once the district is complete. */
+  step(budgetMs: number) {
+    if (!this.job) return true;
+    const started = performance.now();
+    do { if (this.job.next().done) { this.job = null; break; } } while (performance.now() - started < budgetMs);
+    this.buildMs += performance.now() - started;
+    return !this.job;
+  }
+  finish() { this.step(Infinity); }
+  private *construct(): Generator<void> {
+    yield* this.street();
+    const spec = this.spec.build(this); if (spec) yield* spec; yield;
+    while (this.queued.length) { this.queued.shift()!(); yield; }
+    this.exhibitSigns = buildExhibits(this); this.guide(); yield;
+    yield* this.populateTraffic(); this.crossing(); yield;
+    yield* this.streetLife();
+    yield* this.kit.buildSteps(); this.kit.group.children.slice().forEach(m => { this.group.add(m); m.position.set(0, 0, 0); });
     const signs = this.signs.build(); if (signs) this.group.add(signs);
     const boards = this.exhibitSigns?.build(); if (boards) { boards.name = 'district:exhibits'; this.group.add(boards); }
     this.group.add(this.crowd.group, this.traffic.group); for (const w of this.waters) this.group.add(w.mesh);
     // Low solids (stalls, benches, posts, parked rows) are what walkers on the pavement must step around.
     for (const b of this.kit.lowSolids) this.crowd.obstacles.push({ minX: b.min.x, maxX: b.max.x, minZ: b.min.z, maxZ: b.max.z });
     this.spatial = new SpatialIndex(this.kit.colliders); this.kit.colliders.forEach(g => g.dispose()); this.kit.colliders.length = 0;
-    this.group.visible = false; this.buildMs = performance.now() - started;
   }
   /** Shared road, pavements, lights, limits and backdrop. */
-  private street() {
+  private *street(): Generator<void> {
     const { kit } = this, c = this.ctx, palette = this.spec.palette ?? PASTELS;
     kit.box([300, .1, 340], [0, -.12, -22], '#6d6f69', 'asphalt');
     kit.box([7.8, .04, 340], [0, -.03, -22], '#55585a', 'asphalt');
@@ -86,7 +113,7 @@ export class District {
       for (let z = 118; z > -160; z -= 1.7) kit.box([.24, .14, 1.6], [side * 3.98, .06, z], Math.floor(z / 1.7) % 2 ? '#c7a84f' : '#2f2e2b');
       for (let z = 10; z > -60; z -= 16) streetLight(c, side * 6.4, z, side);
       for (let z = 9; z > -60; z -= 4.5) kit.box([.65, .015, .45], [side * 3.45, .005, z], '#2a2e33', 'metal');
-      streetClutter(c, side, this.zone.stop);
+      streetClutter(c, side, this.zone.stop); yield;
     }
     // The walkable envelope. Invisible; the road visibly continues past it.
     for (const side of [-1, 1]) {
@@ -104,6 +131,7 @@ export class District {
         const h = 10 + Math.abs(Math.sin(z * 1.7 + side)) * 16, w = 13.5;
         kit.frame([side * (8.5 + (Math.abs(z) % 3)), 0, z + (z0 > 0 ? 7 : -7)], side > 0 ? -Math.PI / 2 : Math.PI / 2, () => { backdropBlock(c, w, h, 12, palette[Math.abs(Math.round(z)) % palette.length]); rooftop(c, w, h, 12); });
       }
+      yield;
     }
     // Skyline: a ring of mid-rises, slab blocks and the odd tall tower with a crown or a crane.
     const tones = ['#c9c3b4', '#d6c7b2', '#b9b8ae', '#cdb9a8', '#c2c7c4', '#d9d0bd', '#bfae9a', '#aeb7bd'];
@@ -116,7 +144,9 @@ export class District {
         else if (pickType < .5) { const h = 24 + this.kit.rand() * 10; backdropBlock(c, 34, h, 12, tone); towerRelief(c, 34, h, 12, tone); }
         else { const h = 18 + (i % 5) * 5; backdropBlock(c, 24, h, 12, tone); towerRelief(c, 24, h, 12, tone); rooftop(c, 24, h, 12); }
       });
+      if (i % 4 === 3) yield;
     }
+    yield;
     // A tower going up somewhere on the horizon, with its crane.
     const ca = (this.spec.skyline === 'east' ? .6 : -.9) + this.kit.rand() * .4;
     kit.frame([Math.sin(ca) * 132, 0, -22 + Math.cos(ca) * 132], ca + Math.PI, () => constructionSite(c));
@@ -128,9 +158,9 @@ export class District {
     guide.group.rotation.y = Math.atan2(gx - s.x, gz - s.z);
     this.interactions.push({ id: this.spec.id, label: `Talk to ${this.spec.guide}`, position: new THREE.Vector3(this.origin.x + gx, 1.45, gz) });
   }
-  private populateTraffic() {
+  private *populateTraffic(): Generator<void> {
     const n = Math.round(this.spec.traffic.length * cityDensity.traffic), kinds = Array.from({ length: n }, (_, i) => this.spec.traffic[(i * 7) % this.spec.traffic.length]), north = this.traffic.lane([[1.6, 0, LANE_END[0]], [1.6, 0, LANE_END[1]]]), south = this.traffic.lane([[-1.6, 0, LANE_END[1]], [-1.6, 0, LANE_END[0]]]);
-    kinds.forEach((kind, i) => this.traffic.vehicle(i % 2 ? south : north, kind, ((i >> 1) + (i % 2) * .5) / Math.ceil(kinds.length / 2), `${this.spec.id}:${i}`));
+    for (const [i, kind] of kinds.entries()) { this.traffic.vehicle(i % 2 ? south : north, kind, ((i >> 1) + (i % 2) * .5) / Math.ceil(kinds.length / 2), `${this.spec.id}:${i}`); yield; }
     // Both lanes stop short of the zebra (z −13.3…−10.7) while the crossing is held.
     this.traffic.stopLine(north, ZEBRA_Z + 2.8, crossingHeld); this.traffic.stopLine(south, ZEBRA_Z - 2.8, crossingHeld);
   }
@@ -157,8 +187,9 @@ export class District {
   frontage(side: number, items: FrontageItem[], start = 14) {
     let z = start;
     for (const item of items) {
-      const zc = z - item.w / 2, x = side * (7 + (item.setback ?? 0));
-      this.kit.frame([x, 0, zc], side > 0 ? -Math.PI / 2 : Math.PI / 2, () => item.build(this.ctx));
+      const zc = z - item.w / 2, x = side * (7 + (item.setback ?? 0)), here = this.kit.here;
+      // Each building is its own slice of a deferred build.
+      this.queued.push(() => this.kit.within(here, () => this.kit.frame([x, 0, zc], side > 0 ? -Math.PI / 2 : Math.PI / 2, () => item.build(this.ctx))));
       z -= item.w + (item.gap ?? .4);
     }
     return z;
@@ -175,11 +206,14 @@ export class District {
   }
   water(width: number, depth: number, center: V3, color: string, amplitude?: number) { const w = new Water(width, depth, center, color, amplitude); this.waters.push(w); return w; }
   animate(step: (time: number, delta: number) => void) { this.motion.push(step); }
+  /** Someone standing, talking, selling or sitting; each is its own slice of a deferred build. */
+  idle(...args: Parameters<Crowd['idle']>) { this.queued.push(() => { this.crowd.idle(...args); }); }
   private mix: Outfit[] = [];
   walkers(base: Outfit[], lanes: number[], z0 = 12, z1 = -56, speed = 1.05) {
     this.mix.push(...base);
     const outfits = Array.from({ length: Math.round(base.length * cityDensity.crowd * (this.spec.crowd ?? 1)) }, (_, i) => base[(i * 5) % base.length]);
-    outfits.forEach((o, i) => { const x = lanes[i % lanes.length] + ((i * 37) % 7 - 3) * .08; this.crowd.walker(o, [[x, .03, z0], [x, .03, z1]], speed * (.85 + ((i * 13) % 5) * .07), ((i * 29) % 17) / 17); });
+    // Each walker is its own slice of a deferred build (dressing a figure is the costly part).
+    outfits.forEach((o, i) => { const x = lanes[i % lanes.length] + ((i * 37) % 7 - 3) * .08; this.queued.push(() => { this.crowd.walker(o, [[x, .03, z0], [x, .03, z1]], speed * (.85 + ((i * 13) % 5) * .07), ((i * 29) % 17) / 17); }); });
   }
   /** Is a pavement spot clear of the stop, the guide and the zebra crossing? */
   private clearOf(x: number, z: number) {
@@ -189,7 +223,7 @@ export class District {
    * The life between the authored set pieces: knots of people chatting on the pavements and
    * rows of parked two-wheelers along the kerb, scaled by `cityDensity`.
    */
-  private streetLife() {
+  private *streetLife(): Generator<void> {
     const r = () => this.kit.rand(), mix = this.mix.length ? this.mix : ['shirt', 'office', 'sari', 'kurta'] as Outfit[];
     for (const side of [-1, 1]) {
       if ((side < 0 ? this.spec.west : this.spec.east) === 'open') continue;
@@ -206,6 +240,7 @@ export class District {
           const p = this.crowd.idle(mix[Math.floor(r() * mix.length)], [px, .03, pz], 0, i === 0 || r() > .5 ? 'talk' : 'stand');
           p.group.rotation.y = Math.atan2(px - x, pz - z);
         }
+        yield;
       }
       // Two-wheelers parked in line along the kerb, in clusters. Nose-in rows would reach into the traffic lane
       // (a 2 m bike from the kerb ends where a passing car's flank is), so they stand parallel, clear of it.
@@ -213,11 +248,11 @@ export class District {
       for (let z = 10 - r() * 4; z > -58; z -= 16 + r() * 8) {
         const count = 2 + Math.floor(r() * 3), span = count * 2.2;
         if (!this.clearOf(side * 3.45, z) || !this.clearOf(side * 3.45, z - span)) continue;
-        for (let i = 0; i < count; i++) this.parkedLite(kinds[Math.floor(r() * kinds.length)], side * 3.45, z - 1.1 - i * 2.2, (side > 0 ? Math.PI : 0) + (r() - .5) * .12);
-        this.kit.solid([.8, 1.2, span], [side * 3.45, .6, z - span / 2]);
+        for (let i = 0; i < count; i++) { this.parkedLite(kinds[Math.floor(r() * kinds.length)], side * 3.45, z - 1.1 - i * 2.2, (side > 0 ? Math.PI : 0) + (r() - .5) * .12); yield; }
+        this.kit.solid([.8, 1.2, span], [side * 3.45, .6, z - span / 2]); yield;
       }
     }
-    this.flushParked();
+    yield; this.flushParked();
   }
   private parkedParts: THREE.BufferGeometry[] = [];
   /** Queue a static vehicle into the district's single merged parked-vehicle mesh. */
@@ -248,8 +283,10 @@ export class District {
   private blockView = new THREE.Vector3();
   /** Release physics bodies and every GPU resource this district owns (shared street maps stay). */
   dispose() {
+    // A deferred build abandoned part-way (the visitor turned back) still owns its unmerged parts.
+    if (this.job) { this.job = null; this.kit.discard(); }
     for (const body of this.kit.bodies) this.physics.removeBody(body);
-    this.spatial.dispose(); this.signs.texture.dispose(); this.exhibitSigns?.texture.dispose(); this.group.removeFromParent();
+    this.spatial?.dispose(); this.signs.texture.dispose(); this.exhibitSigns?.texture.dispose(); this.group.removeFromParent();
     for (const person of this.crowd.people()) person.cast?.dispose();
     this.traffic.dispose();
     const shared = paintMaterial();

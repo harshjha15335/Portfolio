@@ -1,4 +1,4 @@
-import { gpuName, type BenchFrame, type ViewResources } from './visitorBenchmark';
+import { gpuName, type ArrivalShaders, type BenchFrame, type ViewResources } from './visitorBenchmark';
 import {GPUFrameProfiler} from './GPUFrameProfiler';
 import {stationCharacter} from '../data/stationCharacter';
 import {characterCast} from '../data/characterCast';
@@ -31,7 +31,13 @@ interface WorldOptions {
   onLook?: () => void;
   onHail: (kind: TransitKind) => void; onError: (error: unknown) => void;
   onSelect: (id: string) => void; reducedMotion: boolean; mobile: boolean;
+  /** A directory jump is waiting for its district to finish building (the stop's id), or has landed (null). */
+  onArriving?: (id: string | null) => void;
 }
+/** Main-thread time per frame given to building a district ahead of arrival. */
+const DISTRICT_SLICE_MS = 6;
+/** Longest a directory jump waits on the driver linking the new district's shaders before landing anyway. */
+const ARRIVAL_SHADER_WAIT_MS = 4000;
 import { AdaptiveQuality } from './AdaptiveQuality';
 import { StreetAudio } from './StreetAudio';
 import { StreetRenderer, type RenderPreset } from './StreetRenderer';
@@ -115,7 +121,7 @@ export class WorldEngine {
     // Districts are built on first need and receive the same weathering/haze patch as the street.
     setCityDensity(this.renderPreset);
     // Modelled district traffic loads in the background; lofted bodies stand in until it arrives.
-    this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); this.warm(district.group); if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.fortTraffic = createFortRoadTraffic(() => this.street.loopVehicles); applyStreetAtmosphere(this.fortTraffic.group, this.atmosphere); this.scene.add(this.fortTraffic.group); if (typeof location !== 'undefined') void preloadCityVehicleModels(location.origin).then(() => { if (this.disposed) return; this.fortTraffic.refresh(); this.city.refreshVehicles(); this.warm(this.scene); this.pausedFrameDirty = true; }); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}});
+    this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); const before = this.renderer.info.programs?.length ?? 0; this.compiling = this.warm(district.group); this.linkStarted = performance.now(); this.linkPrograms = (this.renderer.info.programs?.length ?? 0) - before; if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.fortTraffic = createFortRoadTraffic(() => this.street.loopVehicles); applyStreetAtmosphere(this.fortTraffic.group, this.atmosphere); this.scene.add(this.fortTraffic.group); if (typeof location !== 'undefined') void preloadCityVehicleModels(location.origin).then(() => { if (this.disposed) return; this.fortTraffic.refresh(); this.city.refreshVehicles(); this.warm(this.scene); this.pausedFrameDirty = true; }); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}});
     const preview=import.meta.env.DEV?new URLSearchParams(location.search).get('characterPreview'):null;
     // Licensed street cast: approved characters load at runtime; DEV ?characterPreview also shows candidates.
     const castPreview=preview==='idle'||preview==='walk'||preview==='cast';
@@ -210,12 +216,28 @@ export class WorldEngine {
   focusLandmark(_id: string) { /* Reading an overlay never changes the visitor's viewpoint. */ }
   travelTo(id: string) {
     const stop = streetStops[id]; if (!stop) { this.options.onSelect(id); return; }
-    this.endRide(); this.placeVisitor(stop.x, stop.z, stop.yaw); this.updateNear();
+    this.endRide(); this.tween = null;
+    const index = zoneIndexAt(stop.x);
+    // A district not built yet is built over the next frames while the visitor stays put, instead of freezing on the jump.
+    if (!this.reducedMotion && !this.city.isReady(index)) { this.city.prepare(index); this.arrivingAt = id; this.arrivalStarted = performance.now(); this.options.onArriving?.(id); return; }
+    this.land(id);
   }
-  reset() { this.tween = null; this.endRide(); this.placeVisitor(STREET_SPAWN.x, STREET_SPAWN.z, STREET_SPAWN.yaw); this.updateNear(); }
+  /** The stop a directory jump is waiting to land at, while its district builds. */
+  get arriving() { return this.arrivingAt; }
+  private arrivingAt: string | null = null;
+  private arrivalStarted = 0;
+  /** Smoothed length of frames that did no district building. */
+  private typicalFrameMs = 16.7; private builtLastFrame = false;
+  private land(id: string) {
+    const stop = streetStops[id], waited = this.arrivingAt !== null; this.arrivingAt = null;
+    this.placeVisitor(stop.x, stop.z, stop.yaw); this.updateNear();
+    if (waited) this.options.onArriving?.(null);
+  }
+  private cancelArrival() { if (this.arrivingAt === null) return; this.arrivingAt = null; this.options.onArriving?.(null); }
+  reset() { this.tween = null; this.cancelArrival(); this.endRide(); this.placeVisitor(STREET_SPAWN.x, STREET_SPAWN.z, STREET_SPAWN.yaw); this.updateNear(); }
   /** Carry the visitor to a framing pose (guided tours). Instant under reduced motion. */
   frameView(view: TourView) {
-    this.endRide(); this.releaseInput();
+    this.cancelArrival(); this.endRide(); this.releaseInput();
     const from = { x: this.visitor.position.x, z: this.visitor.position.z, yaw: this.yaw, pitch: this.pitch };
     const turn = Math.atan2(Math.sin(view.yaw - from.yaw), Math.cos(view.yaw - from.yaw));
     const to = { ...view, yaw: from.yaw + turn }, distance = Math.hypot(to.x - from.x, to.z - from.z);
@@ -234,7 +256,7 @@ export class WorldEngine {
   }
   setMove(key: string, down: boolean) { if (down) this.touchKeys.add(key); else this.touchKeys.delete(key); }
   board(kind: TransitKind) {
-    this.endRide(); this.releaseInput(); this.visitor.velocity.setZero(); this.rideYaw = 0; this.ridePitch = 0;
+    this.cancelArrival(); this.endRide(); this.releaseInput(); this.visitor.velocity.setZero(); this.rideYaw = 0; this.ridePitch = 0;
     this.ride = { ...idleRide(), phase: this.reducedMotion ? 'boarding' : 'hailing', kind, fare: this.reducedMotion ? storyFare(kind, 0) : 0 };
     this.taxi.visible = kind === 'taxi'; this.auto.visible = kind === 'auto'; this.transit.visible = true; this.queuedDestination = null;
     // Pull in from the same lane, parallel to the pavement. No vehicle crosses a building.
@@ -267,7 +289,7 @@ export class WorldEngine {
   }
   /** Draw and simulate only the district that contains x. */
   private syncZone(x: number) {
-    const index = zoneIndexAt(x); if (index === this.zone && (index === 0 || this.city.get(index)?.group.visible)) return;
+    const index = zoneIndexAt(x); if (index === this.zone && (index === 0 || this.city.peek(index)?.group.visible)) return;
     this.zone = index; const ox = cityZones[index].originX;
     this.street.group.visible = index === 0; this.fortTraffic.group.visible = index === 0; this.city.activate(index);
     // The hidden street's people rebuild their bone textures on return; releasing them keeps a district's texture count to its own.
@@ -370,12 +392,26 @@ export class WorldEngine {
    * a district built for an arriving ride, or the cast and vehicle models once they load. Compiling them
    * inside the first frame that shows them froze the game for a second or more on Windows drivers.
    */
-  private warm(root: THREE.Object3D) {
-    if (this.disposed) return;
+  private warm(root: THREE.Object3D): Set<THREE.Material> {
+    if (this.disposed) return new Set();
     const group = new THREE.Group(); root.traverse(o => { if ((o as THREE.Mesh).isMesh) { const c = o.clone(false); c.visible = true; c.matrixWorld.copy(o.matrixWorld); group.add(c); } });
     // compile() only queues the programs (the driver links them in parallel where KHR_parallel_shader_compile exists);
-    // compileAsync's readiness polling throws if a material is disposed meanwhile, as retired stand-in figures are.
-    try { this.renderer.compile(group, this.camera, this.scene); } catch { /* Compiled on first draw instead. */ } finally { group.clear(); }
+    // compileAsync's readiness polling throws if a material is disposed meanwhile, as retired stand-in figures are, so `shadersReady` polls instead.
+    try { return this.renderer.compile(group, this.camera, this.scene); } catch { return new Set(); /* Compiled on first draw instead. */ } finally { group.clear(); }
+  }
+  /** Materials of the district just built whose programs the driver may still be linking. */
+  private compiling = new Set<THREE.Material>();
+  private linkStarted = 0; private linkPrograms = 0;
+  /** The last directory jump's shader wait, for `?bench`. */
+  lastArrival: ArrivalShaders | null = null;
+  /** True once the driver has linked every program `warm` queued for the new district, so its first frame does not stall on them. */
+  private shadersReady() {
+    if (!this.renderer.extensions.has('KHR_parallel_shader_compile')) this.compiling.clear();
+    for (const material of this.compiling) {
+      const program = (this.renderer.properties.get(material) as { currentProgram?: { isReady(): boolean } }).currentProgram;
+      if (!program || program.isReady()) this.compiling.delete(material);
+    }
+    return this.compiling.size === 0;
   }
   /** High keeps 1.5× sharpness on dense displays; Medium and phones stop at 1.25× (MSAA on a 1.5× canvas is 2.25× the fill of 1×). */
   private get maxPixelRatio() { return !this.options.mobile && this.renderPreset === 'high' ? 1.5 : 1.25; }
@@ -451,6 +487,12 @@ export class WorldEngine {
     if (this.disposed) return; this.frameId = requestAnimationFrame(this.frame);if(this.inspectionFrozen)return;
     const elapsed = this.fixedStep || (this.lastTime ? (timestamp - this.lastTime) / 1000 : 0); const delta = Math.min(elapsed, .08); this.lastTime = timestamp;
     if (document.hidden || this.mode !== 'world') return;
+    // A quarter of a typical frame where frames are slow everywhere (software rendering), else 6 ms. The typical frame
+    // leaves out frames that built: one long slice must not widen the next budget into another long frame.
+    const tickStart = performance.now(); this.city.tick(Math.max(DISTRICT_SLICE_MS, this.typicalFrameMs * .25)); const tickMs = performance.now() - tickStart;
+    if (elapsed > 0 && tickMs < 1 && this.builtLastFrame === false) this.typicalFrameMs += (Math.min(elapsed * 1000, 4000) - this.typicalFrameMs) * .1;
+    this.builtLastFrame = tickMs >= 1;
+    if (this.arrivingAt && this.city.isReady(zoneIndexAt(streetStops[this.arrivingAt].x)) && (this.shadersReady() || timestamp - this.arrivalStarted > ARRIVAL_SHADER_WAIT_MS)) { this.lastArrival = { parallel: this.renderer.extensions.has('KHR_parallel_shader_compile'), newPrograms: this.linkPrograms, linkWaitMs: performance.now() - this.linkStarted, capped: this.compiling.size > 0 }; this.land(this.arrivingAt); this.pausedFrameDirty = true; }
     if (this.paused && !this.pausedFrameDirty) return;
     const forceRender=this.pausedFrameDirty;this.pausedFrameDirty = false;
     let simulatedWalkingMs=0;
@@ -488,7 +530,7 @@ export class WorldEngine {
       if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)&&!this.applyLowTier())this.resize();
       if(!this.reducedMotion&&!this.paused&&this.time-this.lastShadow>.2&&this.renderer.shadowMap.enabled){this.renderer.shadowMap.needsUpdate=true;this.lastShadow=this.time;}
       this.audio?.update(this.ride.phase==='riding'?this.rideSpeed:Math.hypot(this.visitor.velocity.x,this.visitor.velocity.z),this.ride.phase!=='idle'&&this.ride.phase!=='hailing',this.ride.kind==='auto');
-      if(needsRender){this.renderer.info.reset();this.profiler?.beforeRender();const renderStart=performance.now();this.rendering.render(delta);this.frameObserver?.({frameMs:elapsed*1000,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,low:this.quality.low});this.profiler?.afterRender({frameMs:elapsed*1000,renderCpuMs:performance.now()-renderStart,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,geometries:this.renderer.info.memory.geometries,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,preset:this.renderPreset,phase:this.ride.phase,worldX:this.visitor.position.x,worldZ:this.visitor.position.z,walkingSimulatedMs:simulatedWalkingMs,shadowRefreshed:this.rendering.frameCost.shadowDraws>0,shadowDraws:this.rendering.frameCost.shadowDraws,shadowTriangles:this.rendering.frameCost.shadowTriangles,shadowDrawCpuMs:this.rendering.frameCost.shadowDrawCpuMs,mainAndOtherDraws:this.rendering.frameCost.mainAndOtherDraws,mainAndOtherTriangles:this.rendering.frameCost.mainAndOtherTriangles});this.lastRenderPosition.copy(this.camera.position);this.lastRenderRotation.copy(this.camera.quaternion);this.debugFrames++;}
+      if(needsRender){this.renderer.info.reset();this.profiler?.beforeRender();const renderStart=performance.now();this.rendering.render(delta);this.frameObserver?.({tickMs,renderMs:performance.now()-renderStart,frameMs:elapsed*1000,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,low:this.quality.low});this.profiler?.afterRender({frameMs:elapsed*1000,renderCpuMs:performance.now()-renderStart,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,geometries:this.renderer.info.memory.geometries,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,preset:this.renderPreset,phase:this.ride.phase,worldX:this.visitor.position.x,worldZ:this.visitor.position.z,walkingSimulatedMs:simulatedWalkingMs,shadowRefreshed:this.rendering.frameCost.shadowDraws>0,shadowDraws:this.rendering.frameCost.shadowDraws,shadowTriangles:this.rendering.frameCost.shadowTriangles,shadowDrawCpuMs:this.rendering.frameCost.shadowDrawCpuMs,mainAndOtherDraws:this.rendering.frameCost.mainAndOtherDraws,mainAndOtherTriangles:this.rendering.frameCost.mainAndOtherTriangles});this.lastRenderPosition.copy(this.camera.position);this.lastRenderRotation.copy(this.camera.quaternion);this.debugFrames++;}
       if (timestamp - this.lastHud > 125) {
         if (this.benchmarkEnabled){this.renderer.domElement.dataset.benchmarkReady='true';this.renderer.domElement.dataset.ridePhase=this.ride.phase;this.renderer.domElement.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';}
         if (this.debug) { const canvas = this.renderer.domElement; canvas.dataset.worldX = this.visitor.position.x.toFixed(3); canvas.dataset.cast = this.street.castStatus; canvas.dataset.worldZ = this.visitor.position.z.toFixed(3); canvas.dataset.eyeHeight = this.camera.position.y.toFixed(3); canvas.dataset.lookYaw = this.yaw.toFixed(3); canvas.dataset.renderScale=this.quality.scale.toFixed(2); canvas.dataset.quality=this.quality.low?'low':'high'; canvas.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';canvas.dataset.navigation=this.street.navigationStatus;canvas.dataset.surfaceMaps=this.street.surfaceStatus;canvas.dataset.streetAssets=this.street.assetStatus;canvas.dataset.characterStatus=this.street.characterStatus;canvas.dataset.npcUpdateMs=this.street.npcUpdateMs.toFixed(3);canvas.dataset.trafficUpdateMs=this.street.trafficUpdateMs.toFixed(3);canvas.dataset.renderPreset=this.renderPreset; canvas.dataset.cameraMode = this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? 'first-person' : 'passenger'; }

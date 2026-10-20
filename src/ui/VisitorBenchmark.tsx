@@ -38,13 +38,14 @@ export function VisitorBenchmark({ engine, ready, preset, adaptive, worldReadyMs
         let frames: BenchFrame[] = [];
         engine.setFrameObserver(frame => frames.push(frame));
         setStep({ index, label: `Arriving at ${title(id)}` });
-        const start = performance.now(); engine.travelTo(id); const buildMs = performance.now() - start;
+        // A district not built yet builds in slices before the visitor lands; `build` is that wait.
+        const start = performance.now(); engine.lastArrival = null; engine.travelTo(id); while (engine.arriving && !run.stop) await nextFrame(); const buildMs = performance.now() - start, landedAt = frames.length;
         await wait(warmupS * 1000);
         const warmup = frames; frames = [];
         setStep({ index, label: `Measuring ${title(id)}` });
         const yaw = streetStops[id].yaw, begin = performance.now();
         for (let t = 0; t < sampleS && !run.stop; t = (performance.now() - begin) / 1000) { engine.setView(yaw + Math.PI * 2 * t / sampleS, -.02); await nextFrame(); }
-        const result = districtResult(id, buildMs, warmup, frames, engine.viewResources());
+        const result = districtResult(id, buildMs, warmup, frames, engine.viewResources(), engine.lastArrival ?? undefined, landedAt);
         results.push(result); all.push(...frames.map(f => f.frameMs));
       }
       engine.setFrameObserver(null); engine.pinQuality(false); engine.travelTo('cst');

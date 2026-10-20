@@ -14,16 +14,17 @@ import type { DistrictCast } from './DistrictCast';
 export class CityDistricts {
   private built = new Map<number, District>();
   constructor(private physics: CANNON.World, private surfaces: StreetMaterials, private root: THREE.Object3D, private onBuilt: (district: District) => void) {}
-  /** District for a zone index (1…7); null for the CST–Fort street (index 0). */
+  /** District for a zone index (1…7), complete; null for the CST–Fort street (index 0). A build in progress is finished now. */
   get(index: number) {
     if (index <= 0 || index >= cityZones.length) return null;
-    let district = this.built.get(index);
-    if (!district) {
-      const zone = cityZones[index]; district = new District(this.physics, this.surfaces, zone, DISTRICT_SPECS[zone.id]);
-      this.built.set(index, district); this.root.add(district.group); this.onBuilt(district);
-    }
+    const district = this.built.get(index) ?? this.create(index);
+    this.settle(district, Infinity);
     return district;
   }
+  /** The district for `index` if one exists, finished or not, without building anything. */
+  peek(index: number) { return this.built.get(index) ?? null; }
+  /** True when arriving at `index` needs no more building (the street, or a finished district). */
+  isReady(index: number) { return index <= 0 || index >= cityZones.length || Boolean(this.built.get(index)?.ready); }
   /** Show only `index`; districts left behind are released so memory stays at one district. */
   activate(index: number) {
     const active = this.get(index);
@@ -32,8 +33,21 @@ export class CityDistricts {
     return active;
   }
   private pending = -1;
-  /** Build a district ahead of arrival (a ride towards it) without disposing the current one. */
-  prepare(index: number) { if (index > 0) { this.pending = index; this.get(index); } }
+  /** Start building a district ahead of arrival (a ride or jump towards it) without disposing the current one; `tick` continues it. */
+  prepare(index: number) {
+    if (index <= 0 || index >= cityZones.length) return;
+    this.pending = index; if (!this.built.has(index)) this.create(index);
+  }
+  /** Spend about `budgetMs` of this frame on the district being prepared. */
+  tick(budgetMs: number) { const district = this.built.get(this.pending); if (district) this.settle(district, budgetMs); }
+  private announced = new WeakSet<District>();
+  private create(index: number) {
+    const zone = cityZones[index], district = new District(this.physics, this.surfaces, zone, DISTRICT_SPECS[zone.id], true);
+    this.built.set(index, district); this.root.add(district.group); return district;
+  }
+  private settle(district: District, budgetMs: number) {
+    if (district.step(budgetMs) && !this.announced.has(district)) { this.announced.add(district); this.onBuilt(district); }
+  }
   /** Give every built district's crowd the licensed cast once it has loaded. */
   /** Rebuild built districts' traffic and parked vehicles with the modelled bodies once they have loaded. */
   refreshVehicles() { for (const d of this.built.values()) d.refreshVehicles(); }

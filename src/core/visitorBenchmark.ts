@@ -9,7 +9,11 @@ export const BENCH_STOPS = ['cst', 'fort', 'bkc', 'andheri', 'powai', 'dadar', '
 export const BENCH_WARMUP_S = 4;
 export const BENCH_SAMPLE_S = 12;
 
-export interface BenchFrame { frameMs: number; draws: number; triangles: number; textures: number; programs: number; scale: number; low: boolean }
+/** `tickMs` / `renderMs`: main-thread time this frame spent building districts and inside the renderer (CPU, including any wait on shader linking). */
+export interface BenchFrame { frameMs: number; draws: number; triangles: number; textures: number; programs: number; scale: number; low: boolean; tickMs?: number; renderMs?: number }
+
+/** How a jump to a district went: programs the driver had to link for it, how long the jump waited on them, and whether it gave up waiting. */
+export interface ArrivalShaders { parallel: boolean; newPrograms: number; linkWaitMs: number; capped: boolean }
 
 export interface FrameStats { frames: number; p50: number; p95: number; p99: number; max: number; mean: number; fps: number; over33: number; over50: number }
 
@@ -19,12 +23,17 @@ export interface DistrictResult {
   buildMs: number;
   /** Worst frame during warm-up: shader compiles and texture uploads after arriving. */
   arrivalHitchMs: number;
+  /** Worst frame once the visitor stands in the district (the rest of `arrivalHitchMs` falls while "Heading to…" shows). */
+  landedHitchMs?: number;
   stats: FrameStats;
   peak: { draws: number; triangles: number; textures: number; programs: number };
   scale: number;
   low: boolean;
   /** What the last measured frame actually binds; the peak counters above are renderer totals (see `ViewResources`). */
   inView?: ViewResources;
+  /** Where the hitch went: the work of the frame before the longest gap (a long gap is the previous callback's work, or the browser's). */
+  hitchCause?: { tickMs: number; renderMs: number };
+  shaders?: ArrivalShaders;
 }
 
 /**
@@ -67,13 +76,16 @@ export function frameStats(frameMs: number[]): FrameStats {
   };
 }
 
-export function districtResult(id: string, buildMs: number, warmup: BenchFrame[], sample: BenchFrame[], inView?: ViewResources): DistrictResult {
+export function districtResult(id: string, buildMs: number, warmup: BenchFrame[], sample: BenchFrame[], inView?: ViewResources, shaders?: ArrivalShaders, landedAt?: number): DistrictResult {
   const last = sample[sample.length - 1] ?? warmup[warmup.length - 1];
   const peak = (key: 'draws' | 'triangles' | 'textures' | 'programs') => Math.max(0, ...sample.map(f => f[key]));
+  const worst = warmup.reduce((best, f, i) => f.frameMs > (warmup[best]?.frameMs ?? -1) ? i : best, -1), before = warmup[worst - 1];
   return {
     id, buildMs: round(buildMs), arrivalHitchMs: round(Math.max(0, ...warmup.map(f => f.frameMs))), stats: frameStats(sample.map(f => f.frameMs)),
     peak: { draws: peak('draws'), triangles: peak('triangles'), textures: peak('textures'), programs: peak('programs') },
     scale: last?.scale ?? 1, low: last?.low ?? false, ...(inView ? { inView } : {}),
+    ...(landedAt !== undefined ? { landedHitchMs: round(Math.max(0, ...warmup.slice(landedAt + 1).map(f => f.frameMs))) } : {}),
+    ...(before ? { hitchCause: { tickMs: round(before.tickMs ?? 0), renderMs: round(before.renderMs ?? 0) } } : {}), ...(shaders ? { shaders: { ...shaders, linkWaitMs: round(shaders.linkWaitMs) } } : {}),
   };
 }
 
@@ -108,7 +120,10 @@ export function formatReport(report: BenchReport) {
     ...report.districts.map(d => `${d.id.padEnd(9)}${pad(d.stats.p50, 7)}${pad(d.stats.p95, 7)}${pad(d.stats.p99, 7)}${pad(d.stats.max, 7)}${pad(d.stats.fps, 6)}${pad(d.stats.over33, 7)}${pad(d.arrivalHitchMs, 7)}${pad(d.buildMs, 7)}${pad(d.peak.draws, 7)}${pad(Math.round(d.peak.triangles / 1000) + 'k', 7)}${pad(d.peak.textures, 5)}${pad(d.peak.programs, 5)}${pad(d.inView?.imageTextures ?? '-', 5)}${pad(d.inView?.boneTextures ?? '-', 5)}${pad(d.inView?.programs ?? '-', 5)}${pad(d.scale.toFixed(2) + (d.low ? 'L' : ''), 6)}`),
     `${'all'.padEnd(9)}${pad(report.overall.p50, 7)}${pad(report.overall.p95, 7)}${pad(report.overall.p99, 7)}${pad(report.overall.max, 7)}${pad(report.overall.fps, 6)}${pad(report.overall.over33, 7)}`,
     '',
-    'Frame times in ms. hitch = worst frame in the warm-up after arriving; build = district construction; tex = all renderer textures; prog = shader programs compiled so far (cumulative); img / bone / view = image textures, bone textures and programs the visible scene binds at the end of the pan; L = low tier engaged.',
+    'arrival   landed  newprog  linkwait  gaveup  parallel  before-hitch: build render',
+    ...report.districts.map(d => `${d.id.padEnd(9)}${pad(d.landedHitchMs ?? '-', 7)}${pad(d.shaders?.newPrograms ?? '-', 9)}${pad(d.shaders?.linkWaitMs ?? '-', 10)}${pad(d.shaders ? (d.shaders.capped ? 'yes' : 'no') : '-', 8)}${pad(d.shaders ? (d.shaders.parallel ? 'yes' : 'no') : '-', 10)}${pad(d.hitchCause?.tickMs ?? '-', 20)}${pad(d.hitchCause?.renderMs ?? '-', 7)}`),
+    '',
+    'Frame times in ms. hitch = worst frame from choosing the stop to the end of the warm-up; build = wait from choosing the stop to standing there (the district builds in slices meanwhile); tex = all renderer textures; prog = shader programs compiled so far (cumulative); img / bone / view = image textures, bone textures and programs the visible scene binds at the end of the pan; L = low tier engaged. landed = worst frame after standing in the district (the rest of hitch falls while "Heading to…" shows); newprog = shader programs the driver had to link for the district; linkwait = how long the jump waited on them; gaveup = landed before they finished; before-hitch = district building and renderer time in the frame before the longest gap.',
   ];
   return lines.join('\n');
 }
