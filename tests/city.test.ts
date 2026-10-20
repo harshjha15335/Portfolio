@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as CANNON from 'cannon-es';
 import { districts } from '../src/data/city';
 import { Campus, landmarkArrival } from '../src/game/World/Campus';
-import { arrivalPoint, pointAtDistance, routeLength, storyFare, transitRoute } from '../src/game/World/transit';
+import { arrivalPoint, pointAtDistance, routeLength, transitRoute } from '../src/game/World/transit';
+import { DEMO_FARES, fareFor } from '../src/game/World/meter/FareMeter';
 
 beforeEach(() => vi.stubGlobal('document', { createElement: () => ({ getContext: () => ({ fillRect() {}, fillText() {}, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {}, measureText: (text: string) => ({ width: text.length * 50 }) }) }) }));
 afterEach(() => vi.unstubAllGlobals());
@@ -48,9 +49,9 @@ describe('compact portfolio city', () => {
     const points = transitRoute({ x: 0, z: -10 }, { x: 23, z: 0 });
     expect(pointAtDistance(points, 0)).toMatchObject({ x: 0, z: -10 });
     for (const kind of ['taxi', 'auto'] as const) {
-      expect(storyFare(kind, 10)).toBeGreaterThan(storyFare(kind, 0));
-      expect(Number.isFinite(storyFare(kind, routeLength(points)))).toBe(true);
+      expect(fareFor(DEMO_FARES[kind], 2000, 0)).toBeGreaterThan(fareFor(DEMO_FARES[kind], 0, 0));
+      expect(Number.isFinite(fareFor(DEMO_FARES[kind], routeLength(points), 0))).toBe(true);
     }
-    expect(storyFare('taxi', 0)).toBe(28); expect(storyFare('auto', 0)).toBe(23);
+    expect(fareFor(DEMO_FARES.taxi, 0, 0)).toBe(28); expect(fareFor(DEMO_FARES.auto, 0, 0)).toBe(23);
   });
 });

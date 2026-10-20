@@ -29,7 +29,6 @@
 .bench-source { display:inline-block; margin-top:8px; font:500 11px var(--mono); text-decoration:underline; }
 .bench-title { font-size:14px; margin:14px 0; } .bench-title a { text-decoration:underline; }
 .studio-stage { position:relative; background:#1d2629; padding:24px; min-height:220px; display:grid; place-items:center; margin-bottom:14px; }
-.studio-stage .ride-meter { position:static; max-height:none; width:280px; }
 .studio-stage > .caption { color:#f0e4c9; }
 .event-log { list-style:none; padding:0; margin:6px 0 12px; font-size:12px; display:grid; gap:4px; }
 .hop-list { list-style:none; margin:0 0 10px; padding:0; font-size:12px; }
