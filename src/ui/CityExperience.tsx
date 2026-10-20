@@ -4,12 +4,11 @@ import { experience, achievements } from '../data/experience';
 import { projects } from '../data/projects';
 import { portfolio } from '../data/portfolio';
 import {ResearchExhibition} from './ResearchExhibition';
-import { FLAGSHIP_LABS } from './FlagshipLab';
-import { AstflowLab } from './AstflowLab';
+import { FLAGSHIP_LABS } from '../data/flagshipLabs';
+import { AstflowLab, SkillShops } from './LazyLabs';
 import { Modal } from './Modal';
 import { streetStops, zoneAt } from '../game/World/streetLayout';
 import type { Point, TransitKind } from '../game/World/transit';
-import { SkillShops } from './AndheriShops';
 export { RideMeter } from './RideMeter';
 
 export function CityMap({ position, canRide, onTravel, onOpen, onRide, onClose }: {

@@ -5,8 +5,7 @@ import { journey, districts } from '../data/city';
 import { portfolio } from '../data/portfolio';
 import { SHOPS, type Shop } from '../data/shops';
 import { BUCKET, PAGES, RATES, ingest, solves, type IngestRun, type Rate } from '../game/activities/rateLimit';
-import { SkillShops } from './AndheriShops';
-import { AstflowLab } from './AstflowLab';
+import { AstflowLab, SkillShops } from './LazyLabs';
 import { Theatre, scenes } from './CityExperience';
 
 /** Exhibits that open a panel (Powai's project boards open the project itself, so they are not listed). */

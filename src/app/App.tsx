@@ -19,12 +19,18 @@ import { record, loadProgress, saveProgress, emptyProgress, districtAt, type Ach
 import { TOURS } from '../data/tours';
 import { ExhibitPanel, isExhibit } from '../ui/Exhibits';
 import { AchievementToasts, Journal, Orientation, TourCard, Waypoint } from '../ui/GameHud';
+import { VisitorBenchmark } from '../ui/VisitorBenchmark';
+
+/** `/?bench[&preset=high|medium|low][&fixed]`: the visitor-runnable performance tour. */
+const benchParams = new URLSearchParams(location.search);
+const BENCH = benchParams.has('bench');
+const BENCH_PRESET = ['high', 'medium', 'low'].find(p => p === benchParams.get('preset')) as 'high' | 'medium' | 'low' | undefined;
 
 const heroProjects = () => projects.filter(p => p.priority <= 4);
 
 export default function App() {
   const route = readRoute(window.location.hash);
-  const [mode, setMode] = useState<Mode>(route.mode);
+  const [mode, setMode] = useState<Mode>(BENCH ? 'world' : route.mode);
   const [projectId, setProjectId] = useState<string | null>(route.project);
   const [placeId, setPlaceId] = useState<string | null>(route.district ?? null);
   const [ride, setRide] = useState(idleRide);
@@ -39,10 +45,11 @@ export default function App() {
   const [journal, setJournal] = useState(false);
   const [, setSpeed] = useState(0);
   const [ready, setReady] = useState(false);
-  const [loadWorld, setLoadWorld] = useState(route.mode !== 'quick');
+  const [loadWorld, setLoadWorld] = useState(BENCH || route.mode !== 'quick');
+  const worldReadyMs = useRef(0);
   const [fallback, setFallback] = useState('');
   const [palette, setPalette] = useState(false);
-  const [renderPreset,setRenderPreset]=useState<'high'|'medium'|'low'>('medium');
+  const [renderPreset,setRenderPreset]=useState<'high'|'medium'|'low'>(BENCH_PRESET ?? 'medium');
   const [sound, setSound] = useState(false);
   const [menu, setMenu] = useState(false);
   const [map, setMap] = useState(false);
@@ -144,6 +151,7 @@ export default function App() {
           engine.current = instance;
           instance.setMode(modeRef.current);
           instance.setPaused(!!projectId);
+          worldReadyMs.current = performance.now();
           setReady(true);
         } catch (error) { fail(error); }
       }).catch(fail);
@@ -152,7 +160,7 @@ export default function App() {
   }, [mobile, openProject, hail, loadWorld, track]);
   // Visits, walking, arrivals at a waypoint and finished rides feed the journal.
   const here = districtAt(zoneAt(position.x).id, position.z);
-  useEffect(() => { if (ready && mode === 'world' && !fallback) track({ type: 'visit', district: here }); }, [here, ready, mode, fallback, track]);
+  useEffect(() => { if (ready && mode === 'world' && !fallback && !BENCH) track({ type: 'visit', district: here }); }, [here, ready, mode, fallback, track]);
   useEffect(() => { if (Math.hypot(position.x - STREET_SPAWN.x, position.z - STREET_SPAWN.z) > 4 && ride.phase === 'idle') track({ type: 'orientation', step: 'walk' }); }, [position, ride.phase, track]);
   useEffect(() => { if (ride.phase === 'arrived') track({ type: 'ride-complete' }); }, [ride.phase, track]);
   useEffect(() => { if (map) track({ type: 'orientation', step: 'map' }); }, [map, track]);
@@ -276,10 +284,11 @@ export default function App() {
       {!ready && <div className="loader" role="status"><span className="status-dot" /><span>OPENING THE CITY</span><small>Warming renderer · Quick View is ready</small></div>}
       <div className="street-location"><span className="street-live" /> {zoneAt(position.x).label} <small>{STREET_MOOD.clock} · {STREET_MOOD.label}</small></div>
       {near && <div className="street-reticle" aria-hidden="true" />}
-      {ride.phase === 'idle' && near && <button className="proximity-prompt" onClick={() => boardNear ? hail(boardNear) : openProject(near)}><kbd>{mobile ? '↗' : 'E'}</kbd><strong>{boardNear ? `Hail ${boardNear === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : near === 'ffprime' ? 'Read the FFprime research' : nearDistrict ? `Talk · ${nearDistrict.guide}` : nearLabel ?? 'Inspect'}</strong></button>}
-      {ready && !progress.orientationDismissed && !tour && ride.phase === 'idle' && <Orientation progress={progress} onSkip={() => track({ type: 'dismiss-orientation' })} />}
+      {ride.phase === 'idle' && near && !BENCH && <button className="proximity-prompt" onClick={() => boardNear ? hail(boardNear) : openProject(near)}><kbd>{mobile ? '↗' : 'E'}</kbd><strong>{boardNear ? `Hail ${boardNear === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : near === 'ffprime' ? 'Read the FFprime research' : nearDistrict ? `Talk · ${nearDistrict.guide}` : nearLabel ?? 'Inspect'}</strong></button>}
+      {ready && !BENCH && !progress.orientationDismissed && !tour && ride.phase === 'idle' && <Orientation progress={progress} onSkip={() => track({ type: 'dismiss-orientation' })} />}
       {tourData && tour && <TourCard tour={tourData} step={tour.step} onStep={step => setTour({ ...tour, step })} onOpen={openProject} onNext={id => { setTour(null); setWaypoint(id); }} onLeave={() => setTour(null)} />}
       {waypoint && !tour && ride.phase === 'idle' && <Waypoint target={waypoint} position={position} onRide={() => hail('taxi', waypoint)} onClear={() => setWaypoint(null)} />}
+      {BENCH && <VisitorBenchmark engine={engine.current} ready={ready && !fallback} preset={mobile ? `${renderPreset} (phones run the low tier)` : renderPreset} adaptive={!benchParams.has('fixed')} sampleS={Number(benchParams.get('seconds')) || undefined} worldReadyMs={worldReadyMs.current} />}
       <AchievementToasts toasts={toasts} />
       <div className="city-transport-actions"><button disabled={!ready} onClick={() => hail('taxi')}>HAIL TAXI ↗</button><button disabled={!ready} onClick={() => hail('auto')}>HAIL AUTO ↗</button></div>
       {ride.phase === 'boarding' && !reduced && <div className="passenger-entry-fade" aria-hidden="true" />}

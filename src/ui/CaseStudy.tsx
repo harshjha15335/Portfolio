@@ -2,7 +2,8 @@ import {ResearchExhibition} from './ResearchExhibition';
 import type { Project } from '../data/projects';
 import { Annotation } from './Annotation';
 import { ProjectDemo } from './ProjectDemo';
-import { FLAGSHIP_LABS, FlagshipDemo } from './FlagshipLab';
+import { FLAGSHIP_LABS } from '../data/flagshipLabs';
+import { FlagshipDemo } from './LazyLabs';
 import { ProjectGraphic } from './ProjectGraphic';
 import { useModalClose } from './Modal';
 

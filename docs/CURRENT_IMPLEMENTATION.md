@@ -68,7 +68,9 @@ Desktop starts on Medium, phones on Low with adaptive render scale; the low tier
 
 Static review budget per main pass on Medium: 110 draws, 230k triangles, 32 textures, 26 shader programs. Draws and triangles fit in every district. Textures and programs are over (Medium CST was 45/34 at `fc8eb4b`), mostly from the Rocketbox cast; see [PERFORMANCE_REPORT.md](PERFORMANCE_REPORT.md) for the current numbers. The ceilings have not been raised.
 
-All renderer numbers so far come from SwiftShader in a cloud container (about 1 fps). Real laptop and phone frame times have not been measured yet; [GPU_BENCHMARK.md](GPU_BENCHMARK.md) has the benchmark protocol.
+All renderer numbers so far come from SwiftShader in a cloud container (about 1 fps). Real laptop and phone frame times have not been measured yet. Anyone can measure them by opening `/?bench` on the device: it tours all nine districts and produces a copyable p50/p95/p99 table ([GPU_BENCHMARK.md](GPU_BENCHMARK.md)).
+
+Initial load: the landing chunk is about 373 kB (121 kB gzip). The working labs (ASTFLOW, Andheri shops, Powai flagship demos) load on first open, and Recast navigation is a separately streamed 339 kB `.wasm` instead of a 726 kB inlined script.
 
 ## 5. Checks
 
