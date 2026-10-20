@@ -1,6 +1,6 @@
 # Harsh Jha — Mumbai, after hours
 
-A first-person portfolio street inspired by the supplied Mumbai reel: tightly packed plaster façades, balconies, bilingual shop signs, overhead wires, glowing windows, pedestrians and kaali-peeli traffic at dusk. All geometry and textures are original procedural work.
+A first-person, golden-hour Mumbai built as a portfolio: nine walkable districts, Rocketbox pedestrians, modelled kaali-peeli traffic, taxi and auto rides, and working demos of the projects. Live at <https://portfolio-beta-murex-52.vercel.app/>. Third-party assets (Rocketbox cast, Poly Haven scans, vehicle models built in Blender) are listed in [CREDITS.md](CREDITS.md) and [docs/ASSET_PROVENANCE.md](docs/ASSET_PROVENANCE.md).
 
 For the full current system description, scope, controls, architecture, test evidence and limitations, see [Current implementation](docs/CURRENT_IMPLEMENTATION.md).
 
@@ -29,20 +29,21 @@ The default browser config uses Edge. `playwright.cloud.config.ts` uses installe
 | Control | Action |
 | --- | --- |
 | WASD / arrows | Walk forward/backward and strafe, relative to your view |
-| Shift | Brisk walk |
+| Shift | Run |
+| Space | Jump |
 | Mouse | Click for pointer lock, or drag to look if lock is unavailable |
 | Comma / period | Turn with the keyboard |
 | E | Interact with what you are looking at: a guide, an exhibit, the departure board, a taxi or auto stand |
 | J | Exploration journal: quest, achievements, districts visited |
 | R | Return to CST |
-| M | Open the directory and pause walking |
+| M | City map: open, ride to or fast travel to any district |
 | Escape | Release the pointer / open the menu; close overlays |
 | Ctrl+K / Cmd+K | Search portfolio content and commands |
 | Phone | Drag to look; hold the four directional buttons to walk |
 
 The camera sits about 1.65m above the ground, has smooth acceleration/deceleration and a 12mm walking bob. Reduced motion disables bob and moving scenery. Opening any portfolio overlay releases pointer lock and pauses movement.
 
-Hail a taxi or auto, wait for pickup and choose CST or Fort. The camera enters the passenger cabin, with limited look-around; the auto has a more open view. Routes follow deterministic two-lane waypoints and end beside the pavement. The meter accumulates distance and a decorative fare. Skip or exit at any time; exiting puts you on the pavement. Reduced motion arrives directly. Ambient traffic and NPCs are decorative and do not have collision avoidance AI.
+Hail a taxi or auto, wait for pickup and choose any district. The camera enters the passenger cabin, with limited look-around; the auto has a more open view. The meter accumulates distance and a decorative fare. Skip or exit at any time; exiting puts you on the pavement. Reduced motion arrives directly. You collide with buildings, people and vehicles; you cannot drive.
 
 ## Portfolio directory
 
@@ -56,50 +57,22 @@ Hail a taxi or auto, wait for pickup and choose CST or Fort. The camera enters t
 | Dadar Junction | Journey and timeline |
 | Worli Proof Deck | Achievements and sourced metrics |
 | Juhu Studio | About, résumé, GitHub, contact |
-| Film City Talkies | Existing nine-scene journey slideshow |
+| Film City Talkies | Nine-scene journey theatre |
 
 Quick View, project case studies, résumé, contact links, command palette and native-dialog focus remain available. `#/place/fort` opens the HTML guide. Existing `#/project/<id>` links work independently of the 3D world. `/?webgl=off#world` exercises fallback. Original portfolio data and source qualifiers are retained; see [docs/SOURCES.md](docs/SOURCES.md).
 
 ## Architecture and performance
 
-- `src/game/World/MumbaiStreet.ts`: authored street, open-door interior, original plaster/sign atlas, instanced façades/props, skinned pedestrians and authored crowd/traffic routes.
-- `src/game/World/streetLayout.ts`: human-scale stops, camera-relative movement and road waypoints.
-- `src/game/World/WalkingBody.ts`: upright collision volume, loaded with the world so Quick View stays independent of physics.
-- `src/core/WorldEngine.ts`: first-person physics body, pointer lock/drag/touch controls, fixed-step simulation, passenger camera, pickup, meter, overlay pause and disposal.
-- `src/game/World/TransitModel.ts`: original merged taxi/auto models with passenger cabin and driver.
-- `src/ui/CityExperience.tsx`: directory, transport instruments, sourced content and accessible theatre.
-- `src/data/*.ts`: unchanged project/evidence sources; updated city names.
+See [Current implementation](docs/CURRENT_IMPLEMENTATION.md) for the source map, render budgets and known gaps, and [Performance report](docs/PERFORMANCE_REPORT.md) for measured numbers. `/?debug#world` (dev server) reports draw calls, triangles, textures and programs.
 
-The directional shadow map refreshes at a bounded rate during motion and stays cached in reduced motion; mobile disables real-time shadows. Four local lights provide warm pools. Repeated geometry is instanced, signs share an atlas, transit parts are merged, and pixel ratio is capped. `/?debug#world` reports draw calls, triangles, textures and eye height. Reduced-motion views render on demand; full-motion shadows follow the moving crowd and traffic at the bounded refresh rate. No third-person or player-car mode is exposed.
+## Checks
 
-City sound is optional and starts muted. Real devices, hardware GPU performance and other browser engines need separate evaluation. The current street is a reviewable visual checkpoint, not a claim that the whole reference world has been recreated. See [docs/CITY-QA.md](docs/CITY-QA.md) for validation and captured evidence.
+GitHub Actions (`.github/workflows/ci.yml`) runs typecheck, unit tests and the production build, plus a Chromium smoke run of the HTML-side flows, on every pull request and on `main`.
 
 ## Deploy
 
-Deploy `dist/` with the existing Vercel or Netlify config. Use the branch containing the first-person change, rather than an older city branch. Repository-subpath hosting such as GitHub Pages requires an appropriate Vite `base`. Before a permanent public deployment, set the real canonical origin in metadata/sitemap. Hash routes need no case-study server rewrites.
+Vercel builds `main` and publishes `dist/`. Canonical, Open Graph and sitemap URLs point at the Vercel origin; change them together (`tests/seo.test.ts` checks them) if the site moves to a custom domain. Hash routes need no rewrites.
 
-## Visual rebuild checkpoint
+## History
 
-The `feat/mumbai-visual-rebuild` revision upgrades this same street with four deterministic façade grammars, inset windows, PBR surface variation, original shaped taxi/auto bodywork, articulated pedestrians and branched vegetation. City audio is optional and muted until enabled in the world menu. Adaptive quality reduces render scale, shadows and pedestrian density after sustained slow frames.
-
-See [reference audit](docs/GULMOHAR_REFERENCE_AUDIT.md) and [visual rebuild QA](docs/VISUAL-REBUILD-QA.md) for evidence and the expansion gate. The public reference could not be fetched through this workspace's network. This is still the CST/Fort slice; the seven other physical districts and a walk-in cinema remain future work.
-
-To reproduce the review captures, start Vite and run `node scripts/capture-street.mjs`. Set `CHROMIUM_PATH` when Chromium is installed elsewhere. `STREET_CAPTURE_URL` can select a different development-server address; the fixed review poses require Vite development mode.
-
-### CST–Fort production overhaul branch
-
-The isolated `feature/mumbai-production-overhaul` branch adds cached through-cut façade panels, a trusted BVH visibility/ground-query layer, original skinned people with continuous garments, Recast sidewalk/crossing navigation, curved lane traffic with yielding, and selectable High/Medium/Low rendering. Cannon movement and the existing portfolio/ride flows remain. Physical expansion stays gated on actual first-person art review and laptop GPU measurements.
-
-See `docs/MUMBAI_BASELINE_AUDIT.md`, `docs/SECURITY_DEPENDENCY_AUDIT.md`, `docs/VISUAL_QUALITY_REVIEW.md`, `docs/PERFORMANCE_REPORT.md` and `docs/FINAL_VERIFICATION.md`. Capture native comparisons against a running development server with `STREET_CAPTURE_DIR=docs/screenshots/production-overhaul/after STREET_CAPTURE_DETAILS=1 node scripts/capture-street.mjs`. `node scripts/profile-street.mjs` profiles authored crowd/traffic simulation on Node; it does not benchmark GPU/browser FPS.
-
-### Street polish — 2026-10-10
-
-The CST–Fort pass adds shaped faces/hands, varied sleeves, two pedestrian geometry detail levels, baked seated drivers and detailed passenger cabins. Original draped awnings, shop-specific displays, projecting signs, compound foliage, restrained wear and warm shop lighting improve the same first-person street. No other physical district is expanded. See [polish review](docs/CST_FORT_POLISH.md) for comparison captures and verification.
-
-### CST–Fort Art Production Sprint 1
-
-`feature/cst-fort-art-production` reworks the same street with layered background continuations, varied heights/bays/rooflines, deeper shops and a broader CST-inspired Gothic station. A shared fixed17:40 mood aligns the HUD with golden-hour lighting. The existing Three.js stack now supports lazy verified GLBs and a station-character integration hook; no downloaded character is imported because the verified binary request is blocked. See [sprint visual review](docs/ART_PRODUCTION_SPRINT_1.md) and [asset pipeline](docs/GLB_ASSET_PIPELINE.md) for exact changes, matched native captures, performance evidence and unresolved acceptance work.
-
-Sprint 2 implementation and remaining acceptance blockers: [art-production review](docs/ART_PRODUCTION_SPRINT_2.md), [benchmark protocol](docs/GPU_BENCHMARK.md), [local character admission](docs/LOCAL_CHARACTER_IMPORT.md).
-
-CST–Fort rendering optimization and matched pass evidence: [Sprint 2.1 performance review](docs/ART_PRODUCTION_PERFORMANCE_REVIEW.md).
+Earlier checkpoints are described in their own docs: the [CST–Fort-only snapshot](docs/archive/CURRENT_IMPLEMENTATION_2026-10-10.md), [visual rebuild QA](docs/VISUAL-REBUILD-QA.md), [CST–Fort polish](docs/CST_FORT_POLISH.md), [art production sprints 1](docs/ART_PRODUCTION_SPRINT_1.md) and [2](docs/ART_PRODUCTION_SPRINT_2.md), [city districts](docs/CITY_DISTRICTS.md), [street cast](docs/STREET_CAST.md) and the [game audit](docs/GAME_AUDIT_2026-10-15.md). They describe the state at the time and are not updated.
