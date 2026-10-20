@@ -1,4 +1,4 @@
-import { FORT_LOOP, pedestrianGreen, type LoopVehicle } from '../traffic/RoadTraffic';
+import { FORT_LOOP, crossingHeld, type LoopVehicle } from '../traffic/RoadTraffic';
 import { LaneTraffic } from './DistrictSystems';
 import { cityDensity } from './District';
 import type { CityVehicleKind } from './CityVehicles';
@@ -32,7 +32,7 @@ export const FORT_LOOP_LANE = 0;
 export function createFortRoadTraffic(loop: () => LoopVehicle[]) {
   const traffic = new LaneTraffic();
   const ring = traffic.lane(FORT_LOOP, true, loop);
-  traffic.stopLine(ring, -8.8, pedestrianGreen, 1.75); traffic.stopLine(ring, -15.2, pedestrianGreen, -1.75);
+  traffic.stopLine(ring, -8.8, crossingHeld, 1.75); traffic.stopLine(ring, -15.2, crossingHeld, -1.75);
   // Keep to the lane edges clear of the corner blocks: eastbound on the near (south) side, westbound beyond.
   const east = traffic.lane([[-90, 0, CROSS_STREET + 2], [90, 0, CROSS_STREET + 2]]), west = traffic.lane([[90, 0, CROSS_STREET - 1.2], [-90, 0, CROSS_STREET - 1.2]]);
   const scale = cityDensity.traffic * .35;

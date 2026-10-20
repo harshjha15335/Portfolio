@@ -3,7 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { createCityPerson, type CityPerson, type Outfit } from './CityFolk';
 import { VEHICLE_LENGTH, VEHICLE_SPEED, type CityVehicleKind, createCityVehicleLod, setVehicleDetail } from './CityVehicles';
 import type { V3 } from './ColorMesh';
-import type { LoopVehicle } from '../traffic/RoadTraffic';
+import { pedestrianGreen, type LoopVehicle } from '../traffic/RoadTraffic';
 import { CAST_LOD, districtCast, type CastAct, type CastFigure, type DistrictCast } from './DistrictCast';
 import { footprint, personBlocker, PERSON_RADIUS, type Blocker } from '../collision/DynamicBlockers';
 
@@ -115,7 +115,7 @@ const SEAT = .515;
  * procedural stand-in until the cast has loaded (or when it cannot load, e.g. in tests).
  */
 export interface Person { group: THREE.Group; outfit: Outfit; act: Act; scale: number; key: string; folk: CityPerson | null; cast: CastFigure | null }
-interface Walker { person: Person; path: THREE.Vector3[]; lengths: number[]; total: number; s: number; speed: number; dir: number; pause: number; loop: boolean; offset: number }
+interface Walker { person: Person; path: THREE.Vector3[]; lengths: number[]; total: number; s: number; speed: number; dir: number; pause: number; loop: boolean; offset: number; signal?: boolean }
 /** A walker's widest step to either side of its line, metres (pavements are about 3 m wide). */
 const SIDESTEP = .75;
 interface Idler { person: Person; act: Act; phase: number }
@@ -124,11 +124,22 @@ export class Crowd {
   readonly group = new THREE.Group(); private walkers: Walker[] = []; private idlers: Idler[] = []; private frame = 0; private count = 0;
   /** Static solids walkers must not pass through (local axis boxes), set by the district from its colliders. */
   readonly obstacles: Array<{ minX: number; maxX: number; minZ: number; maxZ: number }> = [];
+  /** True while a vehicle is still on the zebra; crossers at the kerb wait for it even on the walk signal. */
+  crossingBusy: (() => boolean) | null = null;
   walker(outfit: Outfit, path: V3[], speed = 1, start = Math.random(), loop = false, scale = 1) {
     const person = this.make(outfit, 'stand', scale, path[0], true), pts = path.map(p => new THREE.Vector3(...p)), lengths = pts.slice(1).map((p, i) => p.distanceTo(pts[i]));
     const total = lengths.reduce((a, b) => a + b, 0), w: Walker = { person, path: pts, lengths, total, s: start * total, speed: person.cast?.walkSpeed ?? speed, dir: this.count % 2 ? 1 : -1, pause: 0, loop, offset: 0 };
     this.walkers.push(w); this.place(w); return person;
   }
+  /** Someone who crosses the road at the zebra (local z), kerb to kerb and back, stepping off only on the walk signal. */
+  crosser(outfit: Outfit, z: number, x0: number, x1: number, speed = 1.2) {
+    const person = this.walker(outfit, [[x0, .03, z], [x1, .03, z]], speed, 0);
+    const w = this.walkers[this.walkers.length - 1]; w.signal = true; w.dir = 1; w.speed = Math.max(w.speed, speed); return person;
+  }
+  /** The people who use the zebra. */
+  crossers() { return this.walkers.filter(w => w.signal).map(w => w.person); }
+  /** Positions of walkers on the carriageway (|x| < 4.2, local), for traffic to stop for. */
+  onRoad(out: THREE.Vector3[] = []) { for (const w of this.walkers) if (Math.abs(w.person.group.position.x) < 4.2) out.push(w.person.group.position); return out; }
   idle(outfit: Outfit, position: V3, yaw: number, act: Act = 'stand', scale = 1) {
     const person = this.make(outfit, act, scale, position); person.group.position.set(...position); person.group.rotation.y = yaw;
     this.idlers.push({ person, act, phase: this.count * 1.7 }); return person;
@@ -175,8 +186,10 @@ export class Crowd {
     for (const w of this.walkers) {
       const g = w.person.group, rx = view.x - g.position.x, rz = view.z - g.position.z;
       const blocked = Math.hypot(rx, rz) < 1.6 && -rx * Math.sin(g.rotation.y) - rz * Math.cos(g.rotation.y) > 0;
+      // At the kerb, a crosser waits for the walk signal; once on the road they keep going.
+      const waiting = w.signal && (w.s <= 0 || w.s >= w.total) && (!pedestrianGreen(time) || !!this.crossingBusy?.());
       if (w.pause > 0) w.pause -= delta;
-      else if (!blocked) {
+      else if (!blocked && !waiting) {
         w.s += w.dir * w.speed * delta;
         if (w.s > w.total || w.s < 0) { if (w.loop) w.s = (w.s + w.total) % w.total; else { w.dir *= -1; w.s = THREE.MathUtils.clamp(w.s, 0, w.total); w.pause = 1 + (w.total % 3); } }
       }
@@ -224,7 +237,8 @@ export class Crowd {
       const pick = Math.abs(a) < Math.abs(c) ? a : c;
       if (Math.abs(pick) > SIDESTEP) turn = true; else want = Math.abs(pick) > Math.abs(want) ? pick : want;
     }
-    if (turn && w.pause <= 0) { w.dir *= -1; w.pause = .6; }
+    // Someone on a crossing finishes it rather than turning back in the road.
+    if (turn && w.pause <= 0 && !w.signal) { w.dir *= -1; w.pause = .6; }
     w.offset += (want - w.offset) * Math.min(1, delta * 3);
     g.position.x += lx * w.offset; g.position.z += lz * w.offset;
   }
@@ -286,6 +300,8 @@ export class LaneTraffic {
   }
   /** Positions of the vehicles currently on the road (for other traffic to queue behind). */
   get positions() { return this.agents.filter(a => a.active && a.mesh.visible).map(a => a.mesh.position); }
+  /** Vehicles on the road now: where, which way and how long (local). */
+  get moving() { return this.agents.filter(a => a.active).map(a => ({ position: a.mesh.position, yaw: a.mesh.rotation.y, length: a.length, kind: a.kind })); }
   /**
    * A lane along `points`. An open lane is driven end to end, vehicles leaving at the far end and re-entering
    * at the start; a closed one is a loop driven round and round. `shared` lists other traffic on the same

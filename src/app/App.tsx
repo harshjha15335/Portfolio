@@ -15,16 +15,22 @@ import { CityMap, DistrictExperience, RideMeter } from '../ui/CityExperience';
 import { idleRide, type Point, type TransitKind } from '../game/World/transit';
 import { streetStops, STREET_SPAWN, zoneAt } from '../game/World/streetLayout';
 import type { WorldEngine } from '../core/WorldEngine';
-import { record, loadProgress, saveProgress, emptyProgress, districtAt, type Achievement, type ProgressEvent } from '../game/progress';
+import { record, loadProgress, saveProgress, emptyProgress, districtAt, nextObjective, type Achievement, type ProgressEvent } from '../game/progress';
 import { TOURS } from '../data/tours';
 import { ExhibitPanel, isExhibit } from '../ui/Exhibits';
 import { AchievementToasts, Journal, Orientation, TourCard, Waypoint } from '../ui/GameHud';
+import { VisitorBenchmark } from '../ui/VisitorBenchmark';
+
+/** `/?bench[&preset=high|medium|low][&fixed]`: the visitor-runnable performance tour. */
+const benchParams = new URLSearchParams(location.search);
+const BENCH = benchParams.has('bench');
+const BENCH_PRESET = ['high', 'medium', 'low'].find(p => p === benchParams.get('preset')) as 'high' | 'medium' | 'low' | undefined;
 
 const heroProjects = () => projects.filter(p => p.priority <= 4);
 
 export default function App() {
   const route = readRoute(window.location.hash);
-  const [mode, setMode] = useState<Mode>(route.mode);
+  const [mode, setMode] = useState<Mode>(BENCH ? 'world' : route.mode);
   const [projectId, setProjectId] = useState<string | null>(route.project);
   const [placeId, setPlaceId] = useState<string | null>(route.district ?? null);
   const [ride, setRide] = useState(idleRide);
@@ -39,10 +45,11 @@ export default function App() {
   const [journal, setJournal] = useState(false);
   const [, setSpeed] = useState(0);
   const [ready, setReady] = useState(false);
-  const [loadWorld, setLoadWorld] = useState(route.mode !== 'quick');
+  const [loadWorld, setLoadWorld] = useState(BENCH || route.mode !== 'quick');
+  const worldReadyMs = useRef(0);
   const [fallback, setFallback] = useState('');
   const [palette, setPalette] = useState(false);
-  const [renderPreset,setRenderPreset]=useState<'high'|'medium'|'low'>('medium');
+  const [renderPreset,setRenderPreset]=useState<'high'|'medium'|'low'>(BENCH_PRESET ?? 'medium');
   const [sound, setSound] = useState(false);
   const [menu, setMenu] = useState(false);
   const [map, setMap] = useState(false);
@@ -144,6 +151,7 @@ export default function App() {
           engine.current = instance;
           instance.setMode(modeRef.current);
           instance.setPaused(!!projectId);
+          worldReadyMs.current = performance.now();
           setReady(true);
         } catch (error) { fail(error); }
       }).catch(fail);
@@ -152,7 +160,7 @@ export default function App() {
   }, [mobile, openProject, hail, loadWorld, track]);
   // Visits, walking, arrivals at a waypoint and finished rides feed the journal.
   const here = districtAt(zoneAt(position.x).id, position.z);
-  useEffect(() => { if (ready && mode === 'world' && !fallback) track({ type: 'visit', district: here }); }, [here, ready, mode, fallback, track]);
+  useEffect(() => { if (ready && mode === 'world' && !fallback && !BENCH) track({ type: 'visit', district: here }); }, [here, ready, mode, fallback, track]);
   useEffect(() => { if (Math.hypot(position.x - STREET_SPAWN.x, position.z - STREET_SPAWN.z) > 4 && ride.phase === 'idle') track({ type: 'orientation', step: 'walk' }); }, [position, ride.phase, track]);
   useEffect(() => { if (ride.phase === 'arrived') track({ type: 'ride-complete' }); }, [ride.phase, track]);
   useEffect(() => { if (map) track({ type: 'orientation', step: 'map' }); }, [map, track]);
@@ -260,13 +268,13 @@ export default function App() {
     <a className="skip-link" href="#main-content" onClick={e => { e.preventDefault(); navigate('quick'); setTimeout(() => document.getElementById('main-content')?.focus(), 0); }}>Skip to portfolio content</a>
     <div className="world-container" ref={container} aria-hidden={mode !== 'world'} />
     <header className="header">
-      <button className="brand" onClick={() => navigate('intro')} aria-label="Harsh Jha home"><span className="brand-mark">h<span>j</span><i /></span><span className="brand-copy">HARSH JHA<small>ENGINEER / RESEARCHER</small></span></button>
+      <button className="brand" onClick={() => navigate('intro')}><span className="brand-mark" aria-hidden="true">h<span>j</span><i /></span><span className="brand-copy">HARSH JHA<small>ENGINEER / RESEARCHER</small></span></button>
       <nav aria-label="Main navigation" className="header-nav">
         {!(fallback && mode === 'quick') && <button onClick={() => mode === 'quick' ? navigate('world') : navigate('quick')}>{mode === 'quick' ? 'ENTER WORLD' : 'QUICK VIEW'} <span>↗</span></button>}
         {resumeAvailable && <a href={portfolio.resume} target="_blank" rel="noreferrer">RÉSUMÉ <span>↗</span></a>}
         <a href={portfolio.github} target="_blank" rel="noreferrer" className="github-link">GITHUB <span>↗</span></a>
         <button onClick={() => setContact(true)} className="contact-link">LET’S TALK <span>↗</span></button>
-        <button className="search-button" onClick={() => { setPalette(true); setQuery(''); }} aria-label="Open command palette">⌘ <kbd>K</kbd></button>
+        <button className="search-button" onClick={() => { setPalette(true); setQuery(''); }} aria-keyshortcuts="Meta+K Control+K"><span className="sr-only">Open command palette</span><span aria-hidden="true">⌘ <kbd>K</kbd></span></button>
       </nav>
     </header>
     {fallback && <p className="fallback-message" role="status">{fallback}</p>}
@@ -276,10 +284,11 @@ export default function App() {
       {!ready && <div className="loader" role="status"><span className="status-dot" /><span>OPENING THE CITY</span><small>Warming renderer · Quick View is ready</small></div>}
       <div className="street-location"><span className="street-live" /> {zoneAt(position.x).label} <small>{STREET_MOOD.clock} · {STREET_MOOD.label}</small></div>
       {near && <div className="street-reticle" aria-hidden="true" />}
-      {ride.phase === 'idle' && near && <button className="proximity-prompt" onClick={() => boardNear ? hail(boardNear) : openProject(near)}><kbd>{mobile ? '↗' : 'E'}</kbd><strong>{boardNear ? `Hail ${boardNear === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : near === 'ffprime' ? 'Read the FFprime research' : nearDistrict ? `Talk · ${nearDistrict.guide}` : nearLabel ?? 'Inspect'}</strong></button>}
-      {ready && !progress.orientationDismissed && !tour && ride.phase === 'idle' && <Orientation progress={progress} onSkip={() => track({ type: 'dismiss-orientation' })} />}
+      {ride.phase === 'idle' && near && !BENCH && <button className="proximity-prompt" onClick={() => boardNear ? hail(boardNear) : openProject(near)}><kbd>{mobile ? '↗' : 'E'}</kbd><strong>{boardNear ? `Hail ${boardNear === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : near === 'ffprime' ? 'Read the FFprime research' : nearDistrict ? `Talk · ${nearDistrict.guide}` : nearLabel ?? 'Inspect'}</strong></button>}
+      {ready && !BENCH && !progress.orientationDismissed && !tour && ride.phase === 'idle' && <Orientation progress={progress} onSkip={() => track({ type: 'dismiss-orientation' })} />}
       {tourData && tour && <TourCard tour={tourData} step={tour.step} onStep={step => setTour({ ...tour, step })} onOpen={openProject} onNext={id => { setTour(null); setWaypoint(id); }} onLeave={() => setTour(null)} />}
       {waypoint && !tour && ride.phase === 'idle' && <Waypoint target={waypoint} position={position} onRide={() => hail('taxi', waypoint)} onClear={() => setWaypoint(null)} />}
+      {BENCH && <VisitorBenchmark engine={engine.current} ready={ready && !fallback} preset={mobile ? `${renderPreset} (phones run the low tier)` : renderPreset} adaptive={!benchParams.has('fixed')} sampleS={Number(benchParams.get('seconds')) || undefined} worldReadyMs={worldReadyMs.current} />}
       <AchievementToasts toasts={toasts} />
       <div className="city-transport-actions"><button disabled={!ready} onClick={() => hail('taxi')}>HAIL TAXI ↗</button><button disabled={!ready} onClick={() => hail('auto')}>HAIL AUTO ↗</button></div>
       {ride.phase === 'boarding' && !reduced && <div className="passenger-entry-fade" aria-hidden="true" />}
@@ -299,7 +308,7 @@ export default function App() {
     </main>}
     {selected && <Modal title={`CASE STUDY / ${selected.title}`} onClose={closeProject} className={`project-modal project-${selected.id}`}><CaseStudy project={selected} world={mode === 'world'} onClose={closeProject} /></Modal>}
     {palette && <Modal title="COMMAND CENTER" onClose={() => setPalette(false)} className="palette-modal"><label className="search-input"><span>⌕</span><input autoFocus placeholder="Search projects, skills, or commands…" aria-label="Search commands" value={query} onChange={e => { setQuery(e.target.value); setCommandIndex(0); }} onKeyDown={e => { if (e.key === 'ArrowDown') { e.preventDefault(); setCommandIndex(i => Math.min(i + 1, filtered.length - 1)); } if (e.key === 'ArrowUp') { e.preventDefault(); setCommandIndex(i => Math.max(i - 1, 0)); } if (e.key === 'Enter') { e.preventDefault(); filtered[commandIndex]?.action(); } }} /></label><div className="command-results">{filtered.length ? filtered.map((command, i) => <button key={command.id} className={i === commandIndex ? 'active' : ''} onClick={command.action} onMouseEnter={() => setCommandIndex(i)}><span><strong>{command.label}</strong><small>{command.detail}</small></span><span>↗</span></button>) : <p className="empty-state">No matches. Try a project name or technology.</p>}</div><p className="palette-help caption">↑ ↓ NAVIGATE · ENTER OPEN · ESC CLOSE</p></Modal>}
-    {map && <CityMap position={position} canRide={ready && !fallback} onTravel={travel} onOpen={openProject} onRide={hail} onClose={() => setMap(false)} />}
+    {map && <CityMap position={position} canRide={ready && !fallback} objective={nextObjective(progress)} waypoint={waypoint} onMark={id => setWaypoint(current => current === id ? null : id)} onTravel={travel} onOpen={openProject} onRide={hail} onClose={() => setMap(false)} />}
     {district && <DistrictExperience key={district.id} district={district} reduced={reduced} resumeAvailable={resumeAvailable} onClose={closePlace} onProject={openProject} onQuick={() => navigate('quick')} onContact={() => { closePlace(); setContact(true); }} onDestination={id => { closePlace(); travel(id); }} onTour={TOURS[district.id] && mode === 'world' && !fallback ? () => startTour(district.id) : undefined} onFinale={finale} />}
     {exhibit && <ExhibitPanel id={exhibit} onClose={() => setExhibit(null)} onSolved={id => track({ type: 'discover', id: `${id}:solved` })} onDeparture={departure}
       onOpen={openProject} onProject={id => { setExhibit(null); openProject(id); }} onContact={() => { setExhibit(null); setContact(true); }} onFinale={finale}

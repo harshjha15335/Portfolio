@@ -15,13 +15,13 @@ Two ways into the same portfolio:
 | --- | --- | --- |
 | CST Arrival Terminus | Intro, orientation, departure board indexing every district | Station front, Radio House benchmark façade, taxi and auto stands, Rocketbox crowd, modelled traffic |
 | Fort Research Institute | GSoC 2026, QC-Devs/Theochem, FFprime | Furnished research room: gradient-check activity, coordinate workstation, FFprime terminal, contribution board |
-| BKC Systems Office | CCIEeXpert internship | Boulevard and plaza with a rate-limit console |
+| BKC Systems Office | CCIEeXpert internship | Boulevard, plaza and a walk-in lobby floor: reception, open-plan desks, a glass meeting room, the brief and request path on the wall, a rate-limit console |
 | Andheri Tech Bazaar | Skills with evidence | Lane with five skill shops running real logic |
-| Powai Builder's District | Flagship projects | Lakeside towers; working demo labs for NORTHSTAR, MoneyMetrics, Meeting Intelligence, RideFlow, RepoLens and ASTFLOW |
+| Powai Builder's District | Flagship projects | A walk-in workplace per project along the lake (observatory, control tower, bank, timber studio, transit kiosk, lens, lab), each with its board and a demo desk inside; working demo labs for NORTHSTAR, MoneyMetrics, Meeting Intelligence, RideFlow, RepoLens and ASTFLOW, a case study for RECO |
 | Dadar Junction | Education and timeline | Station, chawl and maidan; six platform boards |
 | Worli Proof Deck | Achievements | Sea face with four evidence cases |
-| Juhu Studio | About, résumé, contact | Beach, stalls and three boards in front of the studio |
-| Film City Talkies | Nine-scene journey | Studio lot, box office and scene board; the theatre itself is an HTML slideshow |
+| Juhu Studio | About, résumé, contact | Beach, stalls and a walk-in studio behind a garden gate: work table, bookshelf, sofa, notice board, résumé stand, contact terminal |
+| Film City Talkies | Nine-scene journey | Studio lot and a walk-in cinema: lobby with box office, scene board and snack counter, a ten-row auditorium whose screen starts the film (the film itself is the HTML slideshow) |
 
 Every district has a guide, exhibits opened with E, a generated guided tour, and journal entries. Progress (journal, achievements, quest) is stored locally under `hj-progress-v1`.
 
@@ -68,7 +68,9 @@ Desktop starts on Medium, phones on Low with adaptive render scale; the low tier
 
 Static review budget per main pass on Medium: 110 draws, 230k triangles, 32 textures, 26 shader programs. Draws and triangles fit in every district. Textures and programs are over (Medium CST was 45/34 at `fc8eb4b`), mostly from the Rocketbox cast; see [PERFORMANCE_REPORT.md](PERFORMANCE_REPORT.md) for the current numbers. The ceilings have not been raised.
 
-All renderer numbers so far come from SwiftShader in a cloud container (about 1 fps). Real laptop and phone frame times have not been measured yet; [GPU_BENCHMARK.md](GPU_BENCHMARK.md) has the benchmark protocol.
+All renderer numbers so far come from SwiftShader in a cloud container (about 1 fps). Real laptop and phone frame times have not been measured yet. Anyone can measure them by opening `/?bench` on the device: it tours all nine districts and produces a copyable p50/p95/p99 table ([GPU_BENCHMARK.md](GPU_BENCHMARK.md)).
+
+Initial load: the landing chunk is about 373 kB (121 kB gzip). The working labs (ASTFLOW, Andheri shops, Powai flagship demos) load on first open, and Recast navigation is a separately streamed 339 kB `.wasm` instead of a 726 kB inlined script.
 
 ## 5. Checks
 
@@ -92,7 +94,7 @@ Tracked from the 20 October gap audit:
 
 - Real-device frame times (laptop GPU, Android phone) are unmeasured.
 - Texture and shader-program budgets are exceeded on Medium.
-- BKC and Juhu have no walk-in interiors; Film City has no physical auditorium.
+- BKC, Juhu, Film City and the seven Powai workplaces have walk-in interiors. Rooms have no lights of their own: walls and ceilings use the unlit `glow` surface as stand-in bounce light, because a point light would change every district program (`districts/interiors.ts`).
 - Powai's flagship projects share generic towers rather than distinct buildings.
 - Pedestrians and traffic can overlap at crossings; vehicles do not stop at signals.
 - The map does not draw the active objective or waypoint.

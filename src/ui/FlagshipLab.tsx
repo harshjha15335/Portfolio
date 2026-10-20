@@ -5,14 +5,7 @@ import { SAMPLE_ANALYSIS, SAMPLE_MEETING, meetingSource, reminderOutcome, valida
 import { EXPLANATIONS, LOCATIONS, calculateScore, rideflowSource, searchRoutes, type Preference, type Route } from '../projects/rideflow';
 import { BM25Index, embed, hybridSearch, repolensSample } from '../projects/repolens';
 
-/** Powai flagship facilities. Each lab runs a port of the project's own logic, pinned to a commit. */
-export const FLAGSHIP_LABS: Record<string, { place: string; setting: string }> = {
-  northstar: { place: 'NORTHSTAR Trading Floor', setting: 'Paper-trading risk desk' },
-  moneymetrics: { place: 'MoneyMetrics Finance Office', setting: 'Spending anomaly desk' },
-  'meeting-intelligence-service': { place: 'Meeting Intelligence Conference Room', setting: 'Transcript to cited action items' },
-  rideflow: { place: 'RideFlow Transit Depot', setting: 'Route search and ranking' },
-  repolens: { place: 'RepoLens Inspection Office', setting: 'Hybrid code retrieval' },
-};
+export { FLAGSHIP_LABS } from '../data/flagshipLabs';
 
 function Lab({ place, runs, sources, children }: { place: string; runs: string; sources: [string, string][]; children: ReactNode }) {
   return <section className="flagship-lab" aria-label={`${place} working demo`}>

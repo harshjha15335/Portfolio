@@ -1,6 +1,15 @@
 import {init,NavMeshQuery,Crowd,type CrowdAgent,type NavMesh} from '@recast-navigation/core';
 import {generateSoloNavMesh} from '@recast-navigation/generators';
 import type {Vector3} from '@recast-navigation/core';
+/**
+ * Browsers fetch Recast as a separate .wasm and compile it while streaming (cacheable, no 726 kB base64
+ * script to parse). Node (unit tests) keeps the package's inlined build.
+ */
+// `init` calls its argument with no arguments and awaits the module; its typing names the factory itself.
+const loadRecast=typeof window==='undefined'?undefined:async()=>{
+  const [{default:Recast},{default:wasmUrl}]=await Promise.all([import('@recast-navigation/wasm/wasm'),import('../../../../node_modules/@recast-navigation/wasm/dist/recast-navigation.wasm.wasm?url')]);
+  return Recast({locateFile:()=>wasmUrl});
+};
 export interface Obstacle {minX:number;maxX:number;minZ:number;maxZ:number;}
 export function navigationGeometry(obstacles:Obstacle[]) {
  const positions:number[]=[],indices:number[]=[];
@@ -13,7 +22,7 @@ export function navigationGeometry(obstacles:Obstacle[]) {
 export class NavMeshManager {
  readonly query:NavMeshQuery;readonly crowd:Crowd;
  private constructor(private mesh:NavMesh){this.query=new NavMeshQuery(mesh);this.crowd=new Crowd(mesh,{maxAgents:32,maxAgentRadius:.3});}
- static async create(obstacles:Obstacle[]) {await init();const geometry=navigationGeometry(obstacles);if(geometry.positions.length>150000||!geometry.positions.every(Number.isFinite))throw new Error('Invalid navigation input');const result=generateSoloNavMesh(geometry.positions,geometry.indices,{cs:.15,ch:.1,walkableHeight:18,walkableClimb:2,walkableRadius:2,minRegionArea:4,mergeRegionArea:8});if(!result.success)throw new Error(result.error);return new NavMeshManager(result.navMesh);}
+ static async create(obstacles:Obstacle[]) {await init(loadRecast as unknown as Parameters<typeof init>[0]);const geometry=navigationGeometry(obstacles);if(geometry.positions.length>150000||!geometry.positions.every(Number.isFinite))throw new Error('Invalid navigation input');const result=generateSoloNavMesh(geometry.positions,geometry.indices,{cs:.15,ch:.1,walkableHeight:18,walkableClimb:2,walkableRadius:2,minRegionArea:4,mergeRegionArea:8});if(!result.success)throw new Error(result.error);return new NavMeshManager(result.navMesh);}
  path(start:Vector3,end:Vector3){if(![start.x,start.y,start.z,end.x,end.y,end.z].every(Number.isFinite))return null;const result=this.query.computePath(start,end);return result.success?result.path:null;}
  add(position:Vector3):CrowdAgent {return this.crowd.addAgent(position,{radius:.24,height:1.8,maxSpeed:1,maxAcceleration:2,separationWeight:3,collisionQueryRange:2.5,pathOptimizationRange:8,updateFlags:31});}
  dispose(){this.crowd.destroy();this.query.destroy();this.mesh.destroy();}

@@ -5,8 +5,7 @@ import { journey, districts } from '../data/city';
 import { portfolio } from '../data/portfolio';
 import { SHOPS, type Shop } from '../data/shops';
 import { BUCKET, PAGES, RATES, ingest, solves, type IngestRun, type Rate } from '../game/activities/rateLimit';
-import { SkillShops } from './AndheriShops';
-import { AstflowLab } from './AstflowLab';
+import { AstflowLab, SkillShops } from './LazyLabs';
 import { Theatre, scenes } from './CityExperience';
 
 /** Exhibits that open a panel (Powai's project boards open the project itself, so they are not listed). */
@@ -33,7 +32,7 @@ export function DistrictExhibitBody(props: DistrictExhibitProps) {
     {id === 'juhu-about' && <section className="district-exhibit"><span className="eyebrow">{e?.panel.eyebrow}</span><h2>{portfolio.name}</h2><p>{portfolio.education}. Expected graduation: {portfolio.graduation}.</p><p>{portfolio.tagline} Interested in scientific computing, software engineering and applied AI: building tools that make complicated ideas usable.</p></section>}
     {id === 'juhu-resume' && <section className="district-exhibit"><span className="eyebrow">{e?.panel.eyebrow}</span><h2>Everything, on one page.</h2><p>The résumé carries every role, project and result in this city, with the same qualifiers.</p><div className="case-links">{props.resumeAvailable ? <a className="primary-button" href={portfolio.resume} target="_blank" rel="noreferrer">DOWNLOAD RÉSUMÉ ↓</a> : <p className="caption">THE RÉSUMÉ FILE IS NOT AVAILABLE RIGHT NOW</p>}<a href={portfolio.github} target="_blank" rel="noreferrer">GITHUB ↗</a><a href={portfolio.linkedin} target="_blank" rel="noreferrer">LINKEDIN ↗</a></div></section>}
     {id === 'juhu-contact' && <section className="district-exhibit"><span className="eyebrow">{e?.panel.eyebrow}</span><h2>Let’s build something.</h2><p>For engineering opportunities, research, or a good technical conversation.</p><div className="case-links"><button className="primary-button" onClick={props.onContact}>WRITE TO HARSH ↗</button><a href={portfolio.linkedin} target="_blank" rel="noreferrer">LINKEDIN ↗</a></div></section>}
-    {id === 'filmcity-boxoffice' && <Theatre reduced={props.reduced} onContact={props.onContact} onExit={props.onClose} onFinale={props.onFinale} />}
+    {(id === 'filmcity-boxoffice' || id === 'filmcity-screen') && <Theatre reduced={props.reduced} onContact={props.onContact} onExit={props.onClose} onFinale={props.onFinale} />}
     {id === 'filmcity-scenes' && <SceneBoard {...props} />}
   </>;
 }

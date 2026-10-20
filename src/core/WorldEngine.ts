@@ -1,3 +1,4 @@
+import { gpuName, type BenchFrame, type ViewResources } from './visitorBenchmark';
 import {GPUFrameProfiler} from './GPUFrameProfiler';
 import {stationCharacter} from '../data/stationCharacter';
 import {characterCast} from '../data/characterCast';
@@ -61,6 +62,7 @@ export class WorldEngine {
   private quality: AdaptiveQuality;
   private benchmarkEnabled=new URLSearchParams(location.search).get('benchmark')==='1';
   private profiler:GPUFrameProfiler|null=null;
+  private frameObserver:((frame:BenchFrame)=>void)|null=null;
   private reviewQuality=(import.meta.env.DEV&&new URLSearchParams(location.search).get('review')==='1')||(this.benchmarkEnabled&&new URLSearchParams(location.search).get('fixedQuality')==='1');
   private lastShadow=0;
  private inspectionFrozen=false;
@@ -182,6 +184,29 @@ export class WorldEngine {
   setSound(enabled:boolean) { this.soundEnabled=enabled; if(enabled&&!this.audio){try{this.audio=new StreetAudio();}catch{this.soundEnabled=false;}} this.audio?.setActive(enabled&&this.mode==='world'&&!this.paused&&!document.hidden); }
   setRenderPreset(preset:RenderPreset){this.renderPreset=preset;setCityDensity(preset);this.rendering.setPreset(this.quality.low?'low':preset);this.street.setDensity(preset==='high'&&!this.quality.low);this.renderer.shadowMap.enabled=preset!=='low'&&!this.options.mobile&&!this.quality.low;this.syncSunBalance();this.renderer.shadowMap.needsUpdate=true;this.resize();this.pausedFrameDirty=true;}
   setReducedMotion(reduced: boolean) { this.reducedMotion = reduced;this.pausedFrameDirty=true; }
+  /** Visitor benchmark (`?bench`): per-rendered-frame cost, a look override, quality pinning and the GPU name. */
+  setFrameObserver(observer: ((frame: BenchFrame) => void) | null) { this.frameObserver = observer; }
+  setView(yaw: number, pitch = -.015) { this.yaw = yaw; this.pitch = pitch; this.updateCamera(); }
+  pinQuality(pinned: boolean) { this.reviewQuality = pinned; }
+  /** Advance the world by a fixed step per rendered frame instead of wall time, so a slow renderer can still record smooth motion (review captures). 0 restores real time. */
+  setFixedStep(seconds: number) { this.fixedStep = Math.max(0, seconds); }
+  private fixedStep = 0;
+  get gpu() { return gpuName(this.renderer.getContext()); }
+  /** Textures and programs the visible scene binds now, with bone textures split from image textures. */
+  viewResources(): ViewResources {
+    const images = new Set<THREE.Texture>(), bones = new Set<THREE.Texture>(), programs = new Set<unknown>();
+    this.scene.traverseVisible(object => {
+      const mesh = object as THREE.Mesh & { skeleton?: THREE.Skeleton };
+      if (!mesh.material) return;
+      for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        const program = (this.renderer.properties.get(material) as { currentProgram?: unknown }).currentProgram; if (program) programs.add(program);
+        for (const value of Object.values(material)) if ((value as THREE.Texture | null)?.isTexture) images.add(value as THREE.Texture);
+      }
+      if (mesh.skeleton?.boneTexture) bones.add(mesh.skeleton.boneTexture);
+    });
+    if (this.scene.environment) images.add(this.scene.environment);
+    return { imageTextures: images.size, boneTextures: bones.size, programs: programs.size };
+  }
   focusLandmark(_id: string) { /* Reading an overlay never changes the visitor's viewpoint. */ }
   travelTo(id: string) {
     const stop = streetStops[id]; if (!stop) { this.options.onSelect(id); return; }
@@ -424,7 +449,7 @@ export class WorldEngine {
   }
   private frame = (timestamp: number) => {
     if (this.disposed) return; this.frameId = requestAnimationFrame(this.frame);if(this.inspectionFrozen)return;
-    const elapsed = this.lastTime ? (timestamp - this.lastTime) / 1000 : 0; const delta = Math.min(elapsed, .08); this.lastTime = timestamp;
+    const elapsed = this.fixedStep || (this.lastTime ? (timestamp - this.lastTime) / 1000 : 0); const delta = Math.min(elapsed, .08); this.lastTime = timestamp;
     if (document.hidden || this.mode !== 'world') return;
     if (this.paused && !this.pausedFrameDirty) return;
     const forceRender=this.pausedFrameDirty;this.pausedFrameDirty = false;
@@ -463,7 +488,7 @@ export class WorldEngine {
       if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)&&!this.applyLowTier())this.resize();
       if(!this.reducedMotion&&!this.paused&&this.time-this.lastShadow>.2&&this.renderer.shadowMap.enabled){this.renderer.shadowMap.needsUpdate=true;this.lastShadow=this.time;}
       this.audio?.update(this.ride.phase==='riding'?this.rideSpeed:Math.hypot(this.visitor.velocity.x,this.visitor.velocity.z),this.ride.phase!=='idle'&&this.ride.phase!=='hailing',this.ride.kind==='auto');
-      if(needsRender){this.renderer.info.reset();this.profiler?.beforeRender();const renderStart=performance.now();this.rendering.render(delta);this.profiler?.afterRender({frameMs:elapsed*1000,renderCpuMs:performance.now()-renderStart,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,geometries:this.renderer.info.memory.geometries,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,preset:this.renderPreset,phase:this.ride.phase,worldX:this.visitor.position.x,worldZ:this.visitor.position.z,walkingSimulatedMs:simulatedWalkingMs,shadowRefreshed:this.rendering.frameCost.shadowDraws>0,shadowDraws:this.rendering.frameCost.shadowDraws,shadowTriangles:this.rendering.frameCost.shadowTriangles,shadowDrawCpuMs:this.rendering.frameCost.shadowDrawCpuMs,mainAndOtherDraws:this.rendering.frameCost.mainAndOtherDraws,mainAndOtherTriangles:this.rendering.frameCost.mainAndOtherTriangles});this.lastRenderPosition.copy(this.camera.position);this.lastRenderRotation.copy(this.camera.quaternion);this.debugFrames++;}
+      if(needsRender){this.renderer.info.reset();this.profiler?.beforeRender();const renderStart=performance.now();this.rendering.render(delta);this.frameObserver?.({frameMs:elapsed*1000,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,low:this.quality.low});this.profiler?.afterRender({frameMs:elapsed*1000,renderCpuMs:performance.now()-renderStart,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,geometries:this.renderer.info.memory.geometries,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,preset:this.renderPreset,phase:this.ride.phase,worldX:this.visitor.position.x,worldZ:this.visitor.position.z,walkingSimulatedMs:simulatedWalkingMs,shadowRefreshed:this.rendering.frameCost.shadowDraws>0,shadowDraws:this.rendering.frameCost.shadowDraws,shadowTriangles:this.rendering.frameCost.shadowTriangles,shadowDrawCpuMs:this.rendering.frameCost.shadowDrawCpuMs,mainAndOtherDraws:this.rendering.frameCost.mainAndOtherDraws,mainAndOtherTriangles:this.rendering.frameCost.mainAndOtherTriangles});this.lastRenderPosition.copy(this.camera.position);this.lastRenderRotation.copy(this.camera.quaternion);this.debugFrames++;}
       if (timestamp - this.lastHud > 125) {
         if (this.benchmarkEnabled){this.renderer.domElement.dataset.benchmarkReady='true';this.renderer.domElement.dataset.ridePhase=this.ride.phase;this.renderer.domElement.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';}
         if (this.debug) { const canvas = this.renderer.domElement; canvas.dataset.worldX = this.visitor.position.x.toFixed(3); canvas.dataset.cast = this.street.castStatus; canvas.dataset.worldZ = this.visitor.position.z.toFixed(3); canvas.dataset.eyeHeight = this.camera.position.y.toFixed(3); canvas.dataset.lookYaw = this.yaw.toFixed(3); canvas.dataset.renderScale=this.quality.scale.toFixed(2); canvas.dataset.quality=this.quality.low?'low':'high'; canvas.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';canvas.dataset.navigation=this.street.navigationStatus;canvas.dataset.surfaceMaps=this.street.surfaceStatus;canvas.dataset.streetAssets=this.street.assetStatus;canvas.dataset.characterStatus=this.street.characterStatus;canvas.dataset.npcUpdateMs=this.street.npcUpdateMs.toFixed(3);canvas.dataset.trafficUpdateMs=this.street.trafficUpdateMs.toFixed(3);canvas.dataset.renderPreset=this.renderPreset; canvas.dataset.cameraMode = this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? 'first-person' : 'passenger'; }

@@ -4,29 +4,37 @@ import { experience, achievements } from '../data/experience';
 import { projects } from '../data/projects';
 import { portfolio } from '../data/portfolio';
 import {ResearchExhibition} from './ResearchExhibition';
-import { FLAGSHIP_LABS } from './FlagshipLab';
-import { AstflowLab } from './AstflowLab';
+import { FLAGSHIP_LABS } from '../data/flagshipLabs';
+import { AstflowLab, SkillShops } from './LazyLabs';
 import { Modal } from './Modal';
 import { streetStops, zoneAt } from '../game/World/streetLayout';
 import type { Point, TransitKind } from '../game/World/transit';
-import { SkillShops } from './AndheriShops';
 export { RideMeter } from './RideMeter';
 
-export function CityMap({ position, canRide, onTravel, onOpen, onRide, onClose }: {
+export function CityMap({ position, canRide, objective, waypoint, onMark, onTravel, onOpen, onRide, onClose }: {
   canRide: boolean;
   position: Point; onTravel: (id: string) => void; onOpen: (id: string) => void;
+  /** The quest's next open step (its id is a district), and the stop the visitor has marked. */
+  objective?: { id: string; label: string; index: number; total: number } | null; waypoint?: string | null; onMark?: (id: string) => void;
   onRide: (kind: TransitKind, destination?: string) => void; onClose: () => void;
 }) {
   const [kind, setKind] = useState<TransitKind>('taxi');
+  const tag = (id: string) => [objective?.id === id && 'is-objective', waypoint === id && 'is-waypoint'].filter(Boolean).join(' ');
+  const note = (id: string) => `${objective?.id === id ? ' · current objective' : ''}${waypoint === id ? ' · marked' : ''}`;
   return <Modal title="MUMBAI CITY DIRECTORY" onClose={onClose} className="city-map-modal">
-    <div className="city-map-heading"><span className="eyebrow">{zoneAt(position.x).label} / CITY DIRECTORY</span><h2>Where to, boss?</h2><p>Every stop is a street you can walk. Flag a kaali-peeli or an auto and watch the meter, or jump straight there.</p></div>
+    <div className="city-map-heading"><span className="eyebrow">{zoneAt(position.x).label} / CITY DIRECTORY</span><h2>Where to, boss?</h2><p>Every stop is a street you can walk. Flag a kaali-peeli or an auto and watch the meter, or jump straight there.</p>
+      {objective !== undefined && <div className="map-objective" role="status">
+        {objective ? <><span className="eyebrow">OBJECTIVE {objective.index + 1} OF {objective.total}</span><strong>{objective.label}</strong>
+          {onMark && <button className="text-button" aria-pressed={waypoint === objective.id} onClick={() => onMark(objective.id)}>{waypoint === objective.id ? 'MARKED ON THE STREET ✓' : 'MARK IT ON THE STREET'}</button>}</>
+          : <><span className="eyebrow">OBJECTIVES</span><strong>All five done. The city is yours to wander.</strong></>}
+      </div>}</div>
     <div className="city-map-layout"><div className="city-map-graphic" aria-label="Stylized city map with current position">
       <svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" className="map-land"/><path d="M23 16 V76 H50 V36 H77 V76" className="map-loop"/><path d="M5 0V100" stroke="#5c99a8" strokeWidth="15"/></svg>
       <span className="map-sea-label">FORT ROAD<br />CST ↔ RESEARCH INSTITUTE</span>
-      {districts.map((d, i) => <button className="city-map-stop" style={{ left: `${[23,23,23,50,50,50,77,77,77][i]}%`, top: `${[16,46,76,76,56,36,36,56,76][i]}%`, background: d.color }} key={d.id} aria-label={`Explore ${d.title}`} onClick={() => onOpen(d.id)}><b>{String(i + 1).padStart(2, '0')}</b><span>{d.shortName}</span></button>)}
+      {districts.map((d, i) => <button className={`city-map-stop ${tag(d.id)}`} style={{ left: `${[23,23,23,50,50,50,77,77,77][i]}%`, top: `${[16,46,76,76,56,36,36,56,76][i]}%`, background: d.color }} key={d.id} aria-label={`Explore ${d.title}${note(d.id)}`} onClick={() => onOpen(d.id)}><b>{String(i + 1).padStart(2, '0')}</b><span>{d.shortName}</span></button>)}
       <span className="map-you" style={zoneAt(position.x).id === 'cst' ? { left: '23%', top: `${16 + Math.max(0,Math.min(1,(10-position.z)/45))*30}%` } : { left: `${[23,23,23,50,50,50,77,77,77][districts.findIndex(d => d.id === zoneAt(position.x).id)]}%`, top: `${[16,46,76,76,56,36,36,56,76][districts.findIndex(d => d.id === zoneAt(position.x).id)] - 7}%` }} aria-label="Your current position">●<small>YOU ARE HERE</small></span>
     </div><div className="city-directory"><div className="transport-choice" aria-label="Ride type"><button aria-pressed={kind === 'taxi'} onClick={() => setKind('taxi')}>KAALI-PEELI</button><button aria-pressed={kind === 'auto'} onClick={() => setKind('auto')}>AUTO</button></div>
-      {districts.map((d, i) => <article key={d.id}><button onClick={() => onOpen(d.id)}><span className="district-number" style={{ color: d.color }}>{String(i + 1).padStart(2, '0')}</span><span><strong>{d.title}</strong><small>{d.descriptor}</small></span></button><div><button disabled={!canRide || !streetStops[d.id]} aria-label={`Ride to ${d.title}`} onClick={() => onRide(kind, d.id)}>RIDE ↗</button><button aria-label={`Travel to ${d.title}`} onClick={() => onTravel(d.id)}>GO →</button></div></article>)}
+      {districts.map((d, i) => <article key={d.id} className={tag(d.id)}><button onClick={() => onOpen(d.id)}><span className="district-number" style={{ color: d.color }}>{String(i + 1).padStart(2, '0')}</span><span><strong>{d.title}</strong><small>{objective?.id === d.id ? <><em className="objective-tag">OBJECTIVE</em> {objective.label}</> : d.descriptor}</small></span></button><div><button disabled={!canRide || !streetStops[d.id]} aria-label={`Ride to ${d.title}`} onClick={() => onRide(kind, d.id)}>RIDE ↗</button><button aria-label={`Travel to ${d.title}`} onClick={() => onTravel(d.id)}>GO →</button></div></article>)}
       <p className="caption">EVERY STOP: WALK, RIDE OR JUMP · TALK TO THE GUIDE FOR THE PORTFOLIO</p></div></div>
   </Modal>;
 }

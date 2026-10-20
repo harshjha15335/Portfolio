@@ -35,4 +35,10 @@ describe('street atmosphere',()=>{
   expect(compiled.fragmentShader).toContain('uSunHaze');
   expect((compiled.uniforms.uWeather as {value:number}).value).toBe(.85);
  });
+ it('patches a clone of a patched material instead of trusting its copied flag',()=>{
+  const original=new THREE.MeshStandardMaterial();applyStreetAtmosphere(new THREE.Mesh(new THREE.BoxGeometry(),original),uniforms());
+  const copy=original.clone();expect(copy.userData.weatherPatched).toBe(true);expect(copy.customProgramCacheKey()).not.toContain(WEATHER_CACHE_KEY);
+  expect(applyStreetAtmosphere(new THREE.Mesh(new THREE.BoxGeometry(),copy),uniforms())).toBe(1);
+  expect(copy.customProgramCacheKey()).toBe(original.customProgramCacheKey());
+ });
 });

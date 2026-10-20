@@ -202,7 +202,9 @@ test('quick view loads without 3D and hides a missing or invalid résumé', asyn
   await expect(page.locator('.world-container canvas')).toHaveCount(0);
   expect(requests.some(url => url.includes('/src/core/WorldEngine') || /\/deps\/(three|cannon-es)/.test(url))).toBe(false);
   await page.getByRole('button', { name: 'ENTER WORLD' }).click();
-  await expect(page.locator('.world-container canvas')).toBeVisible();
+  // The world loads on demand: a canvas where the browser has WebGL, the stated fallback where it has none (headless Firefox on CI).
+  await expect(page.locator('.world-container canvas').or(page.getByRole('status').filter({ hasText: '3D experience unavailable' }))).toBeVisible();
+  expect(requests.some(url => url.includes('/src/core/WorldEngine'))).toBe(true);
 });
 
 test('first-person walking accelerates, stops, pauses in overlays, and resets at eye level', async ({ page }) => {

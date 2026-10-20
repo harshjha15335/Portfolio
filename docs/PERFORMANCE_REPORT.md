@@ -101,3 +101,19 @@ Main-pass counts with a cached shadow map (`scripts/capture-districts.mjs`, `?be
 
 - Each district gains exactly one texture: the 1024² atlas its exhibit boards paint into (the district sign atlas had no room in Andheri). Board frames merge into the district's existing surface batches and all boards share one draw, so draws move by −5 to +2, within the crowd's run-to-run variation (the pavement crowds also shift slightly because they now keep clear of the boards). Programs are unchanged.
 - Textures now reach the 32 ceiling at most poses and programs remain over it (50–54, cumulative and cast-driven, as before). No ceiling was raised.
+
+## What the texture and program overruns are made of (2026-10-20)
+
+The 45-texture and 34+-program figures come from `renderer.info`, which counts things a frame does not use. A probe that walks the visible scene at each of the nine stops (dev server, Medium, review scale 1.00) found:
+
+| Stop | `info` textures | Textures bound in view | `info` programs (session total) | Programs bound in view |
+|---|---|---|---|---|
+| cst | 40 | 39 | 40 | 24 |
+| fort | 46 | 45 (26 image + 19 bone) | 40 | 25 |
+| bkc | 31 | 22 | 56 | 16 |
+| andheri, powai, dadar, worli, juhu, filmcity | 31–32 | 25–27 | 56–58 | 15–18 |
+
+- **Textures.** At Fort, 19 of the 45 are skinned-actor bone matrix textures (20×20 RGBA32F, about 6 KiB each, 114 KiB together). The image textures in view (surface scans, sign and exhibit atlases, the PMREM environment, the cast atlases) are 26, inside the 32 ceiling. The real memory cost among them is the four 2048×1024 character normal maps (host, chai vendor, student, taxi driver; about 10.7 MiB each with mips). Dropping them on the low tier is the first lever if the phone benchmark asks for it; nothing was removed before hardware numbers exist.
+- **Programs.** `info.programs` is every program compiled this session, so it only grows as the visitor travels (40 on the CST–Fort street, 56–58 after visiting districts). A frame binds 15–25, inside the 26 ceiling.
+- **Clone bug fixed.** `Material.clone()` copies `userData.weatherPatched` but not `onBeforeCompile`, so the atmosphere patch skipped cloned cast materials and they compiled unpatched programs (no weather, and a duplicate program per material). The patch now checks the program cache key instead. Counts at these poses did not change, because the cast materials seen here were not clones; the fix stops the duplication where clones appear.
+- **Ceilings unchanged.** 110 / 230,000 / 32 / 26 stay as they are. `?bench` now reports `img`, `bone` and `view` beside the renderer totals, so the laptop and phone runs show both. A 1-second-per-stop SwiftShader tour (low tier engaged) read img 21–26, bone 1–11, view 15–26 at every stop.

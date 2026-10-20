@@ -37,6 +37,13 @@
 .city-map-stop { position:absolute; transform:translate(-50%,-50%); border:1px solid #f3e5c7; color:#fff9e8; padding:5px 9px; min-width:52px; box-shadow:2px 2px 0 #283c4144; }
 .city-map-stop:hover { transform:translate(-50%,-50%) scale(1.08); z-index:2; }
 .city-map-stop b { font:18px/1 var(--display); }.city-map-stop span { display:block; font:8px var(--mono); }
+.city-map-stop.is-objective { outline:2px solid #f9c847; outline-offset:3px; animation:objective-pulse 1.8s ease-in-out infinite; }
+.city-map-stop.is-waypoint::after { content:'◆'; position:absolute; top:-14px; left:50%; transform:translateX(-50%); color:#f9c847; font-size:11px; text-shadow:0 1px 2px #000; }
+@keyframes objective-pulse { 50% { outline-offset:7px; outline-color:#f9c84766; } }
+.map-objective { display:grid; gap:4px; justify-items:start; margin-top:14px; padding:10px 14px; border-left:3px solid #f9c847; background:#f9c84714; max-width:590px; }
+.map-objective strong { font:600 17px/1.3 var(--display); }
+.city-directory article.is-objective { box-shadow:inset 3px 0 0 #f9c847; }
+.objective-tag { font:normal 8px var(--mono); letter-spacing:.08em; color:#1c1c1c; background:#f9c847; padding:1px 4px; margin-right:4px; }
 .map-you { position:absolute; transform:translate(-50%,-50%); color:#f9c847; text-shadow:0 1px 2px #000; font-size:18px; pointer-events:none; z-index:3; }
 .map-you small { display:block; text-align:center; font:7px var(--mono); }
 .transport-choice { display:flex; border:1px solid #283c41; margin-bottom:10px; }
@@ -142,7 +149,7 @@
   .ride-meter { left:calc(50% - 140px); top:25px; max-height:calc(100dvh - 185px); }
   .home-city-ticket { display:none; }
 }
-@media (prefers-reduced-motion:reduce) { .city-map-stop { transition:none; } }
+@media (prefers-reduced-motion:reduce) { .city-map-stop { transition:none; } .city-map-stop.is-objective { animation:none; } }
 /* First-person street: small instruments at the edge, architecture owns the frame. */
 .mode-world .header { height:56px; padding:0 24px; background:#191d25e8; color:#dfd6bc; border-color:#d5bb8d25; }
 .mode-world .brand-mark { font-size:33px; }.mode-world .brand-copy { font-size:10px; }.mode-world .brand-copy small { font-size:7px; }

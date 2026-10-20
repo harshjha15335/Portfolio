@@ -279,8 +279,11 @@ export function constructionSite(c: Ctx) {
  * Everyday kerb furniture along one side: wooden utility poles with sagging cable bundles,
  * transformer boxes, municipal bins, rubbish bags, a paan-beedi kiosk and loose crates.
  */
+/** Local z of the zebra crossing every district street has (kept clear of kerb clutter). */
+export const ZEBRA_Z = -12;
 export function streetClutter(c: Ctx, side: number, stop: { x: number; z: number }) {
-  const { kit } = c, r = () => kit.rand(), near = (z: number) => Math.abs(z - stop.z) < 5 && Math.sign(stop.x) === side;
+  // A pole's bin and bollards trail up to 3 m behind it; none of it may stand at the zebra's kerbs.
+  const { kit } = c, r = () => kit.rand(), near = (z: number) => (Math.abs(z - stop.z) < 5 && Math.sign(stop.x) === side) || (z > ZEBRA_Z - 2.5 && z - 3 < ZEBRA_Z + 2.5);
   for (let z = 6 - r() * 4; z > -58; z -= 18 + r() * 6) {
     if (near(z)) continue;
     const x = side * 4.25;
