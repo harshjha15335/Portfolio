@@ -28,8 +28,8 @@ describe('visitor benchmark', () => {
   });
   it('attributes the arrival hitch to the frame before the longest gap and keeps the shader wait', () => {
     const shaders = { parallel: true, newPrograms: 21, linkWaitMs: 4000.04, capped: true };
-    const result = districtResult('bkc', 8000, [frame(16, { tickMs: 6 }), frame(17, { tickMs: 1, renderMs: 4900 }), frame(4950), frame(16)], [frame(16)], undefined, shaders);
-    expect(result.hitchCause).toEqual({ tickMs: 1, renderMs: 4900 }); expect(result.shaders).toEqual({ ...shaders, linkWaitMs: 4000 });
+    const result = districtResult('bkc', 8000, [frame(16, { tickMs: 6 }), frame(17, { tickMs: 1, renderMs: 4900 }), frame(4950), frame(16)], [frame(16)], undefined, shaders, 2);
+    expect(result.hitchCause).toEqual({ tickMs: 1, renderMs: 4900 }); expect(result.shaders).toEqual({ ...shaders, linkWaitMs: 4000 }); expect(result.landedHitchMs).toBe(16);
   });
   it('formats a copyable table with a row per district', () => {
     const districts = BENCH_STOPS.map(id => districtResult(id, 0, [frame(30)], [frame(16), frame(18)], { imageTextures: 26, boneTextures: 19, programs: 25 }));

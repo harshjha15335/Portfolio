@@ -226,6 +226,8 @@ export class WorldEngine {
   get arriving() { return this.arrivingAt; }
   private arrivingAt: string | null = null;
   private arrivalStarted = 0;
+  /** Smoothed length of frames that did no district building. */
+  private typicalFrameMs = 16.7; private builtLastFrame = false;
   private land(id: string) {
     const stop = streetStops[id], waited = this.arrivingAt !== null; this.arrivingAt = null;
     this.placeVisitor(stop.x, stop.z, stop.yaw); this.updateNear();
@@ -485,8 +487,11 @@ export class WorldEngine {
     if (this.disposed) return; this.frameId = requestAnimationFrame(this.frame);if(this.inspectionFrozen)return;
     const elapsed = this.fixedStep || (this.lastTime ? (timestamp - this.lastTime) / 1000 : 0); const delta = Math.min(elapsed, .08); this.lastTime = timestamp;
     if (document.hidden || this.mode !== 'world') return;
-    // A quarter of a long frame (software rendering) so a jump there does not take minutes; 6 ms on a real device.
-    const tickStart = performance.now(); this.city.tick(Math.max(DISTRICT_SLICE_MS, elapsed * 250)); const tickMs = performance.now() - tickStart;
+    // A quarter of a typical frame where frames are slow everywhere (software rendering), else 6 ms. The typical frame
+    // leaves out frames that built: one long slice must not widen the next budget into another long frame.
+    const tickStart = performance.now(); this.city.tick(Math.max(DISTRICT_SLICE_MS, this.typicalFrameMs * .25)); const tickMs = performance.now() - tickStart;
+    if (elapsed > 0 && tickMs < 1 && this.builtLastFrame === false) this.typicalFrameMs += (Math.min(elapsed * 1000, 4000) - this.typicalFrameMs) * .1;
+    this.builtLastFrame = tickMs >= 1;
     if (this.arrivingAt && this.city.isReady(zoneIndexAt(streetStops[this.arrivingAt].x)) && (this.shadersReady() || timestamp - this.arrivalStarted > ARRIVAL_SHADER_WAIT_MS)) { this.lastArrival = { parallel: this.renderer.extensions.has('KHR_parallel_shader_compile'), newPrograms: this.linkPrograms, linkWaitMs: performance.now() - this.linkStarted, capped: this.compiling.size > 0 }; this.land(this.arrivingAt); this.pausedFrameDirty = true; }
     if (this.paused && !this.pausedFrameDirty) return;
     const forceRender=this.pausedFrameDirty;this.pausedFrameDirty = false;
