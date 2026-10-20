@@ -26,6 +26,11 @@ describe('visitor benchmark', () => {
     expect(result.peak).toEqual({ draws: 80, triangles: 200_000, textures: 31, programs: 34 });
     expect(result.low).toBe(true); expect(result.scale).toBe(.8);
   });
+  it('attributes the arrival hitch to the frame before the longest gap and keeps the shader wait', () => {
+    const shaders = { parallel: true, newPrograms: 21, linkWaitMs: 4000.04, capped: true };
+    const result = districtResult('bkc', 8000, [frame(16, { tickMs: 6 }), frame(17, { tickMs: 1, renderMs: 4900 }), frame(4950), frame(16)], [frame(16)], undefined, shaders);
+    expect(result.hitchCause).toEqual({ tickMs: 1, renderMs: 4900 }); expect(result.shaders).toEqual({ ...shaders, linkWaitMs: 4000 });
+  });
   it('formats a copyable table with a row per district', () => {
     const districts = BENCH_STOPS.map(id => districtResult(id, 0, [frame(30)], [frame(16), frame(18)], { imageTextures: 26, boneTextures: 19, programs: 25 }));
     const report: BenchReport = { version: 1, url: 'https://x/?bench', commit: 'abcdef1234', when: '2026-10-20T00:00:00Z', device: { gpu: 'Test GPU', vendor: 'Test', userAgent: 'UA', platform: 'Linux', cores: 8, memoryGb: 8, screen: '1920×1080', dpr: 1, viewport: '1920×1000' }, settings: { preset: 'medium', adaptive: true, warmupS: 4, sampleS: 12 }, load: { worldReadyMs: 3000, scriptKb: 900, wasmKb: 200, modelKb: 5000 }, districts, overall: frameStats([16, 18]), interrupted: false, hidden: false };
