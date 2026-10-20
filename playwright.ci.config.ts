@@ -17,8 +17,8 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: original.use?.viewport } },
     { name: 'firefox', use: { ...devices['Desktop Firefox'], viewport: original.use?.viewport } },
     { name: 'webkit', use: { ...devices['Desktop Safari'], viewport: original.use?.viewport } },
-    // Phones: the same flows at phone size with touch; the a11y checks open their own phone context.
-    { name: 'mobile-chrome', use: { ...devices['Pixel 7'] }, grep: /quick view exposes|deep links|local demonstrations|loads without 3D|a11y:/ },
-    { name: 'mobile-safari', use: { ...devices['iPhone 13'] }, grep: /quick view exposes|deep links|local demonstrations|loads without 3D|a11y:/ },
+    // Phones: the same flows at phone size with touch (the desktop navigation checks stay on the desktop projects).
+    { name: 'mobile-chrome', use: { ...devices['Pixel 7'] }, grep: /deep links|local demonstrations|loads without 3D|a11y:/ },
+    { name: 'mobile-safari', use: { ...devices['iPhone 13'] }, grep: /deep links|local demonstrations|loads without 3D|a11y:/ },
   ],
 });

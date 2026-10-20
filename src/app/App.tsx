@@ -268,13 +268,13 @@ export default function App() {
     <a className="skip-link" href="#main-content" onClick={e => { e.preventDefault(); navigate('quick'); setTimeout(() => document.getElementById('main-content')?.focus(), 0); }}>Skip to portfolio content</a>
     <div className="world-container" ref={container} aria-hidden={mode !== 'world'} />
     <header className="header">
-      <button className="brand" onClick={() => navigate('intro')} aria-label="Harsh Jha home"><span className="brand-mark">h<span>j</span><i /></span><span className="brand-copy">HARSH JHA<small>ENGINEER / RESEARCHER</small></span></button>
+      <button className="brand" onClick={() => navigate('intro')}><span className="brand-mark" aria-hidden="true">h<span>j</span><i /></span><span className="brand-copy">HARSH JHA<small>ENGINEER / RESEARCHER</small></span></button>
       <nav aria-label="Main navigation" className="header-nav">
         {!(fallback && mode === 'quick') && <button onClick={() => mode === 'quick' ? navigate('world') : navigate('quick')}>{mode === 'quick' ? 'ENTER WORLD' : 'QUICK VIEW'} <span>↗</span></button>}
         {resumeAvailable && <a href={portfolio.resume} target="_blank" rel="noreferrer">RÉSUMÉ <span>↗</span></a>}
         <a href={portfolio.github} target="_blank" rel="noreferrer" className="github-link">GITHUB <span>↗</span></a>
         <button onClick={() => setContact(true)} className="contact-link">LET’S TALK <span>↗</span></button>
-        <button className="search-button" onClick={() => { setPalette(true); setQuery(''); }} aria-label="Open command palette">⌘ <kbd>K</kbd></button>
+        <button className="search-button" onClick={() => { setPalette(true); setQuery(''); }} aria-keyshortcuts="Meta+K Control+K"><span className="sr-only">Open command palette</span><span aria-hidden="true">⌘ <kbd>K</kbd></span></button>
       </nav>
     </header>
     {fallback && <p className="fallback-message" role="status">{fallback}</p>}

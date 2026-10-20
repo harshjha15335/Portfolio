@@ -207,10 +207,11 @@ kbd { font-size:9px; padding:2px 5px; border:1px solid var(--border); letter-spa
 .experience-org { font-weight:500; color:var(--ink)!important; margin:8px 0 20px!important; }
 .experience-item p,.experience-item li { color:var(--muted); font-size:13px; }
 .experience-item ul { padding-left:18px; }
-.experience-item a,.achievements-section a { font:9px var(--mono); border-bottom:1px solid currentColor; }
+.experience-item a,.achievements-section a { display:inline-flex; align-items:center; min-height:24px; font:9px var(--mono); border-bottom:1px solid currentColor; }
 .skills-section { margin-top:90px; }
 .skill-group { display:grid; grid-template-columns:1fr 3fr; gap:40px; padding:25px 0; border-top:1px solid var(--border); }
 .skill-tags { display:flex; flex-wrap:wrap; gap:8px 20px; }
+.skill-tags button { min-width:24px; }
 .skill-tags button,.case-skills span { padding:5px 0; font-size:13px; border-bottom:1px solid var(--border); }
 .skill-tags button:hover,.skill-tags button.active { color:var(--blue); border-color:var(--blue); }
 .skill-evidence { display:flex; gap:14px; flex-wrap:wrap; font:10px var(--mono); margin-top:17px; color:var(--muted); }
@@ -228,6 +229,7 @@ kbd { font-size:9px; padding:2px 5px; border:1px solid var(--border); letter-spa
 .quick-footer > button span { font-family:var(--body); font-size:.6em; }
 .quick-footer > div { margin-top:50px; padding-top:20px; border-top:1px solid #f2efe75c; display:flex; align-items:center; gap:28px; color:var(--paper); font:10px var(--mono); }
 .quick-footer > div > span { margin-right:auto; color:var(--paper); }
+.quick-footer > div > a { display:inline-flex; align-items:center; min-height:24px; }
 
 /* Native dialogs keep focus handling and scroll, but read as magazine spreads. */
 .modal { color:var(--ink); background:var(--paper); border:1px solid var(--ink); padding:0; width:min(1000px,calc(100vw - 48px)); max-height:calc(100dvh - 48px); overflow:auto; animation:modal-enter 450ms var(--ease); overscroll-behavior:contain; }
