@@ -146,6 +146,7 @@ export class DistrictKit {
       const material = surface === 'facade' ? new THREE.MeshStandardMaterial({ map: facadeTexture(), roughness: .9 }) : base.clone() as THREE.MeshStandardMaterial;
       material.vertexColors = true; if ((material as THREE.MeshStandardMaterial).color) material.color.set('#ffffff');
       material.userData = { ...base.userData, district: true };
+      if (surface === 'foliage') swayInWind(material);
       const mesh = new THREE.Mesh(g, material); mesh.name = `district:${surface}`;
       mesh.castShadow = surface !== 'glow' && surface !== 'glass'; mesh.receiveShadow = surface !== 'glow';
       this.group.add(mesh); yield;
@@ -154,6 +155,25 @@ export class DistrictKit {
   }
   /** Drop everything not yet merged (an unfinished build being thrown away). */
   discard() { for (const list of this.parts.values()) list.forEach(p => p.dispose()); this.parts.clear(); this.colliders.forEach(g => g.dispose()); this.colliders.length = 0; }
+}
+
+/** Seconds of world time driving the foliage sway; `District.update` advances it. Shared by every district. */
+export const foliageWind = { value: 0 };
+/**
+ * Leaves sway in the sea breeze: a vertex shift that grows with height above the ground (trunks and low shrubs barely
+ * move, crowns move a few centimetres) and varies with position, so neighbouring trees are out of step. One shader
+ * variant for every district's foliage; shadows use the rest pose.
+ */
+function swayInWind(material: THREE.Material) {
+  material.onBeforeCompile = shader => {
+    shader.uniforms.uWind = foliageWind;
+    shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nuniform float uWind;').replace('#include <begin_vertex>', `#include <begin_vertex>
+      float sway = clamp((position.y - 1.5) / 7.0, 0.0, 1.0); sway *= sway;
+      float phase = position.x * .23 + position.z * .31;
+      transformed.x += (sin(uWind * 1.3 + phase) * .06 + sin(uWind * 3.1 + phase * 2.7) * .02) * sway;
+      transformed.z += cos(uWind * 1.1 + phase * 1.3) * .045 * sway;`);
+  };
+  material.customProgramCacheKey = () => 'district-foliage-wind';
 }
 
 /** Planar UVs in metres chosen by the dominant normal axis, divided by the map's repeat. */

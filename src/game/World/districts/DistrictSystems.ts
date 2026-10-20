@@ -9,13 +9,24 @@ import { footprint, personBlocker, PERSON_RADIUS, type Blocker } from '../collis
 import { DRIVE_PROFILE, VEHICLE_BODY, TrafficSpace, drive, exitBlocked, inView, onCarriageway, stoppingDistance, type DriveState, type Driver, type Envelope, type Hold, type JunctionReservations, type SpawnDecision, type ViewCone } from '../traffic/TrafficSafety';
 
 /* ------------------------------------------------------------------ signs */
-export interface SignStyle { bg?: string; fg?: string; border?: string; font?: string; local?: string; draw?: (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => void }
+/**
+ * `tier` ranks how much a visitor must be able to read a sign: 1 for district and building names and other wayfinding
+ * the brief requires to be legible (checked by `tests/signs.test.ts`), 2 for shop and street text (the default), 3 for
+ * painted posters and decoration (the default for `draw` signs).
+ */
+export interface SignStyle { bg?: string; fg?: string; border?: string; font?: string; local?: string; tier?: 1 | 2 | 3; draw?: (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => void }
+/** Where a sign was placed, in its district's local frame: the centre and outward normal of its face, and its size in metres. */
+export interface SignRecord { text: string; tier: 1 | 2 | 3; center: THREE.Vector3; normal: THREE.Vector3; right: THREE.Vector3; width: number; height: number }
 /**
  * One canvas atlas per district for every painted board, hoarding and poster,
  * merged into a single unlit draw. Text is drawn once at build time.
  */
 export class SignAtlas {
   private canvas: HTMLCanvasElement; private ctx: CanvasRenderingContext2D; readonly texture: THREE.CanvasTexture;
+  /** Every sign placed, for the sign audit. */
+  readonly records: SignRecord[] = [];
+  /** Signs that did not fit in the atlas and were not drawn. */
+  readonly dropped: string[] = [];
   private pieces: THREE.BufferGeometry[] = []; private shelves: Array<{ y: number; h: number; x: number }> = []; private next = 0;
   constructor(private size = 2048) {
     this.canvas = document.createElement('canvas'); this.canvas.width = this.canvas.height = size; this.ctx = this.canvas.getContext('2d')!;
@@ -27,7 +38,7 @@ export class SignAtlas {
     // Shelf packing: a sign joins the snuggest shelf that fits it, so short signs don't waste tall rows.
     let shelf = this.shelves.filter(s => s.h >= h && s.h <= h * 1.5 && s.x + w <= this.size).sort((a, b) => a.h - b.h)[0];
     if (!shelf) {
-      if (this.next + h > this.size) { if (import.meta.env?.DEV) console.warn(`[signs] atlas full after ${this.pieces.length} signs, dropped "${text}"`); return null; }
+      if (this.next + h > this.size) { if (import.meta.env?.DEV) console.warn(`[signs] atlas full after ${this.pieces.length} signs, dropped "${text}"`); this.dropped.push(text); return null; }
       shelf = { y: this.next, h, x: 0 }; this.shelves.push(shelf); this.next += h;
     }
     const x = shelf.x, y = shelf.y; shelf.x += w;
@@ -44,7 +55,9 @@ export class SignAtlas {
     }
     const g = new THREE.PlaneGeometry(width, width * h / w), uv = g.getAttribute('uv');
     for (let i = 0; i < uv.count; i++) uv.setXY(i, (x + uv.getX(i) * w) / this.size, 1 - (y + (1 - uv.getY(i)) * h) / this.size);
-    g.applyMatrix4(matrix); this.pieces.push(g); return g;
+    g.applyMatrix4(matrix); this.pieces.push(g);
+    this.records.push({ text, tier: style.tier ?? (style.draw ? 3 : 2), center: new THREE.Vector3().setFromMatrixPosition(matrix), normal: new THREE.Vector3(0, 0, 1).transformDirection(matrix), right: new THREE.Vector3(1, 0, 0).transformDirection(matrix), width, height: width * h / w });
+    return g;
   }
   build() {
     this.texture.needsUpdate = true;

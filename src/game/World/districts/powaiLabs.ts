@@ -18,7 +18,7 @@ export const LAB = { w: 8, d: 7, h: 3.6 };
 export function powaiLab(c: Ctx, lab: PowaiLab) {
   const { kit } = c, { w, d, h } = LAB;
   room(c, { w, d, h, doorW: 2, doorH: 2.7, wall: lab.color, inner: '#f1ede4', floor: '#cfc7b6', floorSurface: 'stone', windows: [[-2.65, 1.9], [2.65, 1.9]], lights: [2, 2] });
-  sign(c, lab.title.toUpperCase(), 3.6, [0, 3.2, .16], { bg: '#1d2326', fg: lab.accent, border: 'none' }, [768, 128]);
+  sign(c, lab.title.toUpperCase(), 3.6, [0, 3.2, .16], { bg: '#1d2326', fg: lab.accent, border: 'none', tier: 1 }, [768, 128]);
   kit.box([2.8, .12, 1], [0, 2.86, .45], '#2a2e30', 'metal');
   // Inside: the demo desk, its painted still on the back wall above it, a plant by the door.
   desk(c, -2.2, -5.25, 0, { screens: 2, screen: lab.accent });
@@ -43,7 +43,7 @@ function form(c: Ctx, lab: PowaiLab) {
       kit.box([3.5, .18, 3.5], [-2.8, roof + 7.05, -d + 1.1], lab.accent, 'glow'); kit.rod([-2.8, roof + 9.2, -d + 1.1], [-2.8, roof + 11, -d + 1.1], .05, '#c9ccc8');
       break;
     case 'bank': // A small colonnade and pediment with a ticker band across the top.
-      for (const x of [-3.4, -1.3, 1.3, 3.4]) kit.cylinder(.22, h, [x, h / 2, .55], '#ece6d8', 'stone');
+      for (const x of [-3.55, -2.15, 2.15, 3.55]) kit.cylinder(.22, h, [x, h / 2, .55], '#ece6d8', 'stone'); // clear of the name board
       kit.box([w + .6, .45, 1.4], [0, h + .25, .25], '#e4dccb', 'stone'); kit.box([w - 1.2, .5, 1.3], [0, h + .72, .25], '#e4dccb', 'stone'); kit.box([w - 3.6, .4, 1.2], [0, h + 1.17, .25], '#e4dccb', 'stone');
       kit.box([w - .4, .32, .05], [0, h - .25, 1.26], lab.accent, 'glow');
       break;
