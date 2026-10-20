@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ACHIEVEMENTS, DISTRICT_IDS, QUEST, districtAt, emptyProgress, loadProgress, questDone, record, saveProgress, type ProgressEvent } from '../src/game/progress';
+import { ACHIEVEMENTS, DISTRICT_IDS, QUEST, districtAt, emptyProgress, loadProgress, nextObjective, questDone, record, saveProgress, type ProgressEvent } from '../src/game/progress';
 import { bearing, pickTarget } from '../src/game/World/interactionTargeting';
 import { CORRECT_FIELD, FIELD_CANDIDATES, finiteDifferenceCheck } from '../src/research/gradientCheck';
 import { TOURS } from '../src/data/tours';
@@ -35,6 +35,13 @@ describe('progress', () => {
     expect(questDone(four)).toBe(false);
     expect(questDone(record(four, { type: 'discover', id: 'juhu' }).progress)).toBe(true);
     expect(QUEST.steps).toHaveLength(5);
+  });
+  it('points the map at the first open quest step, in order, then at nothing', () => {
+    expect(nextObjective(emptyProgress())).toMatchObject({ id: 'fort', index: 0, total: 5 });
+    // Steps done out of order: the earliest open one is still the objective.
+    expect(nextObjective(play(...['fort-tour', 'northstar'].map(id => ({ type: 'discover', id }) as ProgressEvent)))).toMatchObject({ id: 'bkc', index: 1 });
+    expect(nextObjective(play(...['fort-source', 'bkc', 'northstar', 'andheri', 'juhu'].map(id => ({ type: 'discover', id }) as ProgressEvent)))).toBeNull();
+    for (const step of QUEST.steps) expect(DISTRICT_IDS as readonly string[], step.id).toContain(step.id);
   });
   it('treats the research end of the CST street as Fort', () => {
     expect(districtAt('cst', 8)).toBe('cst'); expect(districtAt('cst', -35)).toBe('fort'); expect(districtAt('bkc', -35)).toBe('bkc');

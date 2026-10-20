@@ -7,13 +7,14 @@ import { SpatialIndex } from '../spatial/SpatialIndex';
 import type { CityZone } from '../streetLayout';
 import { DistrictKit } from './DistrictKit';
 import { Crowd, LaneTraffic, SignAtlas, Water } from './DistrictSystems';
-import { backdropBlock, constructionSite, rooftop, skylineCrown, streetClutter, streetLight, towerRelief, PASTELS, type Ctx } from './buildings';
+import { backdropBlock, constructionSite, rooftop, skylineCrown, streetClutter, streetLight, towerRelief, PASTELS, ZEBRA_Z, type Ctx } from './buildings';
 import type { Outfit } from './CityFolk';
 import { createCityVehicle, VEHICLE_LENGTH, type CityVehicleKind } from './CityVehicles';
 import { paintMaterial, withFinish, type V3 } from './ColorMesh';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { buildExhibits } from './exhibits';
 import { exhibitsOf } from '../../../data/districtExhibits';
+import { crossingHeld, pedestrianGreen } from '../traffic/RoadTraffic';
 
 /**
  * How full the districts are, set from the graphics preset before a district is built
@@ -61,7 +62,7 @@ export class District {
   constructor(private physics: CANNON.World, surfaces: StreetMaterials, readonly zone: CityZone, readonly spec: DistrictSpec) {
     const started = performance.now(); this.origin = new THREE.Vector3(zone.originX, 0, 0); this.group.position.copy(this.origin); this.group.name = `district:${spec.id}`;
     this.kit = new DistrictKit(this.origin, physics, surfaces, spec.id); this.ctx = { kit: this.kit, signs: this.signs };
-    this.street(); spec.build(this); this.exhibitSigns = buildExhibits(this); this.guide(); this.populateTraffic(); this.streetLife();
+    this.street(); spec.build(this); this.exhibitSigns = buildExhibits(this); this.guide(); this.populateTraffic(); this.crossing(); this.streetLife();
     this.kit.build(); this.kit.group.children.slice().forEach(m => { this.group.add(m); m.position.set(0, 0, 0); });
     const signs = this.signs.build(); if (signs) this.group.add(signs);
     const boards = this.exhibitSigns?.build(); if (boards) { boards.name = 'district:exhibits'; this.group.add(boards); }
@@ -77,7 +78,7 @@ export class District {
     kit.box([300, .1, 340], [0, -.12, -22], '#6d6f69', 'asphalt');
     kit.box([7.8, .04, 340], [0, -.03, -22], '#55585a', 'asphalt');
     for (let z = 118; z > -160; z -= 6) kit.box([.1, .01, 2.2], [0, .0, z], '#b8b09a');
-    for (let i = 0; i < 8; i++) kit.box([.55, .01, 2.6], [-3 + i * .85, .0, -12], '#d4cfbf');
+    for (let i = 0; i < 8; i++) kit.box([.55, .01, 2.6], [-3 + i * .85, .0, ZEBRA_Z], '#d4cfbf');
     kit.box([60, .035, 7], [0, -.015, 16.5], '#5a5d5e', 'asphalt'); kit.box([60, .035, 8], [0, -.015, -60.5], '#5a5d5e', 'asphalt');
     for (const side of [-1, 1]) {
       if ((side < 0 ? this.spec.west : this.spec.east) === 'open') continue;
@@ -130,7 +131,27 @@ export class District {
   private populateTraffic() {
     const n = Math.round(this.spec.traffic.length * cityDensity.traffic), kinds = Array.from({ length: n }, (_, i) => this.spec.traffic[(i * 7) % this.spec.traffic.length]), north = this.traffic.lane([[1.6, 0, LANE_END[0]], [1.6, 0, LANE_END[1]]]), south = this.traffic.lane([[-1.6, 0, LANE_END[1]], [-1.6, 0, LANE_END[0]]]);
     kinds.forEach((kind, i) => this.traffic.vehicle(i % 2 ? south : north, kind, ((i >> 1) + (i % 2) * .5) / Math.ceil(kinds.length / 2), `${this.spec.id}:${i}`));
+    // Both lanes stop short of the zebra (z −13.3…−10.7) while the crossing is held.
+    this.traffic.stopLine(north, ZEBRA_Z + 2.8, crossingHeld); this.traffic.stopLine(south, ZEBRA_Z - 2.8, crossingHeld);
   }
+  /** The zebra's signals and the people who use it. */
+  private crossing() {
+    const { kit } = this, mix = this.mix.length ? this.mix : ['shirt', 'office'] as Outfit[];
+    const walk: THREE.BufferGeometry[] = [], wait: THREE.BufferGeometry[] = [];
+    for (const side of [-1, 1]) {
+      // A pole at each kerb with a head facing across the road: red standing figure above, green walking one below.
+      const x = side * 4.45, z = ZEBRA_Z - 1.75;
+      kit.rod([x, 0, z], [x, 2.9, z], .05, '#2b2f31'); kit.box([.34, .62, .26], [x, 2.55, z], '#1f2224', 'metal');
+      for (const [list, y] of [[wait, 2.7], [walk, 2.4]] as const) list.push(new THREE.BoxGeometry(.04, .2, .16).translate(x - side * .18, y, z));
+    }
+    const lamp = (list: THREE.BufferGeometry[], color: string) => { const m = new THREE.Mesh(mergeGeometries(list)!, new THREE.MeshBasicMaterial({ color })); list.forEach(g => g.dispose()); m.name = 'signal-lamps'; this.group.add(m); return m; };
+    this.signalLamps = { walk: lamp(walk, '#7dff9a'), wait: lamp(wait, '#ff5a4a') };
+    // Two people use the zebra, one from each side, at a walking pace that clears the road inside the hold.
+    this.crowd.crosser(mix[1 % mix.length], ZEBRA_Z - .5, -4.4, 4.4); this.crowd.crosser(mix[3 % mix.length], ZEBRA_Z + .5, 4.4, -4.4);
+    // A slow cart or bus can still be on the stripes when the walk signal comes; nobody steps out in front of it.
+    this.crowd.crossingBusy = () => this.traffic.moving.some(v => Math.abs(v.position.z - ZEBRA_Z) < v.length / 2 + 1.8);
+  }
+  private signalLamps: { walk: THREE.Mesh; wait: THREE.Mesh } | null = null;
   /* --------- helpers used by district builders --------- */
   /** Line one side of the walkable road with buildings from z = 14 northwards. */
   frontage(side: number, items: FrontageItem[], start = 14) {
@@ -162,7 +183,7 @@ export class District {
   }
   /** Is a pavement spot clear of the stop, the guide and the zebra crossing? */
   private clearOf(x: number, z: number) {
-    const s = this.zone.stop; return Math.hypot(x - s.x, z - s.z) > 6 && Math.abs(z + 12) > 3 && exhibitsOf(this.spec.id).every(e => Math.hypot(x - e.x, z - e.z) > 2.6);
+    const s = this.zone.stop; return Math.hypot(x - s.x, z - s.z) > 6 && Math.abs(z - ZEBRA_Z) > 3 && exhibitsOf(this.spec.id).every(e => Math.hypot(x - e.x, z - e.z) > 2.6);
   }
   /**
    * The life between the authored set pieces: knots of people chatting on the pavements and
@@ -214,7 +235,8 @@ export class District {
     const delta = reduced ? 0 : Math.min(.08, Math.max(0, time - this.previous)); this.previous = time;
     const local = view.clone().sub(this.origin);
     this.crowd.update(reduced ? 0 : time, delta, local);
-    this.traffic.update(time, delta, [local, ...others.map(o => o.clone().sub(this.origin))]);
+    this.traffic.update(time, delta, [local, ...others.map(o => o.clone().sub(this.origin))], this.crowd.onRoad());
+    if (this.signalLamps) { const walk = pedestrianGreen(reduced ? 0 : time); this.signalLamps.walk.visible = walk; this.signalLamps.wait.visible = !walk; }
     if (!reduced) for (const w of this.waters) w.update(time);
     for (const m of this.motion) m(reduced ? 0 : time, delta);
   }

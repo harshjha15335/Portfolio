@@ -73,6 +73,8 @@ export const QUEST = {
   ],
 };
 export const questDone = (p: Progress) => QUEST.steps.every(step => step.done(p));
+/** The first quest step still open: what the map shows as the active objective (null once the quest is done). */
+export const nextObjective = (p: Progress) => { const i = QUEST.steps.findIndex(step => !step.done(p)); return i < 0 ? null : { ...QUEST.steps[i], index: i, total: QUEST.steps.length }; };
 
 export const emptyProgress = (): Progress => ({ version: 1, visited: [], discovered: [], achievements: [], orientation: [], orientationDismissed: false, rides: 0 });
 

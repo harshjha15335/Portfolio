@@ -15,7 +15,7 @@ import { CityMap, DistrictExperience, RideMeter } from '../ui/CityExperience';
 import { idleRide, type Point, type TransitKind } from '../game/World/transit';
 import { streetStops, STREET_SPAWN, zoneAt } from '../game/World/streetLayout';
 import type { WorldEngine } from '../core/WorldEngine';
-import { record, loadProgress, saveProgress, emptyProgress, districtAt, type Achievement, type ProgressEvent } from '../game/progress';
+import { record, loadProgress, saveProgress, emptyProgress, districtAt, nextObjective, type Achievement, type ProgressEvent } from '../game/progress';
 import { TOURS } from '../data/tours';
 import { ExhibitPanel, isExhibit } from '../ui/Exhibits';
 import { AchievementToasts, Journal, Orientation, TourCard, Waypoint } from '../ui/GameHud';
@@ -308,7 +308,7 @@ export default function App() {
     </main>}
     {selected && <Modal title={`CASE STUDY / ${selected.title}`} onClose={closeProject} className={`project-modal project-${selected.id}`}><CaseStudy project={selected} world={mode === 'world'} onClose={closeProject} /></Modal>}
     {palette && <Modal title="COMMAND CENTER" onClose={() => setPalette(false)} className="palette-modal"><label className="search-input"><span>⌕</span><input autoFocus placeholder="Search projects, skills, or commands…" aria-label="Search commands" value={query} onChange={e => { setQuery(e.target.value); setCommandIndex(0); }} onKeyDown={e => { if (e.key === 'ArrowDown') { e.preventDefault(); setCommandIndex(i => Math.min(i + 1, filtered.length - 1)); } if (e.key === 'ArrowUp') { e.preventDefault(); setCommandIndex(i => Math.max(i - 1, 0)); } if (e.key === 'Enter') { e.preventDefault(); filtered[commandIndex]?.action(); } }} /></label><div className="command-results">{filtered.length ? filtered.map((command, i) => <button key={command.id} className={i === commandIndex ? 'active' : ''} onClick={command.action} onMouseEnter={() => setCommandIndex(i)}><span><strong>{command.label}</strong><small>{command.detail}</small></span><span>↗</span></button>) : <p className="empty-state">No matches. Try a project name or technology.</p>}</div><p className="palette-help caption">↑ ↓ NAVIGATE · ENTER OPEN · ESC CLOSE</p></Modal>}
-    {map && <CityMap position={position} canRide={ready && !fallback} onTravel={travel} onOpen={openProject} onRide={hail} onClose={() => setMap(false)} />}
+    {map && <CityMap position={position} canRide={ready && !fallback} objective={nextObjective(progress)} waypoint={waypoint} onMark={id => setWaypoint(current => current === id ? null : id)} onTravel={travel} onOpen={openProject} onRide={hail} onClose={() => setMap(false)} />}
     {district && <DistrictExperience key={district.id} district={district} reduced={reduced} resumeAvailable={resumeAvailable} onClose={closePlace} onProject={openProject} onQuick={() => navigate('quick')} onContact={() => { closePlace(); setContact(true); }} onDestination={id => { closePlace(); travel(id); }} onTour={TOURS[district.id] && mode === 'world' && !fallback ? () => startTour(district.id) : undefined} onFinale={finale} />}
     {exhibit && <ExhibitPanel id={exhibit} onClose={() => setExhibit(null)} onSolved={id => track({ type: 'discover', id: `${id}:solved` })} onDeparture={departure}
       onOpen={openProject} onProject={id => { setExhibit(null); openProject(id); }} onContact={() => { setExhibit(null); setContact(true); }} onFinale={finale}

@@ -1,5 +1,15 @@
 import * as THREE from 'three';
-export const pedestrianGreen=(time:number)=>time%32>=20&&time%32<27;
+/**
+ * One signal cycle for every zebra in the city (32 s). People may step off the kerb only early in the walk phase, and
+ * traffic is held from just before it until the slowest of them (8 m of carriageway at about 1 m/s) is across, so
+ * nobody is still on the road when the cars move off.
+ */
+export const SIGNAL_CYCLE=32,WALK_FROM=20,WALK_UNTIL=22.5,HOLD_UNTIL=31.5;
+const phase=(time:number)=>((time%SIGNAL_CYCLE)+SIGNAL_CYCLE)%SIGNAL_CYCLE;
+/** People waiting at the kerb may start to cross. */
+export const pedestrianGreen=(time:number)=>phase(time)>=WALK_FROM&&phase(time)<WALK_UNTIL;
+/** Vehicles stop at the line: the walk phase plus its clearance. */
+export const crossingHeld=(time:number)=>phase(time)>=WALK_FROM-.5&&phase(time)<HOLD_UNTIL;
 /** The Fort Road loop: up the east lane, round at the cross street, down the west lane and round in the forecourt. */
 export const FORT_LOOP:Array<[number,number,number]>=[[1.75,0,12],[1.75,0,-8],[1.75,0,-30],[1.75,0,-51],[0,0,-54],[-1.75,0,-51],[-1.75,0,-30],[-1.75,0,-8],[-1.75,0,12],[0,0,14]];
 /** Another vehicle on the same loop: its distance along it and its length. */
@@ -25,7 +35,7 @@ export class RoadTraffic {
    // Other traffic sharing the loop (Fort Road's private cars): bumper-to-bumper gap, so nothing drives into a longer vehicle.
    for(const b of loop){const centre=((b.s-a.distance)%this.length+this.length)%this.length;if(centre<this.length/2)target=Math.min(target,Math.max(0,(centre-(RoadTraffic.lengthOf(i)+b.length)/2-2.2)*.8));}
    const stop=direction<0?-8.8:-15.2,approach=(stop-p.z)*direction;
-   if(pedestrianGreen(time)&&approach>=-.2&&approach<10)target=Math.min(target,Math.max(0,approach*.8));
+   if(crossingHeld(time)&&approach>=-.2&&approach<10)target=Math.min(target,Math.max(0,approach*.8));
    for(const obstacle of Array.isArray(obstacles)?obstacles:obstacles?[obstacles]:[])if(Math.abs(p.x-obstacle.x)<1.5){const gap=(obstacle.z-p.z)*direction;if(gap>0&&gap<10)target=Math.min(target,Math.max(0,(gap-3)*.8));}
    const rate=target<a.speed?5:1.2;a.speed+=THREE.MathUtils.clamp(target-a.speed,-rate*delta,rate*delta);a.distance=(a.distance+a.speed*delta)%this.length;
   });
