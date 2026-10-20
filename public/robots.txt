@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://portfolio-beta-murex-52.vercel.app/sitemap.xml
