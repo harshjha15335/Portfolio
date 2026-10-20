@@ -23,7 +23,7 @@ export type OrientationStep = 'look' | 'walk' | 'interact' | 'map' | 'ride';
 export const ORIENTATION_STEPS: { id: OrientationStep; label: string; hint: string }[] = [
   { id: 'look', label: 'Look around', hint: 'Click the street, then move the mouse (or drag)' },
   { id: 'walk', label: 'Walk a few steps', hint: 'W A S D or the arrow keys · Shift to run · Space to jump' },
-  { id: 'interact', label: 'Talk or inspect', hint: 'Face the station host or the departure board and press E' },
+  { id: 'interact', label: 'Talk or inspect', hint: 'Face Harsh at the station or the departure board and press E' },
   { id: 'map', label: 'Open the city map', hint: 'Press M' },
   { id: 'ride', label: 'Hail a ride', hint: 'Use the taxi or auto stand, or HAIL TAXI / HAIL AUTO' },
 ];
@@ -47,7 +47,7 @@ const count = (p: Progress, pattern: RegExp) => new Set(p.discovered.filter(id =
 /** Activities record `<exhibit>:solved` when finished, separately from opening the exhibit. */
 const solved = (p: Progress, id: string) => has(p, `${id}:solved`);
 export const ACHIEVEMENTS: Achievement[] = [
-  { id: 'first-steps', title: 'First Steps', detail: 'Met the station host or read the CST departure board.', earned: p => has(p, 'cst') || has(p, 'cst-board') },
+  { id: 'first-steps', title: 'First Steps', detail: 'Met Harsh at the station or read the CST departure board.', earned: p => has(p, 'cst') || has(p, 'cst-board') },
   { id: 'research-explorer', title: 'Research Explorer', detail: 'Followed the five reviewed FFprime pull requests at Fort.', earned: p => has(p, 'fort-source') },
   { id: 'gradient-check', title: 'Finite Differences', detail: 'Found the field implementation that passes the gradient check.', earned: p => solved(p, 'fort-gradient') },
   { id: 'systems-thinker', title: 'Systems Thinker', detail: 'Ingested every page at BKC without a single 429.', earned: p => solved(p, 'bkc-ratelimit') },

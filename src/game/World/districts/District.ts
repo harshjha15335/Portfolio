@@ -15,6 +15,9 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { buildExhibits } from './exhibits';
 import { exhibitsOf } from '../../../data/districtExhibits';
 import { crossingHeld, pedestrianGreen, zebraBusy } from '../traffic/RoadTraffic';
+import { FriendSlot } from '../npc/FriendSlot';
+import { PERSON_RADIUS } from '../collision/DynamicBlockers';
+import { FRIENDS, friendInteraction } from '../../../data/friends';
 
 /**
  * How full the districts are, set from the graphics preset before a district is built
@@ -100,7 +103,7 @@ export class District {
     yield* this.street();
     const spec = this.spec.build(this); if (spec) yield* spec; yield;
     while (this.queued.length) { this.queued.shift()!(); yield; }
-    this.exhibitSigns = buildExhibits(this); this.guide(); yield;
+    this.exhibitSigns = buildExhibits(this); this.guide(); this.friends(); yield;
     yield* this.populateTraffic(); this.crossing(); yield;
     yield* this.streetLife();
     yield* this.kit.buildSteps(); this.kit.group.children.slice().forEach(m => { this.group.add(m); m.position.set(0, 0, 0); });
@@ -169,6 +172,16 @@ export class District {
     const guide = this.crowd.idle(this.spec.guideOutfit, [gx, .03, gz], 0, 'talk');
     guide.group.rotation.y = Math.atan2(gx - s.x, gz - s.z);
     this.interactions.push({ id: this.spec.id, label: `Talk to ${this.spec.guide}`, position: new THREE.Vector3(this.origin.x + gx, 1.45, gz) });
+  }
+  private friendSlots: FriendSlot[] = [];
+  /** Harsh's friends who live in this district stand along the pavement past the guide, facing the arrival stop. */
+  private friends() {
+    const s = this.zone.stop, side = s.x < 0 ? -1 : 1;
+    for (const f of FRIENDS.filter(f => f.district === this.spec.id)) {
+      const x = s.x + side * (1.05 + f.offset[0]), z = s.z - 2.3 + f.offset[1], slot = new FriendSlot(f.cast, Math.atan2(x - s.x, z - s.z));
+      slot.group.position.set(x, .03, z); this.group.add(slot.group); this.friendSlots.push(slot);
+      this.interactions.push({ id: friendInteraction(f.id), label: `Talk to ${f.name}`, position: new THREE.Vector3(this.origin.x + x, 1.45, z) });
+    }
   }
   private *populateTraffic(): Generator<void> {
     for (const _ of districtTraffic(this.traffic, this.spec.traffic, this.spec.id)) yield;
@@ -283,11 +296,13 @@ export class District {
     if (this.signalLamps) { const walk = pedestrianGreen(reduced ? 0 : time); this.signalLamps.walk.visible = walk; this.signalLamps.wait.visible = !walk; }
     if (!reduced) for (const w of this.waters) w.update(time);
     for (const m of this.motion) m(reduced ? 0 : time, delta);
+    for (const f of this.friendSlots) f.update(reduced ? 0 : time, local);
   }
   /** People and moving vehicles near `view` (world space) that the visitor cannot walk through. */
   collectBlockers(out: Blocker[], view: THREE.Vector3) {
     const local = this.blockView.copy(view).sub(this.origin);
     this.crowd.collectBlockers(out, this.origin, local); this.traffic.collectBlockers(out, this.origin, local);
+    for (const f of this.friendSlots) out.push({ x: f.group.position.x + this.origin.x, z: f.group.position.z, yaw: 0, halfLength: PERSON_RADIUS, halfWidth: PERSON_RADIUS, round: true });
   }
   private blockView = new THREE.Vector3();
   /** Release physics bodies and every GPU resource this district owns (shared street maps stay). */
@@ -295,6 +310,8 @@ export class District {
     // A deferred build abandoned part-way (the visitor turned back) still owns its unmerged parts.
     if (this.job) { this.job = null; this.kit.discard(); }
     for (const body of this.kit.bodies) this.physics.removeBody(body);
+    // Friends hold leases on the shared character templates; release them before the GPU sweep below.
+    this.friendSlots.forEach(f => f.dispose()); this.friendSlots = [];
     this.spatial?.dispose(); this.signs.texture.dispose(); this.exhibitSigns?.texture.dispose(); this.group.removeFromParent();
     for (const person of this.crowd.people()) person.cast?.dispose();
     this.traffic.dispose();

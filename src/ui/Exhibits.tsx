@@ -7,6 +7,7 @@ import { DEPARTURES } from '../data/departures';
 import { districts } from '../data/city';
 import type { TransitKind } from '../game/World/transit';
 import { DISTRICT_EXHIBIT_TITLES, DistrictExhibitBody } from './DistrictExhibits';
+import { FRIENDS, friendById, friendInteraction, type Friend } from '../data/friends';
 
 /** Physical exhibits in the world that open a focused panel instead of a whole district page. */
 export const EXHIBIT_TITLES: Record<string, string> = {
@@ -19,6 +20,7 @@ export const EXHIBIT_TITLES: Record<string, string> = {
   'fort-panel-1': 'FORT / PANEL 02',
   'fort-panel-2': 'FORT / PANEL 03',
   ...DISTRICT_EXHIBIT_TITLES,
+  ...Object.fromEntries(FRIENDS.map(f => [friendInteraction(f.id), `${districts.find(d => d.id === f.district)?.shortName.toUpperCase() ?? ''} / ${f.name.toUpperCase()}`])),
 };
 export const isExhibit = (id: string) => id in EXHIBIT_TITLES;
 
@@ -36,8 +38,25 @@ export function ExhibitPanel({ id, onClose, onSolved, onDeparture, onOpen, onPro
     {id === 'fort-source' && <ResearchExhibition focus="source" />}
     {id === 'fort-workstation' && <CoordinateWorkstation />}
     {id === 'fort-gradient' && <GradientCheck onSolved={() => onSolved('fort-gradient')} />}
+    {friendById(id) && <FriendDialogue key={id} friend={friendById(id)!} onAction={onProject} />}
     {id in DISTRICT_EXHIBIT_TITLES && <DistrictExhibitBody key={id} id={id} reduced={reduced} resumeAvailable={resumeAvailable} discovered={discovered} onSolved={onSolved} onOpen={onOpen} onProject={onProject} onContact={onContact} onClose={onClose} onFinale={onFinale} />}
   </Modal>;
+}
+
+/** A short conversation with one of Harsh's friends: their lines one at a time, then where they suggest going next. */
+function FriendDialogue({ friend, onAction }: { friend: Friend; onAction: (id: string) => void }) {
+  const [line, setLine] = useState(0), last = line === friend.lines.length - 1;
+  return <section className="friend-dialogue guide-dialogue" aria-label={`Conversation with ${friend.name}`}>
+    <div className="guide-avatar" aria-hidden="true">{friend.name.split(' ').map(w => w[0]).join('')}</div>
+    <div><span className="eyebrow">{friend.role.toUpperCase()}</span><h2>{friend.name}</h2>
+      <p aria-live="polite">“{friend.lines[line]}”</p>
+      <div className="guide-actions">
+        {!last && <button className="primary-button" onClick={() => setLine(line + 1)}>NEXT →</button>}
+        {last && friend.actions.map(a => <button key={a.open} className="primary-button" onClick={() => onAction(a.open)}>{a.label}</button>)}
+        {line > 0 && <button className="text-button" onClick={() => setLine(0)}>FROM THE START</button>}
+      </div>
+    </div>
+  </section>;
 }
 
 function DepartureBoard({ onDeparture }: { onDeparture: (district: string, action: 'mark' | 'go' | TransitKind) => void }) {

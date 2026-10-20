@@ -20,7 +20,7 @@ describe('first-person street slice', () => {
   it('provides human-scale interaction points and 14 street facades', () => {
     const street=new MumbaiStreet(new CANNON.World());
     expect(street.facadeCount).toBeGreaterThanOrEqual(10);
-    expect(street.interactions.map(p=>p.id)).toEqual(['cst','cst-board','fort','ffprime','fort-workstation','fort-field','fort-source','fort-gradient','fort-panel-0','fort-panel-1','fort-panel-2','hail-taxi','hail-auto']);
+    expect(street.interactions.map(p=>p.id)).toEqual(['cst','cst-board','fort','friend-aarush','ffprime','fort-workstation','fort-field','fort-source','fort-gradient','fort-panel-0','fort-panel-1','fort-panel-2','hail-taxi','hail-auto']);
     // People and desks sit at chest height; wall panels and the hanging departure board are read looking up.
     expect(street.interactions.every(p=>p.position.y>=1 && p.position.y<(p.id==='cst-board'?2.8:1.75))).toBe(true);
   });

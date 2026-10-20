@@ -5,6 +5,7 @@ import sys, json, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from PIL import Image
 from skintone import warm
+from likeness import apply as likeness
 tex, work, cid, code, W, hero, tone = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], int(sys.argv[5]), sys.argv[6] == '1', float(sys.argv[7])
 os.makedirs(work, exist_ok=True)
 load = lambda kind, suffix: Image.open(f'{tex}/{code}_{kind}_{suffix}.tga')
@@ -13,9 +14,10 @@ atlas = Image.new('RGBA' if hair else 'RGB', (2 * W, W + W // 2 if hair else W),
 for i, kind in enumerate(['body', 'head']):
     im = load(kind, 'color').convert('RGB')
     if tone > 0: im, _ = warm(im, tone)
+    im = likeness(cid, kind, im)
     atlas.paste(im.resize((W, W), Image.LANCZOS), (i * W, 0))
 if hair:
-    cards = load('opacity', 'color').convert('RGBA').resize((W // 2, W // 2), Image.LANCZOS)
+    cards = likeness(cid, 'cards', load('opacity', 'color')).convert('RGBA').resize((W // 2, W // 2), Image.LANCZOS)
     atlas.paste(cards, (W, W))
     out = {'atlas': f'{work}/{cid}_atlas.png', 'hair': True}; atlas.save(out['atlas'], optimize=True)
 else:

@@ -1,0 +1,78 @@
+{
+ "status": "approved",
+ "visualReview": {
+  "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+  "date": "2026-10-20",
+  "notes": "Fort research room, face and full body: white shirt with green leaf print and chain, dark hair, warm skin tone; hair cards shade with the scalp."
+ },
+ "asset": {
+  "id": "cast-aarush",
+  "url": "/models/characters/aarush-e51e898790e9e808.glb",
+  "sha256": "e51e898790e9e8081a68c3ef4a65bc6a0a13ba60380724bb0ad5e8fe8de57784",
+  "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_01",
+  "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+  "license": "MIT"
+ },
+ "provenance": {
+  "repository": "https://github.com/microsoft/Microsoft-Rocketbox",
+  "commit": "0943055db6ec570bcef9f2c8b41c9e5467c808f9",
+  "license": "MIT",
+  "licenseEvidence": "https://github.com/microsoft/Microsoft-Rocketbox/blob/0943055db6ec570bcef9f2c8b41c9e5467c808f9/LICENSE.md",
+  "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+  "copyright": "Copyright (c) 2020 Microsoft",
+  "licenseReviewedOn": "2026-10-11",
+  "avatar": "Assets/Avatars/Adults/Male_Adult_01",
+  "avatarSha256": "8d1edb51b4dc3427ae2456f4407fc105532c145dd019e53cd42bab31cc948a29",
+  "clips": {
+   "Idle": {
+    "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_01.max.fbx",
+    "sha256": "818cc185af21390575f7fbfdeb3012ba2ce5969fbcb220ea725a2617b339a6e2"
+   },
+   "Walk": {
+    "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_neutral_01.max.fbx",
+    "sha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0"
+   },
+   "Talk": {
+    "file": "Assets/Animations/all_animations_max_motextr_static/m_gestic_talk_neutral_01.max.fbx",
+    "sha256": "4c2b9ff481a9538dafbbe7f6aa6ffd6b948b5d34bb16a1e2052e943bbbbd3cd8"
+   }
+  },
+  "modifications": "Blender 4.2 FBX import; body and head maps packed into one 1664×832 atlas; skin tone shifted toward a South Asian complexion (strength 1); clips retargeted from the Rocketbox animation rig, trimmed ({\"Idle\":12,\"Talk\":9}) and resampled with gltf-transform 4.1.1; 30% decimated LOD mesh on the same rig."
+ },
+ "inspection": {
+  "triangles": 7440,
+  "lodTriangles": 2231,
+  "primitives": 1,
+  "materials": 1,
+  "joints": [
+   80
+  ],
+  "textures": [
+   {
+    "width": 1664,
+    "height": 1248,
+    "mimeType": "image/png"
+   }
+  ],
+  "clips": [
+   {
+    "name": "Idle",
+    "duration": 11.699999809265137,
+    "channels": 240
+   },
+   {
+    "name": "Walk",
+    "duration": 1.2333333492279053,
+    "channels": 240
+   }
+  ],
+  "visualReviewRequired": [
+   "human proportions",
+   "clothing and texture quality",
+   "human-scale floor alignment",
+   "Idle and Walk move the intended skeleton",
+   "foot sliding/facing direction",
+   "new Medium draw/triangle/texture/program counts"
+  ]
+ }
+}

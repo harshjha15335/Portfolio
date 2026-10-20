@@ -110,3 +110,44 @@ Options if the budget can't move: drop the normal atlases (−4 textures, −1 t
 - Hardware frame-time profile: needs a real GPU.
 - New-building capture: owned by the overhaul thread.
 - Fully photoreal people: not available under a free redistributable licence. That needs paid or authored assets, for example Reallusion Character Creator exports (licence permitting redistribution in a game build), scanned people, or custom-authored South Asian characters with sari and kurta variety and grip animations.
+
+## Named people (20 October 2026)
+
+Harsh asked for real people in the city, from photos they agreed to share. Each is a **stylised likeness** on a
+licensed Rocketbox body: the face geometry and skeleton stay Rocketbox's, and `scripts/characters/likeness.py`
+repaints the maps toward the person (skin tone, hair colour and texture, beard or stubble, brown irises, and the
+clothes from the photos). Harsh, Anuj and Arham also get glasses: a thin frame built around the eyes in
+`rocketbox_to_glb.py`, skinned to the head bone and sampling a dark swatch painted in the head map, so it adds no
+material, texture or draw call.
+
+| Who | Where | Base body | Outfit |
+| --- | --- | --- | --- |
+| Harsh Jha | CST, the arrival host (replaces the station host; interaction id `cst` unchanged) | Male_Adult_08 | pale pink fine-striped shirt, light blue-grey jeans, dark watch, glasses |
+| Aarush Shetty | Fort research room, on the rug by the kiosk | Male_Adult_01 | white shirt with sage leaf print, chain |
+| Pavit Singh | BKC, past the guide | Male_Adult_01 | black ribbed polo, chain |
+| Anuj Deshpande | Andheri, past the guide | Male_Adult_16 | blue t-shirt, grey trousers, short full beard, glasses |
+| Arham Jain | Powai, past the guide | Male_Adult_09 | purple t-shirt, black track pants with a grey side stripe, goatee, glasses |
+| Ranjan Jha | Dadar, past the guide | Male_Adult_01 | white shirt with mustard, orange, navy and grey brush strokes, plain shorts, orange thread on the wrist |
+| Rina Jha | Worli, past the guide | Female_Adult_05 | red long-sleeve top with a front ruffle, blue jeans |
+| Abhinav Jha | Worli, beside Rina | Male_Child_01 | rust-orange "POWER UP IN PROGRESS" t-shirt, dark jeans |
+
+Abhinav is a young teenager, so his face is the generic Rocketbox child's; only his hair colour and outfit follow
+the photos. Three people share the Male_Adult_01 body in three different districts, so they are never seen together.
+
+Dialogue and placement live in `src/data/friends.ts`. District friends are `FriendSlot`s (`npc/FriendSlot.ts`):
+one `GLBCharacter` each from their own small asset library (the shared one is capped at 16 templates), placed
+along the pavement beyond the district guide. Within 3.4 m they turn to face the visitor and play Talk; the talk
+prompt opens `FriendDialogue` in `ui/Exhibits.tsx`, which steps through their lines and ends with links to that
+district's exhibits.
+
+Rebuild only these with `python3.11 scripts/characters/build_cast.py <work> harsh aarush pavit anuj arham ranjan rina abhinav`,
+then copy the other cast members' current GLBs into `<work>` as `<id>.glb` before `node scripts/import-cast.mjs <work>`
+(the importer rewrites every member).
+
+Hair cards on these builds get radial normals (out from the head's centre, `radialHair` in the build config,
+set for every `likeness` entry). With the cards' own normals the low golden-hour sun caught them as bright tan
+stripes that read as a patterned cap; the radial normals shade the hair like the scalp underneath.
+
+Cost: one atlas texture per person, no normal map: 1664×1248 RGBA for the six with hair cards (the importer caps a
+texture at 2048×1024 pixels in area), 2048×1024 for Anuj and Abhinav. At CST, Harsh replaces the host's two
+textures with one. Each district adds one character (two at Worli) and one bone texture per character in view.

@@ -416,5 +416,357 @@ export const characterCast:Record<string,CastMember>={
     }
    ]
   }
+ },
+ "harsh": {
+  "status": "approved",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "CST forecourt, face at 0.85 m and full body at 2.6 m: glasses frame sits on the nose, open pink striped shirt over a white tee, watch on the left wrist, short dark fade; hair cards shade with the scalp."
+  },
+  "role": "Harsh Jha · arrival host at CST",
+  "height": 1.74,
+  "asset": {
+   "id": "cast-harsh",
+   "url": "/models/characters/harsh-96c2567c73f3100b.glb",
+   "sha256": "96c2567c73f3100b61aeeac28a4997f000595e0b54557299e37fdc7a6ea589fc",
+   "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_08",
+   "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+   "license": "MIT"
+  },
+  "inspection": {
+   "triangles": 7744,
+   "primitives": 1,
+   "joints": [
+    80
+   ],
+   "textures": [
+    {
+     "width": 1664,
+     "height": 1248,
+     "mimeType": "image/png"
+    }
+   ],
+   "clips": [
+    {
+     "name": "Idle",
+     "duration": 11.699999809265137,
+     "channels": 240
+    },
+    {
+     "name": "Walk",
+     "duration": 1.2333333492279053,
+     "channels": 240
+    }
+   ]
+  }
+ },
+ "aarush": {
+  "status": "approved",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "Fort research room, face and full body: white shirt with green leaf print and chain, dark hair, warm skin tone; hair cards shade with the scalp."
+  },
+  "role": "Aarush Shetty · research fellow at Fort",
+  "height": 1.76,
+  "asset": {
+   "id": "cast-aarush",
+   "url": "/models/characters/aarush-e51e898790e9e808.glb",
+   "sha256": "e51e898790e9e8081a68c3ef4a65bc6a0a13ba60380724bb0ad5e8fe8de57784",
+   "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_01",
+   "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+   "license": "MIT"
+  },
+  "inspection": {
+   "triangles": 7440,
+   "primitives": 1,
+   "joints": [
+    80
+   ],
+   "textures": [
+    {
+     "width": 1664,
+     "height": 1248,
+     "mimeType": "image/png"
+    }
+   ],
+   "clips": [
+    {
+     "name": "Idle",
+     "duration": 11.699999809265137,
+     "channels": 240
+    },
+    {
+     "name": "Walk",
+     "duration": 1.2333333492279053,
+     "channels": 240
+    }
+   ]
+  }
+ },
+ "pavit": {
+  "status": "approved",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "BKC arrival pavement, face and full body: black ribbed polo with chain, dark textured hair and a short beard, blue shorts from the base body."
+  },
+  "role": "Pavit Singh · systems engineer at BKC",
+  "height": 1.78,
+  "asset": {
+   "id": "cast-pavit",
+   "url": "/models/characters/pavit-0b1c0cbdda50b688.glb",
+   "sha256": "0b1c0cbdda50b6880ce086783c8bc5f4a54110f92decdea5e99ac45f5a8cae40",
+   "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_01",
+   "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+   "license": "MIT"
+  },
+  "inspection": {
+   "triangles": 7440,
+   "primitives": 1,
+   "joints": [
+    80
+   ],
+   "textures": [
+    {
+     "width": 1664,
+     "height": 1248,
+     "mimeType": "image/png"
+    }
+   ],
+   "clips": [
+    {
+     "name": "Idle",
+     "duration": 11.699999809265137,
+     "channels": 240
+    },
+    {
+     "name": "Walk",
+     "duration": 1.2333333492279053,
+     "channels": 240
+    }
+   ]
+  }
+ },
+ "anuj": {
+  "status": "approved",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "Andheri bazaar pavement, clear of the stalls: curly dark hair, dark glasses, short full beard, blue tee and grey trousers."
+  },
+  "role": "Anuj Deshpande · stack guide at Andheri",
+  "height": 1.74,
+  "asset": {
+   "id": "cast-anuj",
+   "url": "/models/characters/anuj-8ffaa52e48271fa2.glb",
+   "sha256": "8ffaa52e48271fa2309b6492780120ce4395b94b730c3882e100239f709f9bfe",
+   "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_16",
+   "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+   "license": "MIT"
+  },
+  "inspection": {
+   "triangles": 7444,
+   "primitives": 1,
+   "joints": [
+    80
+   ],
+   "textures": [
+    {
+     "width": 2048,
+     "height": 1024,
+     "mimeType": "image/jpeg"
+    }
+   ],
+   "clips": [
+    {
+     "name": "Idle",
+     "duration": 11.699999809265137,
+     "channels": 240
+    },
+    {
+     "name": "Walk",
+     "duration": 1.2333333492279053,
+     "channels": 240
+    }
+   ]
+  }
+ },
+ "arham": {
+  "status": "approved",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "Powai pavement, face and full body: side-swept hair, round-square glasses, moustache and goatee, purple tee, black track pants with a grey stripe."
+  },
+  "role": "Arham Jain · demo lead at Powai",
+  "height": 1.72,
+  "asset": {
+   "id": "cast-arham",
+   "url": "/models/characters/arham-4d0a961d4f983c1c.glb",
+   "sha256": "4d0a961d4f983c1c9bf4723ec35d6f64139a0dc147d982a4c4d7832dbd39de2c",
+   "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_09",
+   "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+   "license": "MIT"
+  },
+  "inspection": {
+   "triangles": 7806,
+   "primitives": 1,
+   "joints": [
+    80
+   ],
+   "textures": [
+    {
+     "width": 1664,
+     "height": 1248,
+     "mimeType": "image/png"
+    }
+   ],
+   "clips": [
+    {
+     "name": "Idle",
+     "duration": 11.699999809265137,
+     "channels": 240
+    },
+    {
+     "name": "Walk",
+     "duration": 1.2333333492279053,
+     "channels": 240
+    }
+   ]
+  }
+ },
+ "ranjan": {
+  "status": "approved",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "Dadar platform pavement, face and full body: white brush-print shirt over shorts, reading glasses hooked on the placket, orange thread on the wrist, light stubble."
+  },
+  "role": "Ranjan Jha · timeline keeper at Dadar",
+  "height": 1.7,
+  "asset": {
+   "id": "cast-ranjan",
+   "url": "/models/characters/ranjan-f352199c1359b040.glb",
+   "sha256": "f352199c1359b040c7cc59e60dd64822befc5aa3beec81620c78d51b0cc8dc96",
+   "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_01",
+   "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+   "license": "MIT"
+  },
+  "inspection": {
+   "triangles": 7440,
+   "primitives": 1,
+   "joints": [
+    80
+   ],
+   "textures": [
+    {
+     "width": 1664,
+     "height": 1248,
+     "mimeType": "image/png"
+    }
+   ],
+   "clips": [
+    {
+     "name": "Idle",
+     "duration": 11.699999809265137,
+     "channels": 240
+    },
+    {
+     "name": "Walk",
+     "duration": 1.2333333492279053,
+     "channels": 240
+    }
+   ]
+  }
+ },
+ "rina": {
+  "status": "approved",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "Worli sea face, face and full body: dark wavy shoulder-length hair, red top with ruffle, blue jeans; female Talk clip loops cleanly."
+  },
+  "role": "Rina Jha · host of the Worli proof deck",
+  "height": 1.6,
+  "asset": {
+   "id": "cast-rina",
+   "url": "/models/characters/rina-63af3800a1009bec.glb",
+   "sha256": "63af3800a1009becb59c52f2a0a394bd81398434389fbf7ff82faa267ad87bd9",
+   "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Female_Adult_05",
+   "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+   "license": "MIT"
+  },
+  "inspection": {
+   "triangles": 8288,
+   "primitives": 1,
+   "joints": [
+    80
+   ],
+   "textures": [
+    {
+     "width": 1664,
+     "height": 1248,
+     "mimeType": "image/png"
+    }
+   ],
+   "clips": [
+    {
+     "name": "Idle",
+     "duration": 12.033333778381348,
+     "channels": 240
+    },
+    {
+     "name": "Walk",
+     "duration": 1.2333333492279053,
+     "channels": 240
+    }
+   ]
+  }
+ },
+ "abhinav": {
+  "status": "approved",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "Worli sea face, face and full body: generic young-teen face (no likeness by design), short dark hair, rust-orange POWER UP IN PROGRESS tee, dark jeans."
+  },
+  "role": "Abhinav Jha · achievements runner at Worli",
+  "height": 1.52,
+  "asset": {
+   "id": "cast-abhinav",
+   "url": "/models/characters/abhinav-944d0856cdcf79be.glb",
+   "sha256": "944d0856cdcf79be30462d6c10fd6a122ab2c1882f46f3e824dd013521f5aecc",
+   "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Children/Male_Child_01",
+   "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
+   "license": "MIT"
+  },
+  "inspection": {
+   "triangles": 6660,
+   "primitives": 1,
+   "joints": [
+    80
+   ],
+   "textures": [
+    {
+     "width": 2048,
+     "height": 1024,
+     "mimeType": "image/jpeg"
+    }
+   ],
+   "clips": [
+    {
+     "name": "Idle",
+     "duration": 11.699999809265137,
+     "channels": 240
+    },
+    {
+     "name": "Walk",
+     "duration": 1.2333333492279053,
+     "channels": 240
+    }
+   ]
+  }
  }
 };

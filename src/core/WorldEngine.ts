@@ -21,6 +21,8 @@ import { CityDistricts } from '../game/World/districts/CityDistricts';
 import { setCityDensity } from '../game/World/districts/District';
 import { createFortRoadTraffic, FORT_LOOP_LANE } from '../game/World/districts/FortRoadTraffic';
 import { DistrictCast, districtCast, setDistrictCast } from '../game/World/districts/DistrictCast';
+import { setFriendSource } from '../game/World/npc/FriendSlot';
+import type { GLBAssetLibrary } from '../game/World/assets/GLBAssetLibrary';
 import { VEHICLE_HIDDEN, type LaneTraffic } from '../game/World/districts/DistrictSystems';
 import { districts as directory } from '../data/city';
 import { pickTarget } from '../game/World/interactionTargeting';
@@ -61,6 +63,7 @@ export class WorldEngine {
   private physics = new CANNON.World({ gravity: new CANNON.Vec3(0, -19, 0) });
   private visitor: CANNON.Body;
   private street: MumbaiStreet;
+  private friendLibrary: GLBAssetLibrary | null = null;
   private city!: CityDistricts; private fortTraffic!: LaneTraffic;
   /** Index into cityZones of the district being drawn; 0 is CST–Fort. */
   private zone = 0;
@@ -139,6 +142,8 @@ export class WorldEngine {
     // The same licensed people walk every district: one shared set of rigs, borrowing the street's uploaded textures.
     void this.street.sharedAssetLibrary().then(library=>DistrictCast.load(library,characterCast)).then(cast=>{if(this.disposed){cast.dispose();return;}setDistrictCast(cast);this.city.adoptCast(cast);this.fortTraffic.adopt(cast);refresh();}).catch(error=>console.warn('District cast unavailable; procedural figures retained',error));
     void this.street.installDrivers(characterCast,[this.taxi,this.auto],castPreview).then(refresh).catch(error=>console.warn('Drivers unavailable; original drivers retained',error));
+    // Harsh's friends in the districts each load their own character, from a library of their own so the shared one stays within its asset cap.
+    void import('../game/World/assets/GLBAssetLibrary').then(({GLBAssetLibrary})=>{if(this.disposed)return;this.friendLibrary=new GLBAssetLibrary(window.location.origin,8*1024*1024,8);setFriendSource({library:this.friendLibrary,cast:characterCast,preview:castPreview,loaded:refresh});});
     if(stationCharacter&&(stationCharacter.status==='approved'&&stationCharacter.visualReview||preview==='idle'||preview==='walk'))void this.street.installStationCharacter(stationCharacter.asset,preview==='walk').then(refresh).catch(error=>console.warn('Character admission failed; existing host retained',error));
     this.visitor = createVisitor(STREET_SPAWN.x, STREET_SPAWN.z);
     this.physics.addBody(this.visitor);
@@ -604,7 +609,7 @@ export class WorldEngine {
     window.removeEventListener('street-review-view',this.reviewView);window.removeEventListener('keydown', this.keyDown); window.removeEventListener('keyup', this.keyUp); window.removeEventListener('blur', this.releaseInput);
     document.removeEventListener('visibilitychange', this.visibilityChanged); document.removeEventListener('pointerlockchange', this.lockChanged);
     const canvas = this.renderer.domElement; canvas.removeEventListener('pointerdown', this.pointerDown); window.removeEventListener('pointermove', this.pointerMove); window.removeEventListener('pointerup', this.pointerUp); canvas.removeEventListener('pointercancel', this.pointerUp); canvas.removeEventListener('webglcontextlost', this.contextLost);
-    window.removeEventListener('street-benchmark',this.benchmarkCommand);this.profiler?.dispose();this.city.dispose();districtCast()?.dispose();setDistrictCast(null);this.street.dispose();this.fortTraffic.group.traverse(o=>{const m=o as THREE.Mesh;if(!m.isMesh)return;for(const g of new Set([m.geometry,...((m.userData.lodGeometries??[]) as THREE.BufferGeometry[])]))g.dispose();});this.rendering.dispose();this.environmentTarget.dispose();
+    setFriendSource(null);void this.friendLibrary?.dispose();window.removeEventListener('street-benchmark',this.benchmarkCommand);this.profiler?.dispose();this.city.dispose();districtCast()?.dispose();setDistrictCast(null);this.street.dispose();this.fortTraffic.group.traverse(o=>{const m=o as THREE.Mesh;if(!m.isMesh)return;for(const g of new Set([m.geometry,...((m.userData.lodGeometries??[]) as THREE.BufferGeometry[])]))g.dispose();});this.rendering.dispose();this.environmentTarget.dispose();
     const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>(), skeletons = new Set<THREE.Skeleton>();
     this.scene.traverse(object => { const mesh = object as THREE.SkinnedMesh; if (mesh.isSkinnedMesh) skeletons.add(mesh.skeleton); if (mesh.geometry) geometries.add(mesh.geometry); for(const g of (mesh.userData.lodGeometries??[]) as THREE.BufferGeometry[]) geometries.add(g); if (mesh.material) for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) { materials.add(m); for(const key of ['map','bumpMap','roughnessMap','normalMap'] as const)if((m as THREE.MeshStandardMaterial)[key])textures.add((m as THREE.MeshStandardMaterial)[key]!); } });
     skeletons.forEach(s => s.dispose()); geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); textures.forEach(t => t.dispose()); this.renderer.dispose(); canvas.remove(); this.debug?.remove();

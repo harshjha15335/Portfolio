@@ -32,6 +32,11 @@ for c in cast['characters']:
     clips = {k: fetch(v['file'], v['sha256']) for k, v in c['clips'].items()}
     atlas = json.loads(subprocess.check_output([sys.executable, '-I', os.path.join(HERE, 'rocketbox_atlas.py'), textures, work, c['id'], c['textureCode'], str(c['atlas']), '1' if c['normalMap'] else '0', str(c['skinToneShift'])]))
     cfg = dict(name=c['id'], avatar=fbx, out=os.path.join(work, f"{c['id']}.raw.glb"), lod_ratio=.3, clips=clips, trim=c['trim'], **atlas)
+    if c.get('likeness'): cfg['radialHair'] = True
+    if c.get('glasses'):
+        # The frame samples the swatch likeness.py paints in the head map's corner (head half of the atlas, above any hair strip).
+        sys.path.insert(0, HERE); from likeness import GLASSES_UV
+        u, v = GLASSES_UV; cfg['glasses'] = dict(c['glasses'], uv=[.5 + u * .5, (v + .5) / 1.5 if atlas.get('hair') else v])
     cfg_path = os.path.join(work, f"{c['id']}.json"); json.dump(cfg, open(cfg_path, 'w'))
     subprocess.check_call([sys.executable, '-I', os.path.join(HERE, 'rocketbox_to_glb.py'), cfg_path])
     resampled = os.path.join(work, f"{c['id']}.resampled.glb")

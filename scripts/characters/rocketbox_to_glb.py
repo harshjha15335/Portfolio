@@ -10,6 +10,9 @@ for o in list(bpy.data.objects):
     if o not in (arm,mesh): bpy.data.objects.remove(o,do_unlink=True)
 for a in list(bpy.data.actions): bpy.data.actions.remove(a)
 arm.name='Rig'; mesh.name=cfg['name']
+# Rocketbox children are rigged as 'Bip02'; name their bones like the adults' so the adult clips and runtime lookups match.
+for b in arm.data.bones:
+    if b.name.startswith('Bip02'): b.name='Bip01'+b.name[5:]
 bone_names={b.name for b in arm.data.bones}
 # --- clips: retarget through parent-relative rest matrices (source and avatar rests differ)
 from mathutils import Matrix
@@ -71,6 +74,13 @@ me=mesh.data; uv=me.uv_layers.active.data
 mat_kind=[]
 for m in me.materials:
     n=m.name.lower(); mat_kind.append('opacity' if 'opacity' in n else 'head' if 'head' in n else 'body')
+# Eyes, found by their UVs in the head map's eyeball island (lower left), for glasses placed later.
+eye_verts=set(); head_verts=set()
+for p in me.polygons:
+    if mat_kind[p.material_index]!='head': continue
+    for li in p.loop_indices:
+        u,v=uv[li].uv; head_verts.add(me.loops[li].vertex_index)
+        if .17<u<.36 and .0<v<.2: eye_verts.add(me.loops[li].vertex_index)
 hair=bool(cfg.get('hair'))
 top=(lambda v:(v+.5)/1.5) if hair else (lambda v:v)
 for p in me.polygons:
@@ -80,6 +90,16 @@ for p in me.polygons:
         if kind=='body': uv[li].uv=(u*.5,top(v))
         elif kind=='head': uv[li].uv=(.5+u*.5,top(v))
         else: uv[li].uv=(.5+u*.25,v/3)
+# Hair cards shade like the scalp beneath them: normals point out from the head's centre rather than across each
+# card, which otherwise catches the low sun as bright stripes. Opt-in (cast.json "radialHair") so older builds are unchanged.
+if hair and cfg.get('radialHair') and head_verts:
+    from mathutils import Vector
+    hc=sum((me.vertices[i].co for i in head_verts),Vector())/len(head_verts)
+    normals=[Vector(n.vector) for n in me.corner_normals]
+    for p in me.polygons:
+        if mat_kind[p.material_index]!='opacity': continue
+        for li in p.loop_indices: normals[li]=(me.vertices[me.loops[li].vertex_index].co-hc).normalized()
+    me.normals_split_custom_set(normals); print('radial hair normals set')
 def material(name,color,normal=None,alpha=False):
     m=bpy.data.materials.new(name); m.use_nodes=True; nt=m.node_tree; bsdf=nt.nodes['Principled BSDF']
     t=nt.nodes.new('ShaderNodeTexImage'); t.image=bpy.data.images.load(color); nt.links.new(t.outputs['Color'],bsdf.inputs['Base Color'])
@@ -93,6 +113,54 @@ skin=material(cfg['name']+('_hair' if hair else '_atlas'),cfg['atlas'],cfg.get('
 idx=[0 for p in me.polygons]
 me.materials.clear(); me.materials.append(skin)
 for p,i in zip(me.polygons,idx): p.material_index=i
+# --- glasses: a dark frame built around the eyes, skinned to the head bone, sampling a solid swatch in the atlas
+if cfg.get('glasses'):
+    import bmesh
+    from mathutils import Vector
+    g=cfg['glasses']; P=[me.vertices[i].co.copy() for i in eye_verts]
+    ext=[max(v.co[k] for v in me.vertices)-min(v.co[k] for v in me.vertices) for k in range(3)]; up_i=ext.index(max(ext))
+    var=[sum((p[k]-sum(q[k] for q in P)/len(P))**2 for p in P) for k in range(3)]; ax=var.index(max(var))
+    mid=sorted(p[ax] for p in P)[len(P)//2]
+    L=[p for p in P if p[ax]<mid]; R=[p for p in P if p[ax]>=mid]
+    eL=sum(L,Vector())/len(L); eR=sum(R,Vector())/len(R); unit=(eR-eL).length/.064
+    up=Vector([1 if k==up_i else 0 for k in range(3)]); right=(eR-eL).normalized(); fwd=up.cross(right).normalized()
+    hc=sum((me.vertices[i].co for i in head_verts),Vector())/len(head_verts); eyes=(eL+eR)/2
+    if (eyes-hc).dot(fwd)<0: fwd=-fwd
+    up=right.cross(fwd).normalized() if right.cross(fwd).dot(up)>0 else -right.cross(fwd).normalized()
+    bm=bmesh.new(); t=g.get('thick',.0045)*unit; dep=.004*unit
+    def tube(points,closed):
+        rings=[]
+        for i,c in enumerate(points):
+            a=points[i-1] if (closed or i>0) else points[i]; b=points[(i+1)%len(points)] if (closed or i<len(points)-1) else points[i]
+            tan=(b-a).normalized(); side=tan.cross(fwd).normalized() if abs(tan.dot(fwd))<.9 else tan.cross(up).normalized(); nrm=tan.cross(side).normalized()
+            rings.append([bm.verts.new(c+side*sx*t/2+nrm*sy*dep/2) for sx,sy in ((1,1),(-1,1),(-1,-1),(1,-1))])
+        for i in range(len(rings)-(0 if closed else 1)):
+            r0,r1=rings[i],rings[(i+1)%len(rings)]
+            for k in range(4): bm.faces.new((r0[k],r0[(k+1)%4],r1[(k+1)%4],r1[k]))
+        if not closed:
+            for r in (rings[0],rings[-1]): bm.faces.new(r)
+    w,h,rad=g['w']*unit,g['h']*unit,g.get('radius',.008)*unit; front=eyes+fwd*g.get('front',.021)*unit+up*g.get('lift',.002)*unit
+    corners=[]
+    for side in (-1,1):
+        c=front+right*side*.032*unit; pts=[]
+        for q in range(4):
+            cx,cy=((1,1),(-1,1),(-1,-1),(1,-1))[q]; base=c+right*cx*(w/2-rad)+up*cy*(h/2-rad); a0=[0,90,180,270][q]
+            for j in range(5):
+                a=math.radians(a0+j*22.5); pts.append(base+right*math.cos(a)*rad+up*math.sin(a)*rad)
+        tube(pts,True); corners.append(c)
+    # Bridge between the rims, and temples running back over the ears.
+    tube([corners[0]+right*w/2+up*h*.22,front+up*h*.3,corners[1]-right*w/2+up*h*.22],False)
+    for side,c in ((-1,corners[0]),(1,corners[1])):
+        o=c+right*side*w/2+up*h*.25
+        tube([o,o+right*side*.012*unit-fwd*.02*unit,o+right*side*.016*unit-fwd*.1*unit-up*.012*unit],False)
+    new=list(bm.verts); tmp=bpy.data.meshes.new('glasses'); bm.to_mesh(tmp); bm.free()
+    gobj=bpy.data.objects.new('glasses',tmp); bpy.context.scene.collection.objects.link(gobj); gobj.matrix_world=mesh.matrix_world.copy()
+    tmp.uv_layers.new(name=me.uv_layers.active.name)
+    for loop in tmp.uv_layers[0].data: loop.uv=g['uv']
+    vg=gobj.vertex_groups.new(name='Bip01 Head'); vg.add(list(range(len(tmp.vertices))),1.0,'REPLACE')
+    gobj.data.materials.append(skin)
+    bpy.ops.object.select_all(action='DESELECT'); gobj.select_set(True); mesh.select_set(True); bpy.context.view_layer.objects.active=mesh
+    bpy.ops.object.join(); print('glasses joined, units per metre',round(unit,4))
 # --- LOD: decimated duplicate bound to the same rig
 if cfg.get('lod_ratio'):
     lod=mesh.copy(); lod.data=mesh.data.copy(); lod.name=cfg['name']+'_LOD1'; bpy.context.scene.collection.objects.link(lod)

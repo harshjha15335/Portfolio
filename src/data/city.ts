@@ -4,7 +4,7 @@ export interface District {
   position: [number, number, number]; color: string; guide: string; greeting: string;
 }
 export const districts: District[] = [
-  { id: 'cst', title: 'CST Arrival Terminus', shortName: 'CST', descriptor: 'Start here · meet the builder', position: [0, 0, 0], color: '#d56a42', guide: 'The station host', greeting: 'Welcome aboard. Nine stops, one engineer. Pick a direction or catch a ride.' },
+  { id: 'cst', title: 'CST Arrival Terminus', shortName: 'CST', descriptor: 'Start here · meet the builder', position: [0, 0, 0], color: '#d56a42', guide: 'Harsh Jha', greeting: 'Hi, I’m Harsh. Welcome to my Mumbai: nine stops, one engineer. Walk up Fort Road to the research room, where Aarush will show you around, or catch a taxi to BKC, Powai and the rest.' },
   { id: 'fort', title: 'Fort Research Institute', shortName: 'Fort', descriptor: 'GSoC · FFprime · scientific computing', position: [-25, 0, -25], color: '#327b79', guide: 'The research fellow', greeting: 'The equations are serious. The city is playful. Come see the reviewed work behind FFprime.' },
   { id: 'bkc', title: 'BKC Systems Office', shortName: 'BKC', descriptor: 'CCIEeXpert · enterprise engineering', position: [35, 0, 0], color: '#537b9a', guide: 'The systems engineer', greeting: 'Real APIs, real constraints. This stop is about making enterprise security tools work.' },
   { id: 'andheri', title: 'Andheri Tech Bazaar', shortName: 'Andheri', descriptor: 'Skills with receipts, not progress bars', position: [-35, 0, 0], color: '#c57832', guide: 'The bazaar curator', greeting: 'Every skill has a story. Pick one and I’ll point you to the work that uses it.' },
