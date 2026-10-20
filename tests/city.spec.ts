@@ -11,11 +11,12 @@ for (const kind of ['TAXI', 'AUTO']) {
     await expect(page.locator('.loader')).toHaveCount(0);
     await page.getByRole('button', { name: `HAIL ${kind}` }).click();
     const meter = page.getByRole('region', { name: 'Portfolio Meter' });
-    await expect(meter).toContainText(kind === 'TAXI' ? 'KAALI-PEELI' : 'AUTO RICKSHAW');
+    await expect(meter).toContainText(kind === 'TAXI' ? /kaali-peeli/i : /auto rickshaw/i);
     await expect(page.getByLabel('Ride destination')).toBeVisible({ timeout: 300_000 });
-    const initial = await page.getByTestId('ride-fare').textContent();
+    await expect(page.getByTestId('ride-fare')).toHaveText(kind === 'TAXI' ? '₹28.00' : '₹23.00');
     await page.getByLabel('Ride destination').selectOption(kind === 'TAXI' ? 'fort' : 'cst');
-    await expect.poll(() => page.getByTestId('ride-fare').textContent()).not.toBe(initial);
+    // The base fare covers the first 1.5 km, so the meter shows the ride by its distance first.
+    await expect.poll(() => page.getByTestId('ride-distance').textContent(), { timeout: 120_000 }).not.toBe('0.0 km');
     if (kind === 'TAXI') await page.getByRole('button', { name: 'SKIP TO ARRIVAL' }).click();
     // The auto drives the whole way (round the street's U-turns); the taxi skips.
     await expect(meter.getByRole('status')).toContainText('Arrived', { timeout: kind === 'TAXI' ? 30_000 : 420_000 });
@@ -154,7 +155,7 @@ test('a moving ride can be exited and the next vehicle can be boarded', async ({
   await page.getByRole('button', { name: 'HAIL TAXI' }).click();
   await expect(page.getByLabel('Ride destination')).toBeVisible({ timeout: 300_000 });
   await page.getByLabel('Ride destination').selectOption('fort');
-  await expect.poll(() => page.getByTestId('ride-fare').textContent()).not.toBe('₹28.00');
+  await expect.poll(() => page.getByTestId('ride-distance').textContent(), { timeout: 120_000 }).not.toBe('0.0 km');
   await page.getByRole('button', { name: 'Exit ride', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Portfolio Meter' })).toHaveCount(0);
   await page.getByRole('button', { name: 'HAIL AUTO' }).click();

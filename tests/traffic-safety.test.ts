@@ -180,8 +180,8 @@ describe('Fort Road with the passenger ride', () => {
       for (let i = 0; i < 30 * 240; i++) {
         const event = w.step(1 / 30, visitor, view);
         if (w.cab.stage === 'waiting' && !departed) { departed = true; w.cab.depart(cityRideLegs({ x: w.cab.pose.x, z: w.cab.pose.z }, destination), 1000); }
-        // Fare distance only grows, and only by the cut's virtual distance at the cut.
-        if (w.cab.stage === 'riding') { const jump = w.cab.driven - last; expect(jump).toBeGreaterThanOrEqual(0); expect(jump).toBeLessThan(event === 'cut' ? 1000.5 : .5); last = w.cab.driven; }
+        // Fare distance only grows, smoothly (the cut's virtual distance is released on the arrival road: tests/fare-meter.test.ts).
+        if (w.cab.stage === 'riding') { const jump = w.cab.chargeable - last; expect(jump).toBeGreaterThanOrEqual(0); expect(jump).toBeLessThan(.5); last = w.cab.chargeable; }
         if (event === 'cut') { cut = true; break; }
         const r = worst(w.space); if (r.min < min) { min = r.min; pair = r.pair; }
         if (w.cab.stage === 'arrived') break;

@@ -10,7 +10,9 @@ import * as CANNON from 'cannon-es';
 import { createVisitor } from '../game/World/WalkingBody';
 import { MumbaiStreet } from '../game/World/MumbaiStreet';
 import { createTransitModel, animateTransit } from '../game/World/TransitModel';
-import { idleRide, storyFare, type Point, type RideStatus, type TransitKind } from '../game/World/transit';
+import { idleRide, type Point, type RideStatus, type TransitKind } from '../game/World/transit';
+import { CITY_METRES_PER_MAP_UNIT, CITY_METRES_PER_WORLD_METRE, DEMO_FARES, FareMeter } from '../game/World/meter/FareMeter';
+import type { PhysicalMeter } from '../game/World/meter/MeterModel';
 import { DISTRICT_JUNCTIONS, FORT_JUNCTIONS, PassengerRide, kerbRoom } from '../game/World/traffic/PassengerRide';
 import { JunctionReservations, TrafficSpace, onCarriageway, type ViewCone } from '../game/World/traffic/TrafficSafety';
 import { preloadCityVehicleModels } from '../game/World/districts/CityVehicleModels';
@@ -64,7 +66,7 @@ export class WorldEngine {
   private zone = 0;
   private sky!: THREE.Mesh;
   /** The hailed or boarded cab: a collision-safe vehicle in the traffic (see PassengerRide). */
-  private cab = new PassengerRide();
+  private cab = Object.assign(new PassengerRide(), { distanceScale: CITY_METRES_PER_WORLD_METRE });
   /** The current district's road this frame: every vehicle, the cab, the visitor and people on the carriageway (local). */
   private traffic = new TrafficSpace();
   /** U-turn areas the cab shares with the traffic, per district (index as cityZones). */
@@ -97,6 +99,8 @@ export class WorldEngine {
   private tween: { from: TourView; to: TourView; start: number; duration: number } | null = null;
   private looked = 0;
   private ride = idleRide(); private queuedDestination: string | null = null;
+  /** The boarded cab's fare meter: it powers on when a cab is hailed, is hired when a destination is chosen, and is the only source of the ride's fare. */
+  private meter = new FareMeter(DEMO_FARES.taxi);
   private transit = new THREE.Group(); private taxi = createTransitModel('taxi','close'); private auto = createTransitModel('auto','close');
   private lastRenderPosition=new THREE.Vector3(Infinity,Infinity,Infinity);
   private lastRenderRotation=new THREE.Quaternion();
@@ -262,7 +266,8 @@ export class WorldEngine {
   setMove(key: string, down: boolean) { if (down) this.touchKeys.add(key); else this.touchKeys.delete(key); }
   board(kind: TransitKind) {
     this.cancelArrival(); this.endRide(); this.releaseInput(); this.visitor.velocity.setZero(); this.rideYaw = 0; this.ridePitch = 0;
-    this.ride = { ...idleRide(), phase: this.reducedMotion ? 'boarding' : 'hailing', kind, fare: this.reducedMotion ? storyFare(kind, 0) : 0 };
+    this.meter.apply('cancel'); this.meter.apply('reset'); this.meter.apply('power-off'); this.meter.setPolicy(DEMO_FARES[kind]); this.meter.apply('power-on');
+    this.ride = { ...idleRide(), phase: this.reducedMotion ? 'boarding' : 'hailing', kind }; this.readMeter();
     this.taxi.visible = kind === 'taxi'; this.auto.visible = kind === 'auto'; this.queuedDestination = null;
     // The cab comes up the lane with the traffic, from out of sight where it can, and pulls in at a free kerb spot.
     const routes = pickupRoutes({ x: this.visitor.position.x, z: this.visitor.position.z }, (x, z) => this.kerbClear(x, z, kind));
@@ -284,7 +289,7 @@ export class WorldEngine {
     this.cab.depart(cityRideLegs({ x: this.cab.pose.x, z: this.cab.pose.z }, id), this.hopDistance(id));
     // Build the destination district now, while the cab is still pulling away.
     this.city.prepare(zoneIndexAt(streetStops[id].x));
-    this.ride = { ...this.ride, phase: 'riding', destination: id, elapsed: 0, distance: 0, progress: 0 };
+    this.meter.apply('hire'); this.ride = { ...this.ride, phase: 'riding', destination: id, elapsed: 0, progress: 0 }; this.readMeter();
     if (this.reducedMotion) this.skipRide(); else this.options.onRide({ ...this.ride });
   }
   skipRide() {
@@ -299,7 +304,7 @@ export class WorldEngine {
     const from = cityZones[zoneIndexAt(this.transit.position.x)].id, to = cityZones[zoneIndexAt(streetStops[id]?.x ?? 0)].id;
     if (from === to) return 0;
     const a = directory.find(d => d.id === from)?.position ?? [0, 0, 0], b = directory.find(d => d.id === to)?.position ?? [0, 0, 0];
-    return Math.round(Math.hypot(a[0] - b[0], a[2] - b[2]) * 8);
+    return Math.round(Math.hypot(a[0] - b[0], a[2] - b[2]) * CITY_METRES_PER_MAP_UNIT);
   }
   /** Draw and simulate only the district that contains x. */
   private syncZone(x: number) {
@@ -347,12 +352,13 @@ export class WorldEngine {
   private finishRide() {
     if (!streetStops[this.ride.destination ?? '']) return;
     this.syncZone(this.cab.pose.x);
-    this.ride = { ...this.ride, phase: 'arrived', distance: this.cab.driven, fare: storyFare(this.ride.kind, this.cab.driven), progress: 1 }; this.options.onRide({ ...this.ride });
+    this.meter.tick(0, this.cab.chargeable, 0); this.meter.apply('complete'); this.ride = { ...this.ride, phase: 'arrived', progress: 1 }; this.readMeter(); this.options.onRide({ ...this.ride });
   }
   endRide() {
     if (this.ride.phase === 'idle') return;
     const destination = this.ride.destination && streetStops[this.ride.destination];
     const phase = this.ride.phase, wasPlaced = this.cab.active;
+    this.meter.apply('cancel'); this.meter.apply('reset'); this.meter.apply('power-off'); this.showMeter();
     this.ride = idleRide(); this.transit.visible = false;
     if (phase === 'arrived' && destination) this.placeVisitor(destination.x, destination.z, destination.yaw);
     else if (phase !== 'hailing' && wasPlaced) { const ox = cityZones[zoneIndexAt(this.cab.pose.x)].originX; this.placeVisitor(ox + (this.cab.pose.x - ox < 0 ? -4.9 : 4.9), this.cab.pose.z, this.cab.pose.yaw); }
@@ -365,6 +371,9 @@ export class WorldEngine {
     this.transit.rotation.z = this.reducedMotion || this.ride.phase !== 'riding' ? 0 : Math.sin(this.ride.elapsed * 9) * .0018 * Math.min(1, this.cab.speed) + THREE.MathUtils.clamp(turn * 8, -.3, .3) * .025;
   }
   private cabTravelled = 0;
+  /** Copy the meter's readings into the ride status and onto the boarded cab's physical meter. */
+  private readMeter() { const r = this.meter.reading; this.ride.fare = r.fare; this.ride.distance = r.distance; this.ride.waiting = r.waiting; this.ride.meter = r.state; this.showMeter(); }
+  private showMeter() { for (const model of [this.taxi, this.auto]) (model.userData.meter as PhysicalMeter | undefined)?.show(model === (this.ride.kind === 'auto' ? this.auto : this.taxi) ? this.meter.reading : { ...this.meter.reading, state: 'OFF' }); }
   private updateRide(delta: number) {
     const before = this.cab.pose.yaw, zone = zoneIndexAt(this.cab.active ? this.cab.pose.x : this.visitor.position.x), ox = cityZones[zone].originX;
     if (zone !== this.zone) return;
@@ -381,10 +390,12 @@ export class WorldEngine {
     this.placeTransit(turn); animateTransit(this.ride.kind === 'taxi' ? this.taxi : this.auto, this.cabTravelled, turn * 8);
     if (this.ride.phase === 'riding') {
       this.ride.elapsed += delta; this.street.updateDrivers(this.reducedMotion ? 0 : delta, turn * 8);
-      this.ride.distance = this.cab.driven; this.ride.fare = storyFare(this.ride.kind, this.ride.distance); this.ride.progress = this.cab.tripLength ? Math.min(1, this.ride.distance / this.cab.tripLength) : 1;
+      // Waiting is not charged while the road ahead is still being built (the cut's district not ready).
+      this.meter.tick(delta, this.cab.chargeable, this.cab.speed, !this.city.isReady(this.zone) && this.zone !== 0); this.readMeter();
+      this.ride.progress = this.cab.tripLength ? Math.min(1, this.cab.chargeable / this.cab.tripLength) : 1;
     }
     if (event === 'pulled-up') {
-      this.ride = { ...this.ride, phase: 'boarding', fare: storyFare(this.ride.kind, 0) }; this.options.onRide({ ...this.ride });
+      this.ride = { ...this.ride, phase: 'boarding' }; this.readMeter(); this.options.onRide({ ...this.ride });
       if (this.queuedDestination) { const id = this.queuedDestination; this.queuedDestination = null; this.rideTo(id); }
     }
     if (event === 'arrived') this.finishRide();

@@ -63,10 +63,12 @@ export class PassengerRide {
   private candidates: RoutePath[] = []; private dispatchFor = 0;
   /** Where the cab is (world) and which way it faces. */
   readonly pose: PathPose = { x: 0, z: 0, yaw: 0 };
-  /** Distance (m) driven on the trip legs so far, plus the virtual distance of a cut between districts. */
+  /** Distance (m) driven on the trip legs so far (the road actually covered, without the cut between districts). */
   driven = 0;
-  /** Virtual distance (m) a cross-district cut adds; set by the caller. */
+  /** Virtual distance (m) the cut between districts stands for; set by the caller. */
   hop = 0;
+  /** City metres each metre driven stands for in the chargeable distance (the streets are a miniature). */
+  distanceScale = 1;
   /** Seconds the ride has stood still while riding (waiting in traffic or at the zebra). */
   waited = 0;
   constructor() {
@@ -75,7 +77,17 @@ export class PassengerRide {
   get speed() { return this.driver.speed; }
   get active() { return this.stage !== 'idle' && this.stage !== 'dispatching'; }
   /** Total chargeable length of the current trip (legs plus the cut). */
-  get tripLength() { return this.stage === 'riding' || this.stage === 'arrived' ? this.legs.reduce((t, l) => t + l.length, 0) + this.hop : 0; }
+  get tripLength() { return this.stage === 'riding' || this.stage === 'arrived' ? this.legs.reduce((t, l) => t + l.length, 0) * this.distanceScale + this.hop : 0; }
+  /**
+   * Chargeable distance so far: the road driven, plus the cut's virtual distance released in step with progress
+   * along the arrival road, so the meter never jumps at the cut and reaches the whole trip on arrival.
+   */
+  get chargeable() {
+    const road = this.driven * this.distanceScale;
+    if (this.stage === 'arrived') return road + this.hop;
+    if (this.stage !== 'riding' || this.leg === 0) return road;
+    const arrival = this.legs[this.leg].length; return road + this.hop * (arrival > 0 ? Math.min(1, this.s / arrival) : 1);
+  }
   get path() { return this.legs[this.leg]; }
   /** Distance (m) left to the end of the current leg. */
   get remaining() { return this.legs[this.leg] ? this.legs[this.leg].length - this.s : 0; }
@@ -91,7 +103,7 @@ export class PassengerRide {
   /** Leave for a destination along `legs`, adding `hop` metres of virtual distance at the cut. */
   depart(legs: Point[][], hop: number) { this.legs = legs.map(l => new RoutePath(l)); this.leg = 0; this.s = 0; this.driven = 0; this.hop = hop; this.waited = 0; this.stage = 'riding'; this.place(); }
   /** Jump to the end of the trip (skip). */
-  finish() { if (this.stage !== 'riding') return; this.leg = this.legs.length - 1; this.s = this.legs[this.leg].length; this.driven = this.tripLength; this.driver.speed = 0; this.place(); this.stage = 'arrived'; }
+  finish() { if (this.stage !== 'riding') return; this.leg = this.legs.length - 1; this.s = this.legs[this.leg].length; this.driven = this.legs.reduce((t, l) => t + l.length, 0); this.driver.speed = 0; this.place(); this.stage = 'arrived'; }
   end() { this.reset(); this.stage = 'idle'; }
   private place() { const p = this.legs[this.leg].at(this.s); this.pose.x = p.x; this.pose.z = p.z; this.pose.yaw = p.yaw; }
   /** The ride's envelope in a district's local frame. */
@@ -144,14 +156,14 @@ export class PassengerRide {
     this.s += moved; if (this.stage === 'riding') { this.driven += moved; if (d.speed < .05) this.waited += dt; }
     if (!last && this.s >= path.length) {
       // The cut to the next district's arrival road (it carries on from the leg's end speed).
-      this.leg++; this.s = 0; this.driven += this.hop; this.place(); ctx.space.remove('ride'); return 'cut';
+      this.leg++; this.s = 0; this.place(); ctx.space.remove('ride'); return 'cut';
     }
     this.s = Math.min(this.s, path.length); this.place(); this.envelopeIn(ctx.originX);
     if (last && path.length - this.s < .3 && d.speed < .6) {
       this.s = path.length; this.place(); this.envelopeIn(ctx.originX);
       d.speed = 0; d.env.speed = 0;
       if (this.stage === 'approaching') { this.stage = 'waiting'; return 'pulled-up'; }
-      this.driven = this.tripLength; this.stage = 'arrived'; return 'arrived';
+      this.driven = this.legs.reduce((t, l) => t + l.length, 0); this.stage = 'arrived'; return 'arrived';
     }
     return 'none';
   }

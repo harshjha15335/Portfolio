@@ -5,8 +5,14 @@ import type { TransitKind } from './transit';
 import { createSeatedDriver } from './npc/NPCFactory';
 import { loadVehicleBody, type VehicleBodyParts } from './AuthoredVehicles';
 import { bakedFinishMaterial } from './architecture/BakedKit';
+import { METER_BASE, createPhysicalMeter } from './meter/MeterModel';
 
 type V = [number, number, number];
+// Where the fare meter sits (its case centre, on its mount) and how it turns to face the passenger's eye: the auto
+// passenger sits at (.34, 1.34, .63) on the right of the bench, the taxi passenger at (-.32, 1.37, .63) behind the
+// empty front seat. Rotations are [tilt up, turn towards the passenger] in YXZ order.
+const METER_SPOT: Record<TransitKind, V> = { auto: [.48, 1.13 + METER_BASE.auto, .3], taxi: [-.2, 1.206 + METER_BASE.taxi, .32] };
+const METER_TURN: Record<TransitKind, [number, number, number]> = { auto: [-.14, -.4, 0], taxi: [-.24, -.37, 0] };
 let upholsteryMap:THREE.CanvasTexture|undefined;
 function upholsteryTexture(){
   // Geometry/physics tools can construct vehicles without a browser canvas.
@@ -131,14 +137,18 @@ export function createTransitModel(kind: TransitKind,cabinDetail:'close'|'street
       for(const sy of [-.029,.029])part([.018,.003,.003],[driverX+dx,1.145+sy,-.655],metal);
       dial.rotation.x=-.1;
     }
-    for(const x of [-.57,-.11])for(let n=0;n<4;n++)part([.12,.009,.008],[x,1.105+n*.018,-.53],metal);
+    for(const x of [-.57,-.22])for(let n=0;n<4;n++)part([.12,.009,.008],[x,1.105+n*.018,-.53],metal);
     bar([-.04,.53,-.14],[-.04,.79,-.23],.015,metal);add(new THREE.SphereGeometry(.03,10,8),[-.04,.79,-.23],black);
     part([.21,.075,.026],[0,1.5,-.50],black);part([.18,.05,.006],[0,1.5,-.48],metal);
     bar([0,1.54,-.49],[0,1.61,-.48],.009,metal);
     for(const side of [-1,1])bar([side*.18,1.065,-.91],[side*.38,1.19,-.82],.008,rubber);
   }
   }
-  const meter=part([.18,.12,.065],[auto?.27:.35,1.12,auto?-.61:-.68],black);meter.name='physical-meter';part([.14,.06,.004],[auto?.27:.35,1.13,auto?-.65:-.72],lamp);
+  // The meter is beside the passenger, turned to face them with nothing between: the auto's on a bracket off the
+  // right-hand side rail just ahead of the bench; the taxi's clamped to the top of the empty front seat's back, beside
+  // its headrest. Street vehicles carry a simple box there (added after merging).
+  if(auto)bar([.62,1.0,.3],[.48,1.13,.3],.012,metal);else bar([-.2,1.06,.24],[-.2,1.206,.32],.01,metal);
+  if(cabinDetail==='street'){const meter=part([.18,.12,.065],METER_SPOT[kind],black);meter.rotation.set(...METER_TURN[kind],'YXZ');meter.name='physical-meter';}
 
   // Merge static body panels by material; wheels remain independently articulated.
   const originals=new Set<THREE.BufferGeometry>();const buckets=new Map<string,{material:THREE.Material;exterior:boolean;parts:THREE.BufferGeometry[]}>();group.updateMatrixWorld(true);
@@ -171,6 +181,10 @@ export function createTransitModel(kind: TransitKind,cabinDetail:'close'|'street
   group.userData.lastPosition=new THREE.Vector3();group.userData.travel=0;
   group.add(steering);group.userData.steering=steering;
   group.userData.cabinDetail=cabinDetail;
+  if(cabinDetail==='close'){
+    // The working fare meter on its passenger-side mount (above), facing the passenger and tilted up to them.
+    const meter=createPhysicalMeter(kind);meter.group.position.set(...METER_SPOT[kind]);meter.group.rotation.set(...METER_TURN[kind],'YXZ');group.add(meter.group);group.userData.meter=meter;
+  }
   return group;
 }
 /**

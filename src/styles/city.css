@@ -12,20 +12,6 @@
 .city-transport-actions button { background:#f9c847; border:1px solid #283c41; padding:11px 15px; font:10px var(--mono); }
 .city-transport-actions button:disabled { opacity:.45; }
 .city-transport-actions button:hover { background:#fff0be; }
-.ride-meter { position:absolute; left:3.2%; top:275px; width:280px; max-height:calc(100dvh - 390px); overflow:auto; padding:16px; color:#f0e4c9; background:#283536; border:3px solid #f9c847; box-shadow:5px 5px 0 #28353644; pointer-events:auto; }
-.meter-top { display:flex; justify-content:space-between; align-items:center; gap:8px; font:8px var(--mono); }
-.meter-top button { font-size:20px; padding:0 3px; }
-.meter-face { padding:12px 15px; margin:12px 0; color:#d6ff9a; border:1px solid #708076; background:#172021; }
-.meter-face .caption { color:#d6ff9a; }
-.meter-face strong { display:block; font:42px/1.3 var(--mono); font-variant-numeric:tabular-nums; letter-spacing:-.05em; }
-.meter-face > span:last-child { font:7px var(--mono); }
-.ride-meter p { font-size:12px; margin:10px 0; }
-.ride-destination { display:block; font:9px var(--mono); }
-.ride-destination select { display:block; width:100%; padding:12px 8px; margin-top:8px; background:#f3e5c7; color:#283536; border:1px solid #f3e5c7; font:11px var(--body); }
-.ride-meter .primary-button { background:#f9c847; color:#283536; border-color:#f9c847; padding:12px 10px; width:100%; font-size:9px; margin-top:12px; gap:5px; }
-.meter-readings { display:flex; justify-content:space-between; gap:8px; font:8px var(--mono); }
-.ride-meter progress { display:block; width:100%; height:5px; margin-top:12px; accent-color:#f9c847; }
-.ride-destination-name { font-weight:700; }
 .city-map-modal { width:min(1080px,94vw); background:#f3e5c7; }
 .city-map-heading h2 { font:600 clamp(44px,5vw,76px)/1 var(--display); margin:10px 0; }
 .city-map-heading p { max-width:590px; font-size:13px; }
@@ -126,7 +112,6 @@
   .mode-world .destination-rail { display:none; }
   .city-transport-actions { left:12px; top:158px; width:230px; }
   .city-transport-actions button { font-size:9px; padding:9px 12px; }
-  .ride-meter { left:12px; top:208px; width:255px; max-height:calc(100dvh - 352px); padding:12px; }
   .mode-world .world-bottom { left:12px; right:12px; height:65px; padding:0 10px; }
   .world-bottom .controls > span { font-size:7px; }.world-bottom .speed-readout { display:none; }
   .world-bottom nav button { font-size:9px; }.mode-world .proximity-prompt { min-width:0; width:calc(100% - 24px); bottom:80px; padding:12px; gap:10px; }
@@ -146,7 +131,6 @@
   .home-city-ticket { top:43%; left:6%; padding:8px 12px; }.home-city-ticket strong { font-size:23px; }
 }
 @media (max-height:650px) and (min-width:761px) {
-  .ride-meter { left:calc(50% - 140px); top:25px; max-height:calc(100dvh - 185px); }
   .home-city-ticket { display:none; }
 }
 @media (prefers-reduced-motion:reduce) { .city-map-stop { transition:none; } .city-map-stop.is-objective { animation:none; } }
@@ -167,9 +151,6 @@
 .mode-world .proximity-prompt strong { font-size:12px; font-weight:500; }.mode-world .proximity-prompt kbd { border-color:#efd4a155; color:#efd4a1; background:transparent; }
 .mode-world .city-transport-actions { left:auto; right:24px; top:20px; width:auto; gap:6px; }
 .mode-world .city-transport-actions button { color:#ead3a9; border-color:#e8d8b72d; background:#22262dc4; padding:8px 10px; font-size:8px; }
-.mode-world .ride-meter { top:auto; left:auto; right:24px; bottom:82px; width:225px; background:#161d21ed; border:1px solid #dba76677; box-shadow:0 6px 20px #0004; padding:13px; max-height:calc(100dvh - 200px); }
-.mode-world .meter-face { margin:10px 0; color:#eca85c; background:#151615; }.mode-world .meter-face strong { font-size:32px; }.mode-world .meter-face .caption { color:#eca85c; }
-.mode-world .ride-meter .primary-button { background:#d9ae6f; border-color:#d9ae6f; }
 .mode-world .custom-cursor { display:none; }.mode-world, .mode-world button, .mode-world a, .mode-world canvas { cursor:auto!important; }
 .street-intro { background:radial-gradient(ellipse at 70% 60%,#44313c 0,#171e2c 45%,#0d111b 80%); color:#e5d5b7; padding:9vh 9vw 5vh; min-height:calc(100dvh - 92px); position:relative; overflow:hidden; }
 .street-intro::before { content:""; position:absolute; width:50vw; height:90vh; right:-7vw; bottom:-42vh; transform:rotate(-18deg); background:linear-gradient(90deg,transparent,#df8d4e12,transparent); pointer-events:none; }
@@ -181,7 +162,7 @@
 .street-entry { position:fixed; inset:0; background:#0e131d; z-index:100; display:flex; align-items:center; justify-content:center; flex-direction:column; color:#dba56e; animation:street-arrive 1.1s both; pointer-events:none; }.street-entry span { font-size:44px; }.street-entry small { margin-top:15px; font:9px var(--mono); }
 @keyframes street-arrive { 0%,35% { opacity:1; } 100% { opacity:0; } }
 .touch-walk { position:absolute; left:18px; bottom:84px; display:grid; grid-template-columns:repeat(3,40px); gap:4px; pointer-events:auto; }.touch-walk button { height:40px; border:1px solid #e8d8b744; background:#20262dcb; color:#ead3a9; touch-action:none; }.touch-walk button:first-child { grid-column:2; }.touch-walk button:nth-child(2) { grid-column:1; }
-@media(max-width:760px) { .district-arriving { top:48px; font-size:9px; }.mode-world .header { padding:0 12px; }.mode-world .header-nav { gap:12px; }.mode-world .world-ui { top:0; height:calc(100dvh - 56px); }.street-location { left:14px; top:16px; font-size:9px; }.mode-world .city-transport-actions { right:12px; top:60px; }.mode-world .world-bottom { left:10px; right:10px; bottom:10px; height:50px; }.mode-world .world-bottom .controls { font-size:7px; }.mode-world .world-bottom nav button { font-size:8px; }.mode-world .ride-meter { right:12px; bottom:75px; width:210px; }.mode-world .proximity-prompt { bottom:138px; max-width:90vw; }.street-intro { padding:7vh 8vw 4vh; min-height:calc(100dvh - 72px); }.arrival-line { margin-bottom:7vh; }.street-intro h1 { font-size:clamp(65px,16vw,105px); }.street-intro .home-actions { gap:16px; flex-wrap:wrap; }.arrival-footer { gap:15px; margin-top:6vh; } }
+@media(max-width:760px) { .district-arriving { top:48px; font-size:9px; }.mode-world .header { padding:0 12px; }.mode-world .header-nav { gap:12px; }.mode-world .world-ui { top:0; height:calc(100dvh - 56px); }.street-location { left:14px; top:16px; font-size:9px; }.mode-world .city-transport-actions { right:12px; top:60px; }.mode-world .world-bottom { left:10px; right:10px; bottom:10px; height:50px; }.mode-world .world-bottom .controls { font-size:7px; }.mode-world .world-bottom nav button { font-size:8px; }.mode-world .proximity-prompt { bottom:138px; max-width:90vw; }.street-intro { padding:7vh 8vw 4vh; min-height:calc(100dvh - 72px); }.arrival-line { margin-bottom:7vh; }.street-intro h1 { font-size:clamp(65px,16vw,105px); }.street-intro .home-actions { gap:16px; flex-wrap:wrap; }.arrival-footer { gap:15px; margin-top:6vh; } }
 @media(prefers-reduced-motion:reduce) { .street-entry { display:none; } }
 .world-debug { position:absolute; z-index:4; bottom:75px; left:24px; background:#101923d9; color:#d7bf90; padding:7px 10px; font:9px var(--mono); pointer-events:none; }
 
@@ -203,3 +184,10 @@
 /* Fort teaching exhibit: HTML/SVG remains usable without the world renderer. */
 .research-exhibition{margin:32px 0;padding:28px;background:#e9e5d8;border:1px solid #c1c6b6;color:#243c35}.research-exhibition header h2{font-size:clamp(26px,3vw,44px);line-height:1.08;margin:12px 0}.research-exhibition header p{max-width:65ch}.research-chapters{display:flex;gap:8px;flex-wrap:wrap;margin:24px 0}.research-chapters button{padding:12px;border:1px solid #9aaa97;background:transparent;color:inherit}.research-chapters button[aria-pressed=true]{background:#354f44;color:#f5edda}.research-exhibit-layout{display:grid;grid-template-columns:1.3fr 1fr;gap:28px}.research-plot svg{display:block;width:100%;border:1px solid #97a28e;touch-action:pan-y}.research-coordinates{display:grid;grid-template-columns:1fr 1fr;gap:16px}.research-coordinates label{display:grid;gap:6px;font-size:13px}.research-coordinates input{width:100%;accent-color:#496453}.research-readout{display:block;padding:12px 0;min-height:50px;font-family:var(--mono);font-size:12px}.research-explanation h3{font-size:19px;line-height:1.5;font-weight:500}.research-equation{padding:18px 12px;background:#dddcca;font-family:var(--mono);font-size:15px;overflow-wrap:anywhere}.research-explanation p{line-height:1.6}.research-explanation a{font-family:var(--mono);font-size:12px;text-decoration:underline}.research-evidence{display:grid;grid-template-columns:1fr 1.3fr;gap:28px;border-top:1px solid #aeb9a2;margin-top:24px;padding-top:22px}.research-evidence ol{list-style:none;margin:0;padding:0}.research-evidence li a{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid #bbc4b0;text-decoration:none;font-size:13px}.research-evidence li a b{min-width:32px}.research-evidence li a small{display:block;margin-top:4px;font-family:var(--mono);font-size:10px}.research-evidence li a>span:last-child{margin-left:auto}.research-exhibition button:focus-visible,.research-exhibition a:focus-visible{outline:3px solid #335cff;outline-offset:3px}
 @media(max-width:700px){.research-exhibition{padding:16px;margin:22px 0}.research-exhibit-layout,.research-evidence{grid-template-columns:1fr}.research-chapters{display:grid}.research-equation{font-size:13px}}
+/* Ride controls: no fare card (the fare is on the cab's own meter), only a slim row of what the moment needs. */
+.ride-meter { position:absolute; left:24px; bottom:82px; display:flex; align-items:center; gap:8px; max-width:calc(100vw - 24px); pointer-events:auto; }
+.ride-meter > p { margin:0; padding:9px 14px; font:9px var(--mono); letter-spacing:.06em; color:#f0e4c9; background:#161d21b3; border-radius:999px; }
+.ride-meter select, .ride-meter > button { padding:10px 14px; font:9px var(--mono); letter-spacing:.06em; color:#161d21; background:#d9ae6fe6; border:0; border-radius:999px; cursor:pointer; }
+.ride-meter select { font:12px var(--body); max-width:60vw; }
+.ride-meter .ride-exit { width:34px; height:34px; padding:0; color:#f0e4c9; background:#161d21b3; font-size:15px; }
+.studio-stage .ride-meter { position:static; flex-wrap:wrap; }

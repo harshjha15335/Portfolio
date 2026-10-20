@@ -1,14 +1,26 @@
 import { districts } from '../data/city';
 import { streetStops } from '../game/World/streetLayout';
 import type { RideStatus } from '../game/World/transit';
+import { DEMO_FARE_LABEL, meterKm, meterText } from '../game/World/meter/FareMeter';
 
-/** The taxi/auto "Portfolio Meter". Also mounted on the Frontend Studio bench in Andheri. */
+/**
+ * The ride controls. The fare is read only on the cab's physical meter in the 3D cabin, so there is no fare card on
+ * screen: just the controls the moment needs (destination, skip, exit, step out) as a slim row at the bottom, and a
+ * screen-reader readout of the meter that is not drawn. Also mounted on the Frontend Studio bench in Andheri.
+ */
 export function RideMeter({ ride, onChoose, onSkip, onExit, onOpen }: { ride: RideStatus; onChoose: (id: string) => void; onSkip: () => void; onExit: () => void; onOpen: (id: string) => void }) {
   if (ride.phase === 'idle') return null;
   const destination = districts.find(d => d.id === ride.destination);
   return <section className="ride-meter" aria-label="Portfolio Meter">
-    <div className="meter-top"><span>{ride.kind === 'auto' ? 'AUTO RICKSHAW' : 'KAALI-PEELI'} / STORY FARE</span><button aria-label="Exit ride" onClick={onExit}>✕</button></div>
-    <div className="meter-face"><span className="caption">PORTFOLIO METER</span><strong data-testid="ride-fare">₹{ride.fare.toFixed(2)}</strong><span>FOR THE JOURNEY · NO PAYMENT</span></div>
-    {ride.phase === 'hailing' ? <p role="status">Your driver is pulling over. One moment…</p> : ride.phase === 'boarding' ? <><p>Your ride is ready.<br /><strong>Choose your next stop.</strong></p><label className="ride-destination">DESTINATION<select aria-label="Ride destination" value="" onChange={e => onChoose(e.target.value)}><option value="" disabled>Where shall we go?</option>{districts.filter(d => streetStops[d.id]).map(d => <option key={d.id} value={d.id}>{d.title}</option>)}</select></label></> : <><p className="ride-destination-name">{destination?.title}</p><div className="meter-readings"><span>{Math.round(ride.distance)} m</span><span>{Math.floor(ride.elapsed)} sec</span></div><progress aria-label="Ride progress" value={ride.progress} max={1} />{ride.phase === 'riding' ? <button className="primary-button" onClick={onSkip}>SKIP TO ARRIVAL →</button> : <><p role="status">Arrived. Your story continues here.</p><button className="primary-button" onClick={() => { onExit(); if (destination) onOpen(destination.id); }}>STEP OUT & MEET THE GUIDE →</button></>}</>}
+    {ride.phase === 'hailing' ? <p role="status">Your {ride.kind === 'auto' ? 'auto rickshaw' : 'kaali-peeli taxi'} is on the way.</p>
+      : ride.phase === 'boarding' ? <select aria-label="Ride destination" value="" onChange={e => onChoose(e.target.value)}><option value="" disabled>Where to?</option>{districts.filter(d => streetStops[d.id]).map(d => <option key={d.id} value={d.id}>{d.title}</option>)}</select>
+      : ride.phase === 'riding' ? <button className="ride-skip" onClick={onSkip}>SKIP TO ARRIVAL →</button>
+      : <><p role="status" className="sr-only">Arrived at {destination?.title}.</p><button className="ride-step-out" onClick={() => { onExit(); if (destination) onOpen(destination.id); }}>STEP OUT & MEET THE GUIDE →</button></>}
+    <button className="ride-exit" aria-label="Exit ride" onClick={onExit}>✕</button>
+    {ride.phase !== 'hailing' && <div className="sr-only" aria-live="polite">
+      <p>{ride.kind === 'auto' ? 'Auto rickshaw' : 'Kaali-peeli taxi'}{destination ? ` to ${destination.title}` : ''}.</p>
+      <p>Fare <span data-testid="ride-fare">₹{ride.fare.toFixed(2)}</span>, <span data-testid="ride-distance">{meterKm(ride.distance)} km</span>.</p>
+      <p>{meterText({ state: ride.meter, fare: ride.fare, distance: ride.distance, waiting: ride.waiting })}. {DEMO_FARE_LABEL}. No payment is taken.</p>
+    </div>}
   </section>;
 }
