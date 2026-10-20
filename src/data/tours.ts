@@ -44,7 +44,7 @@ const DISTRICT_TOUR_ORDER = ['bkc', 'andheri', 'powai', 'dadar', 'worli', 'juhu'
 const INTROS: Record<string, string> = {
   bkc: 'This stop is the CCIEeXpert internship: enterprise security tooling that integrates with Cisco Secure Access. Walk into the Systems Office: the boards in the lobby walk through it, and one of them is a console you can run.',
   andheri: 'Five shops, one per kind of skill. Each kiosk names the shop; inside, every skill links to the code that uses it, and a bench runs real logic from those repositories.',
-  powai: 'Seven workplaces, one per project. Each board on the paving opens a working demo that runs the project’s own logic, or the case study where there is no demo.',
+  powai: 'Seven workplaces along the lake, one per project, each built differently: an observatory, a control tower, a small bank, a timber studio, a transit kiosk, a lens and a lab. The board inside each opens a working demo that runs the project’s own logic, or the case study where there is no demo.',
   dadar: 'The journey runs along this pavement as six platform boards, each with only the dates we can source. Read all six to travel the whole route.',
   worli: 'Four claims, four evidence cases on the promenade. Before you trust a number, check what stands behind it: a public record you can open, or a line on the résumé.',
   juhu: 'The studio is where the person lives, not the projects: step through the garden gate to a notice board, the résumé stand and a terminal to say hello.',

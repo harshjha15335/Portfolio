@@ -4,6 +4,9 @@ import type { District, DistrictSpec } from './District';
 import { bench, bungalow, busStop, glassTower, hangar, hoarding, midrise, neoclassical, palm, sign, stall, streetLight, tetrapods, tree, backdropBlock, type Ctx } from './buildings';
 import type { Outfit } from './CityFolk';
 import type { V3 } from './ColorMesh';
+import { powaiLab, type PowaiLab } from './powaiLabs';
+import { POWAI_PODS } from '../../../data/districtExhibits';
+import { projects } from '../../../data/projects';
 import { bkcOffice, juhuStudio, studioBungalow, systemsOffice, talkies, talkiesInterior } from './interiors';
 
 /* Painted hoardings and posters. Plain canvas calls only: original artwork, no assets. */
@@ -111,6 +114,14 @@ const andheri: DistrictSpec = {
 };
 
 /* ============================================================ POWAI */
+const project = (id: string) => projects.find(p => p.id === id)!;
+const lab = (id: string, form: PowaiLab['form'], color: string, still: PowaiLab['still']): PowaiLab => ({ id, title: project(id).title, form, color, accent: project(id).color, still });
+/** In the order of the Powai exhibits: the six flagships, then ASTFLOW. */
+const POWAI_LABS: PowaiLab[] = [
+  lab('northstar', 'observatory', '#33456a', 'chart'), lab('reco', 'tower', '#b0613f', 'queue'), lab('moneymetrics', 'bank', '#d9d0bd', 'flows'),
+  lab('meeting-intelligence-service', 'timber', '#d8c9ae', 'transcript'), lab('rideflow', 'transit', '#e1c37e', 'route'), lab('repolens', 'lens', '#3a6f8a', 'code'),
+  { id: 'astflow', title: 'ASTFLOW', form: 'lab', color: '#5b3d73', accent: '#d7b8f0', still: 'ranking' },
+];
 const powai: DistrictSpec = {
   id: 'powai', guide: 'the product builder', guideOutfit: 'office', west: 'open', westLimit: 12.6, skyline: 'east',
   traffic: ['sedan', 'suv', 'hatch', 'auto', 'bike', 'bus', 'taxi', 'hatch', 'suv', 'auto', 'sedan', 'bike'],
@@ -128,11 +139,12 @@ const powai: DistrictSpec = {
     for (let i = 0; i < 6; i++) kit.frame([-108 - (i % 2) * 6, 0, -70 + i * 18], Math.PI / 2, () => backdropBlock(c, 14, 28 + (i % 3) * 8, 12, '#e3d7bf'));
     for (let z = 10; z > -60; z -= 16) streetLight(c, -11.8, z, -1);
     for (let z = 4; z > -58; z -= 12) { palm(c, -11.4, z - 6, 7); bench(c, -11.6, z, Math.PI / 2); }
+    // One workplace per project along the lake front; the towers stand behind them.
+    d.frontage(1, POWAI_LABS.map(lab => ({ w: POWAI_PODS.w, setback: POWAI_PODS.setback, gap: POWAI_PODS.gap, build: (c: Ctx) => powaiLab(c, lab) })), POWAI_PODS.start);
     d.frontage(1, [
-      { w: 22, setback: 3, build: c => neoclassical(c, { w: 22, d: 18, floors: 13, name: "POWAI BUILDER'S DISTRICT" }) },
-      { w: 12, setback: 3, build: c => { const k = c.kit; k.box([12, 4.2, 9], [0, 2.1, -4.5], '#2f3b3c', 'glass'); k.solid([12, 4.2, 9], [0, 2.1, -4.5]); k.box([11, 2.6, .05], [0, 1.8, .02], '#e5c690', 'glow'); k.box([12.6, .35, 10], [0, 4.35, -4.5], '#e9e3d4', 'stone'); for (let x = -5; x <= 5; x += 2.5) k.box([.12, 4.2, .2], [x, 2.1, .05], '#2a2a2a', 'metal'); sign(c, 'LAKESIDE CAFE · DEMO DAY TONIGHT', 9, [0, 3.7, .2], { bg: '#21362f', fg: '#f3e2b4', border: 'none' }, [1024, 128]); for (const x of [-3, 0, 3]) { k.cylinder(.45, .05, [x, .75, 2.2], '#e8e2d2', 'wood'); k.cylinder(.05, .75, [x, .38, 2.2], '#444', 'metal'); } } },
-      { w: 20, setback: 3, build: c => neoclassical(c, { w: 20, d: 18, floors: 15, color: '#ece2cb', name: 'HACKERSPACE · TOWER B' }) },
-      { w: 18, setback: 3, build: c => neoclassical(c, { w: 18, d: 16, floors: 11, color: '#e2d6bd', dome: false, name: 'GITHUB WEEKEND LAB' }) },
+      { w: 22, setback: 13, build: c => neoclassical(c, { w: 22, d: 18, floors: 13, name: "POWAI BUILDER'S DISTRICT" }) },
+      { w: 20, setback: 13, build: c => neoclassical(c, { w: 20, d: 18, floors: 15, color: '#ece2cb', name: 'HACKERSPACE · TOWER B' }) },
+      { w: 18, setback: 13, build: c => neoclassical(c, { w: 18, d: 16, floors: 11, color: '#e2d6bd', dome: false, name: 'GITHUB WEEKEND LAB' }) },
     ]);
     kit.box([3, .07, 72], [1 * (6.8 + 1.5), .02, -22], '#d6cdb9', 'paving');
     hoarding(c, 10.5, 6.5, -55, -Math.PI / 2 + .4, 7.5, poster('#28473b', '#e3b04b', 'FIVE PROJECTS', 'Research terminals · recovery · route planners'), 'AD');

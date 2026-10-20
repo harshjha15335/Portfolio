@@ -17,7 +17,7 @@ Two ways into the same portfolio:
 | Fort Research Institute | GSoC 2026, QC-Devs/Theochem, FFprime | Furnished research room: gradient-check activity, coordinate workstation, FFprime terminal, contribution board |
 | BKC Systems Office | CCIEeXpert internship | Boulevard, plaza and a walk-in lobby floor: reception, open-plan desks, a glass meeting room, the brief and request path on the wall, a rate-limit console |
 | Andheri Tech Bazaar | Skills with evidence | Lane with five skill shops running real logic |
-| Powai Builder's District | Flagship projects | Lakeside towers; working demo labs for NORTHSTAR, MoneyMetrics, Meeting Intelligence, RideFlow, RepoLens and ASTFLOW |
+| Powai Builder's District | Flagship projects | A walk-in workplace per project along the lake (observatory, control tower, bank, timber studio, transit kiosk, lens, lab), each with its board and a demo desk inside; working demo labs for NORTHSTAR, MoneyMetrics, Meeting Intelligence, RideFlow, RepoLens and ASTFLOW, a case study for RECO |
 | Dadar Junction | Education and timeline | Station, chawl and maidan; six platform boards |
 | Worli Proof Deck | Achievements | Sea face with four evidence cases |
 | Juhu Studio | About, résumé, contact | Beach, stalls and a walk-in studio behind a garden gate: work table, bookshelf, sofa, notice board, résumé stand, contact terminal |
@@ -94,7 +94,7 @@ Tracked from the 20 October gap audit:
 
 - Real-device frame times (laptop GPU, Android phone) are unmeasured.
 - Texture and shader-program budgets are exceeded on Medium.
-- Only BKC, Juhu and Film City have walk-in interiors. Rooms have no lights of their own: walls and ceilings use the unlit `glow` surface as stand-in bounce light, because a point light would change every district program (`districts/interiors.ts`).
+- BKC, Juhu, Film City and the seven Powai workplaces have walk-in interiors. Rooms have no lights of their own: walls and ceilings use the unlit `glow` surface as stand-in bounce light, because a point light would change every district program (`districts/interiors.ts`).
 - Powai's flagship projects share generic towers rather than distinct buildings.
 - Pedestrians and traffic can overlap at crossings; vehicles do not stop at signals.
 - The map does not draw the active objective or waypoint.

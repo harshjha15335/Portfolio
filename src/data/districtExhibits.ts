@@ -24,7 +24,11 @@ export interface DistrictExhibit {
 }
 
 const flagships = projects.filter(p => p.id !== 'ffprime');
-const powaiZ = [8, 0, -8, -15, -28, -38, -48];
+/** Powai's workplaces along the east frontage: one per flagship project, then ASTFLOW (built by `catalog.ts` with the same spacing). */
+export const POWAI_PODS = { start: 14, w: 8.5, gap: 1.2, setback: 3.5, depth: 7 };
+export const powaiPodZ = (i: number) => POWAI_PODS.start - i * (POWAI_PODS.w + POWAI_PODS.gap) - POWAI_PODS.w / 2;
+/** Each board hangs on its workplace's back wall, right of the door as you walk in. */
+const powaiBoard = (i: number) => ({ x: 7 + POWAI_PODS.setback + POWAI_PODS.depth - .34, z: powaiPodZ(i) + 1.6, mount: 'wall' as const });
 
 export const DISTRICT_EXHIBITS: DistrictExhibit[] = [
   /* ---------------- BKC: inside the Systems Office lobby, the internship floor */
@@ -46,13 +50,13 @@ export const DISTRICT_EXHIBITS: DistrictExhibit[] = [
     tour: { title: shop.name, body: `${shop.pitch} Press E to open the shop and its bench.` },
   })),
 
-  /* ---------------- Powai: a lab sign in front of each workplace on the lakeside paving */
+  /* ---------------- Powai: each project's board inside its own workplace */
   ...flagships.map((p, i) => ({
-    id: p.id, district: 'powai', label: `Open ${p.title}`, x: 8.9, z: powaiZ[i],
+    id: p.id, district: 'powai', label: `Open ${p.title}`, ...powaiBoard(i),
     panel: { eyebrow: p.category.toUpperCase(), title: p.title, lines: [p.subtitle, p.architecture.slice(0, 3).join(' → '), p.id === 'reco' ? 'Case study inside' : 'Working demo inside'] },
     tour: { title: p.title, body: `${p.shortDescription} Press E to ${p.id === 'reco' ? 'read the case study' : 'run the working demo'}.` },
   })),
-  { id: 'astflow', district: 'powai', label: 'Open the ASTFLOW lab', x: 8.9, z: powaiZ[6],
+  { id: 'astflow', district: 'powai', label: 'Open the ASTFLOW lab', ...powaiBoard(6),
     panel: { eyebrow: 'POWAI / ASTFLOW LAB', title: 'ASTFLOW', lines: ['BM25 + dense retrieval, fused', 'The experiment record, replayed', 'Working lab inside'] },
     tour: { title: 'The ASTFLOW lab', body: 'ASTFLOW’s engineering lab shows the shipped retrieval results and replays the fusion experiments on the frozen runs: change k, the weighting or the depth and see the ranking move.' } },
 

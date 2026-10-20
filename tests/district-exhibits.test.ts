@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { MumbaiStreet } from '../src/game/World/MumbaiStreet';
 import { CityDistricts } from '../src/game/World/districts/CityDistricts';
 import { cityZones } from '../src/game/World/streetLayout';
-import { DISTRICT_EXHIBITS, exhibitsOf, readingSpot } from '../src/data/districtExhibits';
+import { DISTRICT_EXHIBITS, exhibitsOf, powaiPodZ, readingSpot } from '../src/data/districtExhibits';
 import { projects } from '../src/data/projects';
 
 const ctx: Record<string, unknown> = new Proxy({}, { get: (t: Record<string, unknown>, k: string) => k in t ? t[k] : () => ctx, set: (t, k: string, v) => { t[k] = v; return true; } });
@@ -53,11 +53,13 @@ it('can be walked to from the pavement, through the doors of the walk-in buildin
     bkc: { entry: [[6.5, 3], [13, 3]] },
     juhu: { entry: [[6, 5], [12, 5]] },
     filmcity: { entry: [[6, 3], [12, 3]], via: { 'filmcity-screen': [[17, 3]] } },
+    // Each Powai workplace has its own door, so its route starts on the pavement in front of it.
+    powai: { entry: [], via: Object.fromEntries(exhibitsOf('powai').map((e, i) => [e.id, [[7.2, powaiPodZ(i)], [12, powaiPodZ(i)]]])) },
   };
   for (const [id, route] of Object.entries(routes)) {
     const i = cityZones.findIndex(z => z.id === id), zone = cityZones[i], d = city.activate(i)!;
     // The opened stretch of the district limit is closed again by the building's own back wall.
-    expect(d.spatial.hit(new THREE.Vector3(zone.originX + 14, 1.3, route.entry[1][1]), new THREE.Vector3(1, 0, 0), 30), `${id} open at the back`).toBeTruthy();
+    if (route.entry.length) expect(d.spatial.hit(new THREE.Vector3(zone.originX + 14, 1.3, route.entry[1][1]), new THREE.Vector3(1, 0, 0), 30), `${id} open at the back`).toBeTruthy();
     for (const e of exhibitsOf(id)) {
       const spot = readingSpot(e), path = [...route.entry, ...(route.via?.[e.id] ?? []), [spot.x, spot.z] as [number, number]];
       for (let k = 1; k < path.length; k++) {
