@@ -44,7 +44,7 @@ export function VisitorBenchmark({ engine, ready, preset, adaptive, worldReadyMs
         setStep({ index, label: `Measuring ${title(id)}` });
         const yaw = streetStops[id].yaw, begin = performance.now();
         for (let t = 0; t < sampleS && !run.stop; t = (performance.now() - begin) / 1000) { engine.setView(yaw + Math.PI * 2 * t / sampleS, -.02); await nextFrame(); }
-        const result = districtResult(id, buildMs, warmup, frames);
+        const result = districtResult(id, buildMs, warmup, frames, engine.viewResources());
         results.push(result); all.push(...frames.map(f => f.frameMs));
       }
       engine.setFrameObserver(null); engine.pinQuality(false); engine.travelTo('cst');

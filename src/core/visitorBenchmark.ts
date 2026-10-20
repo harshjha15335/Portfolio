@@ -23,7 +23,16 @@ export interface DistrictResult {
   peak: { draws: number; triangles: number; textures: number; programs: number };
   scale: number;
   low: boolean;
+  /** What the last measured frame actually binds; the peak counters above are renderer totals (see `ViewResources`). */
+  inView?: ViewResources;
 }
+
+/**
+ * Resources bound by the visible scene at one moment. `renderer.info.memory.textures` also counts every
+ * skinned actor's bone matrix texture (20×20 floats, about 6 KiB each) and render targets, and
+ * `renderer.info.programs` is every program compiled this session, so neither says what a frame uses.
+ */
+export interface ViewResources { imageTextures: number; boneTextures: number; programs: number }
 
 export interface BenchReport {
   version: 1;
@@ -58,13 +67,13 @@ export function frameStats(frameMs: number[]): FrameStats {
   };
 }
 
-export function districtResult(id: string, buildMs: number, warmup: BenchFrame[], sample: BenchFrame[]): DistrictResult {
+export function districtResult(id: string, buildMs: number, warmup: BenchFrame[], sample: BenchFrame[], inView?: ViewResources): DistrictResult {
   const last = sample[sample.length - 1] ?? warmup[warmup.length - 1];
   const peak = (key: 'draws' | 'triangles' | 'textures' | 'programs') => Math.max(0, ...sample.map(f => f[key]));
   return {
     id, buildMs: round(buildMs), arrivalHitchMs: round(Math.max(0, ...warmup.map(f => f.frameMs))), stats: frameStats(sample.map(f => f.frameMs)),
     peak: { draws: peak('draws'), triangles: peak('triangles'), textures: peak('textures'), programs: peak('programs') },
-    scale: last?.scale ?? 1, low: last?.low ?? false,
+    scale: last?.scale ?? 1, low: last?.low ?? false, ...(inView ? { inView } : {}),
   };
 }
 
@@ -95,11 +104,11 @@ export function formatReport(report: BenchReport) {
     `Preset ${report.settings.preset} · ${report.settings.adaptive ? 'adaptive quality on' : 'quality pinned'} · ${report.settings.warmupS}s warm-up + ${report.settings.sampleS}s pan per stop`,
     `World ready ${Math.round(report.load.worldReadyMs)} ms · JS ${report.load.scriptKb} kB · WASM ${report.load.wasmKb} kB · models/textures ${report.load.modelKb} kB`,
     '',
-    'district     p50    p95    p99    max   fps  >33ms  hitch  build  draws   tris  tex prog scale',
-    ...report.districts.map(d => `${d.id.padEnd(9)}${pad(d.stats.p50, 7)}${pad(d.stats.p95, 7)}${pad(d.stats.p99, 7)}${pad(d.stats.max, 7)}${pad(d.stats.fps, 6)}${pad(d.stats.over33, 7)}${pad(d.arrivalHitchMs, 7)}${pad(d.buildMs, 7)}${pad(d.peak.draws, 7)}${pad(Math.round(d.peak.triangles / 1000) + 'k', 7)}${pad(d.peak.textures, 5)}${pad(d.peak.programs, 5)}${pad(d.scale.toFixed(2) + (d.low ? 'L' : ''), 6)}`),
+    'district     p50    p95    p99    max   fps  >33ms  hitch  build  draws   tris  tex prog  img bone view scale',
+    ...report.districts.map(d => `${d.id.padEnd(9)}${pad(d.stats.p50, 7)}${pad(d.stats.p95, 7)}${pad(d.stats.p99, 7)}${pad(d.stats.max, 7)}${pad(d.stats.fps, 6)}${pad(d.stats.over33, 7)}${pad(d.arrivalHitchMs, 7)}${pad(d.buildMs, 7)}${pad(d.peak.draws, 7)}${pad(Math.round(d.peak.triangles / 1000) + 'k', 7)}${pad(d.peak.textures, 5)}${pad(d.peak.programs, 5)}${pad(d.inView?.imageTextures ?? '-', 5)}${pad(d.inView?.boneTextures ?? '-', 5)}${pad(d.inView?.programs ?? '-', 5)}${pad(d.scale.toFixed(2) + (d.low ? 'L' : ''), 6)}`),
     `${'all'.padEnd(9)}${pad(report.overall.p50, 7)}${pad(report.overall.p95, 7)}${pad(report.overall.p99, 7)}${pad(report.overall.max, 7)}${pad(report.overall.fps, 6)}${pad(report.overall.over33, 7)}`,
     '',
-    'Frame times in ms. hitch = worst frame in the warm-up after arriving; build = district construction; prog = shader programs compiled so far (cumulative); L = low tier engaged.',
+    'Frame times in ms. hitch = worst frame in the warm-up after arriving; build = district construction; tex = all renderer textures; prog = shader programs compiled so far (cumulative); img / bone / view = image textures, bone textures and programs the visible scene binds at the end of the pan; L = low tier engaged.',
   ];
   return lines.join('\n');
 }

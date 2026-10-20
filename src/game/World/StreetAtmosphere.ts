@@ -154,12 +154,19 @@ export function applyStreetAtmosphere(root:THREE.Object3D,uniforms:AtmosphereUni
  root.traverse(object=>{
   const mesh=object as THREE.Mesh;if(!mesh.isMesh)return;
   for(const material of Array.isArray(mesh.material)?mesh.material:[mesh.material]){
-   if(seen.has(material)||!(material as THREE.MeshStandardMaterial).isMeshStandardMaterial||material.userData.weatherPatched)continue;
+   if(seen.has(material)||!(material as THREE.MeshStandardMaterial).isMeshStandardMaterial||isPatched(material))continue;
    seen.add(material);patchMaterial(material as THREE.MeshStandardMaterial,uniforms);
   }
  });
  return seen.size;
 }
+
+/**
+ * Patched means the hook is on this instance. `userData.weatherPatched` alone is not enough: Material.clone()
+ * copies userData but not onBeforeCompile, so a clone of a patched material (the cast's per-district copies)
+ * carried the flag, was skipped, and compiled a second, unpatched program for the same look.
+ */
+export const isPatched=(material:THREE.Material)=>material.customProgramCacheKey().split('|').includes(WEATHER_CACHE_KEY);
 
 export function patchMaterial(material:THREE.MeshStandardMaterial,uniforms:AtmosphereUniforms){
  const previous=material.onBeforeCompile.bind(material),previousKey=material.customProgramCacheKey.bind(material);

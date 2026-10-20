@@ -1,4 +1,4 @@
-import { gpuName, type BenchFrame } from './visitorBenchmark';
+import { gpuName, type BenchFrame, type ViewResources } from './visitorBenchmark';
 import {GPUFrameProfiler} from './GPUFrameProfiler';
 import {stationCharacter} from '../data/stationCharacter';
 import {characterCast} from '../data/characterCast';
@@ -189,6 +189,21 @@ export class WorldEngine {
   setView(yaw: number, pitch = -.015) { this.yaw = yaw; this.pitch = pitch; this.updateCamera(); }
   pinQuality(pinned: boolean) { this.reviewQuality = pinned; }
   get gpu() { return gpuName(this.renderer.getContext()); }
+  /** Textures and programs the visible scene binds now, with bone textures split from image textures. */
+  viewResources(): ViewResources {
+    const images = new Set<THREE.Texture>(), bones = new Set<THREE.Texture>(), programs = new Set<unknown>();
+    this.scene.traverseVisible(object => {
+      const mesh = object as THREE.Mesh & { skeleton?: THREE.Skeleton };
+      if (!mesh.material) return;
+      for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        const program = (this.renderer.properties.get(material) as { currentProgram?: unknown }).currentProgram; if (program) programs.add(program);
+        for (const value of Object.values(material)) if ((value as THREE.Texture | null)?.isTexture) images.add(value as THREE.Texture);
+      }
+      if (mesh.skeleton?.boneTexture) bones.add(mesh.skeleton.boneTexture);
+    });
+    if (this.scene.environment) images.add(this.scene.environment);
+    return { imageTextures: images.size, boneTextures: bones.size, programs: programs.size };
+  }
   focusLandmark(_id: string) { /* Reading an overlay never changes the visitor's viewpoint. */ }
   travelTo(id: string) {
     const stop = streetStops[id]; if (!stop) { this.options.onSelect(id); return; }
