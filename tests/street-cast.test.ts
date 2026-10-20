@@ -6,6 +6,7 @@ import {characterCast} from '../src/data/characterCast';
 import {STANDING_CAST,WALKER_CAST,loadable,placementNoise} from '../src/game/World/npc/cast';
 import {solveTwoBone} from '../src/game/World/npc/DriverRig';
 import {inspectCharacter} from '../scripts/lib/inspect-character.mjs';
+import {FRIENDS,HOST} from '../src/data/friends';
 
 describe('licensed street cast',()=>{
  it('ships every admitted character with matching bytes, MIT provenance and rig limits',()=>{
@@ -22,7 +23,14 @@ describe('licensed street cast',()=>{
  it('casts every street placement from an admitted, distinct set of people',()=>{
   for(const id of [...WALKER_CAST,...STANDING_CAST,'host','chai-vendor','taxi-driver','student'])expect(characterCast[id],id).toBeDefined();
   expect(new Set(WALKER_CAST).size).toBe(WALKER_CAST.length);
-  expect(new Set(Object.values(characterCast).map(m=>m.asset.source)).size).toBe(Object.keys(characterCast).length);
+  // The anonymous cast are all different people; the named friends are likenesses painted on a base body, so a base may repeat among them.
+  const anonymous=Object.entries(characterCast).filter(([id])=>!FRIENDS.some(f=>f.cast===id)&&id!==HOST.cast).map(([,m])=>m.asset.source);
+  expect(new Set(anonymous).size).toBe(anonymous.length);
+ });
+ it('admits every named person in the city, each with a talk prompt in their district',()=>{
+  for(const id of [HOST.cast,...FRIENDS.map(f=>f.cast)]){const member=characterCast[id];expect(member,id).toBeDefined();expect(loadable(member,false),id).toBe(true);}
+  expect(new Set(FRIENDS.map(f=>f.id)).size).toBe(FRIENDS.length);
+  for(const f of FRIENDS){expect(f.lines.length).toBeGreaterThan(1);expect(f.actions.length).toBeGreaterThan(0);}
  });
  it('only loads approved, reviewed members outside preview',()=>{
   const member={...Object.values(characterCast)[0],status:'candidate' as const,visualReview:null};expect(loadable(member,false)).toBe(false);expect(loadable(member,true)).toBe(true);

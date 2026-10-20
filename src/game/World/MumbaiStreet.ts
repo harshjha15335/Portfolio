@@ -1,6 +1,7 @@
 import type {VerifiedGLB,GLBAssetLibrary} from './assets/GLBAssetLibrary';
 import type {GLBCharacter} from './assets/GLBCharacter';
 import {loadable,placementNoise,STANDING_CAST,WALKER_CAST,type CastMember} from './npc/cast';
+import {FRIENDS,HOST,friendInteraction} from '../../data/friends';
 import {DriverRig} from './npc/DriverRig';
 import * as THREE from 'three';
 import {casterPrefix,restrictInstanceShadows} from '../../core/ShadowInstances';
@@ -578,8 +579,9 @@ export class MumbaiStreet {
       const centre=new THREE.Vector3(x,6.0,17.99);
       for(const [angle,length] of [[40*Math.PI/30,.30],[((17+40/60)%12)*Math.PI/6,.22]])this.wire(centre,new THREE.Vector3(x-Math.sin(angle)*length,6+Math.cos(angle)*length,17.99),.012,'#514d42');
     }
-    this.stationHost=this.person([5.8,0,8.3],'#829382',false,false,'host');
-    this.interactions.push({id:'cst',position:new THREE.Vector3(5.8,1.45,8.3),label:'Talk to the station host'});
+    // The arrival host is Harsh himself (a stylised likeness, see scripts/characters/likeness.py).
+    this.stationHost=this.person([5.8,0,8.3],'#e8cfcb',false,false,HOST.cast);
+    this.interactions.push({id:'cst',position:new THREE.Vector3(5.8,1.45,8.3),label:`Talk to ${HOST.name}`});
     this.departureBoard();
     const board=this.sign(this.group,'FORT ROAD →','फोर्ट',[6.3,2.9,7.8],1.2,'#3e5c51');board.rotation.y=-.1;
     // Arrival canopy, ribs and transport notice board.
@@ -739,6 +741,10 @@ export class MumbaiStreet {
     }, [0, 0, .032], .8);
     this.person([-5.9, 0, -35.8], '#718d86', false, false, 'office-woman');
     this.interactions.push({ id: 'fort', position: new THREE.Vector3(-5.9, 1.4, -35.8), label: 'Talk to the research fellow' });
+    // Aarush keeps the research room: on the rug between the door and the kiosk, turned to people coming in.
+    const aarush = FRIENDS.find(f => f.id === 'aarush')!;
+    this.person([-9.4, 0, -36.0], '#ece9df', false, false, aarush.cast).rotation.y = -2.0;
+    this.interactions.push({ id: friendInteraction(aarush.id), position: new THREE.Vector3(-9.4, 1.45, -36.0), label: `Talk to ${aarush.name}` });
     g.updateMatrixWorld(true); const at = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyMatrix4(g.matrixWorld);
     this.interactions.push(
       { id: 'ffprime', position: at(1.25, 1.42, -4.85), label: 'Read the FFprime research' },

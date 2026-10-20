@@ -15,7 +15,7 @@ const fortFloor = (lx: number, lz: number) => ({ x: -7 + lz, z: -34 - lx });
 
 export const TOURS: Record<string, Tour> = {
   cst: {
-    id: 'cst', guide: 'The station host', place: 'CST Arrival Terminus',
+    id: 'cst', guide: 'Harsh Jha', place: 'CST Arrival Terminus',
     steps: [
       { title: 'Welcome to the city', body: 'Nine stops, one engineer. Each district holds a different part of Harsh’s work, and every one of them is a street you can walk.', view: { x: 4.6, z: 11.5, yaw: .14, pitch: -.015 } },
       { title: 'The departure board', body: 'The board over the pavement is the portfolio’s index: research, internships, skills, projects, education, achievements, about and cinema. Press E under it to pick a destination and mark it on your map.', view: { x: 4.6, z: 9.2, yaw: 0, pitch: .3 }, exhibit: 'cst-board' },

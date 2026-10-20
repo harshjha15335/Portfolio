@@ -253,6 +253,272 @@
    },
    "textureCode": "f018",
    "hairCard": true
+  },
+  {
+   "id": "harsh",
+   "role": "Harsh Jha · arrival host at CST",
+   "height": 1.74,
+   "avatar": "Assets/Avatars/Adults/Male_Adult_08",
+   "avatarSha256": "e0d979315a5f11050945522f9f084932807af2edeefbdb380a2c9aa36c9f9bb3",
+   "atlas": 832,
+   "normalMap": false,
+   "skinToneShift": 0.45,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_01.max.fbx",
+     "sha256": "818cc185af21390575f7fbfdeb3012ba2ce5969fbcb220ea725a2617b339a6e2"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_neutral_01.max.fbx",
+     "sha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0"
+    },
+    "Talk": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_gestic_talk_neutral_01.max.fbx",
+     "sha256": "4c2b9ff481a9538dafbbe7f6aa6ffd6b948b5d34bb16a1e2052e943bbbbd3cd8"
+    }
+   },
+   "trim": {
+    "Idle": 12,
+    "Talk": 9
+   },
+   "textureCode": "m014",
+   "hairCard": true,
+   "likeness": true,
+   "glasses": {
+    "w": 0.052,
+    "h": 0.034,
+    "radius": 0.006,
+    "thick": 0.0048
+   }
+  },
+  {
+   "id": "aarush",
+   "role": "Aarush Shetty · research fellow at Fort",
+   "height": 1.76,
+   "avatar": "Assets/Avatars/Adults/Male_Adult_01",
+   "avatarSha256": "8d1edb51b4dc3427ae2456f4407fc105532c145dd019e53cd42bab31cc948a29",
+   "atlas": 832,
+   "normalMap": false,
+   "skinToneShift": 1.0,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_01.max.fbx",
+     "sha256": "818cc185af21390575f7fbfdeb3012ba2ce5969fbcb220ea725a2617b339a6e2"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_neutral_01.max.fbx",
+     "sha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0"
+    },
+    "Talk": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_gestic_talk_neutral_01.max.fbx",
+     "sha256": "4c2b9ff481a9538dafbbe7f6aa6ffd6b948b5d34bb16a1e2052e943bbbbd3cd8"
+    }
+   },
+   "trim": {
+    "Idle": 12,
+    "Talk": 9
+   },
+   "textureCode": "m002",
+   "hairCard": true,
+   "likeness": true
+  },
+  {
+   "id": "pavit",
+   "role": "Pavit Singh · systems engineer at BKC",
+   "height": 1.78,
+   "avatar": "Assets/Avatars/Adults/Male_Adult_01",
+   "avatarSha256": "8d1edb51b4dc3427ae2456f4407fc105532c145dd019e53cd42bab31cc948a29",
+   "atlas": 832,
+   "normalMap": false,
+   "skinToneShift": 0.8,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_01.max.fbx",
+     "sha256": "818cc185af21390575f7fbfdeb3012ba2ce5969fbcb220ea725a2617b339a6e2"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_neutral_01.max.fbx",
+     "sha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0"
+    },
+    "Talk": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_gestic_talk_neutral_01.max.fbx",
+     "sha256": "4c2b9ff481a9538dafbbe7f6aa6ffd6b948b5d34bb16a1e2052e943bbbbd3cd8"
+    }
+   },
+   "trim": {
+    "Idle": 12,
+    "Talk": 9
+   },
+   "textureCode": "m002",
+   "hairCard": true,
+   "likeness": true
+  },
+  {
+   "id": "anuj",
+   "role": "Anuj Deshpande · stack guide at Andheri",
+   "height": 1.74,
+   "avatar": "Assets/Avatars/Adults/Male_Adult_16",
+   "avatarSha256": "9c03f1142ddbca6592336f7823f39436635e996fccc3c2a0a9dc32535d6b706d",
+   "atlas": 1024,
+   "normalMap": false,
+   "skinToneShift": 0.6,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_01.max.fbx",
+     "sha256": "818cc185af21390575f7fbfdeb3012ba2ce5969fbcb220ea725a2617b339a6e2"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_neutral_01.max.fbx",
+     "sha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0"
+    },
+    "Talk": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_gestic_talk_neutral_01.max.fbx",
+     "sha256": "4c2b9ff481a9538dafbbe7f6aa6ffd6b948b5d34bb16a1e2052e943bbbbd3cd8"
+    }
+   },
+   "trim": {
+    "Idle": 12,
+    "Talk": 9
+   },
+   "textureCode": "m019",
+   "hairCard": false,
+   "likeness": true,
+   "glasses": {
+    "w": 0.054,
+    "h": 0.036,
+    "radius": 0.006,
+    "thick": 0.005
+   }
+  },
+  {
+   "id": "arham",
+   "role": "Arham Jain · demo lead at Powai",
+   "height": 1.72,
+   "avatar": "Assets/Avatars/Adults/Male_Adult_09",
+   "avatarSha256": "ebb89800dbad28b4352369c7149314e010806268a28d7f5bb954a4393bba3d00",
+   "atlas": 832,
+   "normalMap": false,
+   "skinToneShift": 0.6,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_01.max.fbx",
+     "sha256": "818cc185af21390575f7fbfdeb3012ba2ce5969fbcb220ea725a2617b339a6e2"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_neutral_01.max.fbx",
+     "sha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0"
+    },
+    "Talk": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_gestic_talk_neutral_01.max.fbx",
+     "sha256": "4c2b9ff481a9538dafbbe7f6aa6ffd6b948b5d34bb16a1e2052e943bbbbd3cd8"
+    }
+   },
+   "trim": {
+    "Idle": 12,
+    "Talk": 9
+   },
+   "textureCode": "m017",
+   "hairCard": true,
+   "likeness": true,
+   "glasses": {
+    "w": 0.05,
+    "h": 0.04,
+    "radius": 0.011,
+    "thick": 0.0055
+   }
+  },
+  {
+   "id": "ranjan",
+   "role": "Ranjan Jha · timeline keeper at Dadar",
+   "height": 1.7,
+   "avatar": "Assets/Avatars/Adults/Male_Adult_01",
+   "avatarSha256": "8d1edb51b4dc3427ae2456f4407fc105532c145dd019e53cd42bab31cc948a29",
+   "atlas": 832,
+   "normalMap": false,
+   "skinToneShift": 0.8,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_01.max.fbx",
+     "sha256": "818cc185af21390575f7fbfdeb3012ba2ce5969fbcb220ea725a2617b339a6e2"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_neutral_01.max.fbx",
+     "sha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0"
+    },
+    "Talk": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_gestic_talk_neutral_01.max.fbx",
+     "sha256": "4c2b9ff481a9538dafbbe7f6aa6ffd6b948b5d34bb16a1e2052e943bbbbd3cd8"
+    }
+   },
+   "trim": {
+    "Idle": 12,
+    "Talk": 9
+   },
+   "textureCode": "m002",
+   "hairCard": true,
+   "likeness": true
+  },
+  {
+   "id": "rina",
+   "role": "Rina Jha · host of the Worli proof deck",
+   "height": 1.6,
+   "avatar": "Assets/Avatars/Adults/Female_Adult_05",
+   "avatarSha256": "fffbb46af5f0f0323abad47f04f6067ec6f8757a345d5e53804601bbb77feca4",
+   "atlas": 832,
+   "normalMap": false,
+   "skinToneShift": 0.5,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/f_idle_neutral_01.max.fbx",
+     "sha256": "fd68b33ea9e290dc734ca8c3a71ef5842bb2dfe719853ff84f6336d06d39fdcb"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/f_walk_neutral_01.max.fbx",
+     "sha256": "20238709c689d46f5864aebaa58918cc1233cb9045b24aa4d58cf2752786a73b"
+    },
+    "Talk": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/f_gestic_talk_neutral_01.max.fbx",
+     "sha256": "fee2c764dcfac6f2edd85e73e11b1a13aac305372cbd657207d4c947b21a2476"
+    }
+   },
+   "trim": {
+    "Idle": 12,
+    "Talk": 9
+   },
+   "textureCode": "f005",
+   "hairCard": true,
+   "likeness": true
+  },
+  {
+   "id": "abhinav",
+   "role": "Abhinav Jha · achievements runner at Worli",
+   "height": 1.52,
+   "avatar": "Assets/Avatars/Children/Male_Child_01",
+   "avatarSha256": "ec3b257289dbd4ddeccc1921c25350ad31ed2489a1cb6e88f61c3ccf88d64359",
+   "atlas": 1024,
+   "normalMap": false,
+   "skinToneShift": 0.6,
+   "clips": {
+    "Idle": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_01.max.fbx",
+     "sha256": "818cc185af21390575f7fbfdeb3012ba2ce5969fbcb220ea725a2617b339a6e2"
+    },
+    "Walk": {
+     "file": "Assets/Animations/all_animations_max_motextr_xy/m_walk_neutral_01.max.fbx",
+     "sha256": "e6805ae6b6b49fe10f06c1b17b14ddde90d09b9fea689ac34793df252f44dcd0"
+    },
+    "Talk": {
+     "file": "Assets/Animations/all_animations_max_motextr_static/m_gestic_talk_neutral_01.max.fbx",
+     "sha256": "4c2b9ff481a9538dafbbe7f6aa6ffd6b948b5d34bb16a1e2052e943bbbbd3cd8"
+    }
+   },
+   "trim": {
+    "Idle": 12,
+    "Talk": 9
+   },
+   "textureCode": "cm001",
+   "hairCard": false,
+   "likeness": true
   }
  ]
 }

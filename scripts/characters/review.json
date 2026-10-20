@@ -70,5 +70,69 @@
    "date": "2026-10-11",
    "notes": "Street walker/stander: proportions, clothing and gait checked at 2\u201312 m in matched SwiftShader captures; idle-to-walk crossfade 0.3 s."
   }
+ },
+ "harsh": {
+  "sha256": "96c2567c73f3100b61aeeac28a4997f000595e0b54557299e37fdc7a6ea589fc",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "CST forecourt, face at 0.85 m and full body at 2.6 m: glasses frame sits on the nose, open pink striped shirt over a white tee, watch on the left wrist, short dark fade; hair cards shade with the scalp."
+  }
+ },
+ "arham": {
+  "sha256": "4d0a961d4f983c1c9bf4723ec35d6f64139a0dc147d982a4c4d7832dbd39de2c",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "Powai pavement, face and full body: side-swept hair, round-square glasses, moustache and goatee, purple tee, black track pants with a grey stripe."
+  }
+ },
+ "pavit": {
+  "sha256": "0b1c0cbdda50b6880ce086783c8bc5f4a54110f92decdea5e99ac45f5a8cae40",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "BKC arrival pavement, face and full body: black ribbed polo with chain, dark textured hair and a short beard, blue shorts from the base body."
+  }
+ },
+ "aarush": {
+  "sha256": "e51e898790e9e8081a68c3ef4a65bc6a0a13ba60380724bb0ad5e8fe8de57784",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "Fort research room, face and full body: white shirt with green leaf print and chain, dark hair, warm skin tone; hair cards shade with the scalp."
+  }
+ },
+ "rina": {
+  "sha256": "63af3800a1009becb59c52f2a0a394bd81398434389fbf7ff82faa267ad87bd9",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "Worli sea face, face and full body: dark wavy shoulder-length hair, red top with ruffle, blue jeans; female Talk clip loops cleanly."
+  }
+ },
+ "ranjan": {
+  "sha256": "f352199c1359b040c7cc59e60dd64822befc5aa3beec81620c78d51b0cc8dc96",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "Dadar platform pavement, face and full body: white brush-print shirt over shorts, reading glasses hooked on the placket, orange thread on the wrist, light stubble."
+  }
+ },
+ "anuj": {
+  "sha256": "8ffaa52e48271fa2309b6492780120ce4395b94b730c3882e100239f709f9bfe",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "Andheri bazaar pavement, clear of the stalls: curly dark hair, dark glasses, short full beard, blue tee and grey trousers."
+  }
+ },
+ "abhinav": {
+  "sha256": "944d0856cdcf79be30462d6c10fd6a122ab2c1882f46f3e824dd013521f5aecc",
+  "visualReview": {
+   "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
+   "date": "2026-10-20",
+   "notes": "Worli sea face, face and full body: generic young-teen face (no likeness by design), short dark hair, rust-orange POWER UP IN PROGRESS tee, dark jeans."
+  }
  }
 }
