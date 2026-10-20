@@ -36,6 +36,8 @@ interface WorldOptions {
 }
 /** Main-thread time per frame given to building a district ahead of arrival. */
 const DISTRICT_SLICE_MS = 6;
+/** Longest a directory jump waits on the driver linking the new district's shaders before landing anyway. */
+const ARRIVAL_SHADER_WAIT_MS = 4000;
 import { AdaptiveQuality } from './AdaptiveQuality';
 import { StreetAudio } from './StreetAudio';
 import { StreetRenderer, type RenderPreset } from './StreetRenderer';
@@ -119,7 +121,7 @@ export class WorldEngine {
     // Districts are built on first need and receive the same weathering/haze patch as the street.
     setCityDensity(this.renderPreset);
     // Modelled district traffic loads in the background; lofted bodies stand in until it arrives.
-    this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); this.warm(district.group); if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.fortTraffic = createFortRoadTraffic(() => this.street.loopVehicles); applyStreetAtmosphere(this.fortTraffic.group, this.atmosphere); this.scene.add(this.fortTraffic.group); if (typeof location !== 'undefined') void preloadCityVehicleModels(location.origin).then(() => { if (this.disposed) return; this.fortTraffic.refresh(); this.city.refreshVehicles(); this.warm(this.scene); this.pausedFrameDirty = true; }); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}});
+    this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); this.compiling = this.warm(district.group); if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.fortTraffic = createFortRoadTraffic(() => this.street.loopVehicles); applyStreetAtmosphere(this.fortTraffic.group, this.atmosphere); this.scene.add(this.fortTraffic.group); if (typeof location !== 'undefined') void preloadCityVehicleModels(location.origin).then(() => { if (this.disposed) return; this.fortTraffic.refresh(); this.city.refreshVehicles(); this.warm(this.scene); this.pausedFrameDirty = true; }); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}});
     const preview=import.meta.env.DEV?new URLSearchParams(location.search).get('characterPreview'):null;
     // Licensed street cast: approved characters load at runtime; DEV ?characterPreview also shows candidates.
     const castPreview=preview==='idle'||preview==='walk'||preview==='cast';
@@ -217,12 +219,13 @@ export class WorldEngine {
     this.endRide(); this.tween = null;
     const index = zoneIndexAt(stop.x);
     // A district not built yet is built over the next frames while the visitor stays put, instead of freezing on the jump.
-    if (!this.reducedMotion && !this.city.isReady(index)) { this.city.prepare(index); this.arrivingAt = id; this.options.onArriving?.(id); return; }
+    if (!this.reducedMotion && !this.city.isReady(index)) { this.city.prepare(index); this.arrivingAt = id; this.arrivalStarted = performance.now(); this.options.onArriving?.(id); return; }
     this.land(id);
   }
   /** The stop a directory jump is waiting to land at, while its district builds. */
   get arriving() { return this.arrivingAt; }
   private arrivingAt: string | null = null;
+  private arrivalStarted = 0;
   private land(id: string) {
     const stop = streetStops[id], waited = this.arrivingAt !== null; this.arrivingAt = null;
     this.placeVisitor(stop.x, stop.z, stop.yaw); this.updateNear();
@@ -387,12 +390,23 @@ export class WorldEngine {
    * a district built for an arriving ride, or the cast and vehicle models once they load. Compiling them
    * inside the first frame that shows them froze the game for a second or more on Windows drivers.
    */
-  private warm(root: THREE.Object3D) {
-    if (this.disposed) return;
+  private warm(root: THREE.Object3D): Set<THREE.Material> {
+    if (this.disposed) return new Set();
     const group = new THREE.Group(); root.traverse(o => { if ((o as THREE.Mesh).isMesh) { const c = o.clone(false); c.visible = true; c.matrixWorld.copy(o.matrixWorld); group.add(c); } });
     // compile() only queues the programs (the driver links them in parallel where KHR_parallel_shader_compile exists);
-    // compileAsync's readiness polling throws if a material is disposed meanwhile, as retired stand-in figures are.
-    try { this.renderer.compile(group, this.camera, this.scene); } catch { /* Compiled on first draw instead. */ } finally { group.clear(); }
+    // compileAsync's readiness polling throws if a material is disposed meanwhile, as retired stand-in figures are, so `shadersReady` polls instead.
+    try { return this.renderer.compile(group, this.camera, this.scene); } catch { return new Set(); /* Compiled on first draw instead. */ } finally { group.clear(); }
+  }
+  /** Materials of the district just built whose programs the driver may still be linking. */
+  private compiling = new Set<THREE.Material>();
+  /** True once the driver has linked every program `warm` queued for the new district, so its first frame does not stall on them. */
+  private shadersReady() {
+    if (!this.renderer.extensions.has('KHR_parallel_shader_compile')) this.compiling.clear();
+    for (const material of this.compiling) {
+      const program = (this.renderer.properties.get(material) as { currentProgram?: { isReady(): boolean } }).currentProgram;
+      if (!program || program.isReady()) this.compiling.delete(material);
+    }
+    return this.compiling.size === 0;
   }
   /** High keeps 1.5× sharpness on dense displays; Medium and phones stop at 1.25× (MSAA on a 1.5× canvas is 2.25× the fill of 1×). */
   private get maxPixelRatio() { return !this.options.mobile && this.renderPreset === 'high' ? 1.5 : 1.25; }
@@ -470,7 +484,7 @@ export class WorldEngine {
     if (document.hidden || this.mode !== 'world') return;
     // A quarter of a long frame (software rendering) so a jump there does not take minutes; 6 ms on a real device.
     this.city.tick(Math.max(DISTRICT_SLICE_MS, elapsed * 250));
-    if (this.arrivingAt && this.city.isReady(zoneIndexAt(streetStops[this.arrivingAt].x))) { this.land(this.arrivingAt); this.pausedFrameDirty = true; }
+    if (this.arrivingAt && this.city.isReady(zoneIndexAt(streetStops[this.arrivingAt].x)) && (this.shadersReady() || timestamp - this.arrivalStarted > ARRIVAL_SHADER_WAIT_MS)) { this.land(this.arrivingAt); this.pausedFrameDirty = true; }
     if (this.paused && !this.pausedFrameDirty) return;
     const forceRender=this.pausedFrameDirty;this.pausedFrameDirty = false;
     let simulatedWalkingMs=0;
