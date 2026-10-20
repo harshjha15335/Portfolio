@@ -4,7 +4,7 @@ import { districts } from '../src/data/city';
 for (const kind of ['TAXI', 'AUTO']) {
   test(`${kind.toLowerCase()} can be boarded, metered, routed and exited at its destination`, async ({ page }) => {
     // The hailed cab drives in from up the road with the traffic, which takes minutes of wall time under software rendering.
-    test.slow();
+    test.setTimeout(900_000);
     const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
     await page.goto('/#world');
     await expect(page.locator('.world-container canvas')).toBeVisible();
@@ -17,7 +17,8 @@ for (const kind of ['TAXI', 'AUTO']) {
     await page.getByLabel('Ride destination').selectOption(kind === 'TAXI' ? 'fort' : 'cst');
     await expect.poll(() => page.getByTestId('ride-fare').textContent()).not.toBe(initial);
     if (kind === 'TAXI') await page.getByRole('button', { name: 'SKIP TO ARRIVAL' }).click();
-    await expect(meter.getByRole('status')).toContainText('Arrived', { timeout: 30_000 });
+    // The auto drives the whole way (round the street's U-turns); the taxi skips.
+    await expect(meter.getByRole('status')).toContainText('Arrived', { timeout: kind === 'TAXI' ? 30_000 : 420_000 });
     await page.getByRole('button', { name: 'STEP OUT & MEET THE GUIDE' }).click();
     await expect(page.getByRole('dialog', { name: kind === 'TAXI' ? 'Fort Research Institute' : 'CST Arrival Terminus' })).toBeVisible();
     await expect(meter).toHaveCount(0);

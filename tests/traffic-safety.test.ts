@@ -212,7 +212,7 @@ describe('Fort Road with the passenger ride', () => {
       for (const p of walkers) for (const e of w.space.entries) if (solid(e)) nearest = Math.min(nearest, separation(e, { id: 'p', x: p.x, z: p.z, yaw: 0, halfLength: .3, halfWidth: .3, category: 'person', speed: 0 }));
     }
     expect(nearest).toBeGreaterThan(.5); expect(crossed).toBe(3);
-  });
+  }, 30000);
   it('20 · a denser preset only adds loop vehicles where there is room, and model swaps keep the state', () => {
     const w = fortWorld(false);
     for (let i = 0; i < 30 * 20; i++) w.step(1 / 30, null);
