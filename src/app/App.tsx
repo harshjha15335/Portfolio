@@ -38,6 +38,8 @@ export default function App() {
   const [near, setNear] = useState<string | null>(null);
   const [nearLabel, setNearLabel] = useState<string | undefined>();
   const [progress, setProgress] = useState(loadProgress);
+  /** A directory jump waiting for its district to finish building. */
+  const [arriving, setArriving] = useState<string | null>(null);
   const [toasts, setToasts] = useState<{ key: number; achievement: Achievement }[]>([]);
   const [exhibit, setExhibit] = useState<string | null>(null);
   const [tour, setTour] = useState<{ id: string; step: number } | null>(null);
@@ -147,7 +149,7 @@ export default function App() {
       import('../core/WorldEngine').then(({ WorldEngine }) => {
         if (cancelled || !container.current) return;
         try {
-          const instance = new WorldEngine(container.current, { onNear: (id, label) => { setNear(id); setNearLabel(label); }, onLook: () => track({ type: 'orientation', step: 'look' }), onSpeed: setSpeed, onRide: setRide, onPosition: setPosition, onHail: hail, onError: fail, onSelect: openProject, reducedMotion: reducedRef.current, mobile });
+          const instance = new WorldEngine(container.current, { onNear: (id, label) => { setNear(id); setNearLabel(label); }, onLook: () => track({ type: 'orientation', step: 'look' }), onSpeed: setSpeed, onRide: setRide, onPosition: setPosition, onHail: hail, onError: fail, onSelect: openProject, onArriving: setArriving, reducedMotion: reducedRef.current, mobile });
           engine.current = instance;
           instance.setMode(modeRef.current);
           instance.setPaused(!!projectId);
@@ -282,6 +284,7 @@ export default function App() {
     {entering && <EntryTransition />}
     {mode === 'world' && <main className="world-ui" id="main-content" tabIndex={-1} aria-label="Interactive mini Mumbai portfolio city">
       {!ready && <div className="loader" role="status"><span className="status-dot" /><span>OPENING THE CITY</span><small>Warming renderer · Quick View is ready</small></div>}
+      {arriving && <p className="district-arriving" role="status">Heading to {districts.find(d => d.id === arriving)?.title ?? 'the next stop'}…</p>}
       <div className="street-location"><span className="street-live" /> {zoneAt(position.x).label} <small>{STREET_MOOD.clock} · {STREET_MOOD.label}</small></div>
       {near && <div className="street-reticle" aria-hidden="true" />}
       {ride.phase === 'idle' && near && !BENCH && <button className="proximity-prompt" onClick={() => boardNear ? hail(boardNear) : openProject(near)}><kbd>{mobile ? '↗' : 'E'}</kbd><strong>{boardNear ? `Hail ${boardNear === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : near === 'ffprime' ? 'Read the FFprime research' : nearDistrict ? `Talk · ${nearDistrict.guide}` : nearLabel ?? 'Inspect'}</strong></button>}

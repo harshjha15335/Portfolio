@@ -38,7 +38,8 @@ export function VisitorBenchmark({ engine, ready, preset, adaptive, worldReadyMs
         let frames: BenchFrame[] = [];
         engine.setFrameObserver(frame => frames.push(frame));
         setStep({ index, label: `Arriving at ${title(id)}` });
-        const start = performance.now(); engine.travelTo(id); const buildMs = performance.now() - start;
+        // A district not built yet builds in slices before the visitor lands; `build` is that wait.
+        const start = performance.now(); engine.travelTo(id); while (engine.arriving && !run.stop) await nextFrame(); const buildMs = performance.now() - start;
         await wait(warmupS * 1000);
         const warmup = frames; frames = [];
         setStep({ index, label: `Measuring ${title(id)}` });

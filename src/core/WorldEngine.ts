@@ -31,7 +31,11 @@ interface WorldOptions {
   onLook?: () => void;
   onHail: (kind: TransitKind) => void; onError: (error: unknown) => void;
   onSelect: (id: string) => void; reducedMotion: boolean; mobile: boolean;
+  /** A directory jump is waiting for its district to finish building (the stop's id), or has landed (null). */
+  onArriving?: (id: string | null) => void;
 }
+/** Main-thread time per frame given to building a district ahead of arrival. */
+const DISTRICT_SLICE_MS = 6;
 import { AdaptiveQuality } from './AdaptiveQuality';
 import { StreetAudio } from './StreetAudio';
 import { StreetRenderer, type RenderPreset } from './StreetRenderer';
@@ -210,12 +214,25 @@ export class WorldEngine {
   focusLandmark(_id: string) { /* Reading an overlay never changes the visitor's viewpoint. */ }
   travelTo(id: string) {
     const stop = streetStops[id]; if (!stop) { this.options.onSelect(id); return; }
-    this.endRide(); this.placeVisitor(stop.x, stop.z, stop.yaw); this.updateNear();
+    this.endRide(); this.tween = null;
+    const index = zoneIndexAt(stop.x);
+    // A district not built yet is built over the next frames while the visitor stays put, instead of freezing on the jump.
+    if (!this.reducedMotion && !this.city.isReady(index)) { this.city.prepare(index); this.arrivingAt = id; this.options.onArriving?.(id); return; }
+    this.land(id);
   }
-  reset() { this.tween = null; this.endRide(); this.placeVisitor(STREET_SPAWN.x, STREET_SPAWN.z, STREET_SPAWN.yaw); this.updateNear(); }
+  /** The stop a directory jump is waiting to land at, while its district builds. */
+  get arriving() { return this.arrivingAt; }
+  private arrivingAt: string | null = null;
+  private land(id: string) {
+    const stop = streetStops[id], waited = this.arrivingAt !== null; this.arrivingAt = null;
+    this.placeVisitor(stop.x, stop.z, stop.yaw); this.updateNear();
+    if (waited) this.options.onArriving?.(null);
+  }
+  private cancelArrival() { if (this.arrivingAt === null) return; this.arrivingAt = null; this.options.onArriving?.(null); }
+  reset() { this.tween = null; this.cancelArrival(); this.endRide(); this.placeVisitor(STREET_SPAWN.x, STREET_SPAWN.z, STREET_SPAWN.yaw); this.updateNear(); }
   /** Carry the visitor to a framing pose (guided tours). Instant under reduced motion. */
   frameView(view: TourView) {
-    this.endRide(); this.releaseInput();
+    this.cancelArrival(); this.endRide(); this.releaseInput();
     const from = { x: this.visitor.position.x, z: this.visitor.position.z, yaw: this.yaw, pitch: this.pitch };
     const turn = Math.atan2(Math.sin(view.yaw - from.yaw), Math.cos(view.yaw - from.yaw));
     const to = { ...view, yaw: from.yaw + turn }, distance = Math.hypot(to.x - from.x, to.z - from.z);
@@ -234,7 +251,7 @@ export class WorldEngine {
   }
   setMove(key: string, down: boolean) { if (down) this.touchKeys.add(key); else this.touchKeys.delete(key); }
   board(kind: TransitKind) {
-    this.endRide(); this.releaseInput(); this.visitor.velocity.setZero(); this.rideYaw = 0; this.ridePitch = 0;
+    this.cancelArrival(); this.endRide(); this.releaseInput(); this.visitor.velocity.setZero(); this.rideYaw = 0; this.ridePitch = 0;
     this.ride = { ...idleRide(), phase: this.reducedMotion ? 'boarding' : 'hailing', kind, fare: this.reducedMotion ? storyFare(kind, 0) : 0 };
     this.taxi.visible = kind === 'taxi'; this.auto.visible = kind === 'auto'; this.transit.visible = true; this.queuedDestination = null;
     // Pull in from the same lane, parallel to the pavement. No vehicle crosses a building.
@@ -267,7 +284,7 @@ export class WorldEngine {
   }
   /** Draw and simulate only the district that contains x. */
   private syncZone(x: number) {
-    const index = zoneIndexAt(x); if (index === this.zone && (index === 0 || this.city.get(index)?.group.visible)) return;
+    const index = zoneIndexAt(x); if (index === this.zone && (index === 0 || this.city.peek(index)?.group.visible)) return;
     this.zone = index; const ox = cityZones[index].originX;
     this.street.group.visible = index === 0; this.fortTraffic.group.visible = index === 0; this.city.activate(index);
     // The hidden street's people rebuild their bone textures on return; releasing them keeps a district's texture count to its own.
@@ -451,6 +468,9 @@ export class WorldEngine {
     if (this.disposed) return; this.frameId = requestAnimationFrame(this.frame);if(this.inspectionFrozen)return;
     const elapsed = this.fixedStep || (this.lastTime ? (timestamp - this.lastTime) / 1000 : 0); const delta = Math.min(elapsed, .08); this.lastTime = timestamp;
     if (document.hidden || this.mode !== 'world') return;
+    // A quarter of a long frame (software rendering) so a jump there does not take minutes; 6 ms on a real device.
+    this.city.tick(Math.max(DISTRICT_SLICE_MS, elapsed * 250));
+    if (this.arrivingAt && this.city.isReady(zoneIndexAt(streetStops[this.arrivingAt].x))) { this.land(this.arrivingAt); this.pausedFrameDirty = true; }
     if (this.paused && !this.pausedFrameDirty) return;
     const forceRender=this.pausedFrameDirty;this.pausedFrameDirty = false;
     let simulatedWalkingMs=0;

@@ -54,6 +54,8 @@ export class DistrictKit {
   /** The current local frame (district space), for placing signs on a building. */
   get here() { return this.matrix.clone(); }
   rand() { return this.random(); }
+  /** Run `build` with `matrix` as the current frame (a frame captured earlier with `here`). */
+  within(matrix: THREE.Matrix4, build: () => void) { this.stack.push(this.matrix.clone()); this.matrix.copy(matrix); build(); this.matrix.copy(this.stack.pop()!); }
   /** Run `build` inside a local frame (a building, a stall). Frames nest. */
   frame(position: V3, rotationY: number, build: () => void) {
     const local = new THREE.Matrix4().compose(new THREE.Vector3(...position), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationY), new THREE.Vector3(1, 1, 1));
@@ -131,9 +133,10 @@ export class DistrictKit {
   wall(size: V3, position: V3, color: string, surface: KitSurface = 'plaster', rotationY = 0) { this.box(size, position, color, surface, rotationY); this.solid(size, position, rotationY); }
   readonly bodies: CANNON.Body[] = [];
   /** Merge everything into one mesh per surface. Returns the number of meshes created. */
-  build() {
+  build() { let meshes = 0; for (const _ of this.buildSteps()) meshes++; return meshes; }
+  /** `build`, one surface per step. */
+  *buildSteps(): Generator<void> {
     this.solidifyCandidates();
-    let meshes = 0;
     for (const [surface, list] of this.parts) {
       if (!list.length) continue;
       const g = mergeGeometries(list)!; list.forEach(p => p.dispose());
@@ -145,10 +148,12 @@ export class DistrictKit {
       material.userData = { ...base.userData, district: true };
       const mesh = new THREE.Mesh(g, material); mesh.name = `district:${surface}`;
       mesh.castShadow = surface !== 'glow' && surface !== 'glass'; mesh.receiveShadow = surface !== 'glow';
-      this.group.add(mesh); meshes++;
+      this.group.add(mesh); yield;
     }
-    this.parts.clear(); return meshes;
+    this.parts.clear();
   }
+  /** Drop everything not yet merged (an unfinished build being thrown away). */
+  discard() { for (const list of this.parts.values()) list.forEach(p => p.dispose()); this.parts.clear(); this.colliders.forEach(g => g.dispose()); this.colliders.length = 0; }
 }
 
 /** Planar UVs in metres chosen by the dominant normal axis, divided by the map's repeat. */

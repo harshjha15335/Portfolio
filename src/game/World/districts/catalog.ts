@@ -75,15 +75,15 @@ const bkc: DistrictSpec = {
     for (const z of [-4, -30, -44]) bench(c, 6.2, z, -Math.PI / 2);
     hoarding(c, -12, 7, -40, Math.PI / 2, 8, poster('#1d3d5a', '#e1a43a', 'ENTERPRISE SECURITY', 'Policy analysis · Manifest V3 · Cisco Secure Access'), 'AD');
     d.walkers(walkersOf(['office', 'office', 'office', 'salwar', 'sari', 'office', 'shirt', 'kurta'], 18), [4.7, 5.6, -4.7, -5.6, 8.4, -8.4]);
-    d.crowd.idle('office', [-5.6, .03, -18.4], Math.PI / 2, 'stand'); d.crowd.idle('salwar', [-5.4, .03, -21.2], Math.PI / 2, 'stand');
-    d.crowd.idle('vendor', [-6.9, .03, 6.2], -Math.PI / 2, 'sell'); d.crowd.idle('office', [-5.2, .03, 4.8], Math.PI / 2, 'talk'); d.crowd.idle('office', [-5.2, .03, 7.4], Math.PI / 2 + .4, 'talk');
-    d.crowd.idle('shirt', [9.9, .03, -11.3], -Math.PI / 2, 'stand');
-    d.crowd.idle('office', [8.8, .03, -2], -1.2, 'talk'); d.crowd.idle('office', [9.6, .03, -1.2], 2.2, 'talk');
+    d.idle('office', [-5.6, .03, -18.4], Math.PI / 2, 'stand'); d.idle('salwar', [-5.4, .03, -21.2], Math.PI / 2, 'stand');
+    d.idle('vendor', [-6.9, .03, 6.2], -Math.PI / 2, 'sell'); d.idle('office', [-5.2, .03, 4.8], Math.PI / 2, 'talk'); d.idle('office', [-5.2, .03, 7.4], Math.PI / 2 + .4, 'talk');
+    d.idle('shirt', [9.9, .03, -11.3], -Math.PI / 2, 'stand');
+    d.idle('office', [8.8, .03, -2], -1.2, 'talk'); d.idle('office', [9.6, .03, -1.2], 2.2, 'talk');
     // Inside the Systems Office: reception, three people at their desks, a meeting in the glass room.
     bkcOffice(c);
-    d.crowd.idle('office', [16.6, .03, 10], face(-1, 0), 'stand');
-    for (const [x, z] of [[19.65, 8.2], [22.85, 10.4], [19.65, 12.6]] as const) d.crowd.idle('office', [x, .03, z], face(1, 0), 'sit');
-    d.crowd.idle('office', [21.8, .03, -3.55], face(0, -1), 'sit'); d.crowd.idle('salwar', [24.4, .03, -5.65], face(0, 1), 'sit');
+    d.idle('office', [16.6, .03, 10], face(-1, 0), 'stand');
+    for (const [x, z] of [[19.65, 8.2], [22.85, 10.4], [19.65, 12.6]] as const) d.idle('office', [x, .03, z], face(1, 0), 'sit');
+    d.idle('office', [21.8, .03, -3.55], face(0, -1), 'sit'); d.idle('salwar', [24.4, .03, -5.65], face(0, 1), 'sit');
   },
 };
 
@@ -109,7 +109,7 @@ const andheri: DistrictSpec = {
     for (const [x, z] of [[3.35, -16], [3.35, -17], [3.35, -18], [-3.35, -30], [-3.35, -31], [3.35, -40]] as const) d.parked('bike', x, z, x > 0 ? Math.PI : 0);
     d.parked('cart', -3.5, -9.5, 0); d.parked('cart', 3.5, -46, Math.PI);
     d.walkers(walkersOf(['shirt', 'salwar', 'school', 'office', 'sari', 'kurta', 'worker', 'shirt', 'jogger', 'vendor'], 24), [4.6, 5.2, -4.6, -5.2]);
-    for (const [x, z, o, act] of [[5.3, 6.4, 'vendor', 'sell'], [-5.3, -1, 'vendor', 'sell'], [5.3, -23.6, 'vendor', 'sell'], [-5.3, -38.6, 'vendor', 'sell'], [4.7, -8, 'salwar', 'talk'], [4.6, -9.2, 'school', 'talk'], [-4.5, -20, 'shirt', 'talk'], [-4.6, -21.3, 'office', 'stand'], [-4.4, -46, 'worker', 'talk']] as Array<[number, number, Outfit, 'sell' | 'talk' | 'stand']>) d.crowd.idle(o, [x, .03, z], x > 0 ? -Math.PI / 2 : Math.PI / 2, act);
+    for (const [x, z, o, act] of [[5.3, 6.4, 'vendor', 'sell'], [-5.3, -1, 'vendor', 'sell'], [5.3, -23.6, 'vendor', 'sell'], [-5.3, -38.6, 'vendor', 'sell'], [4.7, -8, 'salwar', 'talk'], [4.6, -9.2, 'school', 'talk'], [-4.5, -20, 'shirt', 'talk'], [-4.6, -21.3, 'office', 'stand'], [-4.4, -46, 'worker', 'talk']] as Array<[number, number, Outfit, 'sell' | 'talk' | 'stand']>) d.idle(o, [x, .03, z], x > 0 ? -Math.PI / 2 : Math.PI / 2, act);
   },
 };
 
@@ -150,9 +150,9 @@ const powai: DistrictSpec = {
     hoarding(c, 10.5, 6.5, -55, -Math.PI / 2 + .4, 7.5, poster('#28473b', '#e3b04b', 'FIVE PROJECTS', 'Research terminals · recovery · route planners'), 'AD');
     d.walkers(walkersOf(['jogger', 'office', 'salwar', 'jogger', 'kurta', 'school', 'office', 'sari'], 12), [-6.5, -8.4, -10.2], 12, -56, 1.15);
     d.walkers(walkersOf(['office', 'office', 'salwar', 'shirt'], 7), [4.8, 5.6]);
-    d.crowd.idle('jogger', [-11.62, .03, 3.45], Math.PI / 2, 'sit'); d.crowd.idle('salwar', [-11.62, .03, 4.5], Math.PI / 2, 'sit');
-    d.crowd.idle('office', [9.3, .03, -21.6], -1.3, 'talk'); d.crowd.idle('office', [10.2, .03, -20.8], 2.1, 'talk'); d.crowd.idle('office', [9.4, .03, -19.7], -2.3, 'stand');
-    d.crowd.idle('elder', [-11.62, .03, -20], Math.PI / 2, 'sit');
+    d.idle('jogger', [-11.62, .03, 3.45], Math.PI / 2, 'sit'); d.idle('salwar', [-11.62, .03, 4.5], Math.PI / 2, 'sit');
+    d.idle('office', [9.3, .03, -21.6], -1.3, 'talk'); d.idle('office', [10.2, .03, -20.8], 2.1, 'talk'); d.idle('office', [9.4, .03, -19.7], -2.3, 'stand');
+    d.idle('elder', [-11.62, .03, -20], Math.PI / 2, 'sit');
   },
 };
 
@@ -188,14 +188,14 @@ const dadar: DistrictSpec = {
     maidan(kit, [-14, .02, -46], 18, 22, { x: 0, z: 0, w: 3, d: 13 }); for (let z = -36; z > -57; z -= 2) kit.box([.05, 1.2, .05], [-7.2, .6, z], '#6a6a5a', 'metal'); kit.box([.05, .05, 22], [-7.2, 1.2, -46], '#6a6a5a', 'metal');
     for (let x = -7.4; x > -19; x -= 3.2) tree(c, x, -58, 7, '#4f7a3c');
     for (const z of [-40.4, -51.6]) for (const dx of [-.09, 0, .09]) kit.box([.03, .7, .03], [-14 + dx, .35, z], '#e9e3cf', 'wood');
-    d.crowd.idle('school', [-14, .03, -51], 0, 'bat', .78); d.crowd.idle('school', [-14.2, .03, -41.2], Math.PI, 'bowl', .74);
-    d.crowd.idle('shirt', [-11, .03, -46], -Math.PI / 2, 'stand', .8); d.crowd.idle('school', [-17, .03, -44], Math.PI / 2, 'wave', .7); d.crowd.idle('school', [-14.7, .03, -53.4], 0, 'stand', .72);
+    d.idle('school', [-14, .03, -51], 0, 'bat', .78); d.idle('school', [-14.2, .03, -41.2], Math.PI, 'bowl', .74);
+    d.idle('shirt', [-11, .03, -46], -Math.PI / 2, 'stand', .8); d.idle('school', [-17, .03, -44], Math.PI / 2, 'wave', .7); d.idle('school', [-14.7, .03, -53.4], 0, 'stand', .72);
     const ball = new THREE.Mesh(new THREE.SphereGeometry(.035, 8, 6), new THREE.MeshStandardMaterial({ color: '#c8322a', roughness: .6 })); d.group.add(ball);
     d.animate(time => { const t = (time * .55) % 1; ball.visible = t > .45 && t < .65 || t < .2; const p = t < .45 ? 0 : Math.min(1, (t - .45) / .2); ball.position.set(-14.1, .3 + Math.sin(p * Math.PI) * 1.6, -41.6 - p * 9); });
     busStop(c, 5.9, -48, -Math.PI / 2, 'DADAR T.T. · RANADE ROAD');
     for (const z of [-15, -39]) palm(c, -6.3, z, 6.5);
     d.walkers(walkersOf(['sari', 'dabbawala', 'salwar', 'kurta', 'office', 'school', 'elder', 'dabbawala', 'sari', 'shirt', 'koli'], 22), [4.6, 5.3, -4.6, -5.2]);
-    for (const [x, z, o, act] of [[-6.9, -2.4, 'sari', 'sell'], [-6.9, -11.2, 'koli', 'sell'], [-6.9, -19.6, 'sari', 'sell'], [5.4, -46.6, 'office', 'stand'], [5.3, -48.8, 'sari', 'stand'], [5.5, -50, 'dabbawala', 'stand'], [-4.5, -6, 'dabbawala', 'talk'], [-4.4, -7.2, 'dabbawala', 'talk']] as Array<[number, number, Outfit, 'sell' | 'talk' | 'stand']>) d.crowd.idle(o, [x, .03, z], x > 0 ? -Math.PI / 2 : Math.PI / 2, act);
+    for (const [x, z, o, act] of [[-6.9, -2.4, 'sari', 'sell'], [-6.9, -11.2, 'koli', 'sell'], [-6.9, -19.6, 'sari', 'sell'], [5.4, -46.6, 'office', 'stand'], [5.3, -48.8, 'sari', 'stand'], [5.5, -50, 'dabbawala', 'stand'], [-4.5, -6, 'dabbawala', 'talk'], [-4.4, -7.2, 'dabbawala', 'talk']] as Array<[number, number, Outfit, 'sell' | 'talk' | 'stand']>) d.idle(o, [x, .03, z], x > 0 ? -Math.PI / 2 : Math.PI / 2, act);
   },
 };
 
@@ -234,9 +234,9 @@ const worli: DistrictSpec = {
     kit.cylinder(.06, 2.5, [-5.6, 1.25, 9], '#5a5f5c', 'metal', true);
     d.walkers(walkersOf(['jogger', 'jogger', 'salwar', 'elder', 'kurta', 'sari', 'jogger', 'office', 'school'], 18), [-6.2, -7.4, -8.6, -12.1], 12, -58, 1.2);
     d.walkers(walkersOf(['office', 'shirt', 'salwar'], 5), [5, 5.6]);
-    for (let z = 8; z > -56; z -= 7) d.crowd.idle(z % 2 ? 'sari' : 'shirt', [-13.2, .55, z], -Math.PI / 2, 'sit');
-    for (let z = 4.5; z > -56; z -= 14) d.crowd.idle('salwar', [-13.2, .55, z], -Math.PI / 2, 'sit');
-    d.crowd.idle('vendor', [-8.5, .03, -14], Math.PI / 2, 'sell'); d.crowd.idle('koli', [-7.4, .03, -32], Math.PI, 'stand');
+    for (let z = 8; z > -56; z -= 7) d.idle(z % 2 ? 'sari' : 'shirt', [-13.2, .55, z], -Math.PI / 2, 'sit');
+    for (let z = 4.5; z > -56; z -= 14) d.idle('salwar', [-13.2, .55, z], -Math.PI / 2, 'sit');
+    d.idle('vendor', [-8.5, .03, -14], Math.PI / 2, 'sell'); d.idle('koli', [-7.4, .03, -32], Math.PI, 'stand');
   },
 };
 
@@ -267,11 +267,11 @@ const juhu: DistrictSpec = {
     hoarding(c, -30, 6, -56, .3, 9, poster('#a3423a', '#f1c56a', 'SAY HELLO', 'Résumé · GitHub · LinkedIn · harsh.jha'), 'AD');
     d.walkers(walkersOf(['salwar', 'shirt', 'sari', 'school', 'kurta', 'jogger', 'elder', 'school', 'office'], 18), [-17, -21, -26, -31, -35], 10, -54, .9);
     d.walkers(walkersOf(['shirt', 'salwar', 'jogger'], 5), [-5, -5.6]);
-    for (let i = 0; i < 6; i++) d.crowd.idle(i % 2 ? 'vendor' : 'kurta', [-12.6, .03, 6 - i * 6.2], -Math.PI / 2, 'sell');
-    for (const [x, z, o, act] of [[-28, -4, 'school', 'wave'], [-29.3, -4.6, 'school', 'stand'], [-22, 2, 'sari', 'stand'], [-21.2, 2.6, 'kurta', 'talk'], [-33, -20, 'shirt', 'stand'], [-15.8, -8, 'salwar', 'talk'], [-15.6, -9.2, 'school', 'stand']] as Array<[number, number, Outfit, 'wave' | 'talk' | 'stand']>) d.crowd.idle(o, [x, .03, z], Math.PI / 2 - (x + z) * .05, act, o === 'school' ? .72 : 1);
+    for (let i = 0; i < 6; i++) d.idle(i % 2 ? 'vendor' : 'kurta', [-12.6, .03, 6 - i * 6.2], -Math.PI / 2, 'sell');
+    for (const [x, z, o, act] of [[-28, -4, 'school', 'wave'], [-29.3, -4.6, 'school', 'stand'], [-22, 2, 'sari', 'stand'], [-21.2, 2.6, 'kurta', 'talk'], [-33, -20, 'shirt', 'stand'], [-15.8, -8, 'salwar', 'talk'], [-15.6, -9.2, 'school', 'stand']] as Array<[number, number, Outfit, 'wave' | 'talk' | 'stand']>) d.idle(o, [x, .03, z], Math.PI / 2 - (x + z) * .05, act, o === 'school' ? .72 : 1);
     // The studio: someone at the work table, a friend on the sofa.
     juhuStudio(c);
-    d.crowd.idle('shirt', [17.3, .03, 5.9], face(1, 0), 'sit'); d.crowd.idle('salwar', [11.25, .03, 10.4], face(1, 0), 'sit');
+    d.idle('shirt', [17.3, .03, 5.9], face(1, 0), 'sit'); d.idle('salwar', [11.25, .03, 10.4], face(1, 0), 'sit');
   },
 };
 
@@ -301,8 +301,8 @@ const filmcity: DistrictSpec = {
     sign(c, 'SCENE 1', 1.5, [9.8, 1.9, -7.59], { draw: filmPoster('#3a1f4a', 'THE ROUTE', 'from student to builder', '#e05a3a') }, [256, 352]);
     sign(c, 'SCENE 2', 1.5, [12.6, 1.9, -7.59], { draw: filmPoster('#173a4a', 'UPSTREAM', 'five pull requests, one summer', '#e0b03a') }, [256, 352]);
     for (const [x, title, tag, bg, hue] of [[9.8, 'SIGNALS', 'what the receipts say', '#3a2a14', '#e05a3a'], [12.6, 'NEXT CHAPTER', 'still being written', '#14303a', '#f0b03a']] as const) sign(c, title, 1.5, [x, 1.9, 13.59], { draw: filmPoster(bg, title, tag, hue) }, [256, 352], Math.PI);
-    d.crowd.idle('sari', [21.2, .03, 5.82], face(1, 0), 'sit'); d.crowd.idle('kurta', [21.2, .03, 7.06], face(1, 0), 'sit'); d.crowd.idle('school', [24.5, .03, -4.74], face(1, 0), 'sit', .72);
-    d.crowd.idle('worker', [14.7, .03, 11.2], face(-1, 0), 'stand');
+    d.idle('sari', [21.2, .03, 5.82], face(1, 0), 'sit'); d.idle('kurta', [21.2, .03, 7.06], face(1, 0), 'sit'); d.idle('school', [24.5, .03, -4.74], face(1, 0), 'sit', .72);
+    d.idle('worker', [14.7, .03, 11.2], face(-1, 0), 'stand');
     // A film unit mid-shoot: camera crane, lights, director's chair.
     const rig = (x: number, z: number) => { kit.rod([x, 0, z], [x, 2.6, z], .03, '#222', 'metal'); kit.box([.6, .5, .3], [x, 2.8, z], '#1e1e1e', 'metal'); kit.box([.5, .4, .02], [x, 2.8, z + .16], '#fff3c8', 'glow'); for (let a = 0; a < 3; a++) kit.rod([x, 1.2, z], [x + Math.cos(a * 2.1) * .5, 0, z + Math.sin(a * 2.1) * .5], .02, '#222', 'metal'); };
     rig(-12.2, -17.5); rig(-12.4, -27.5); kit.box([.8, 1.0, .8], [-8.6, .5, -22], '#2b2b2b', 'metal'); kit.solid([.8, 1, .8], [-8.6, .5, -22]); kit.rod([-8.6, 1, -22], [-11.6, 3.2, -22.6], .08, '#3a3a3a', 'metal'); kit.box([.7, .45, .5], [-11.6, 3.3, -22.6], '#111', 'metal');
@@ -313,7 +313,7 @@ const filmcity: DistrictSpec = {
     // Half up on the kerb, the way Mumbai parks, so the traffic lanes stay clear.
     d.parked('suv', -4.1, -24, 0, false); d.parked('tempo', 4.1, -34, Math.PI, false);
     d.walkers(walkersOf(['worker', 'shirt', 'sari', 'kurta', 'worker', 'salwar', 'office', 'worker'], 14), [4.8, 5.5, -4.8, -5.4]);
-    for (const [x, z, o, act] of [[-14.2, -21.6, 'sari', 'wave'], [-14.6, -22.8, 'kurta', 'talk'], [-9.2, -25.75, 'shirt', 'sit'], [-8.6, -20.8, 'worker', 'stand'], [-10.4, -27.8, 'worker', 'stand'], [4.4, -10.5, 'salwar', 'stand'], [4.9, -11.4, 'shirt', 'talk']] as Array<[number, number, Outfit, 'wave' | 'talk' | 'stand' | 'sit']>) d.crowd.idle(o, [x, .03, z], x < -12 ? -Math.PI / 2 : x < 0 ? Math.PI / 2 : -Math.PI / 2, act);
+    for (const [x, z, o, act] of [[-14.2, -21.6, 'sari', 'wave'], [-14.6, -22.8, 'kurta', 'talk'], [-9.2, -25.75, 'shirt', 'sit'], [-8.6, -20.8, 'worker', 'stand'], [-10.4, -27.8, 'worker', 'stand'], [4.4, -10.5, 'salwar', 'stand'], [4.9, -11.4, 'shirt', 'talk']] as Array<[number, number, Outfit, 'wave' | 'talk' | 'stand' | 'sit']>) d.idle(o, [x, .03, z], x < -12 ? -Math.PI / 2 : x < 0 ? Math.PI / 2 : -Math.PI / 2, act);
   },
 };
 

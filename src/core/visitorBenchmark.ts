@@ -108,7 +108,7 @@ export function formatReport(report: BenchReport) {
     ...report.districts.map(d => `${d.id.padEnd(9)}${pad(d.stats.p50, 7)}${pad(d.stats.p95, 7)}${pad(d.stats.p99, 7)}${pad(d.stats.max, 7)}${pad(d.stats.fps, 6)}${pad(d.stats.over33, 7)}${pad(d.arrivalHitchMs, 7)}${pad(d.buildMs, 7)}${pad(d.peak.draws, 7)}${pad(Math.round(d.peak.triangles / 1000) + 'k', 7)}${pad(d.peak.textures, 5)}${pad(d.peak.programs, 5)}${pad(d.inView?.imageTextures ?? '-', 5)}${pad(d.inView?.boneTextures ?? '-', 5)}${pad(d.inView?.programs ?? '-', 5)}${pad(d.scale.toFixed(2) + (d.low ? 'L' : ''), 6)}`),
     `${'all'.padEnd(9)}${pad(report.overall.p50, 7)}${pad(report.overall.p95, 7)}${pad(report.overall.p99, 7)}${pad(report.overall.max, 7)}${pad(report.overall.fps, 6)}${pad(report.overall.over33, 7)}`,
     '',
-    'Frame times in ms. hitch = worst frame in the warm-up after arriving; build = district construction; tex = all renderer textures; prog = shader programs compiled so far (cumulative); img / bone / view = image textures, bone textures and programs the visible scene binds at the end of the pan; L = low tier engaged.',
+    'Frame times in ms. hitch = worst frame from choosing the stop to the end of the warm-up; build = wait from choosing the stop to standing there (the district builds in slices meanwhile); tex = all renderer textures; prog = shader programs compiled so far (cumulative); img / bone / view = image textures, bone textures and programs the visible scene binds at the end of the pan; L = low tier engaged.',
   ];
   return lines.join('\n');
 }
