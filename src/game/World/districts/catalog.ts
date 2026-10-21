@@ -97,8 +97,8 @@ const andheri: DistrictSpec = {
     const shops = (k: number) => Array.from({ length: k }, () => andheriShops[n++ % andheriShops.length]); yield;
     const block = (w: number, floors: number, style: 'concrete' | 'deco' = 'concrete') => ({ w, build: (c: Ctx) => { const H = midrise(c, { w, d: 12, floors, ground: 'shops', shops: shops(Math.max(2, Math.round(w / 3.6))), style }); for (let f = 0; f < Math.min(floors, 3); f++) sign(c, andheriShops[(n + f * 3) % andheriShops.length][0], w * .42, [(f % 2 ? 1 : -1) * w * .2, 4.9 + f * 3, .45], { bg: ['#c22f2f', '#1f5d9c', '#e0a72a', '#178a6b'][(n + f) % 4], fg: '#ffffff' }, [384, 96]); void H; } }); yield;
     // Gateway arch over the lane (first, so its sign always gets atlas space).
-    for (const s of [-1, 1]) { kit.wall([.8, 7.2, .8], [s * 6.1, 3.6, -3], '#c06a2e', 'plaster'); kit.box([1.1, .4, 1.1], [s * 6.1, 7.3, -3], '#e2b04a', 'stone'); }
-    kit.box([13, 1.4, .6], [0, 6.6, -3], '#2a2f6a', 'plaster'); for (const s of [-1, 1]) sign(c, 'ANDHERI TECH BAZAAR', 11.6, [0, 6.6, -3 + s * .31], { bg: '#2a2f6a', fg: '#ffd35a', local: 'अंधेरी टेक बाज़ार · skills with receipts' }, [1024, 128], s < 0 ? Math.PI : 0); yield;
+    for (const s of [-1, 1]) { kit.wall([.8, 7.2, .8], [s * 5.25, 3.6, -3], '#c06a2e', 'plaster'); kit.box([1.1, .4, 1.1], [s * 5.25, 7.3, -3], '#e2b04a', 'stone'); } // on the pavement, clear of the shop boards
+    kit.box([13, 1.4, .6], [0, 6.6, -3], '#2a2f6a', 'plaster'); for (const s of [-1, 1]) sign(c, 'ANDHERI TECH BAZAAR', 11.6, [0, 6.6, -3 + s * .31], { bg: '#2a2f6a', fg: '#ffd35a', local: 'अंधेरी टेक बाज़ार · skills with receipts', tier: 1 }, [1024, 128], s < 0 ? Math.PI : 0); yield;
     d.frontage(1, [block(11, 4), block(9, 3), block(13, 5), block(10, 3, 'deco'), block(12, 4), block(10, 4)]); yield;
     d.frontage(-1, [block(10, 3), block(12, 5), block(9, 4), block(14, 3), block(11, 4), block(10, 5)]); yield;
     // Pavement stalls under blue tarps, and the overhead tangle of cables.
@@ -175,13 +175,13 @@ const dadar: DistrictSpec = {
       for (let x = -16.5; x <= 16.5; x += 3) { kit.box([.6, 4.2, .6], [x, 2.1, .3], '#dccaa5', 'stone'); kit.box([2.2, 3.2, .1], [x + 1.5, 1.7, -.05], '#2d2924', 'solid'); }
       kit.box([37, .3, 2], [0, 4.3, .6], '#b9a580', 'stone');
       for (const s of [-1, 1]) kit.shape('box', [38, .16, 6], [0, 6.7, -2.5 + s * 2.6], '#9b4b32', 'stone', [s * .38, 0, 0]);
-      sign(c, 'DADAR', 9, [0, 4.95, .95], { draw: railBoard }, [1024, 192]);
+      sign(c, 'DADAR', 9, [0, 4.95, .95], { draw: railBoard, tier: 1 }, [1024, 192]);
       sign(c, 'PLATFORM 1 · WESTERN LINE ↑ · CENTRAL LINE →', 7, [10, 3.7, .7], { bg: '#1d3b6a', fg: '#ffffff', border: 'none' }, [1024, 96]);
     }); yield;
     // Foot-over bridge spanning Ranade Road.
     kit.box([18, .4, 3], [0, 6.6, -30], '#8e8a80', 'stone'); kit.box([18, 1.1, .08], [0, 7.3, -31.45], '#5d6a66', 'metal'); kit.box([18, 1.1, .08], [0, 7.3, -28.55], '#5d6a66', 'metal'); yield;
     kit.shape('box', [18.4, .1, 3.6], [0, 8.4, -30], '#7c8a86', 'metal'); for (const x of [-7.6, 7.6]) kit.wall([.5, 6.6, .5], [x, 3.3, -30], '#8e8a80', 'stone'); yield;
-    sign(c, 'DADAR STATION · पूर्व ⇄ पश्चिम', 7, [0, 7.1, -28.5], { bg: '#1d3b6a', fg: '#ffffff' }, [1024, 128]); yield;
+    sign(c, 'DADAR STATION · पूर्व ⇄ पश्चिम', 7, [0, 7.1, -28.5], { bg: '#1d3b6a', fg: '#ffffff', tier: 1 }, [1024, 128]); yield;
     // Flower market heaps on the west pavement, and a maidan for evening cricket.
     for (let z = -2; z > -24; z -= 4.4) { const k = kit; k.box([2, .5, 1.2], [-6.3, .25, z], '#6a5440', 'wood'); for (let i = 0; i < 30; i++) k.shape('sphere', [.09, .08, .09], [-7.1 + (i % 10) * .18, .55 + Math.floor(i / 10) * .07, z - .4 + Math.floor(i / 10) * .3], i % 3 ? '#f08a1c' : '#f6c624', 'foliage'); k.solid([2, .8, 1.2], [-6.3, .4, z]); for (let i = 0; i < 4; i++) k.shape('cylinder', [.04, .9, .04], [-5.6, 1.3, z - .4 + i * .25], '#f5a623', 'foliage'); }
     sign(c, 'DADAR FLOWER MARKET', 4.6, [-7.6, 3, -12], { bg: '#7a2b2b', fg: '#ffe2a8', local: 'फूल बाजार' }, [768, 128], Math.PI / 2); yield;
@@ -230,8 +230,8 @@ const worli: DistrictSpec = {
       { w: 14, build: c => midrise(c, { w: 14, d: 13, floors: 4, style: 'deco', ground: 'wall', color: '#d9d2bd', name: ['SHANTI NIWAS', 'शांती निवास'] }) },
     ]); yield;
     hoarding(c, 9.4, 7, -55, -Math.PI / 2 + .35, 8, poster('#3a2f6a', '#e9a33c', 'PROOF, NOT ADJECTIVES', 'Big Code qualifier · five merged upstream PRs · metrics with sources'), 'AD'); yield;
-    sign(c, 'WORLI SEA FACE', 3.2, [-5.6, 2.4, 9], { bg: '#1e4b6e', fg: '#ffffff', local: 'वरळी सी फेस' }, [768, 160], Math.PI / 2); yield;
-    kit.cylinder(.06, 2.5, [-5.6, 1.25, 9], '#5a5f5c', 'metal', true); yield;
+    sign(c, 'WORLI SEA FACE', 3.2, [-5.6, 2.4, 9], { bg: '#1e4b6e', fg: '#ffffff', local: 'वरळी सी फेस', tier: 1 }, [768, 160], Math.PI / 2); yield;
+    kit.cylinder(.06, 2.6, [-5.69, 1.3, 9], '#5a5f5c', 'metal', true); // behind the board, not through its face yield;
     d.walkers(walkersOf(['jogger', 'jogger', 'salwar', 'elder', 'kurta', 'sari', 'jogger', 'office', 'school'], 18), [-6.2, -7.4, -8.6, -12.1], 12, -58, 1.2); yield;
     d.walkers(walkersOf(['office', 'shirt', 'salwar'], 5), [5, 5.6]); yield;
     for (let z = 8; z > -56; z -= 7) d.idle(z % 2 ? 'sari' : 'shirt', [-13.2, .55, z], -Math.PI / 2, 'sit'); yield;
@@ -263,7 +263,7 @@ const juhu: DistrictSpec = {
       { w: 16, setback: 2, build: c => midrise(c, { w: 16, d: 13, floors: 3, style: 'deco', ground: 'wall', color: '#f0e4d0', name: ['SANDCASTLE'] }) },
       { w: 15, setback: 2, build: c => bungalow(c, { w: 13, d: 11, color: '#e9dcc4' }) },
     ]); yield;
-    for (let z = 11; z > -58; z -= 10) tree(c, 7.6, z, 6.5, '#5a8a3c'); yield;
+    for (let z = 11; z > -58; z -= 10) tree(c, 7.6, z, 6.5, '#5a8a3c', 1, 'almond'); yield;
     hoarding(c, -30, 6, -56, .3, 9, poster('#a3423a', '#f1c56a', 'SAY HELLO', 'Résumé · GitHub · LinkedIn · harsh.jha'), 'AD'); yield;
     d.walkers(walkersOf(['salwar', 'shirt', 'sari', 'school', 'kurta', 'jogger', 'elder', 'school', 'office'], 18), [-17, -21, -26, -31, -35], 10, -54, .9); yield;
     d.walkers(walkersOf(['shirt', 'salwar', 'jogger'], 5), [-5, -5.6]); yield;
@@ -283,7 +283,7 @@ const filmcity: DistrictSpec = {
     const c = d.ctx, { kit } = c;
     // Gate arch at the studio entrance.
     for (const s of [-1, 1]) kit.wall([1.2, 7, 1.2], [s * 6.2, 3.5, 15], '#7a2c38', 'plaster'); yield;
-    kit.box([14, 1.6, .9], [0, 7.6, 15], '#7a2c38', 'plaster'); for (const s of [-1, 1]) sign(c, 'FILM CITY · GOREGAON', 11, [0, 7.6, 15 + s * .46], { bg: '#7a2c38', fg: '#f4d488', local: 'दादासाहेब फाळके चित्रनगरी' }, [1024, 160], s < 0 ? Math.PI : 0); yield;
+    kit.box([14, 1.6, .9], [0, 7.6, 15], '#7a2c38', 'plaster'); for (const s of [-1, 1]) sign(c, 'FILM CITY · GOREGAON', 11, [0, 7.6, 15 + s * .46], { bg: '#7a2c38', fg: '#f4d488', local: 'दादासाहेब फाळके चित्रनगरी', tier: s < 0 ? 1 : 2 }, [1024, 160], s < 0 ? Math.PI : 0); yield;
     // Film City Talkies: an Art Deco single-screen with a bulb-lit marquee.
     d.frontage(1, [
       { w: 22, setback: 1, build: c => talkies(c, { screen: titleCard }) },

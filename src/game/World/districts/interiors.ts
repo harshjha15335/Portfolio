@@ -154,7 +154,7 @@ export function systemsOffice(c: Ctx) {
   kit.box([w * .7, 3, d * .7], [0, h + 1.5, -d / 2], frame, 'metal'); kit.rod([0, h + 3, -d / 2], [0, h + 9, -d / 2], .12, '#9a9d98');
   room(c, { w, d: 16, h: P, doorW: 3.2, doorH: 3.4, wall: '#d7d1c4', wallSurface: 'stone', inner: '#ece8df', floor: '#d6d1c6', floorSurface: 'stone', windows: [[-6.6, 7.2], [6.6, 7.2]], windowTop: P - .6, lights: [4, 5] });
   kit.box([8, .25, 3.2], [0, 4.4, 1.5], band, 'metal'); for (const s of [-1, 1]) kit.rod([s * 3.6, 0, 2.9], [s * 3.6, 4.3, 2.9], .09, '#aeb1ad');
-  sign(c, 'BKC SYSTEMS OFFICE', 9, [0, P - .3, .2], { bg: '#18242c', fg: '#e9f1f4', border: 'none', local: 'बीकेसी · CCIEeXpert internship floor' }, [1024, 192]);
+  sign(c, 'BKC SYSTEMS OFFICE', 9, [0, P - .3, .2], { bg: '#18242c', fg: '#e9f1f4', border: 'none', local: 'बीकेसी · CCIEeXpert internship floor', tier: 1 }, [1024, 192]);
 }
 
 /** The lobby's furnishings, in district space (the lobby spans x 11.75–27.25, z −7.75–13.75). */
@@ -163,7 +163,7 @@ export function bkcOffice(c: Ctx) {
   // Reception on the right as you walk in, the company wall straight ahead.
   kit.box([1, 1.05, 3.6], [15.6, .53, 10], '#33393b', 'wood'); kit.box([1.15, .06, 3.8], [15.6, 1.08, 10], '#e9e5dc', 'stone');
   kit.box([.08, 2.4, 6], [27.05, 4.6, 3], '#1f2a30', 'metal');
-  sign(c, 'CCIEeXpert', 5.6, [26.98, 4.95, 3] as V3, { bg: '#1f2a30', fg: '#f2f5f6', border: 'none', local: 'SYSTEMS OFFICE · BKC' }, [1024, 256], -Math.PI / 2);
+  sign(c, 'CCIEeXpert', 5.6, [26.98, 4.95, 3] as V3, { bg: '#1f2a30', fg: '#f2f5f6', border: 'none', local: 'SYSTEMS OFFICE · BKC', tier: 1 }, [1024, 256], -Math.PI / 2);
   // Open-plan desks on the right, two rows facing the windows.
   for (const x of [20.2, 23.4]) for (const z of [8.2, 10.4, 12.6]) desk(c, x, z, -Math.PI / 2, { screens: 2 });
   // Glass meeting room on the left with a long table and a wall screen.
@@ -193,7 +193,7 @@ export function studioBungalow(c: Ctx) {
   for (const x of [-w * .3, 0, w * .3]) { kit.box([1.3, 1.5, .06], [x, 4.9, -.97], '#2d393c', 'glass'); for (const s of [-1, 1]) kit.box([.6, 1.5, .06], [x + s * .98, 4.9, -.95], '#5b7a5e', 'wood'); }
   kit.box([w + .8, .2, 2.6], [0, 3.8, .1], '#d8cdb6', 'stone'); for (const x of [-w / 2 + .5, w / 2 - .5]) kit.cylinder(.16, 3.7, [x, 1.85, 1.1], '#efe9dc', 'stone');
   for (const s of [-1, 1]) kit.shape('box', [w + 1.2, .14, d * .62], [0, H + 1.25, -1 - d / 2 + s * d * .27], '#a1503a', 'stone', [s * -.42, 0, 0]);
-  sign(c, 'JUHU STUDIO', 4.2, [-4.6, 3.3, .02], { bg: '#efe8da', fg: '#2c3a3f', border: 'none', local: 'हॅलो · say hello' }, [768, 160]);
+  sign(c, 'JUHU STUDIO', 4.2, [-4.6, 3.3, .02], { bg: '#efe8da', fg: '#2c3a3f', border: 'none', local: 'हॅलो · say hello', tier: 1 }, [768, 160]);
 }
 
 /** Studio furnishings in district space (the room spans x 10.25–21.75, z −2.75–12.75). */
@@ -231,8 +231,8 @@ export function talkies(c: Ctx, draw: { screen: NonNullable<Parameters<typeof si
   // Marquee, bulbs and posters on the street face.
   kit.box([16, 1.6, 3], [0, 3.6, 1.6], '#2b2220', 'solid');
   for (let x = -7.8; x <= 7.8; x += .4) for (const y of [2.84, 4.36]) kit.shape('sphere', [.06, .06, .06], [x, y, 3.12], '#ffe3a0', 'glow');
-  sign(c, 'FILM CITY TALKIES', 14, [0, 3.6, 3.12], { bg: '#2b2220', fg: '#ffd56a', border: 'none', local: 'आज का शो · tonight: one engineering story' }, [1024, 128]);
-  kit.box([2.4, 9, .8], [7.5, 8.6, .6], '#8a2f36', 'plaster'); sign(c, 'TALKIES', 7.5, [8.72, 8.6, .6], { bg: '#8a2f36', fg: '#ffe6a6', border: 'none' }, [768, 160], Math.PI / 2);
+  sign(c, 'FILM CITY TALKIES', 14, [0, 3.6, 3.12], { bg: '#2b2220', fg: '#ffd56a', border: 'none', local: 'आज का शो · tonight: one engineering story', tier: 1 }, [1024, 128]);
+  kit.box([2.4, 9, .8], [7.5, 8.6, .6], '#8a2f36', 'plaster'); sign(c, 'TALKIES', 7.5, [8.72, 8.6, .6], { bg: '#8a2f36', fg: '#ffe6a6', border: 'none', tier: 1 }, [768, 160], Math.PI / 2);
   // In the hall: screen, curtains, proscenium, projector port, wall lights.
   kit.frame([0, 0, -LOBBY - HALL + .3], 0, () => {
     kit.box([14, 6.4, .1], [0, 5, .05], '#1a1414', 'solid');

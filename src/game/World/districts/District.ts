@@ -5,7 +5,7 @@ import type { StreetMaterials } from '../StreetMaterials';
 import type { StreetInteraction } from '../MumbaiStreet';
 import { SpatialIndex } from '../spatial/SpatialIndex';
 import type { CityZone } from '../streetLayout';
-import { DistrictKit } from './DistrictKit';
+import { DistrictKit, foliageWind } from './DistrictKit';
 import { Crowd, LaneTraffic, SignAtlas, Water } from './DistrictSystems';
 import { backdropBlock, constructionSite, rooftop, skylineCrown, streetClutter, streetLight, towerRelief, PASTELS, ZEBRA_Z, type Ctx } from './buildings';
 import type { Outfit } from './CityFolk';
@@ -294,7 +294,7 @@ export class District {
     this.crowd.update(reduced ? 0 : time, delta, local);
     this.traffic.update(time, delta, [local, ...others.map(o => o.clone().sub(this.origin))], this.crowd.onRoad(), context);
     if (this.signalLamps) { const walk = pedestrianGreen(reduced ? 0 : time); this.signalLamps.walk.visible = walk; this.signalLamps.wait.visible = !walk; }
-    if (!reduced) for (const w of this.waters) w.update(time);
+    if (!reduced) { for (const w of this.waters) w.update(time); foliageWind.value = time; }
     for (const m of this.motion) m(reduced ? 0 : time, delta);
     for (const f of this.friendSlots) f.update(reduced ? 0 : time, local);
   }

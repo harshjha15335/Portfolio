@@ -1,11 +1,10 @@
 import * as THREE from 'three';
-import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { DistrictKit } from './DistrictKit';
 import type { V3 } from './ColorMesh';
 
 /**
  * Natural shapes for the districts, built as vertex-coloured geometry on the kit's merged
- * surfaces (no new textures or shaders): clumped tree crowns, feathered palm fronds,
+ * surfaces (no new textures or shaders): branching trees with leaf sprays, feathered palm fronds,
  * noise-shaped hills and worn maidan ground with grass patches.
  */
 function hash(x: number, y: number) { const h = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return h - Math.floor(h); }
@@ -23,36 +22,72 @@ function painted(g: THREE.BufferGeometry, paint: (p: THREE.Vector3, n: THREE.Vec
   g.setAttribute('color', new THREE.BufferAttribute(colors, 3)); return g;
 }
 
-const clumps = new Map<number, THREE.BufferGeometry>();
-/** A lumpy leaf clump: an icosphere pushed in and out by noise, flattened underneath. */
-function clump(variant: number) {
-  let g = clumps.get(variant);
-  if (!g) {
-    g = mergeVertices(new THREE.IcosahedronGeometry(1, 1)); const p = g.getAttribute('position'), v = new THREE.Vector3();
-    for (let i = 0; i < p.count; i++) {
-      v.fromBufferAttribute(p, i); const k = .78 + .44 * fbm(v.x * 2.1 + variant * 7.3, v.z * 2.1 + v.y * 1.7, 3);
-      v.multiplyScalar(k); if (v.y < -.25) v.y = -.25 + (v.y + .25) * .35; p.setXYZ(i, v.x, v.y, v.z);
-    }
-    g.computeVertexNormals(); clumps.set(variant, g);
-  }
-  return g;
-}
+const sprays = new Map<string, THREE.BufferGeometry>();
 /**
- * A broad Mumbai street tree (rain tree, gulmohar): a forked trunk under an umbrella of
- * lumpy leaf clumps, lit from above and shaded underneath in the vertex colours.
+ * A leaf spray: a short twig carrying `leaves` leaf blades (each a pointed four-triangle leaf with a raised midrib),
+ * alternating left and right and fanning outwards, vertex-coloured lighter at the tips. About a metre long. `broad`
+ * leaves (Indian almond) are wide and few; narrow ones (rain tree leaflets) are many and small.
  */
-export function canopyTree(kit: DistrictKit, x: number, z: number, h = 6, crown = '#5d7f43', size = 1) {
-  const trunk = '#5c4a38', top = h * .7, R = 2.3 * size;
-  kit.rod([x, 0, z], [x + .15 * size, top * .62, z], .2 * size, trunk, 'wood');
-  for (let i = 0; i < 4; i++) { const a = i * 1.57 + kit.rand(), reach = (.6 + kit.rand() * .5) * size; kit.rod([x + .15 * size, top * .6, z], [x + Math.cos(a) * reach, top + .7 * size, z + Math.sin(a) * reach], .1 * size, trunk, 'wood'); }
-  kit.solid([.45, 2, .45], [x, 1, z]);
-  // Clumps sit on a dome so the crown reads as a rounded mass, darker and tucked in underneath.
-  const base = colorOf(crown), count = 13;
-  for (let i = 0; i < count; i++) {
-    const a = i * 2.399 + kit.rand() * .4, phi = i === 0 ? 0 : Math.acos(1 - (i / count) * 1.35), d = Math.sin(phi) * R, r = (1.05 + kit.rand() * .5) * size;
-    const cy = top + 1.1 * size + Math.cos(phi) * R * .55, tint = (.82 + kit.rand() * .3) * (1 - .18 * (1 - Math.cos(phi)));
-    const g = painted(clump(i % 5).clone(), (p, n) => base.clone().multiplyScalar(tint * (.5 + .55 * Math.max(0, n.y) + .1 * p.y) * (.85 + .3 * fbm(p.x * 3, p.z * 3, 2))));
-    kit.addColored(g, 'foliage', [x + Math.cos(a) * d, cy, z + Math.sin(a) * d], [r * 1.1, r * .92, r * 1.1], [0, a, 0]); g.dispose();
+function leafSpray(kind: 'broad' | 'fine', variant: number) {
+  const key = `${kind}:${variant}`; let g = sprays.get(key);
+  if (g) return g;
+  const pos: number[] = [], col: number[] = [], index: number[] = [], dark = colorOf(kind === 'broad' ? '#3f6a2c' : '#4d7434'), light = colorOf(kind === 'broad' ? '#7fa04a' : '#8bab55');
+  const leaves = kind === 'broad' ? 7 : 12, length = kind === 'broad' ? .34 : .22, width = kind === 'broad' ? .15 : .065;
+  let seed = variant * 9.17 + (kind === 'broad' ? 3 : 0); const rand = () => { seed += 1; return hash(seed, seed * .37); };
+  for (let i = 0; i < leaves; i++) {
+    const t = (i + .5) / leaves, side = i % 2 ? 1 : -1, along = t * .9, yaw = side * (.7 + rand() * .5) - (t - .5) * .3, droop = -.25 - rand() * .35, l = length * (.75 + rand() * .45), w = width * (.8 + rand() * .4);
+    const dir = new THREE.Vector3(Math.sin(yaw), Math.sin(droop), Math.cos(yaw)).normalize(), across = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw)).multiplyScalar(w / 2);
+    const base = new THREE.Vector3(0, -t * .12, along), tip = base.clone().addScaledVector(dir, l), mid = base.clone().addScaledVector(dir, l * .45);
+    const n = pos.length / 3, shade = dark.clone().lerp(light, .3 + t * .5 + rand() * .2);
+    for (const [v, c] of [[base, dark], [mid.clone().add(across), shade], [tip, light], [mid.clone().sub(across), shade], [mid.clone().add(new THREE.Vector3(0, w * .12, 0)), shade]] as const) { pos.push(v.x, v.y, v.z); col.push(c.r, c.g, c.b); }
+    index.push(n, n + 1, n + 4, n + 1, n + 2, n + 4, n + 2, n + 3, n + 4, n + 3, n, n + 4);
+  }
+  // The twig: a thin flat strip under the leaves.
+  const n = pos.length / 3, bark = colorOf('#5b4a36');
+  for (const [x, y, z] of [[-.008, 0, 0], [.008, 0, 0], [.004, -.12, .95], [-.004, -.12, .95]]) { pos.push(x, y, z); col.push(bark.r, bark.g, bark.b); }
+  index.push(n, n + 1, n + 2, n, n + 2, n + 3);
+  g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(index); g.computeVertexNormals();
+  sprays.set(key, g); return g;
+}
+export type TreeSpecies = 'raintree' | 'almond';
+/**
+ * A broad Mumbai street tree with a real branch structure: a trunk that forks into spreading limbs, each splitting
+ * into smaller branches, and leaf sprays clustered round every branch tip (no blob crowns). The rain tree (Shivaji
+ * Park, Dadar) spreads into a wide umbrella of fine leaflets; the Indian almond (Juhu) grows tiers of near-horizontal
+ * branches with large broad leaves. `crown` tints the foliage; `size` scales the whole tree.
+ */
+export function canopyTree(kit: DistrictKit, x: number, z: number, h = 6, crown = '#5d7f43', size = 1, species: TreeSpecies = 'raintree') {
+  const trunk = '#5c4a38', bark = '#6b5845', s = size, ref = colorOf('#5d7f43'), c = colorOf(crown), tint = new THREE.Color(c.r / ref.r, c.g / ref.g, c.b / ref.b);
+  const almond = species === 'almond', fork = (almond ? .38 : .34) * h * s;
+  const top: V3 = [x + .12 * s, fork, z + .05 * s];
+  kit.rod([x, 0, z], top, (almond ? .17 : .24) * s, trunk, 'wood');
+  kit.rod([x, 0, z], [x, .5 * s, z], (almond ? .24 : .34) * s, trunk, 'wood');
+  kit.solid([.45 * s, 2, .45 * s], [x, 1, z]);
+  const tips: Array<{ p: V3; a: number }> = [];
+  const limb = (from: V3, a: number, rise: number, length: number, radius: number, depth: number) => {
+    const to: V3 = [from[0] + Math.cos(a) * length * Math.cos(rise), from[1] + Math.sin(rise) * length, from[2] + Math.sin(a) * length * Math.cos(rise)];
+    kit.rod(from, to, radius, depth ? bark : trunk, 'wood');
+    if (depth >= 2) { tips.push({ p: to, a }); return; }
+    const forks = depth === 0 ? 3 : 2;
+    for (let i = 0; i < forks; i++) limb(to, a + (i - (forks - 1) / 2) * (almond ? .7 : .55) + (kit.rand() - .5) * .3, almond ? .05 + kit.rand() * .15 : rise * .6 + .1 + kit.rand() * .2, length * (.62 + kit.rand() * .15), radius * .6, depth + 1);
+  };
+  if (almond) {
+    // Pagoda tiers: whorls of four or five near-horizontal limbs up the leader.
+    const tiers = 3, leaderTop: V3 = [top[0], h * .92 * s, top[2]]; kit.rod(top, leaderTop, .1 * s, trunk, 'wood');
+    for (let t = 0; t < tiers; t++) { const y = fork + (leaderTop[1] - fork) * t / tiers, count = 5 - (t > 1 ? 1 : 0), reach = (1.9 - t * .45) * s; for (let i = 0; i < count; i++) limb([top[0], y, top[2]], i / count * Math.PI * 2 + t * .6 + kit.rand() * .3, .06 + kit.rand() * .08, reach * .55, (.09 - t * .02) * s, 1); }
+    tips.push({ p: leaderTop, a: kit.rand() * 6 });
+  } else {
+    for (let i = 0; i < 5; i++) limb(top, i / 5 * Math.PI * 2 + kit.rand() * .5, .42 + kit.rand() * .25, (1.35 + kit.rand() * .4) * s, .14 * s, 0);
+  }
+  // Leaf sprays round each tip, pointing outwards and fanning up and down, a little darker inside the crown.
+  for (const [k, tip] of tips.entries()) {
+    const sprays = almond ? 5 : 6;
+    for (let i = 0; i < sprays; i++) {
+      const g = leafSpray(almond ? 'broad' : 'fine', (k * 7 + i) % 6).clone(), yaw = tip.a + (i / sprays - .5) * 2.4 + (kit.rand() - .5) * .4, pitch = (kit.rand() - .35) * .9, inner = .82 + .25 * (i % 3) / 2;
+      const c = g.getAttribute('color'); for (let v = 0; v < c.count; v++) c.setXYZ(v, c.getX(v) * tint.r * inner, c.getY(v) * tint.g * inner, c.getZ(v) * tint.b * inner);
+      const scale = (almond ? 1.35 : 1.22) * s * (.85 + kit.rand() * .35);
+      kit.addColored(g, 'foliage', [tip.p[0] + (kit.rand() - .5) * .3 * s, tip.p[1] + (kit.rand() - .3) * .35 * s, tip.p[2] + (kit.rand() - .5) * .3 * s], [scale, scale, scale], [pitch, Math.PI / 2 - yaw, 0]); g.dispose();
+    }
   }
 }
 
