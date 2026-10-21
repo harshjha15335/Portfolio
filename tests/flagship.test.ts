@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { BM25Index, analyzeQuery, embed, md5, repolensSample, rrfFusion, denseSearch, splitTokens } from '../src/projects/repolens';
 import { COMPANIES, DEFAULT_CONFIG, evaluateRisk, mockHistory, newLedger, paperFill, type Proposal, type Observation, type RiskContext } from '../src/projects/northstar';
 import { alerts, monthTotals, parseBankSMS, syntheticLedger, weeklyAnomalies } from '../src/projects/moneymetrics';
-import { SAMPLE_ANALYSIS, SAMPLE_MEETING, reminderOutcome, uncitedItems, validateMeeting } from '../src/projects/meeting';
 
 const hex = (bytes: Uint8Array) => [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
 
@@ -92,20 +91,3 @@ describe('MoneyMetrics rules', () => {
   });
 });
 
-describe('Meeting Intelligence rules', () => {
-  it('the sample meeting validates and every example item cites a real timestamp', () => {
-    expect(validateMeeting(SAMPLE_MEETING).status).toBe(201);
-    expect(uncitedItems(SAMPLE_ANALYSIS, SAMPLE_MEETING.transcript)).toEqual([]);
-  });
-  it('invalid input returns the VALIDATION_ERROR envelope', () => {
-    const r = validateMeeting({ ...SAMPLE_MEETING, participants: [], transcript: [] });
-    expect(r.status).toBe(400);
-    expect(r.body).toMatchObject({ error: { code: 'VALIDATION_ERROR', details: [{ field: 'participants' }, { field: 'transcript' }] } });
-  });
-  it('reminders only go to overdue, unfinished items', () => {
-    const now = new Date('2026-10-09T00:00:00Z');
-    expect(reminderOutcome({ status: 'PENDING', dueDate: '2026-10-08' }, now, true).sent).toBe(true);
-    expect(reminderOutcome({ status: 'COMPLETED', dueDate: '2026-10-08' }, now, true).overdue).toBe(false);
-    expect(reminderOutcome({ status: 'PENDING', dueDate: '2026-10-08' }, now, false).history).toMatch(/Telegram not configured/);
-  });
-});

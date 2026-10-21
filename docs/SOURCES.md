@@ -57,8 +57,6 @@ Current public source is HTML/CSS/JavaScript, rather than the React/Python stack
 
 ## Secondary projects
 
-- [Meeting Intelligence README](https://github.com/harshjha15335/meeting-intelligence-service/blob/main/README.md): Node.js/TypeScript, Express, PostgreSQL, Prisma, JWT/bcrypt, Gemini, Telegram, Zod, OpenAPI, cron, Jest/Supertest and Docker.
-- [Meeting AI approach](https://github.com/harshjha15335/meeting-intelligence-service/blob/main/AI_APPROACH.md): transcript-grounded timestamp citations, structured extraction, no chunking/diarization, and re-analysis duplication limitation.
 - [RideFlow README](https://github.com/harshjha15335/rideflow/blob/main/README.md): multimodal route planning/ranking/explanation, React/TypeScript frontend, FastAPI backend, booking flow, mock payments and journey-tracking simulation.
 
 No test totals, user counts, uptime, AI accuracy or production impact were invented for these projects. Ownership descriptions for personal repositories summarize the candidate’s project work; only FFprime has independently inspected per-author upstream merge evidence.

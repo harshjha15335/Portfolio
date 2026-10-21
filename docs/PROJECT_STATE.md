@@ -36,7 +36,7 @@ CST and Fort share one street. The other seven are built one at a time, 600 m ap
 | Fort Open Source Hall | GSoC 2026, QC-Devs, FFprime | Furnished research room: gradient-check activity, FFprime coordinate workstation (Stone-convention conversions), FFprime terminal, contribution board. Aarush Shetty stands here. |
 | BKC Systems Office | CCIEeXpert internship | Boulevard, plaza, the internship brief board at the office entrance, and a walk-in lobby floor with reception, desks, a glass meeting room and a rate-limit console activity. Pavit Singh. |
 | Andheri Tech Bazaar | Skills with evidence | A lane of five skill shops (AI, backend, DevOps, frontend, language), each running real logic with fixtures recorded from Harsh's code. Anuj Deshpande. |
-| Powai Builder's District | Flagship projects | A walk-in workplace per project along the lake. Working labs for NORTHSTAR, MoneyMetrics, RepoLens, Compiler Lab (regex → DFA) and ASTFLOW. Each board stands at its workplace door. RECO stays a Quick View case study; Meeting Intelligence and RideFlow were removed at Harsh's request (21 Oct). Arham Jain. |
+| Powai Builder's District | Flagship projects | A walk-in workplace per project along the lake. Working labs for NORTHSTAR, MoneyMetrics, RepoLens, Compiler Lab (regex → DFA) and ASTFLOW. Each board stands at its workplace door. RECO stays a Quick View case study; Meeting Intelligence and RideFlow were removed everywhere at Harsh's request (21 Oct), including the Andheri shops. Arham Jain. |
 | Dadar Junction | Education and timeline | Station, chawl and maidan with six platform boards and rain trees. Ranjan Jha. |
 | Worli Proof Deck | Achievements and hackathons | Sea face with four evidence cases; you name the evidence behind each claim. Rina Jha. |
 | Juhu Studio | About, résumé, contact | Beach, stalls, almond trees and a walk-in studio with work table, bookshelf, sofa, notice board, résumé stand and contact terminal. Abhinav Jha. |
@@ -75,7 +75,7 @@ Built from Harsh's photos as stylised likenesses on licensed Rocketbox bodies, n
 | Guided tours | Generated per district; the camera frames each exhibit in turn | PASS |
 | Journal (J) | Districts visited, discoveries, quest progress; saved in the browser under `hj-progress-v1` | PASS (`tests/gameplay.test.ts`) |
 | Achievements | 12: First Steps, Research Explorer, Finite Differences, Systems Thinker, Skill Collector, Builder, Time Traveler, Receipts Checked, Said Hello, Kaali-Peeli Regular, Film Buff, City Explorer | PASS |
-| Quest | "Discover the Engineer": Fort research, BKC, a Powai project, Andheri, Juhu. It restricts nothing. | PASS |
+| Quest | "Discover the Engineer": Fort open source, BKC, a Powai project, Andheri, Juhu. It restricts nothing. | PASS |
 | Map (M) | Open a district, ride there, or fast travel; shows the active objective | PASS |
 | Taxi and auto rides | Hail, wait for pickup, choose any district, ride in the passenger cabin; a cross-district ride is an exit leg, a cut, then an arrival leg. You cannot drive. | PASS (`tests/city.spec.ts` 14/14 on PR #22) |
 | Fare meter | A physical 3D meter beside the passenger, at eye level, with three red seven-segment rows (fare, waiting, distance). No on-screen fare box, as Harsh asked. Taxi base fare ₹28. Labelled as a demo fare, not an official tariff. | PASS (`tests/fare-meter.test.ts`, 48 state cases; passenger-view screenshots) |

@@ -80,11 +80,12 @@ test('Andheri shops show evidence and run each bench', async ({ page }) => {
   await sign(/Frontend Studio/).click();
   await shops.getByRole('button', { name: 'SKIP TO ARRIVAL' }).click();
   await expect(shops.getByRole('list', { name: 'Callbacks fired' })).toContainText('onSkip()');
-  // Backend Workshop: a missing token stops at authenticate with the service's real message.
+  // Backend Workshop: a valid BUY fills on paper; the kill switch stops it in the risk engine.
   await sign(/Backend Workshop/).click();
-  await shops.locator('label', { hasText: /^Authorization/ }).locator('select').selectOption('missing');
-  await expect(shops.getByRole('status')).toContainText('HTTP 401');
-  await expect(shops.locator('.hop-list li.stop')).toContainText('authenticate');
+  await expect(shops.getByRole('status')).toContainText('Paper order filled');
+  await shops.getByLabel('Kill switch on').check();
+  await expect(shops.getByRole('status')).toContainText('No order');
+  await expect(shops.locator('.hop-list li.stop')).toContainText('RiskEngine.evaluate');
   // DevOps Garage: failing a backend step blocks RootCause's gated deploy.
   await sign(/DevOps Garage/).click();
   await shops.getByRole('button', { name: /backend: pytest -q \(pass\)/ }).click();

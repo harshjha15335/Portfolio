@@ -17,7 +17,7 @@ Two ways into the same portfolio:
 | Fort Open Source Hall | GSoC 2026, QC-Devs/Theochem, FFprime | Furnished research room: gradient-check activity, coordinate workstation, FFprime terminal, contribution board |
 | BKC Systems Office | CCIEeXpert internship | Boulevard, plaza and a walk-in lobby floor: reception, open-plan desks, a glass meeting room, the brief and request path on the wall, a rate-limit console |
 | Andheri Tech Bazaar | Skills with evidence | Lane with five skill shops running real logic |
-| Powai Builder's District | Flagship projects | A walk-in workplace per project along the lake (observatory, control tower, bank, timber studio, transit kiosk, lens, lab), each with its board and a demo desk inside; working demo labs for NORTHSTAR, MoneyMetrics, Meeting Intelligence, RideFlow, RepoLens and ASTFLOW, a case study for RECO |
+| Powai Builder's District | Flagship projects | A walk-in workplace per project along the lake (observatory, bank, lens, timber studio, lab), each with its board and a demo desk inside; working demo labs for NORTHSTAR, MoneyMetrics, RepoLens, Compiler Lab and ASTFLOW, a case study for RECO |
 | Dadar Junction | Education and timeline | Station, chawl and maidan; six platform boards |
 | Worli Proof Deck | Achievements | Sea face with four evidence cases |
 | Juhu Studio | About, résumé, contact | Beach, stalls and a walk-in studio behind a garden gate: work table, bookshelf, sofa, notice board, résumé stand, contact terminal |
