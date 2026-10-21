@@ -161,7 +161,7 @@ test('reduced motion follows system preference and user choice persists', async 
 
 test('WebGL failure retains usable quick view and project navigation', async ({ page }) => {
   await page.goto('/?webgl=off#world');
-  await expect(page.getByRole('status')).toContainText('3D experience unavailable');
+  await expect(page.getByRole('status').filter({ hasText: '3D experience unavailable' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Engineering, with evidence.' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'ENTER WORLD' })).toHaveCount(0);
   await page.keyboard.press('Control+k');

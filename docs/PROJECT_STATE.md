@@ -130,7 +130,7 @@ Anyone can measure a device by opening `/?bench` on it: the camera tours all nin
 | Typecheck | PASS | CI on `65b812c` |
 | Unit tests (Vitest) | PASS | 348/348 in 35 files, run locally on `65b812c` for this report |
 | Production build | PASS | CI on `65b812c` |
-| CI browser smoke | PASS on latest | `browser.spec.ts` and `a11y.spec.ts` on Chromium, mobile Chrome, Firefox, WebKit and mobile Safari, green on `65b812c`. The WebKit job was red on the merges of #24 and #25 and green again on #26 with no related fix; it has been intermittent since 20 October. |
+| CI browser smoke | PASS on latest | `browser.spec.ts` and `a11y.spec.ts` on Chromium, mobile Chrome, Firefox, WebKit and mobile Safari, green on `65b812c`. The WebKit job was red on and off since 20 October. The cause was the fallback test's `getByRole('status')`, which matched two elements (the loader or fallback message plus the achievement-toast region). This PR scopes it to the fallback message. |
 | Full Playwright suite (9 spec files, 49 tests) | PARTIAL | last full pass was 49/49 on 19 October after PR #17. Since then only parts have run (for example `city.spec.ts` 14/14 on PR #22). It takes about 50 minutes under software rendering. |
 | Accessibility (axe) | PASS | `a11y.spec.ts` in CI; findings from the cross-browser run were fixed in PR #19 |
 
@@ -156,7 +156,6 @@ Anyone can measure a device by opening `/?bench` on it: the camera tours all nin
 - Programs in view at CST and Fort (29) and CST on-screen triangles (233k) are over their ceilings on Harsh's PC.
 
 **Tests and CI**
-- The WebKit smoke job fails on and off with no related code change. It can't be reproduced here, because WebKit can't be downloaded into the cloud container.
 - The full Playwright suite has not run end to end since 19 October.
 
 **World and gameplay**
