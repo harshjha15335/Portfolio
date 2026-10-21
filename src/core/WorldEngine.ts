@@ -4,6 +4,8 @@ import {stationCharacter} from '../data/stationCharacter';
 import {characterCast} from '../data/characterCast';
 import {walkingSimulationDelta} from './frameTiming';
 import {STREET_MOOD} from '../game/World/streetMood';
+import {EnvironmentTime} from './EnvironmentTime';
+import {worldClock} from '../game/World/time/IndiaWorldClock';
 import {applyStreetAtmosphere,createAtmosphereUniforms,createSkyMaterial,type AtmosphereUniforms} from '../game/World/StreetAtmosphere';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
@@ -112,6 +114,8 @@ export class WorldEngine {
   /** `?debug&traffic`: envelope outlines and a traffic summary line. */
   private trafficOverlay: TrafficOverlay | null = null; private trafficLine = '';
   private atmosphere!: AtmosphereUniforms;
+  /** The India world clock's lighting: one shared moment for every district. */
+  private environment!: EnvironmentTime;
   private sun = new THREE.DirectionalLight(STREET_MOOD.sunColor, STREET_MOOD.sunIntensity);
   /** Unshadowed light thrown back off the sunlit street, so faces turned away from the low sun stay legible. */
   private bounce = new THREE.DirectionalLight(STREET_MOOD.bounceColor, STREET_MOOD.bounceIntensity);
@@ -189,12 +193,15 @@ export class WorldEngine {
     this.atmosphere = createAtmosphereUniforms(sun.position, sun.target.position, STREET_MOOD.hazeColor);
     const sky = new THREE.Mesh(new THREE.SphereGeometry(145, 24, 12), createSkyMaterial(this.atmosphere));
     this.scene.add(sky); this.sky = sky;
+    // Real Mumbai time drives the sun, sky, fog, exposure and the city's lamps from here on.
+    this.environment = new EnvironmentTime(worldClock(), { scene: this.scene, renderer: this.renderer, sun, bounce: this.bounce, fill: this.fill, sky, atmosphere: this.atmosphere });
+    void worldClock().checkServer();
   }
-  /** Without directional shadows a low sun would flood the street; soften it and lift the sky fill. */
-  private syncSunBalance(){const shadows=this.renderer.shadowMap.enabled;this.sun.intensity=STREET_MOOD.sunIntensity*(shadows?1:STREET_MOOD.shadowlessSunScale);this.fill.intensity=STREET_MOOD.hemisphereIntensity*(shadows?1:STREET_MOOD.shadowlessFillScale);this.bounce.intensity=STREET_MOOD.bounceIntensity*(shadows?1:STREET_MOOD.shadowlessBounceScale);}
+  /** Re-fit the time-of-day rig to the current zone and shadow setting (without shadows the sun is softened and the sky fill lifted). */
+  private syncSunBalance(){this.environment.configure(cityZones[this.zone].originX,this.renderer.shadowMap.enabled);this.pausedFrameDirty=true;}
   private reviewView = (event:Event) => {
     // Fixed, collision-clear eye-level review points. Development diagnostics only.
-    const views:Record<string,{x:number;z:number;yaw:number;pitch?:number}>={benchmark:{x:5,z:5.5,yaw:.88,pitch:.27},scooter:{x:3.3,z:4.7,yaw:-.62,pitch:-.28},taxi:{x:5,z:8,yaw:3.68,pitch:-.12},auto:{x:-5,z:8,yaw:2.6,pitch:-.12},'benchmark-close':{x:.4,z:-1.6,yaw:1.08,pitch:.5},'station-front':{x:2.2,z:6.5,yaw:Math.PI+.05,pitch:.1},'north-limit':{x:1.8,z:-59,yaw:-.08},'south-look':{x:14.5,z:15,yaw:Math.PI+.15},'side-gap':{x:5.4,z:-.7,yaw:-Math.PI/2},'hero-wide':{x:-2.5,z:4,yaw:Math.PI/2},hero:{x:-4.9,z:5.7,yaw:Math.PI/2},'fort-room':{x:-9.8,z:-33.6,yaw:Math.PI/2},spawn:STREET_SPAWN,station:{x:4.6,z:-4,yaw:Math.PI-.12},shops:{x:-4.8,z:-9,yaw:-.2},fort:{x:-5.1,z:-35,yaw:Math.PI/2},return:{x:4.7,z:-44,yaw:Math.PI+.16},npc:{x:5.6,z:6.8,yaw:Math.PI+.12},shop:{x:-5.7,z:-15,yaw:Math.PI/2},vegetation:{x:-4.8,z:-15,yaw:.38},junction:{x:4.8,z:-8,yaw:.7},institute:{x:-4.6,z:-30,yaw:.54},chai:{x:-4.75,z:2.75,yaw:2.08},bench:{x:5.2,z:-18.4,yaw:-2.86},walkers:{x:3.7,z:-1,yaw:-.22}};
+    const views:Record<string,{x:number;z:number;yaw:number;pitch?:number}>={benchmark:{x:5,z:5.5,yaw:.88,pitch:.27},scooter:{x:3.3,z:4.7,yaw:-.62,pitch:-.28},taxi:{x:5,z:8,yaw:3.68,pitch:-.12},auto:{x:-5,z:8,yaw:2.6,pitch:-.12},'benchmark-close':{x:.4,z:-1.6,yaw:1.08,pitch:.5},'station-front':{x:2.2,z:6.5,yaw:Math.PI+.05,pitch:.1},'station-wide':{x:-1.6,z:-9,yaw:Math.PI+.06,pitch:.16},'north-limit':{x:1.8,z:-59,yaw:-.08},'south-look':{x:14.5,z:15,yaw:Math.PI+.15},'side-gap':{x:5.4,z:-.7,yaw:-Math.PI/2},'hero-wide':{x:-2.5,z:4,yaw:Math.PI/2},hero:{x:-4.9,z:5.7,yaw:Math.PI/2},'fort-room':{x:-9.8,z:-33.6,yaw:Math.PI/2},spawn:STREET_SPAWN,station:{x:4.6,z:-4,yaw:Math.PI-.12},shops:{x:-4.8,z:-9,yaw:-.2},fort:{x:-5.1,z:-35,yaw:Math.PI/2},return:{x:4.7,z:-44,yaw:Math.PI+.16},npc:{x:5.6,z:6.8,yaw:Math.PI+.12},shop:{x:-5.7,z:-15,yaw:Math.PI/2},vegetation:{x:-4.8,z:-15,yaw:.38},junction:{x:4.8,z:-8,yaw:.7},institute:{x:-4.6,z:-30,yaw:.54},chai:{x:-4.75,z:2.75,yaw:2.08},bench:{x:5.2,z:-18.4,yaw:-2.86},walkers:{x:3.7,z:-1,yaw:-.22}};
     const view=views[(event as CustomEvent<string>).detail]??districtViews[(event as CustomEvent<string>).detail];if(view){this.endRide();this.placeVisitor(view.x,view.z,view.yaw);if(view.pitch!==undefined){this.pitch=view.pitch;this.updateCamera();}this.updateNear();}
   };
   setMode(mode: Mode) {
@@ -321,8 +328,7 @@ export class WorldEngine {
     this.street.group.visible = index === 0; this.fortTraffic.group.visible = index === 0; this.city.activate(index);
     // The hidden street's people rebuild their bone textures on return; releasing them keeps a district's texture count to its own.
     if (index !== 0) this.street.group.traverse(o => { const m = o as THREE.SkinnedMesh; if (m.isSkinnedMesh && m.skeleton?.boneTexture) m.skeleton.dispose(); });
-    this.sun.position.set(STREET_MOOD.sunPosition[0] + ox, STREET_MOOD.sunPosition[1], STREET_MOOD.sunPosition[2]);
-    this.sun.target.position.set(STREET_MOOD.sunTarget[0] + ox, STREET_MOOD.sunTarget[1], STREET_MOOD.sunTarget[2]); this.sun.target.updateMatrixWorld();
+    this.environment.configure(ox, this.renderer.shadowMap.enabled);
     this.sky.position.x = ox; this.renderer.shadowMap.needsUpdate = true; this.pausedFrameDirty = true;
   }
   /** What the visitor can see now, in district `originX`'s local frame (spawn and despawn rules). */
@@ -414,7 +420,7 @@ export class WorldEngine {
   private releaseInput = () => { this.keys.clear(); this.touchKeys.clear(); this.dragging = null; };
   private unlock() { if (document.pointerLockElement === this.renderer.domElement) document.exitPointerLock(); }
   private lockChanged = () => { if (!document.pointerLockElement) this.releaseInput(); };
-  private visibilityChanged = () => { this.audio?.setActive(this.soundEnabled&&!document.hidden&&!this.paused&&this.mode==='world'); this.releaseInput(); this.lastTime = 0; this.accumulator = 0; };
+  private visibilityChanged = () => { this.audio?.setActive(this.soundEnabled&&!document.hidden&&!this.paused&&this.mode==='world'); this.releaseInput(); this.lastTime = 0; this.accumulator = 0; if (!document.hidden) { this.environment.update(performance.now(), true); this.pausedFrameDirty = true; } };
   private contextLost = (event: Event) => { event.preventDefault(); this.options.onError(new Error('WebGL context lost')); };
   private keyDown = (event: KeyboardEvent) => {
     if ((event.target as HTMLElement)?.closest('input, textarea, select, [contenteditable="true"]') || this.mode !== 'world' || this.paused) return;
@@ -549,6 +555,7 @@ export class WorldEngine {
     if (this.disposed) return; this.frameId = requestAnimationFrame(this.frame);if(this.inspectionFrozen)return;
     const elapsed = this.fixedStep || (this.lastTime ? (timestamp - this.lastTime) / 1000 : 0); const delta = Math.min(elapsed, .08); this.lastTime = timestamp;
     if (document.hidden || this.mode !== 'world') return;
+    if (this.environment.update()) this.pausedFrameDirty = true;
     // A quarter of a typical frame where frames are slow everywhere (software rendering), else 6 ms. The typical frame
     // leaves out frames that built: one long slice must not widen the next budget into another long frame.
     const tickStart = performance.now(); this.city.tick(Math.max(DISTRICT_SLICE_MS, this.typicalFrameMs * .25)); const tickMs = performance.now() - tickStart;
@@ -599,13 +606,13 @@ export class WorldEngine {
       if(needsRender){this.renderer.info.reset();this.profiler?.beforeRender();const renderStart=performance.now();this.rendering.render(delta);this.frameObserver?.({tickMs,renderMs:performance.now()-renderStart,frameMs:elapsed*1000,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,low:this.quality.low});this.profiler?.afterRender({frameMs:elapsed*1000,renderCpuMs:performance.now()-renderStart,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,geometries:this.renderer.info.memory.geometries,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,preset:this.renderPreset,phase:this.ride.phase,worldX:this.visitor.position.x,worldZ:this.visitor.position.z,walkingSimulatedMs:simulatedWalkingMs,shadowRefreshed:this.rendering.frameCost.shadowDraws>0,shadowDraws:this.rendering.frameCost.shadowDraws,shadowTriangles:this.rendering.frameCost.shadowTriangles,shadowDrawCpuMs:this.rendering.frameCost.shadowDrawCpuMs,mainAndOtherDraws:this.rendering.frameCost.mainAndOtherDraws,mainAndOtherTriangles:this.rendering.frameCost.mainAndOtherTriangles});this.lastRenderPosition.copy(this.camera.position);this.lastRenderRotation.copy(this.camera.quaternion);this.debugFrames++;}
       if (timestamp - this.lastHud > 125) {
         if (this.benchmarkEnabled){this.renderer.domElement.dataset.benchmarkReady='true';this.renderer.domElement.dataset.ridePhase=this.ride.phase;this.renderer.domElement.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';}
-        if (this.debug) { const canvas = this.renderer.domElement; canvas.dataset.worldX = this.visitor.position.x.toFixed(3); canvas.dataset.cast = this.street.castStatus; canvas.dataset.worldZ = this.visitor.position.z.toFixed(3); canvas.dataset.eyeHeight = this.camera.position.y.toFixed(3); canvas.dataset.lookYaw = this.yaw.toFixed(3); canvas.dataset.renderScale=this.quality.scale.toFixed(2); canvas.dataset.quality=this.quality.low?'low':'high'; canvas.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';canvas.dataset.navigation=this.street.navigationStatus;canvas.dataset.surfaceMaps=this.street.surfaceStatus;canvas.dataset.streetAssets=this.street.assetStatus;canvas.dataset.characterStatus=this.street.characterStatus;canvas.dataset.npcUpdateMs=this.street.npcUpdateMs.toFixed(3);canvas.dataset.trafficUpdateMs=this.street.trafficUpdateMs.toFixed(3);canvas.dataset.renderPreset=this.renderPreset; canvas.dataset.cameraMode = this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? 'first-person' : 'passenger'; }
+        if (this.debug) { const canvas = this.renderer.domElement; canvas.dataset.worldX = this.visitor.position.x.toFixed(3); canvas.dataset.cast = this.street.castStatus; canvas.dataset.worldZ = this.visitor.position.z.toFixed(3); canvas.dataset.eyeHeight = this.camera.position.y.toFixed(3); canvas.dataset.lookYaw = this.yaw.toFixed(3); canvas.dataset.renderScale=this.quality.scale.toFixed(2); canvas.dataset.quality=this.quality.low?'low':'high'; canvas.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';canvas.dataset.navigation=this.street.navigationStatus;canvas.dataset.surfaceMaps=this.street.surfaceStatus;canvas.dataset.streetAssets=this.street.assetStatus;canvas.dataset.characterStatus=this.street.characterStatus;canvas.dataset.npcUpdateMs=this.street.npcUpdateMs.toFixed(3);canvas.dataset.trafficUpdateMs=this.street.trafficUpdateMs.toFixed(3);canvas.dataset.renderPreset=this.renderPreset;canvas.dataset.dayPhase=this.environment.sample.phase;canvas.dataset.sunAltitude=this.environment.sample.altitude.toFixed(2);canvas.dataset.lamps=this.environment.look.lamps.toFixed(2);canvas.dataset.istTime=this.environment.sample.time; canvas.dataset.cameraMode = this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? 'first-person' : 'passenger'; }
         this.options.onSpeed(this.ride.phase === 'riding' ? this.cab.speed * 3.6 : Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z) * 3.6);
         this.options.onPosition(this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? { x: this.visitor.position.x, z: this.visitor.position.z, yaw: this.yaw } : { x: this.transit.position.x, z: this.transit.position.z, yaw: this.transit.rotation.y + this.rideYaw });
         if (this.ride.phase !== 'idle') this.options.onRide({ ...this.ride }); this.lastHud = timestamp;
       }
       if (this.trafficOverlay && this.trafficZone >= 0) this.trafficLine = this.trafficOverlay.update(this.traffic, cityZones[this.trafficZone].originX);
-      if (this.debug) { this.debugTime += elapsed; if (this.debugTime > .75) { const info = this.renderer.info; this.debug.textContent = `${this.debugFrames?`${(this.debugFrames / this.debugTime).toFixed(1)} fps`:'idle'} · ${info.render.calls} draws · ${info.render.triangles} triangles · ${info.memory.textures} textures · ${info.programs?.length??0} shaders · ${Math.round(((performance as Performance & {memory?:{usedJSHeapSize:number}}).memory?.usedJSHeapSize??0)/1048576)} MB JS · scale ${this.quality.scale.toFixed(2)} · eye ${this.camera.position.y.toFixed(2)}m${this.trafficLine ? `\n${this.trafficLine}` : ''}`; this.debugTime = 0; this.debugFrames = 0; } }
+      if (this.debug) { this.debugTime += elapsed; if (this.debugTime > .75) { const info = this.renderer.info; this.debug.textContent = `${this.debugFrames?`${(this.debugFrames / this.debugTime).toFixed(1)} fps`:'idle'} · ${info.render.calls} draws · ${info.render.triangles} triangles · ${info.memory.textures} textures · ${info.programs?.length??0} shaders · ${Math.round(((performance as Performance & {memory?:{usedJSHeapSize:number}}).memory?.usedJSHeapSize??0)/1048576)} MB JS · scale ${this.quality.scale.toFixed(2)} · eye ${this.camera.position.y.toFixed(2)}m\n${this.environment.describe()}${this.trafficLine ? `\n${this.trafficLine}` : ''}`; this.debugTime = 0; this.debugFrames = 0; } }
     } catch (error) { this.dispose(); this.options.onError(error); }
   };
   dispose() {

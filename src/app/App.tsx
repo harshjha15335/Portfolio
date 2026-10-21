@@ -1,4 +1,5 @@
-import {STREET_MOOD} from '../game/World/streetMood';
+import { useIndiaClock } from './useIndiaClock';
+import { worldClock } from '../game/World/time/IndiaWorldClock';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { portfolio } from '../data/portfolio';
 import { projects, type Project } from '../data/projects';
@@ -31,6 +32,7 @@ const heroProjects = () => projects.filter(p => p.priority <= 4);
 export default function App() {
   const route = readRoute(window.location.hash);
   const [mode, setMode] = useState<Mode>(BENCH ? 'world' : route.mode);
+  const india = useIndiaClock(mode === 'world');
   const [projectId, setProjectId] = useState<string | null>(route.project);
   const [placeId, setPlaceId] = useState<string | null>(route.district ?? null);
   const [ride, setRide] = useState(idleRide);
@@ -285,7 +287,7 @@ export default function App() {
     {mode === 'world' && <main className="world-ui" id="main-content" tabIndex={-1} aria-label="Interactive mini Mumbai portfolio city">
       {!ready && <div className="loader" role="status"><span className="status-dot" /><span>OPENING THE CITY</span><small>Warming renderer · Quick View is ready</small></div>}
       {arriving && <p className="district-arriving" role="status">Heading to {districts.find(d => d.id === arriving)?.title ?? 'the next stop'}…</p>}
-      <div className="street-location"><span className="street-live" /> {zoneAt(position.x).label} <small>{STREET_MOOD.clock} · {STREET_MOOD.label}</small></div>
+      <div className="street-location"><span className="street-live" /> {zoneAt(position.x).label} <small><time dateTime={new Date(india.epoch).toISOString()}>{india.time} IST</time> · {india.label}{worldClock().overridden ? ' · TIME OVERRIDE' : ''}</small></div>
       {near && <div className="street-reticle" aria-hidden="true" />}
       {ride.phase === 'idle' && near && !BENCH && <button className="proximity-prompt" onClick={() => boardNear ? hail(boardNear) : openProject(near)}><kbd>{mobile ? '↗' : 'E'}</kbd><strong>{boardNear ? `Hail ${boardNear === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : near === 'ffprime' ? 'Read the FFprime research' : nearDistrict ? `Talk · ${nearDistrict.guide}` : nearLabel ?? 'Inspect'}</strong></button>}
       {ready && !BENCH && !progress.orientationDismissed && !tour && ride.phase === 'idle' && <Orientation progress={progress} onSkip={() => track({ type: 'dismiss-orientation' })} />}

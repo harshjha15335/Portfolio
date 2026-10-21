@@ -184,6 +184,8 @@ export function hangar(c: Ctx, o: { w: number; d: number; h: number; label: stri
 export function streetLight(c: Ctx, x: number, z: number, side: number) {
   const { kit } = c; kit.cylinder(.08, 7.6, [x, 3.8, z], '#5a5f5c', 'metal', true); kit.box([2.2, .08, .08], [x - side * 1.05, 7.55, z], '#5a5f5c', 'metal');
   kit.box([.55, .14, .26], [x - side * 2.05, 7.48, z], '#3d413f', 'metal'); kit.box([.45, .03, .2], [x - side * 2.05, 7.4, z], '#ffe5b0', 'glow');
+  // The pool of sodium-warm light it throws on the road at night (see nightLights).
+  kit.shape('plane', [7, 7, 1], [x - side * 2.05, .035, z], '#ffffff', 'pool', [-Math.PI / 2, 0, 0]);
   kit.solid([.3, 3, .3], [x, 1.5, z]);
 }
 /** A broad street tree; see nature.canopyTree. */

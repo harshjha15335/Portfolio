@@ -3,6 +3,7 @@ import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 import { createVisitor } from '../src/game/World/WalkingBody';
 import { MumbaiStreet } from '../src/game/World/MumbaiStreet';
+import { setNightLevel } from '../src/game/World/time/nightLights';
 import { STREET_SPAWN, streetStops, streetRideRoute, streetPickupRoute, pickupRoutes, walkingVelocity } from '../src/game/World/streetLayout';
 import { pointAtDistance, routeLength } from '../src/game/World/transit';
 
@@ -30,14 +31,17 @@ describe('first-person street slice', () => {
     expect(dense.visible).toBe(false);expect(count()).toEqual({people:23,cars:3});
     street.setDensity(true);expect(dense.visible).toBe(true);street.setDensity(false);expect(dense.visible).toBe(false);
   });
-  it('paints the end-of-street and skyline buildings from one atlas in three draws, and drops the lamp pools',()=>{
-    const street=new MumbaiStreet(new CANNON.World());const names:string[]=[];let pools=0;
-    street.group.traverse(o=>{if(o.name.startsWith('backdrop-facades-'))names.push(o.name);const m=(o as THREE.Mesh).material as THREE.Material|undefined;if(m&&!Array.isArray(m)&&m.userData.surface==='pool')pools++;});
+  it('paints the end-of-street and skyline buildings from one atlas in three draws, and draws lamp pools only after dark',()=>{
+    setNightLevel(0);const street=new MumbaiStreet(new CANNON.World());const names:string[]=[];const pools:THREE.Material[]=[];
+    street.group.traverse(o=>{if(o.name.startsWith('backdrop-facades-'))names.push(o.name);const m=(o as THREE.Mesh).material as THREE.Material|undefined;if(m&&!Array.isArray(m)&&m.userData.surface==='pool')pools.push(m);});
     expect(names.sort()).toEqual(['backdrop-facades-north','backdrop-facades-skyline','backdrop-facades-south']);
     const facades=names.map(n=>street.group.getObjectByName(n) as THREE.Mesh);
     expect(new Set(facades.map(m=>(m.material as THREE.MeshStandardMaterial).map)).size).toBe(1);
     expect(facades.every(m=>m.material===facades[0].material||(m.material as THREE.Material).customProgramCacheKey()===(facades[0].material as THREE.Material).customProgramCacheKey())).toBe(true);
-    expect(pools).toBe(0);
+    // Golden-hour orange discs on the road were dropped (STREET_ASSETS.md); the pools now exist only at night, in one draw.
+    const pool=street.group.getObjectByName('street:lamp-pools')!;
+    expect(pools.length).toBe(1);expect(pool.visible).toBe(false);
+    setNightLevel(1);expect(pool.visible).toBe(true);expect(pools[0].opacity).toBeGreaterThan(.3);setNightLevel(0);
   });
   it('keeps elevated shop stock and facade modules attached to buildings and out of the carriageway',()=>{
     const street=new MumbaiStreet(new CANNON.World());street.update(0,true);const misplaced:number[][]=[];
