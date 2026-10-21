@@ -509,7 +509,7 @@ export class LaneTraffic {
       }
       this.pose(a);
       a.mesh.position.y = .02 + (a.kind === 'auto' || a.kind === 'bike' ? Math.sin(time * 13 + a.s) * .006 * Math.min(1, d.speed) : 0);
-      if (this.brakes.braking(a.mesh, d.speed, d.state, delta) && a.mesh.visible && near < VEHICLE_FAR) this.brakes.add(a.mesh, a.kind);
+      const braking = this.brakes.braking(a.mesh, d.speed, d.state, delta); if (a.mesh.visible && near < VEHICLE_FAR) this.brakes.add(a.mesh, a.kind, braking);
     }
     this.brakes.end();
   }

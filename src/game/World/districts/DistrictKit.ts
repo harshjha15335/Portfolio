@@ -4,14 +4,16 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { StreetMaterials, Surface } from '../StreetMaterials';
 import { plain, type V3, type UnitShape } from './ColorMesh';
 import { seededRandom } from '../StreetArchitecture';
-import { FACADE_PLAIN_V, FACADE_TILE, facadeTexture } from './FacadeTexture';
+import { FACADE_PLAIN_V, FACADE_TILE, facadeNightTexture, facadeTexture } from './FacadeTexture';
+import { lightPoolMesh, nightEmissive, POOL_COLOR } from '../time/nightLights';
 
 /** Street surfaces plus 'facade': painted apartment walls with windows (see FacadeTexture). */
-export type KitSurface = Surface | 'facade';
+/** Kit surfaces: the street's, plus the façade atlas and 'pool', the ground decal of light under a lamp (see nightLights). */
+export type KitSurface = Surface | 'facade' | 'pool';
 /** Surfaces whose walls are subdivided and aged: baked contact shadow and grime need vertices to live on. */
 const AGED = new Set<KitSurface>(['plaster', 'stone', 'facade']);
 /** Surfaces underfoot or overhead that never block the visitor. */
-const WALK_THROUGH = new Set<KitSurface>(['paving', 'asphalt', 'glow']);
+const WALK_THROUGH = new Set<KitSurface>(['paving', 'asphalt', 'glow', 'pool']);
 const SOLID_KINDS = new Set<string>(['box', 'rounded', 'cylinder', 'cylinderLow']);
 const boxes = new Map<string, THREE.BufferGeometry>();
 function segmentedBox(sx: number, sy: number, sz: number) {
@@ -140,10 +142,13 @@ export class DistrictKit {
     for (const [surface, list] of this.parts) {
       if (!list.length) continue;
       const g = mergeGeometries(list)!; list.forEach(p => p.dispose());
-      if (surface !== 'facade') worldUv(g, surface, this.origin, this.surfaces);
+      if (surface !== 'facade' && surface !== 'pool') worldUv(g, surface, this.origin, this.surfaces);
       age(g, surface, this.origin);
+      if (surface === 'pool') {
+        const mesh = lightPoolMesh(g, POOL_COLOR); mesh.name = 'district:pool'; this.group.add(mesh); yield; continue;
+      }
       const base = this.surfaces.get('#ffffff', surface === 'facade' ? 'plaster' : surface);
-      const material = surface === 'facade' ? new THREE.MeshStandardMaterial({ map: facadeTexture(), roughness: .9 }) : base.clone() as THREE.MeshStandardMaterial;
+      const material = surface === 'facade' ? nightEmissive(new THREE.MeshStandardMaterial({ map: facadeTexture(), roughness: .9, emissiveMap: facadeNightTexture(), emissive: '#ffffff' }), 1.6) : base.clone() as THREE.MeshStandardMaterial;
       material.vertexColors = true; if ((material as THREE.MeshStandardMaterial).color) material.color.set('#ffffff');
       material.userData = { ...base.userData, district: true };
       if (surface === 'foliage') swayInWind(material);
@@ -216,7 +221,7 @@ const GRIMED = new Set<KitSurface>(['plaster', 'stone', 'facade', 'paving', 'asp
  * shade under ledges and sunshades, and large blotches of monsoon grime, into vertex colours.
  */
 function age(g: THREE.BufferGeometry, surface: KitSurface, origin: THREE.Vector3) {
-  if (surface === 'glow' || surface === 'glass' || surface === 'foliage') return;
+  if (surface === 'glow' || surface === 'glass' || surface === 'foliage' || surface === 'pool') return;
   const p = g.getAttribute('position'), n = g.getAttribute('normal'), c = g.getAttribute('color'), grime = GRIMED.has(surface);
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i) + origin.x, y = p.getY(i), z = p.getZ(i) + origin.z, ny = n.getY(i);

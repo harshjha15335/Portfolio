@@ -25,6 +25,7 @@ import { loadVehicleBody } from './AuthoredVehicles';
 import { StreetMaterials, type Surface } from './StreetMaterials';
 import type { SignRecord } from './districts/DistrictSystems';
 import { BrakeLights } from './traffic/BrakeLights';
+import { lightPoolMesh, POOL_COLOR } from './time/nightLights';
 import { facadeSpec, seededRandom } from './StreetArchitecture';
 import { FacadePanels } from './architecture/FacadePanels';
 import { SpatialIndex } from './spatial/SpatialIndex';
@@ -765,6 +766,10 @@ export class MumbaiStreet {
     const light = new THREE.PointLight('#ffe5ba', 10, 9, 2); light.position.set(-10, 2.5, -34); this.group.add(light);
   }
   private streetDetails() {
+    // Night: each lamp throws a warm pool on the footpath and the road edge (one additive decal mesh; see nightLights).
+    const pools: THREE.BufferGeometry[] = [];
+    for (const side of [-1, 1]) for (let i = 0; i < 5; i++) { const g = new THREE.PlaneGeometry(7.5, 7.5); g.rotateX(-Math.PI / 2); g.translate(side * 5.95 - side * 1.5, .035, 7 - i * 13); pools.push(g); }
+    const poolMesh = lightPoolMesh(mergeGeometries(pools)!, POOL_COLOR); pools.forEach(g => g.dispose()); poolMesh.name = 'street:lamp-pools'; this.group.add(poolMesh);
     for (const side of [-1, 1]) for (let i = 0; i < 5; i++) {
       const z = 7 - i * 13, x = side * 5.95;
       this.cylinder(.09, 6.2, [x, 3.1, z], '#43454b');
@@ -988,7 +993,7 @@ export class MumbaiStreet {
       this.navigation.crowd.update(1/30,delta,3);
     }
     this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.roadWalkers.length=0;for(const w of [...this.walkers,...this.denseWalkers])if(w.agent&&w.group.visible!==false&&Math.abs(w.group.position.x)<3.9)this.roadWalkers.push(w.group.position);this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...this.roadWalkers.map(p=>({x:p.x,z:p.z}))],this.loopTraffic,this.trafficSpace??undefined,this.trafficJunctions?{reservations:this.trafficJunctions,time}:undefined);
-    this.brakes.begin();this.trafficVehicles.forEach((vehicle,i)=>{vehicle.visible=this.trafficSystem.live[i];if(!vehicle.visible)return;const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y=p.heading;animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);const d=this.trafficSystem.drivers[i];if(this.brakes.braking(vehicle,d.speed,d.state,delta)&&(vehicle.parent===this.group||this.dense.visible))this.brakes.add(vehicle,RoadTraffic.kindOf(i));});this.brakes.end();this.trafficUpdateMs=performance.now()-trafficStart;
+    this.brakes.begin();this.trafficVehicles.forEach((vehicle,i)=>{vehicle.visible=this.trafficSystem.live[i];if(!vehicle.visible)return;const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y=p.heading;animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);const d=this.trafficSystem.drivers[i];const braking=this.brakes.braking(vehicle,d.speed,d.state,delta);if(vehicle.parent===this.group||this.dense.visible)this.brakes.add(vehicle,RoadTraffic.kindOf(i),braking);});this.brakes.end();this.trafficUpdateMs=performance.now()-trafficStart;
     for (const animate of this.motion) animate(reduced ? 0 : time);
     this.group.updateMatrixWorld(true);
     for (const { instance, meshes } of this.dynamicBatches) { meshes.forEach((mesh, i) => { let visible=true; for(let p:THREE.Object3D|null=mesh.parent;p&&p!==this.group;p=p.parent)if(!p.visible)visible=false; instance.setMatrixAt(i,visible?mesh.matrixWorld:COLLAPSED); }); instance.instanceMatrix.needsUpdate = true;instance.computeBoundingSphere(); }
