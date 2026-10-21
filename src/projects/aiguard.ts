@@ -1,15 +1,11 @@
 /**
- * How two of Harsh's services treat a language model's reply before trusting it.
+ * How NORTHSTAR treats a language model's reply before trusting it.
  *
  * NORTHSTAR @ 10e96d3 (trading-platform/backend/app):
  * - XAIProvider.propose: strips a ``` fence, then TradeProposal.model_validate_json (agents.py)
  * - TradeProposal: a Pydantic model with extra="forbid", allow_inf_nan=False and per-field bounds (schemas.py)
  * - DecisionAgent.decide: identity, quote, quantity and source checks after validation (agents.py)
  * Tested against the real Pydantic model and DecisionAgent: scripts/projects/northstar_guard_reference.py.
- *
- * Meeting Intelligence @ ea732a9 (src/integrations/gemini.service.ts):
- * - Gemini is asked for JSON (responseMimeType application/json, temperature 0.1), the reply goes
- *   through JSON.parse and validateAnalysis, which fills missing arrays instead of rejecting them.
  */
 export const NORTHSTAR_COMMIT = '10e96d3807b9d302cf33c03f29ff37b97232beb2';
 export const northstarFile = (path: string) => `https://github.com/harshjha15335/NORTHSTAR/blob/${NORTHSTAR_COMMIT}/trading-platform/backend/app/${path}`;
@@ -114,24 +110,3 @@ export function northstarGuard(raw: string, evidence: Evidence): GuardResult {
   return { stage: 'accepted', cleaned, proposal: value };
 }
 
-/** GeminiService.analyzeTranscript after the model call: JSON.parse, then validateAnalysis. */
-export function meetingGuard(raw: string) {
-  const categories = ['summary', 'actionItems', 'decisions', 'followUps'] as const;
-  try {
-    const data = JSON.parse(raw);
-    const repairs: string[] = [];
-    const result = Object.fromEntries(categories.map(c => {
-      const value = data[c];
-      if (!Array.isArray(value)) { repairs.push(`${c} was ${value === undefined ? 'missing' : 'not an array'}, replaced with []`); return [c, []]; }
-      return [c, value.map((item: Record<string, unknown>, i: number) => {
-        if (Array.isArray(item?.citations)) return item;
-        repairs.push(`${c}[${i}].citations was ${item?.citations === undefined ? 'missing' : 'not an array'}, replaced with []`);
-        return { ...item, citations: [] };
-      })];
-    }));
-    return { ok: true as const, result, repairs };
-  } catch (error) {
-    // Every failure, including a null reply, becomes a 502 ExternalServiceError.
-    return { ok: false as const, status: 502, code: 'EXTERNAL_SERVICE_ERROR', message: `Gemini: ${(error as Error).message}` };
-  }
-}

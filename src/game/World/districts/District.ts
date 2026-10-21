@@ -78,7 +78,7 @@ export class District {
   spatial!: SpatialIndex;
   /** The avenues to the neighbouring districts (north and south), drawn on their own atlas of shop signs. */
   readonly avenues: Avenue[] = []; private avenueSigns = new SignAtlas();
-  private waters: Water[] = []; private motion: Array<(time: number, delta: number) => void> = []; private previous = 0;
+  private waters: Water[] = []; private motion: Array<(time: number, delta: number, view: THREE.Vector3) => void> = []; private previous = 0;
   readonly ctx: Ctx;
   /** Exhibit boards' own atlas (null when the district has none). */
   private exhibitSigns: SignAtlas | null = null;
@@ -266,7 +266,11 @@ export class District {
     this.kit.solid([width, 1.4, length], [x, .7, z], yaw); this.traffic.parkedAt(kind, x, z, yaw);
   }
   water(width: number, depth: number, center: V3, color: string, amplitude?: number) { const w = new Water(width, depth, center, color, amplitude); this.waters.push(w); return w; }
-  animate(step: (time: number, delta: number) => void) { this.motion.push(step); }
+  /** Per-frame motion; `view` is the camera in district space. */
+  animate(step: (time: number, delta: number, view: THREE.Vector3) => void) { this.motion.push(step); }
+  /** Released with the district (video elements and other resources the GPU sweep does not know about). */
+  onDispose(release: () => void) { this.releases.push(release); }
+  private releases: Array<() => void> = [];
   /** Someone standing, talking, selling or sitting; each is its own slice of a deferred build. */
   idle(...args: Parameters<Crowd['idle']>) { this.queued.push(() => { this.crowd.idle(...args); }); }
   private mix: Outfit[] = [];
@@ -334,7 +338,7 @@ export class District {
     this.traffic.update(time, delta, [local, ...others.map(o => o.clone().sub(this.origin))], this.crowd.onRoad(), context);
     if (this.signalLamps) { const walk = pedestrianGreen(reduced ? 0 : time); this.signalLamps.walk.visible = walk; this.signalLamps.wait.visible = !walk; }
     if (!reduced) { for (const w of this.waters) w.update(time); foliageWind.value = time; }
-    for (const m of this.motion) m(reduced ? 0 : time, delta);
+    for (const m of this.motion) m(reduced ? 0 : time, delta, local);
     for (const f of this.friendSlots) f.update(reduced ? 0 : time, local);
   }
   /** People and moving vehicles near `view` (world space) that the visitor cannot walk through. */
@@ -348,6 +352,7 @@ export class District {
   dispose() {
     // A deferred build abandoned part-way (the visitor turned back) still owns its unmerged parts.
     if (this.job) { this.job = null; this.kit.discard(); }
+    this.releases.forEach(release => release()); this.releases = [];
     for (const body of this.kit.bodies) this.physics.removeBody(body);
     for (const avenue of this.avenues) avenue.dispose(this.physics); this.avenueSigns.texture.dispose();
     // Friends hold leases on the shared character templates; release them before the GPU sweep below.

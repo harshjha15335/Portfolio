@@ -468,7 +468,7 @@ export const characterCast:Record<string,CastMember>={
    "date": "2026-10-20",
    "notes": "Fort research room, face and full body: white shirt with green leaf print and chain, dark hair, warm skin tone; hair cards shade with the scalp."
   },
-  "role": "Aarush Shetty · research fellow at Fort",
+  "role": "Aarush Shetty · fellow contributor at Fort",
   "height": 1.76,
   "asset": {
    "id": "cast-aarush",

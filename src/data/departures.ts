@@ -4,7 +4,7 @@
  */
 export interface Departure { time: string; category: string; marathi: string; district: string; via: string }
 export const DEPARTURES: Departure[] = [
-  { time: '17:42', category: 'Research', marathi: 'संशोधन', district: 'fort', via: 'Walk · up Fort Road' },
+  { time: '17:42', category: 'Open source', marathi: 'मुक्त स्रोत', district: 'fort', via: 'Walk · up Fort Road' },
   { time: '17:45', category: 'Internships', marathi: 'इंटर्नशिप', district: 'bkc', via: 'Taxi · BKC' },
   { time: '17:47', category: 'Skills', marathi: 'कौशल्ये', district: 'andheri', via: 'Auto · Andheri' },
   { time: '17:50', category: 'Projects', marathi: 'प्रकल्प', district: 'powai', via: 'Taxi · Powai' },

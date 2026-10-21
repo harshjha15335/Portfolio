@@ -18,16 +18,16 @@ export const TOURS: Record<string, Tour> = {
     id: 'cst', guide: 'Harsh Jha', place: 'CST Arrival Terminus',
     steps: [
       { title: 'Welcome to the city', body: 'Nine stops, one engineer. Each district holds a different part of Harsh’s work, and every one of them is a street you can walk.', view: { x: 4.6, z: 11.5, yaw: .14, pitch: -.015 } },
-      { title: 'The departure board', body: 'The board over the pavement is the portfolio’s index: research, internships, skills, projects, education, achievements, about and cinema. Press E under it to pick a destination and mark it on your map.', view: { x: 4.6, z: 9.2, yaw: 0, pitch: .3 }, exhibit: 'cst-board' },
+      { title: 'The departure board', body: 'The board over the pavement is the portfolio’s index: open source, internships, skills, projects, education, achievements, about and cinema. Press E under it to pick a destination and mark it on your map.', view: { x: 4.6, z: 9.2, yaw: 0, pitch: .3 }, exhibit: 'cst-board' },
       { title: 'Taxis and autos', body: 'Kaali-peeli taxis and autos wait at the stand. Hail one, choose a stop and watch the meter. The fare is a game meter, not an official tariff, and you can skip to the destination or get out at any time.', view: { x: 4.4, z: 8.6, yaw: .55, pitch: -.12 } },
-      { title: 'Up Fort Road', body: 'The Fort Research Institute is about 45 metres up this street, on the left. That is where the Google Summer of Code work lives.', view: { x: 4.6, z: 9.2, yaw: .2, pitch: .02 } },
+      { title: 'Up Fort Road', body: 'The Fort Open Source Hall is about 45 metres up this street, on the left. That is where the Google Summer of Code work lives.', view: { x: 4.6, z: 9.2, yaw: .2, pitch: .02 } },
       { title: 'Where next?', body: 'Walk to Fort, or open the map with M for every district. Quick View in the header has the whole portfolio on one page if you are short on time.', next: 'fort' },
     ],
   },
   fort: {
-    id: 'fort', guide: 'The research fellow', place: 'Fort Research Institute',
+    id: 'fort', guide: 'The fellow contributor', place: 'Fort Open Source Hall',
     steps: [
-      { title: 'Research, reviewed upstream', body: 'In Google Summer of Code 2026 Harsh worked with QC-Devs / Theochem on multipole electrostatics in FFprime, an open-source scientific Python package. Everything in this room points back to that code.', view: { ...fortFloor(0, -.6), yaw: Math.PI / 2, pitch: .04 } },
+      { title: 'Open source, reviewed upstream', body: 'Harsh was a Google Summer of Code 2026 contributor at QC-Devs, working on multipole electrostatics in FFprime, an open-source scientific Python package. Everything in this room points back to that code.', view: { ...fortFloor(0, -.6), yaw: Math.PI / 2, pitch: .04 } },
       { title: 'Three panels, three ideas', body: 'Moments to potential, conventions to correctness, derivative to validation. Each panel names the pull requests where that idea landed. Face one and press E to read it.', view: { ...fortFloor(0, -3.2), yaw: Math.PI / 2, pitch: .12 }, exhibit: 'fort-panel-0' },
       { title: 'The field table', body: 'Arrows show the direction of the electric field of a charge, dipole and quadrupole. The inputs are invented teaching values, not a molecule, and the same maths drives the interactive map.', view: { ...fortFloor(-2.45, -3.35), yaw: Math.PI / 2, pitch: -.55 }, exhibit: 'fort-field' },
       { title: 'The coordinate workstation', body: 'FFprime stores multipoles in Cartesian and real spherical form. This workstation runs the Stone-convention conversions Harsh wrote, converts back and checks both potentials agree.', view: { ...fortFloor(-1.25, -3.2), yaw: Math.PI / 2, pitch: -.16 }, exhibit: 'fort-workstation' },

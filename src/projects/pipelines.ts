@@ -14,7 +14,7 @@ export interface Pipeline {
   note: string;
 }
 const blob = (repo: string, commit: string, path: string) => `https://github.com/harshjha15335/${repo}/blob/${commit}/${path}`;
-const PORTFOLIO = '14783f4e7dee8d60fabaf0bb2c4ba535fcf2c09b', ROOTCAUSE = '546d44ecf881f7016a83dfe13da29112a1f641d7', REPOLENS = '28fef675642ca9cc6879ad7fb8c43b4916bc85e1', MEETING = 'ea732a9418be7c2377be0018362f851b003b43de';
+const PORTFOLIO = '14783f4e7dee8d60fabaf0bb2c4ba535fcf2c09b', ROOTCAUSE = '546d44ecf881f7016a83dfe13da29112a1f641d7', REPOLENS = '28fef675642ca9cc6879ad7fb8c43b4916bc85e1';
 
 export const PIPELINES: Pipeline[] = [
   {
@@ -42,15 +42,6 @@ export const PIPELINES: Pipeline[] = [
     note: 'Delivery is described separately in render.yaml (a Docker web service with a /api/health check) and docker-compose.yml (backend + Ollama). CI does not deploy.',
   },
   {
-    id: 'meeting', repo: 'meeting-intelligence-service', title: 'Meeting Intelligence: multi-stage Docker image',
-    file: 'Dockerfile', href: blob('meeting-intelligence-service', MEETING, 'Dockerfile'), trigger: 'docker build (Render builds it from render.yaml)',
-    jobs: [
-      { id: 'builder', name: 'stage: builder (node:20-alpine)', steps: ['npm ci', 'npx prisma generate', 'npm run build (tsc)'] },
-      { id: 'runner', name: 'stage: runner (node:20-alpine)', steps: ['npm ci --omit=dev', 'copy dist + Prisma client from builder', 'USER nodejs (uid 1001)', 'HEALTHCHECK wget /health', 'CMD prisma migrate deploy && node dist/server.js'] },
-    ],
-    note: 'There is no CI workflow in this repository. The runner stage copies from the builder, so a failed builder step means no image; render.yaml then wires a managed Postgres, generates JWT_SECRET and leaves the Gemini and Telegram keys unsynced (sync: false) so they are never committed.',
-  },
-  {
     id: 'portfolio', repo: 'Portfolio', title: 'This portfolio: local checks, static deploy config',
     file: 'package.json', href: blob('Portfolio', PORTFOLIO, 'package.json'), trigger: 'run by hand (no CI workflow in the repository)',
     jobs: [
@@ -64,17 +55,11 @@ export const PIPELINES: Pipeline[] = [
 export type StepState = 'pass' | 'fail' | 'skipped';
 /** What the configuration says happens when step `fail.step` of job `fail.job` fails. */
 export function simulate(p: Pipeline, fail: { job: string; step: number } | null) {
-  const multiStage = p.id === 'meeting';
-  let stopped = false;
   const jobs = p.jobs.map(job => {
-    // Docker stages run in order and the runner copies from the builder, so a failure stops the build.
-    const blocked = multiStage && stopped;
     const states: StepState[] = job.steps.map((_, i) => {
-      if (blocked) return 'skipped';
       if (fail?.job === job.id) return i < fail.step ? 'pass' : i === fail.step ? 'fail' : 'skipped';
       return 'pass';
     });
-    if (states.includes('fail')) stopped = true;
     const conclusion: StepState = states.includes('fail') ? 'fail' : states.every(s => s === 'skipped') ? 'skipped' : 'pass';
     return { id: job.id, states, conclusion };
   });

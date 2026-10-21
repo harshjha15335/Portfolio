@@ -5,9 +5,10 @@ import { bench, bungalow, busStop, glassTower, hangar, hoarding, midrise, neocla
 import type { Outfit } from './CityFolk';
 import type { V3 } from './ColorMesh';
 import { powaiLab, type PowaiLab } from './powaiLabs';
-import { POWAI_PODS } from '../../../data/districtExhibits';
-import { projects } from '../../../data/projects';
+import { ANDHERI_SHOP_BOARDS, POWAI_PODS } from '../../../data/districtExhibits';
+import { POWAI_PROJECTS, projects } from '../../../data/projects';
 import { bkcOffice, juhuStudio, studioBungalow, systemsOffice, talkies, talkiesInterior } from './interiors';
+import { TalkiesAudience, TalkiesScreen } from './TalkiesHouse';
 
 /* Painted hoardings and posters. Plain canvas calls only: original artwork, no assets. */
 type Draw = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => void;
@@ -32,9 +33,9 @@ const titleCard: Draw = (ctx, x, y, w, h) => {
   const g = ctx.createLinearGradient?.(x, y, x, y + h); if (g) { g.addColorStop(0, '#2a1d18'); g.addColorStop(1, '#0d0a09'); ctx.fillStyle = g; } else ctx.fillStyle = '#1a1210';
   ctx.fillRect(x, y, w, h); ctx.fillStyle = '#f7e2b0'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.font = `${Math.round(h * .07)}px Arial, sans-serif`; ctx.fillText('FILM CITY TALKIES PRESENTS', x + w / 2, y + h * .26, w * .8);
-  ctx.font = `bold ${Math.round(h * .2)}px Georgia, serif`; ctx.fillText('NINE SCENES', x + w / 2, y + h * .47, w * .86);
-  ctx.font = `${Math.round(h * .065)}px Arial, sans-serif`; ctx.fillText('one engineering story · you control the pace', x + w / 2, y + h * .64, w * .8);
-  ctx.fillStyle = '#d8a84a'; ctx.font = `bold ${Math.round(h * .055)}px Arial, sans-serif`; ctx.fillText('STAND IN THE AISLE AND PRESS E', x + w / 2, y + h * .82, w * .8);
+  ctx.font = `bold ${Math.round(h * .2)}px Georgia, serif`; ctx.fillText('HARSH JHA', x + w / 2, y + h * .47, w * .86);
+  ctx.font = `${Math.round(h * .065)}px Arial, sans-serif`; ctx.fillText('built for what’s next · the trailer · 42 s', x + w / 2, y + h * .64, w * .8);
+  ctx.fillStyle = '#d8a84a'; ctx.font = `bold ${Math.round(h * .055)}px Arial, sans-serif`; ctx.fillText('HOUSE FULL · PRESS E IN THE AISLE TO WATCH WITH SOUND', x + w / 2, y + h * .82, w * .8);
 };
 const railBoard: Draw = (ctx, x, y, w, h) => {
   ctx.fillStyle = '#f2c52e'; ctx.fillRect(x, y, w, h); ctx.strokeStyle = '#111'; ctx.lineWidth = h * .05; ctx.strokeRect(x + h * .05, y + h * .05, w - h * .1, h - h * .1);
@@ -104,7 +105,9 @@ const andheri: DistrictSpec = {
     // Pavement stalls under blue tarps, and the overhead tangle of cables.
     const goods = ['#1c1c1c', '#e8e8e2', '#d33b3b', '#2f7fd0', '#f0c43a', '#3caa5a']; yield;
     const labels: Array<[string, string?]> = [['CHARGERS ₹99'], ['EARPHONES'], ['USB-C · HDMI'], ['SCREEN GUARD'], ['POWER BANK'], ['MOUSE · KEYBOARD']]; yield;
-    let i = 0; for (const side of [-1, 1]) for (let z = 8; z > -54; z -= 7.5) if (Math.abs(z + 3) > 3) { const [t] = labels[i++ % labels.length]; stall(c, side * 6.15, z, side > 0 ? -Math.PI / 2 : Math.PI / 2, i % 3 ? '#2f5f9e' : '#c9442f', goods, t); }
+    // Stalls keep clear of the arch and of the skill-shop boards, so the boards read from the road.
+    const nearBoard = (side: number, z: number) => ANDHERI_SHOP_BOARDS.some(([x, bz]) => Math.sign(x) === side && Math.abs(bz - z) < 3.8);
+    let i = 0; for (const side of [-1, 1]) for (let z = 8; z > -54; z -= 7.5) if (Math.abs(z + 3) > 3 && !nearBoard(side, z)) { const [t] = labels[i++ % labels.length]; stall(c, side * 6.15, z, side > 0 ? -Math.PI / 2 : Math.PI / 2, i % 3 ? '#2f5f9e' : '#c9442f', goods, t); }
     for (let z = 10; z > -56; z -= 5.5) for (let k = 0; k < 3; k++) kit.rod([-7.2, 6.2 + k * .35, z + k], [7.2, 6.5 + (k % 2) * .3, z + k * .8 - .6], .012, '#1f2020'); yield;
     for (const [x, z] of [[3.35, -16], [3.35, -17], [3.35, -18], [-3.35, -30], [-3.35, -31], [3.35, -40]] as const) d.parked('bike', x, z, x > 0 ? Math.PI : 0); yield;
     d.parked('cart', -3.7, -9.5, 0); d.parked('cart', 3.7, -46, Math.PI); yield;
@@ -116,10 +119,12 @@ const andheri: DistrictSpec = {
 /* ============================================================ POWAI */
 const project = (id: string) => projects.find(p => p.id === id)!;
 const lab = (id: string, form: PowaiLab['form'], color: string, still: PowaiLab['still']): PowaiLab => ({ id, title: project(id).title, form, color, accent: project(id).color, still });
-/** In the order of the Powai exhibits: the six flagships, then ASTFLOW. */
+/** In the order of the Powai exhibits (POWAI_PROJECTS), then ASTFLOW. */
+const LAB_LOOK: Record<string, [PowaiLab['form'], string, PowaiLab['still']]> = {
+  northstar: ['observatory', '#33456a', 'chart'], moneymetrics: ['bank', '#d9d0bd', 'flows'], repolens: ['lens', '#3a6f8a', 'code'], compilerlab: ['timber', '#d8c9ae', 'automaton'],
+};
 const POWAI_LABS: PowaiLab[] = [
-  lab('northstar', 'observatory', '#33456a', 'chart'), lab('reco', 'tower', '#b0613f', 'queue'), lab('moneymetrics', 'bank', '#d9d0bd', 'flows'),
-  lab('meeting-intelligence-service', 'timber', '#d8c9ae', 'transcript'), lab('rideflow', 'transit', '#e1c37e', 'route'), lab('repolens', 'lens', '#3a6f8a', 'code'),
+  ...POWAI_PROJECTS.map(id => lab(id, ...LAB_LOOK[id])),
   { id: 'astflow', title: 'ASTFLOW', form: 'lab', color: '#5b3d73', accent: '#d7b8f0', still: 'ranking' },
 ];
 const powai: DistrictSpec = {
@@ -147,14 +152,18 @@ const powai: DistrictSpec = {
     for (let z = 10; z > -60; z -= 16) streetLight(c, -11.8, z, -1); yield;
     for (let z = 4; z > -58; z -= 12) { palm(c, -11.4, z - 6, 7); bench(c, -11.6, z, Math.PI / 2); }
     // One workplace per project along the lake front; the towers stand behind them.
-    d.frontage(1, POWAI_LABS.map(lab => ({ w: POWAI_PODS.w, setback: POWAI_PODS.setback, gap: POWAI_PODS.gap, build: (c: Ctx) => powaiLab(c, lab) })), POWAI_PODS.start); yield;
+    d.frontage(1, [
+      ...POWAI_LABS.map(lab => ({ w: POWAI_PODS.w, setback: POWAI_PODS.setback, gap: POWAI_PODS.gap, build: (c: Ctx) => powaiLab(c, lab) })),
+      // Past the last workplace the frontage carries on as an ordinary office block.
+      { w: 22, setback: POWAI_PODS.setback, build: (c: Ctx) => glassTower(c, { w: 22, d: 16, h: 34, glass: '#4e6a70', frame: '#d6d1c4', name: 'LAKESIDE TECH PARK' }) },
+    ], POWAI_PODS.start); yield;
     d.frontage(1, [
       { w: 22, setback: 13, build: c => neoclassical(c, { w: 22, d: 18, floors: 13, name: "POWAI BUILDER'S DISTRICT" }) },
       { w: 20, setback: 13, build: c => neoclassical(c, { w: 20, d: 18, floors: 15, color: '#ece2cb', name: 'HACKERSPACE · TOWER B' }) },
       { w: 18, setback: 13, build: c => neoclassical(c, { w: 18, d: 16, floors: 11, color: '#e2d6bd', dome: false, name: 'GITHUB WEEKEND LAB' }) },
     ]); yield;
     kit.box([3, .07, 72], [1 * (6.8 + 1.5), .02, -22], '#d6cdb9', 'paving'); yield;
-    hoarding(c, 10.5, 6.5, -55, -Math.PI / 2 + .4, 7.5, poster('#28473b', '#e3b04b', 'FIVE PROJECTS', 'Research terminals · recovery · route planners'), 'AD'); yield;
+    hoarding(c, 10.5, 6.5, -55, -Math.PI / 2 + .4, 7.5, poster('#28473b', '#e3b04b', 'FIVE PROJECTS', 'Trading desk · finance · code search · compilers · ASTFLOW'), 'AD'); yield;
     d.walkers(walkersOf(['jogger', 'office', 'salwar', 'jogger', 'kurta', 'school', 'office', 'sari'], 12), [-6.5, -8.4, -10.2], 12, -56, 1.15); yield;
     d.walkers(walkersOf(['office', 'office', 'salwar', 'shirt'], 7), [4.8, 5.6]); yield;
     d.idle('jogger', [-11.62, .03, 3.45], Math.PI / 2, 'sit'); d.idle('salwar', [-11.62, .03, 4.5], Math.PI / 2, 'sit'); yield;
@@ -310,6 +319,9 @@ const filmcity: DistrictSpec = {
     sign(c, 'SCENE 2', 1.5, [12.6, 1.9, -7.59], { draw: filmPoster('#173a4a', 'UPSTREAM', 'five pull requests, one summer', '#e0b03a') }, [256, 352]); yield;
     for (const [x, title, tag, bg, hue] of [[9.8, 'SIGNALS', 'what the receipts say', '#3a2a14', '#e05a3a'], [12.6, 'NEXT CHAPTER', 'still being written', '#14303a', '#f0b03a']] as const) sign(c, title, 1.5, [x, 1.9, 13.59], { draw: filmPoster(bg, title, tag, hue) }, [256, 352], Math.PI); yield;
     d.idle('sari', [21.2, .03, 5.82], face(1, 0), 'sit'); d.idle('kurta', [21.2, .03, 7.06], face(1, 0), 'sit'); d.idle('school', [24.5, .03, -4.74], face(1, 0), 'sit', .72); yield;
+    // Show night: every other seat taken by a baked, instanced audience, and the trailer on the screen while the visitor is in the hall.
+    const audience = new TalkiesAudience([{ x: 21.2, z: 5.82 }, { x: 21.2, z: 7.06 }, { x: 24.5, z: -4.74 }]), screen = new TalkiesScreen();
+    d.group.add(audience.group, screen.mesh); d.animate((_t, _d, view) => { audience.update(view); screen.update(view); }); d.onDispose(() => { audience.dispose(); screen.dispose(); }); yield;
     d.idle('worker', [14.7, .03, 11.2], face(-1, 0), 'stand'); yield;
     // A film unit mid-shoot: camera crane, lights, director's chair.
     const rig = (x: number, z: number) => { kit.rod([x, 0, z], [x, 2.6, z], .03, '#222', 'metal'); kit.box([.6, .5, .3], [x, 2.8, z], '#1e1e1e', 'metal'); kit.box([.5, .4, .02], [x, 2.8, z + .16], '#fff3c8', 'glow'); for (let a = 0; a < 3; a++) kit.rod([x, 1.2, z], [x + Math.cos(a * 2.1) * .5, 0, z + Math.sin(a * 2.1) * .5], .02, '#222', 'metal'); }; yield;

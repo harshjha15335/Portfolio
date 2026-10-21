@@ -36,6 +36,19 @@ export function TourCard({ tour, step, onStep, onOpen, onNext, onLeave }: {
   </section>;
 }
 
+/** What a district announces first when you walk into it: for Fort, the role itself. Non-modal; it fades on its own. */
+export const ARRIVAL_CARDS: Record<string, { eyebrow: string; headline: string; detail: string }> = {
+  fort: { eyebrow: 'NOW ENTERING · FORT OPEN SOURCE HALL', headline: 'GSoC Contributor at QC-Devs', detail: 'Google Summer of Code 2026 · FFprime · five merged pull requests' },
+};
+export function ArrivalCard({ district, onDone }: { district: string; onDone: () => void }) {
+  const card = ARRIVAL_CARDS[district];
+  useEffect(() => { const t = window.setTimeout(onDone, 6500); return () => clearTimeout(t); }, [district, onDone]);
+  if (!card) return null;
+  return <aside className="arrival-card" aria-label={card.headline} aria-live="polite" onClick={onDone}>
+    <span className="eyebrow">{card.eyebrow}</span><strong>{card.headline}</strong><small>{card.detail}</small>
+  </aside>;
+}
+
 /** On-screen wayfinding to the district picked on the departure board or the map. */
 export function Waypoint({ target, position, onRide, onClear }: { target: string; position: { x: number; z: number; yaw?: number }; onRide: () => void; onClear: () => void }) {
   const place = districts.find(d => d.id === target), stop = streetStops[target]; if (!place || !stop) return null;

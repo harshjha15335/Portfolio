@@ -51,6 +51,9 @@
 .guide-dialogue p { font-size:16px; max-width:610px; margin-top:8px; }
 .guide-actions { display:flex; align-items:center; gap:20px; margin-top:16px; flex-wrap:wrap; }
 .guide-actions .primary-button { font-size:9px; padding:12px 15px; }
+.back-button { border:1px solid currentColor; padding:11px 14px; font:9px var(--mono); letter-spacing:.06em; background:transparent; color:inherit; cursor:pointer; }
+.back-button:hover, .back-button:focus-visible { background:#283c41; color:#f3e5c7; }
+.district-back { margin:0 0 14px; }
 .district-content { padding-top:28px; }
 .district-content h3 { font:600 clamp(25px,3vw,40px)/1.1 var(--display); margin-bottom:12px; }
 .district-content p { font-size:14px; max-width:740px; margin:12px 0; }
@@ -89,7 +92,6 @@
 .cinema-screen h3 { font-size:clamp(30px,4vw,60px); max-width:600px; margin:45px 0 22px; }
 .cinema-screen p { font-size:14px; }.cinema-screen .caption { font-size:8px; }
 .scene-number { position:absolute; right:20px; top:10px; font:600 55px var(--display); color:#8a4e68; }
-.cinema-seats { font-size:40px; letter-spacing:12px; text-align:center; color:#9f574e; white-space:nowrap; margin:15px -20px 0; }
 .theatre-controls { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid #f3e5c755; padding:16px 0; }
 .theatre-controls button { font:9px var(--mono); color:#f3e5c7; padding:8px 0; border-bottom:1px solid currentColor; }
 .theatre-controls button:disabled { opacity:.3; cursor:default; }.theatre-controls > span { font:8px var(--mono); }
@@ -196,3 +198,19 @@
 .sound-levels legend { padding:0 4px; letter-spacing:.06em; text-transform:uppercase; }
 .sound-levels label { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); align-items:center; gap:10px; }
 .sound-levels input[type=range] { width:100%; min-height:24px; accent-color:#c8862f; }
+/* Film City Talkies: the trailer screen and a full house. */
+.talkies-film { padding-top:24px; }
+.cinema-film { position:relative; aspect-ratio:1280 / 544; background:#000; border:8px solid #11191d; box-shadow:0 0 60px #f3c87a22; }
+.cinema-film video { display:block; width:100%; height:100%; object-fit:contain; background:#000; cursor:pointer; }
+.cinema-film video::cue { font:600 15px var(--mono); background:#000a; }
+.film-overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; background:radial-gradient(ellipse at center,#0006,#000c); }
+.film-overlay button:not(.primary-button) { font:9px var(--mono); color:#f3e5c7; padding:8px 0; border-bottom:1px solid currentColor; }
+.film-overlay .caption { color:#f3e5c7; }
+.film-progress { height:3px; background:#f3e5c722; margin-top:10px; }.film-progress i { display:block; height:100%; background:#f9c847; }
+.cinema-house { height:64px; margin:12px -24px 0; opacity:.9;
+  background:
+    radial-gradient(circle at 50% 38%, #0d1214 0 9px, transparent 10px) 0 0 / 30px 32px,
+    radial-gradient(ellipse at 50% 100%, #0d1214 0 15px, transparent 16px) 0 0 / 30px 32px,
+    radial-gradient(circle at 50% 38%, #151d20 0 8px, transparent 9px) 15px 18px / 30px 32px,
+    linear-gradient(#20272b00, #9f574e55); }
+@media (max-width:700px) { .cinema-film { border-width:4px; } .cinema-house { height:44px; margin:8px -12px 0; } }

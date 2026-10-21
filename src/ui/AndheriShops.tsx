@@ -6,12 +6,10 @@ import { portfolio } from '../data/portfolio';
 import { EXCERPTS } from '../projects/excerpts';
 import { ConventionError, SPHERICAL_SOURCE, quadrupoleToSpherical } from '../research/stone';
 import { weeklyAnomalies, moneymetricsSource, type Txn } from '../projects/moneymetrics';
-import { meetingSource } from '../projects/meeting';
-import { traceMeetingRequest, validateCreateMeeting, type Auth } from '../projects/meetingRequest';
+import { evaluateRisk, newLedger, paperFill, northstarSource, type Proposal, type Symbol } from '../projects/northstar';
 import { PIPELINES, simulate } from '../projects/pipelines';
-import { meetingGuard, northstarFile, northstarGuard, type Evidence } from '../projects/aiguard';
+import { northstarFile, northstarGuard, type Evidence } from '../projects/aiguard';
 import guardData from '../projects/data/northstar-guard.json';
-import requestData from '../projects/data/meeting-requests.json';
 import { RideMeter } from './RideMeter';
 import type { RideStatus } from '../game/World/transit';
 
@@ -66,14 +64,14 @@ const num = (v: string) => (v.trim() === '' ? NaN : Number(v));
 
 /* A: Language Lane. The original excerpt beside a live run of the same logic through the tested port. */
 function LanguageBench() {
-  const [lang, setLang] = useState<'python' | 'javascript' | 'typescript'>('python');
+  const [lang, setLang] = useState<'python' | 'javascript'>('python');
   const ex = EXCERPTS[lang];
-  const href = lang === 'python' ? `${SPHERICAL_SOURCE}#L${ex.lines[0]}-L${ex.lines[1]}` : lang === 'javascript' ? `${moneymetricsSource(ex.file)}#L${ex.lines[0]}-L${ex.lines[1]}` : `${meetingSource(ex.file)}#L${ex.lines[0]}-L${ex.lines[1]}`;
+  const href = `${lang === 'python' ? SPHERICAL_SOURCE : moneymetricsSource(ex.file)}#L${ex.lines[0]}-L${ex.lines[1]}`;
   return <>
-    <div className="lab-presets" role="group" aria-label="Language">{(['python', 'javascript', 'typescript'] as const).map(l => <button key={l} aria-pressed={l === lang} onClick={() => setLang(l)}>{{ python: 'PYTHON · FFPRIME', javascript: 'JAVASCRIPT · MONEYMETRICS', typescript: 'TYPESCRIPT · MEETING INTELLIGENCE' }[l]}</button>)}</div>
+    <div className="lab-presets" role="group" aria-label="Language">{(['python', 'javascript'] as const).map(l => <button key={l} aria-pressed={l === lang} onClick={() => setLang(l)}>{{ python: 'PYTHON · FFPRIME', javascript: 'JAVASCRIPT · MONEYMETRICS' }[l]}</button>)}</div>
     <div className="lab-grid bench-split">
       <figure className="code-chunk"><figcaption className="caption">{ex.file.toUpperCase()} · LINES {ex.lines[0]}–{ex.lines[1]} · VERBATIM</figcaption><pre><code>{ex.code}</code></pre><Source href={href}>Source at the pinned commit</Source></figure>
-      <div>{lang === 'python' ? <PythonRun /> : lang === 'javascript' ? <JavaScriptRun /> : <TypeScriptRun />}</div>
+      <div>{lang === 'python' ? <PythonRun /> : <JavaScriptRun />}</div>
     </div>
   </>;
 }
@@ -114,22 +112,6 @@ function JavaScriptRun() {
   </div>;
 }
 
-function TypeScriptRun() {
-  const [title, setTitle] = useState('Campus Cart release planning');
-  const [people, setPeople] = useState('Asha, Rohan');
-  const [date, setDate] = useState('2026-10-12T10:00:00Z');
-  const body = { title, participants: people.trim() ? people.split(',').map(p => p.trim()) : [], meetingDate: date, transcript: [{ timestamp: '00:01', speaker: 'Asha', text: 'Ship the cart fix on Friday.' }] };
-  const { details, data } = validateCreateMeeting(body);
-  return <div className="lab-controls">
-    <span className="eyebrow">RUN IT · createMeetingSchema.safeParse</span>
-    <label>title<input value={title} onChange={e => setTitle(e.target.value)} /></label>
-    <label>participants (comma separated)<input value={people} onChange={e => setPeople(e.target.value)} /></label>
-    <label>meetingDate<input value={date} onChange={e => setDate(e.target.value)} /></label>
-    {data ? <p className="lab-verdict pass">success: true · meetingDate coerced to {String(data.meetingDate)}</p> : <><p className="lab-verdict fail">success: false</p><pre className="lab-json">{JSON.stringify(details, null, 2)}</pre></>}
-    <p className="caption">SAME RULES AND MESSAGES AS ZOD 3.25.76 ON THE SERVICE'S SCHEMA (RECORDED AND TESTED)</p>
-  </div>;
-}
-
 /* B: Frontend Studio. This site's own RideMeter component, with its props on the bench. */
 function FrontendBench() {
   const [ride, setRide] = useState<RideStatus>({ phase: 'riding', kind: 'taxi', destination: 'fort', elapsed: 42, distance: 380, fare: 64.5, progress: .45, meter: 'RUNNING', waiting: 12 });
@@ -160,27 +142,47 @@ function FrontendBench() {
   </div>;
 }
 
-/* C: Backend Workshop. POST /api/meetings through Meeting Intelligence, hop by hop. */
+/* C: Backend Workshop. One model reply through NORTHSTAR's backend, layer by layer, ending in a paper fill or a refusal. */
+const guardCases = guardData.cases.filter(c => !c.id.startsWith('probe'));
 function BackendBench() {
-  const presets = requestData.cases;
-  const [auth, setAuth] = useState<Auth>('valid');
-  const [traceId, setTraceId] = useState('');
-  const [body, setBody] = useState(presets[0].body);
-  const r = traceMeetingRequest({ auth, traceId, body });
-  const load = (id: string) => { const c = presets.find(p => p.id === id)!; setAuth(c.auth as Auth); setTraceId(c.traceId); setBody(c.body); };
+  const [raw, setRaw] = useState(guardCases.find(c => c.id === 'buy')!.raw);
+  const [ctx, setCtx] = useState({ killSwitch: false, brokerHealthy: true, sessionOpen: true, duplicate: false });
+  const evidence = guardData.evidence as Evidence;
+  const g = northstarGuard(raw, evidence);
+  const ledger = newLedger();
+  const price = Number(evidence.quote.price);
+  let risk: ReturnType<typeof evaluateRisk> | null = null, proposal: Proposal | null = null;
+  if (g.stage === 'accepted') {
+    const p = g.proposal;
+    proposal = { symbol: p.symbol as Symbol, action: p.action as Proposal['action'], quantity: Number(p.proposed_quantity), confidence: Number(p.confidence), proposedPrice: Number(p.current_price), maximumEntryPrice: Number(p.maximum_entry_price), ageSeconds: 0 };
+    risk = evaluateRisk(proposal, { symbol: evidence.symbol as Symbol, price, ageSeconds: 5, tradeable: true, sessionOpen: ctx.sessionOpen, instrument: 'NSE_CASH' }, ledger,
+      { killSwitch: ctx.killSwitch, brokerHealthy: ctx.brokerHealthy, brokerVerified: true, duplicate: ctx.duplicate, alreadyOrdered: false });
+  }
+  const failed = risk?.checks.filter(c => c.status === 'FAIL') ?? [];
+  const after = risk?.passed && proposal ? paperFill(ledger, proposal, price) : null;
+  const hops: { name: string; href: string; state: 'pass' | 'stop' | 'skipped'; note: string }[] = [
+    { name: 'XAIProvider.propose: strip the fence', href: northstarFile('agents.py'), state: 'pass', note: 'Removes a ```json wrapper if the model added one.' },
+    { name: 'TradeProposal.model_validate_json', href: northstarFile('schemas.py'), state: g.stage === 'schema' ? 'stop' : 'pass', note: g.stage === 'schema' ? `${g.errors.length} Pydantic error${g.errors.length === 1 ? '' : 's'}: ${g.errors[0]?.msg ?? ''}` : 'Every field typed and bounded; unknown fields forbidden.' },
+    { name: 'DecisionAgent.decide', href: northstarFile('agents.py'), state: g.stage === 'schema' ? 'skipped' : g.stage === 'decision' ? 'stop' : 'pass', note: g.stage === 'decision' ? g.message : 'Symbol, cycle, quote, value and sources match the evidence.' },
+    { name: 'RiskEngine.evaluate', href: northstarSource('risk.py'), state: !risk ? 'skipped' : risk.passed ? 'pass' : 'stop', note: risk ? `${risk.checks.length - failed.length} of ${risk.checks.length} checks pass${failed.length ? `; ${failed.map(c => c.name).join(', ')} failed` : ''}.` : '' },
+    { name: 'paper fill (MOCK mode)', href: northstarSource('risk.py'), state: after ? 'pass' : 'skipped', note: after ? `Filled ${proposal!.action} ${proposal!.quantity} × ${proposal!.symbol} at ₹${price}. Cash ₹${ledger.cash.toFixed(2)} → ₹${after.cash.toFixed(2)}.` : '' },
+  ];
+  const toggle = (k: keyof typeof ctx) => setCtx(c => ({ ...c, [k]: !c[k] }));
   return <div className="lab-grid">
     <div className="lab-controls">
-      <span className="eyebrow">REQUEST · POST /api/meetings</span>
-      <label>Preset<select defaultValue="" onChange={e => e.target.value && load(e.target.value)}><option value="">Choose a recorded case…</option>{presets.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}</select></label>
-      <label>Authorization<select value={auth} onChange={e => setAuth(e.target.value as Auth)}><option value="valid">Bearer (valid token)</option><option value="missing">(no header)</option><option value="invalid">Bearer (wrong secret)</option><option value="expired">Bearer (expired)</option></select></label>
-      <label>x-trace-id<input value={traceId} placeholder="(none: a UUID is generated)" onChange={e => setTraceId(e.target.value)} /></label>
-      <label>Body (application/json)<textarea rows={8} value={body} spellCheck={false} onChange={e => setBody(e.target.value)} /></label>
+      <span className="eyebrow">INPUT · A MODEL'S TRADE PROPOSAL</span>
+      <label>Preset<select value={guardCases.find(c => c.raw === raw)?.id ?? ''} onChange={e => setRaw(guardCases.find(c => c.id === e.target.value)!.raw)}><option value="" disabled>(edited)</option>{guardCases.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
+      <label>Raw model reply<textarea rows={8} value={raw} spellCheck={false} onChange={e => setRaw(e.target.value)} /></label>
+      <span className="eyebrow">BACKEND STATE</span>
+      <label className="lab-check"><input type="checkbox" checked={ctx.killSwitch} onChange={() => toggle('killSwitch')} /> Kill switch on</label>
+      <label className="lab-check"><input type="checkbox" checked={!ctx.brokerHealthy} onChange={() => toggle('brokerHealthy')} /> Broker connection down</label>
+      <label className="lab-check"><input type="checkbox" checked={!ctx.sessionOpen} onChange={() => toggle('sessionOpen')} /> Market session closed</label>
+      <label className="lab-check"><input type="checkbox" checked={ctx.duplicate} onChange={() => toggle('duplicate')} /> Order already pending for ITC</label>
     </div>
     <div>
-      <ol className="hop-list" aria-label="Request path">{r.hops.map(h => <li key={h.name} className={h.state}><b>{h.state === 'pass' ? '✓' : h.state === 'stop' ? '■' : '·'}</b><div><a href={h.href} target="_blank" rel="noopener noreferrer"><code>{h.name}</code></a><span>{h.state === 'skipped' ? 'not reached' : h.note}</span></div></li>)}</ol>
-      <p className={`lab-verdict ${r.status < 300 ? 'pass' : 'fail'}`} role="status">HTTP {r.status} · x-trace-id: {r.traceHeader ?? '(not set)'}</p>
-      <pre className="lab-json">{JSON.stringify(r.response, null, 2)}</pre>
-      <p className="caption">RESPONSES MATCH REQUESTS RECORDED AGAINST THE SERVICE'S OWN CODE (EXPRESS 4.22.2, ZOD 3.25.76). THE DATABASE IS STUBBED, SO THE ID IS FIXED AND TIMESTAMPS ARE OMITTED.</p>
+      <ol className="hop-list" aria-label="Request path">{hops.map(h => <li key={h.name} className={h.state}><b>{h.state === 'pass' ? '✓' : h.state === 'stop' ? '■' : '·'}</b><div><a href={h.href} target="_blank" rel="noopener noreferrer"><code>{h.name}</code></a><span>{h.state === 'skipped' ? 'not reached' : h.note}</span></div></li>)}</ol>
+      <p className={`lab-verdict ${after ? 'pass' : 'fail'}`} role="status">{after ? 'Paper order filled.' : 'No order. The backend stopped it at the step marked ■.'}</p>
+      <p className="caption">THE SCHEMA AND DECISION STEPS ARE CHECKED AGAINST THE REAL PYDANTIC MODEL; THE RISK ENGINE IS THE TESTED PORT USED BY THE NORTHSTAR LAB IN POWAI. MOCK QUOTE, NO BROKER.</p>
     </div>
   </div>;
 }
@@ -206,53 +208,25 @@ function DevOpsBench() {
   </>;
 }
 
-/* E: AI Integration Lab. One model reply, two services' guards. */
-const MEETING_PRESETS = [
-  ['Valid analysis with citations', JSON.stringify({ summary: [{ text: 'Cart fix ships Friday.', citations: [{ timestamp: '00:01' }] }], actionItems: [{ task: 'Ship the cart fix', assignee: 'Asha', citations: [{ timestamp: '00:01' }] }], decisions: [], followUps: [] }, null, 2)],
-  ['Missing citations and categories', JSON.stringify({ summary: [{ text: 'Cart fix ships Friday.' }], actionItems: 'none' }, null, 2)],
-  ['Wrapped in a ```json fence', '```json\n{"summary": [], "actionItems": [], "decisions": [], "followUps": []}\n```'],
-  ['Prose instead of JSON', 'The team agreed to ship the cart fix on Friday.'],
-] as const;
-
+/* E: AI Integration Lab. One model reply against NORTHSTAR's guard. */
 function AIBench() {
-  const [service, setService] = useState<'northstar' | 'meeting'>('northstar');
-  const cases = guardData.cases.filter(c => !c.id.startsWith('probe'));
-  const [raw, setRaw] = useState(cases.find(c => c.id === 'extra')!.raw);
-  const [mraw, setMraw] = useState<string>(MEETING_PRESETS[1][1]);
+  const [raw, setRaw] = useState(guardCases.find(c => c.id === 'extra')!.raw);
   const evidence = guardData.evidence as Evidence;
   const g = northstarGuard(raw, evidence);
-  const m = meetingGuard(mraw);
   const stages = ['fence cleanup', 'TradeProposal schema', 'DecisionAgent checks', 'accepted'];
   const reached = g.stage === 'schema' ? 1 : g.stage === 'decision' ? 2 : 3;
-  return <>
-    <div className="lab-presets" role="group" aria-label="Service"><button aria-pressed={service === 'northstar'} onClick={() => setService('northstar')}>NORTHSTAR · TRADE PROPOSAL</button><button aria-pressed={service === 'meeting'} onClick={() => setService('meeting')}>MEETING INTELLIGENCE · GEMINI ANALYSIS</button></div>
-    {service === 'northstar' ? <div className="lab-grid">
-      <div className="lab-controls">
-        <label>Model reply preset<select value={cases.find(c => c.raw === raw)?.id ?? ''} onChange={e => setRaw(cases.find(c => c.id === e.target.value)!.raw)}><option value="" disabled>(edited)</option>{cases.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
-        <label>Raw model reply<textarea rows={12} value={raw} spellCheck={false} onChange={e => setRaw(e.target.value)} /></label>
-        <p className="caption">EVIDENCE GIVEN TO THE MODEL: {evidence.symbol} · {evidence.cycle_id} · QUOTE ₹{evidence.quote.price} · SOURCES {evidence.source_ids.join(', ')}</p>
-      </div>
-      <div>
-        <ol className="guard-stages" aria-label="NORTHSTAR guard stages">{stages.map((s, i) => <li key={s} className={i < reached ? 'pass' : i === reached ? (g.stage === 'accepted' ? 'pass' : 'fail') : 'skipped'}>{s}</li>)}</ol>
-        {g.stage === 'schema' && <><p className="lab-verdict fail" role="status">Rejected by the schema: {g.errors.length} error{g.errors.length === 1 ? '' : 's'}. Callers see “{g.outward}”.</p><table className="lab-table"><thead><tr><th>Field</th><th>Pydantic error</th></tr></thead><tbody>{g.errors.map((e, i) => <tr key={i}><td><code>{e.loc.join('.') || '(reply)'}</code></td><td>{e.msg}</td></tr>)}</tbody></table></>}
-        {g.stage === 'decision' && <p className="lab-verdict fail" role="status">Valid JSON, rejected by DecisionAgent: {g.message}.</p>}
-        {g.stage === 'accepted' && <p className="lab-verdict pass" role="status">Accepted as a {String(g.proposal.action)} proposal. It still has to pass all 29 risk checks before any paper order (see the NORTHSTAR lab in Powai).</p>}
-        <p className="caption">CHECKED AGAINST THE REAL PYDANTIC MODEL AND DECISIONAGENT FOR EVERY PRESET · <a href={northstarFile('agents.py')} target="_blank" rel="noopener noreferrer">AGENTS.PY ↗</a> <a href={northstarFile('schemas.py')} target="_blank" rel="noopener noreferrer">SCHEMAS.PY ↗</a></p>
-      </div>
-    </div> : <div className="lab-grid">
-      <div className="lab-controls">
-        <label>Model reply preset<select value={MEETING_PRESETS.find(p => p[1] === mraw)?.[0] ?? ''} onChange={e => setMraw(MEETING_PRESETS.find(p => p[0] === e.target.value)![1])}><option value="" disabled>(edited)</option>{MEETING_PRESETS.map(([l]) => <option key={l}>{l}</option>)}</select></label>
-        <label>Raw Gemini reply<textarea rows={12} value={mraw} spellCheck={false} onChange={e => setMraw(e.target.value)} /></label>
-        <p className="caption">REQUESTED WITH responseMimeType application/json · temperature 0.1</p>
-      </div>
-      <div>
-        {m.ok ? <><p className={`lab-verdict ${m.repairs.length ? 'fail' : 'pass'}`} role="status">{m.repairs.length ? `Accepted after ${m.repairs.length} silent repair${m.repairs.length === 1 ? '' : 's'}.` : 'Accepted unchanged.'}</p>
-          {!!m.repairs.length && <ul className="lab-alerts">{m.repairs.map(x => <li key={x} className="warning">{x}</li>)}</ul>}
-          <pre className="lab-json">{JSON.stringify(m.result, null, 2)}</pre></>
-          : <p className="lab-verdict fail" role="status">HTTP {m.status} {m.code}: {m.message}</p>}
-        <p className="lab-note">The contrast is the lesson: NORTHSTAR refuses anything off-schema before it can touch money, while Meeting Intelligence normalises missing arrays so a partial analysis still saves. Its citation rule (every item cites a real timestamp) lives in the prompt and AI_APPROACH.md, not in this code path.</p>
-        <p className="caption"><a href={meetingSource('src/integrations/gemini.service.ts')} target="_blank" rel="noopener noreferrer">GEMINI.SERVICE.TS ↗</a> · NO MODEL IS CALLED HERE</p>
-      </div>
-    </div>}
-  </>;
+  return <div className="lab-grid">
+    <div className="lab-controls">
+      <label>Model reply preset<select value={guardCases.find(c => c.raw === raw)?.id ?? ''} onChange={e => setRaw(guardCases.find(c => c.id === e.target.value)!.raw)}><option value="" disabled>(edited)</option>{guardCases.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
+      <label>Raw model reply<textarea rows={12} value={raw} spellCheck={false} onChange={e => setRaw(e.target.value)} /></label>
+      <p className="caption">EVIDENCE GIVEN TO THE MODEL: {evidence.symbol} · {evidence.cycle_id} · QUOTE ₹{evidence.quote.price} · SOURCES {evidence.source_ids.join(', ')}</p>
+    </div>
+    <div>
+      <ol className="guard-stages" aria-label="NORTHSTAR guard stages">{stages.map((s, i) => <li key={s} className={i < reached ? 'pass' : i === reached ? (g.stage === 'accepted' ? 'pass' : 'fail') : 'skipped'}>{s}</li>)}</ol>
+      {g.stage === 'schema' && <><p className="lab-verdict fail" role="status">Rejected by the schema: {g.errors.length} error{g.errors.length === 1 ? '' : 's'}. Callers see “{g.outward}”.</p><table className="lab-table"><thead><tr><th>Field</th><th>Pydantic error</th></tr></thead><tbody>{g.errors.map((e, i) => <tr key={i}><td><code>{e.loc.join('.') || '(reply)'}</code></td><td>{e.msg}</td></tr>)}</tbody></table></>}
+      {g.stage === 'decision' && <p className="lab-verdict fail" role="status">Valid JSON, rejected by DecisionAgent: {g.message}.</p>}
+      {g.stage === 'accepted' && <p className="lab-verdict pass" role="status">Accepted as a {String(g.proposal.action)} proposal. It still has to pass every risk check before any paper order (try it in the Backend Workshop, or the NORTHSTAR lab in Powai).</p>}
+      <p className="caption">CHECKED AGAINST THE REAL PYDANTIC MODEL AND DECISIONAGENT FOR EVERY PRESET · <a href={northstarFile('agents.py')} target="_blank" rel="noopener noreferrer">AGENTS.PY ↗</a> <a href={northstarFile('schemas.py')} target="_blank" rel="noopener noreferrer">SCHEMAS.PY ↗</a></p>
+    </div>
+  </div>;
 }
