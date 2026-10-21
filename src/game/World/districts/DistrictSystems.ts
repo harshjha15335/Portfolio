@@ -6,6 +6,7 @@ import type { V3 } from './ColorMesh';
 import { pedestrianGreen, type LoopVehicle } from '../traffic/RoadTraffic';
 import { CAST_LOD, districtCast, type CastAct, type CastFigure, type DistrictCast } from './DistrictCast';
 import { footprint, personBlocker, PERSON_RADIUS, type Blocker } from '../collision/DynamicBlockers';
+import { BrakeLights } from '../traffic/BrakeLights';
 import { DRIVE_PROFILE, VEHICLE_BODY, TrafficSpace, drive, exitBlocked, inView, onCarriageway, stoppingDistance, type DriveState, type Driver, type Envelope, type Hold, type JunctionReservations, type SpawnDecision, type ViewCone } from '../traffic/TrafficSafety';
 
 /* ------------------------------------------------------------------ signs */
@@ -327,6 +328,8 @@ let trafficSystems = 0;
 
 export class LaneTraffic {
   readonly group = new THREE.Group(); private lanes: Lane[] = []; private agents: Agent[] = [];
+  /** Brake lamps of the vehicles that are slowing or held, near the visitor. */
+  private brakes = new BrakeLights(); constructor() { this.group.add(this.brakes.mesh); }
   private stops: Array<{ lane: number; s: number; active: (time: number) => boolean }> = [];
   /** Unique prefix of this system's envelope ids. */
   readonly id = `traffic${trafficSystems++}`;
@@ -389,7 +392,7 @@ export class LaneTraffic {
       a.mesh = mesh; if (cast) this.seat(a, cast);
     }
   }
-  dispose() { for (const a of this.agents) { a.rider?.dispose(); a.rider = null; } }
+  dispose() { for (const a of this.agents) { a.rider?.dispose(); a.rider = null; } this.brakes.dispose(); }
   /** True when the visitor could see this point (within the haze, in the view cone and not behind the frontages). */
   private seen(x: number, z: number, radius: number, length: number) {
     const v = this.view; if (!v) return false;
@@ -472,6 +475,7 @@ export class LaneTraffic {
     // Remember when each lane start was last in view: nothing enters where the visitor has just been looking.
     for (const lane of this.lanes) if (!lane.closed) { const p = this.at(lane, 0); if (this.seen(p.x, p.z, 6, 12)) lane.lastSeen = time; }
     const junctions = this.junctions ? { reservations: this.junctions, time } : undefined;
+    this.brakes.begin();
     for (const a of this.agents) {
       const near = visitor ? a.mesh.position.distanceTo(visitor) : 0;
       if (visitor) setVehicleDetail(a.mesh as THREE.Mesh, near > VEHICLE_HIDDEN || this.occluded?.(a.mesh.position, a.length, visitor) ? 'hidden' : near < VEHICLE_NEAR ? 0 : near < VEHICLE_FAR ? 1 : 2);
@@ -505,7 +509,9 @@ export class LaneTraffic {
       }
       this.pose(a);
       a.mesh.position.y = .02 + (a.kind === 'auto' || a.kind === 'bike' ? Math.sin(time * 13 + a.s) * .006 * Math.min(1, d.speed) : 0);
+      if (this.brakes.braking(a.mesh, d.speed, d.state, delta) && a.mesh.visible && near < VEHICLE_FAR) this.brakes.add(a.mesh, a.kind);
     }
+    this.brakes.end();
   }
   get size() { return this.agents.length; }
   /** Vehicles on the road within `range` of `view` (local), as world-space blockers. */

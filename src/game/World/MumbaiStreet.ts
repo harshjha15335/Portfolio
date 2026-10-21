@@ -24,6 +24,7 @@ import { createTransitModel, animateTransit } from './TransitModel';
 import { loadVehicleBody } from './AuthoredVehicles';
 import { StreetMaterials, type Surface } from './StreetMaterials';
 import type { SignRecord } from './districts/DistrictSystems';
+import { BrakeLights } from './traffic/BrakeLights';
 import { facadeSpec, seededRandom } from './StreetArchitecture';
 import { FacadePanels } from './architecture/FacadePanels';
 import { SpatialIndex } from './spatial/SpatialIndex';
@@ -86,6 +87,8 @@ export class MumbaiStreet {
   private signs: THREE.Mesh[] = [];
   /** Every sign placed on Fort Road and at CST (world frame), for the sign audit; filled when the signs are merged. */
   readonly signRecords: SignRecord[] = [];
+  /** Brake lamps of the Fort Road loop taxis and autos. */
+  private brakes = new BrakeLights(8);
   private signIndex = 0;
   private signCanvas: HTMLCanvasElement;
   readonly facadeCount = 14;
@@ -871,6 +874,7 @@ export class MumbaiStreet {
       const vehicle = createTransitModel(kind); vehicle.position.set(kind === 'taxi' ? 7.4 : -7.4, .02, 12); vehicle.rotation.y = kind === 'auto' ? Math.PI : 0; this.group.add(vehicle);this.parkedVehicles.push(vehicle);this.solidProxy([2,1.5,3.8],[0,.8,0],vehicle);
       this.interactions.push({ id: `hail-${kind}`, label: `Hail ${kind === 'taxi' ? 'kaali-peeli taxi' : 'auto'}`, position: new THREE.Vector3(kind==='taxi'?6.1:-6.1, 1, vehicle.position.z) });
     }
+    this.group.add(this.brakes.mesh);
     for (let i=0;i<this.trafficSystem.agents.length;i++){const vehicle=createTransitModel(i===1||i===4?'auto':'taxi');(i<3?this.group:this.dense).add(vehicle);this.trafficVehicles.push(vehicle);const pose=this.trafficSystem.pose(i);vehicle.position.set(pose.x,.02,pose.z);vehicle.rotation.y=pose.heading;}
   }
   private instanceStatics() {
@@ -984,7 +988,7 @@ export class MumbaiStreet {
       this.navigation.crowd.update(1/30,delta,3);
     }
     this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.roadWalkers.length=0;for(const w of [...this.walkers,...this.denseWalkers])if(w.agent&&w.group.visible!==false&&Math.abs(w.group.position.x)<3.9)this.roadWalkers.push(w.group.position);this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...this.roadWalkers.map(p=>({x:p.x,z:p.z}))],this.loopTraffic,this.trafficSpace??undefined,this.trafficJunctions?{reservations:this.trafficJunctions,time}:undefined);
-    this.trafficVehicles.forEach((vehicle,i)=>{vehicle.visible=this.trafficSystem.live[i];if(!vehicle.visible)return;const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y=p.heading;animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);});this.trafficUpdateMs=performance.now()-trafficStart;
+    this.brakes.begin();this.trafficVehicles.forEach((vehicle,i)=>{vehicle.visible=this.trafficSystem.live[i];if(!vehicle.visible)return;const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y=p.heading;animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);const d=this.trafficSystem.drivers[i];if(this.brakes.braking(vehicle,d.speed,d.state,delta)&&(vehicle.parent===this.group||this.dense.visible))this.brakes.add(vehicle,RoadTraffic.kindOf(i));});this.brakes.end();this.trafficUpdateMs=performance.now()-trafficStart;
     for (const animate of this.motion) animate(reduced ? 0 : time);
     this.group.updateMatrixWorld(true);
     for (const { instance, meshes } of this.dynamicBatches) { meshes.forEach((mesh, i) => { let visible=true; for(let p:THREE.Object3D|null=mesh.parent;p&&p!==this.group;p=p.parent)if(!p.visible)visible=false; instance.setMatrixAt(i,visible?mesh.matrixWorld:COLLAPSED); }); instance.instanceMatrix.needsUpdate = true;instance.computeBoundingSphere(); }

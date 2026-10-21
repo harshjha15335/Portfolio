@@ -55,7 +55,7 @@ describe('city districts', () => {
         else movers++;
       });
       district.crowd.group.traverse(o => { if ((o as THREE.SkinnedMesh).isSkinnedMesh) expect((o.userData.lodGeometries as unknown[]).length).toBe(3); });
-      for (const v of district.traffic.group.children) expect((v.userData.lodGeometries as unknown[]).length).toBe(3);
+      for (const v of district.traffic.group.children.filter(c => c.name !== 'traffic:brake-lights')) expect((v.userData.lodGeometries as unknown[]).length).toBe(3);
       // Nobody stands inside anybody else.
       const standing = district.crowd.standing().map(p => p.group.position);
       for (let a = 0; a < standing.length; a++) for (let b = a + 1; b < standing.length; b++) expect(Math.hypot(standing[a].x - standing[b].x, standing[a].z - standing[b].z), cityZones[i].id).toBeGreaterThan(.8);

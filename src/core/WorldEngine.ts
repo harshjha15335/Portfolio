@@ -15,6 +15,7 @@ import { CITY_METRES_PER_MAP_UNIT, CITY_METRES_PER_WORLD_METRE, DEMO_FARES, Fare
 import type { PhysicalMeter } from '../game/World/meter/MeterModel';
 import { DISTRICT_JUNCTIONS, FORT_JUNCTIONS, PassengerRide, kerbRoom } from '../game/World/traffic/PassengerRide';
 import { JunctionReservations, TrafficSpace, onCarriageway, type ViewCone } from '../game/World/traffic/TrafficSafety';
+import { TrafficOverlay } from '../game/World/traffic/TrafficOverlay';
 import { preloadCityVehicleModels } from '../game/World/districts/CityVehicleModels';
 import { STREET_SPAWN, streetStops, pickupRoutes, walkingVelocity, cityRideLegs, cityZones, zoneIndexAt, districtViews } from '../game/World/streetLayout';
 import { CityDistricts } from '../game/World/districts/CityDistricts';
@@ -108,6 +109,8 @@ export class WorldEngine {
   private lastRenderPosition=new THREE.Vector3(Infinity,Infinity,Infinity);
   private lastRenderRotation=new THREE.Quaternion();
   private debug: HTMLElement | null = null; private debugTime = 0; private debugFrames = 0;
+  /** `?debug&traffic`: envelope outlines and a traffic summary line. */
+  private trafficOverlay: TrafficOverlay | null = null; private trafficLine = '';
   private atmosphere!: AtmosphereUniforms;
   private sun = new THREE.DirectionalLight(STREET_MOOD.sunColor, STREET_MOOD.sunIntensity);
   /** Unshadowed light thrown back off the sunlit street, so faces turned away from the low sun stay legible. */
@@ -155,7 +158,7 @@ export class WorldEngine {
     document.addEventListener('visibilitychange', this.visibilityChanged); document.addEventListener('pointerlockchange', this.lockChanged);
     canvas.addEventListener('pointerdown', this.pointerDown); window.addEventListener('pointermove', this.pointerMove); window.addEventListener('pointerup', this.pointerUp); canvas.addEventListener('pointercancel', this.pointerUp);
     canvas.addEventListener('webglcontextlost', this.contextLost);
-    if (import.meta.env.DEV && new URLSearchParams(location.search).has('debug')) {window.addEventListener('street-review-view',this.reviewView); this.debug = document.createElement('div'); this.debug.className = 'world-debug'; this.debug.setAttribute('aria-label', 'Renderer diagnostics'); container.append(this.debug); (window as unknown as {__world?:WorldEngine}).__world=this; }
+    if (import.meta.env.DEV && new URLSearchParams(location.search).has('debug')) {window.addEventListener('street-review-view',this.reviewView); this.debug = document.createElement('div'); this.debug.className = 'world-debug'; this.debug.setAttribute('aria-label', 'Renderer diagnostics'); container.append(this.debug); (window as unknown as {__world?:WorldEngine}).__world=this; if (new URLSearchParams(location.search).has('traffic')) { this.trafficOverlay = new TrafficOverlay(); this.scene.add(this.trafficOverlay.lines); } }
     this.atmosphere.uShelterMin.value.copy(this.street.shelteredBounds.min);this.atmosphere.uShelterMax.value.copy(this.street.shelteredBounds.max);
     applyStreetAtmosphere(this.scene,this.atmosphere);this.syncSunBalance();
     // Public Three API primes light state before the first shadow pass, avoiding
@@ -601,7 +604,8 @@ export class WorldEngine {
         this.options.onPosition(this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? { x: this.visitor.position.x, z: this.visitor.position.z, yaw: this.yaw } : { x: this.transit.position.x, z: this.transit.position.z, yaw: this.transit.rotation.y + this.rideYaw });
         if (this.ride.phase !== 'idle') this.options.onRide({ ...this.ride }); this.lastHud = timestamp;
       }
-      if (this.debug) { this.debugTime += elapsed; if (this.debugTime > .75) { const info = this.renderer.info; this.debug.textContent = `${this.debugFrames?`${(this.debugFrames / this.debugTime).toFixed(1)} fps`:'idle'} · ${info.render.calls} draws · ${info.render.triangles} triangles · ${info.memory.textures} textures · ${info.programs?.length??0} shaders · ${Math.round(((performance as Performance & {memory?:{usedJSHeapSize:number}}).memory?.usedJSHeapSize??0)/1048576)} MB JS · scale ${this.quality.scale.toFixed(2)} · eye ${this.camera.position.y.toFixed(2)}m`; this.debugTime = 0; this.debugFrames = 0; } }
+      if (this.trafficOverlay && this.trafficZone >= 0) this.trafficLine = this.trafficOverlay.update(this.traffic, cityZones[this.trafficZone].originX);
+      if (this.debug) { this.debugTime += elapsed; if (this.debugTime > .75) { const info = this.renderer.info; this.debug.textContent = `${this.debugFrames?`${(this.debugFrames / this.debugTime).toFixed(1)} fps`:'idle'} · ${info.render.calls} draws · ${info.render.triangles} triangles · ${info.memory.textures} textures · ${info.programs?.length??0} shaders · ${Math.round(((performance as Performance & {memory?:{usedJSHeapSize:number}}).memory?.usedJSHeapSize??0)/1048576)} MB JS · scale ${this.quality.scale.toFixed(2)} · eye ${this.camera.position.y.toFixed(2)}m${this.trafficLine ? `\n${this.trafficLine}` : ''}`; this.debugTime = 0; this.debugFrames = 0; } }
     } catch (error) { this.dispose(); this.options.onError(error); }
   };
   dispose() {
@@ -612,6 +616,6 @@ export class WorldEngine {
     setFriendSource(null);void this.friendLibrary?.dispose();window.removeEventListener('street-benchmark',this.benchmarkCommand);this.profiler?.dispose();this.city.dispose();districtCast()?.dispose();setDistrictCast(null);this.street.dispose();this.fortTraffic.group.traverse(o=>{const m=o as THREE.Mesh;if(!m.isMesh)return;for(const g of new Set([m.geometry,...((m.userData.lodGeometries??[]) as THREE.BufferGeometry[])]))g.dispose();});this.rendering.dispose();this.environmentTarget.dispose();
     const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>(), skeletons = new Set<THREE.Skeleton>();
     this.scene.traverse(object => { const mesh = object as THREE.SkinnedMesh; if (mesh.isSkinnedMesh) skeletons.add(mesh.skeleton); if (mesh.geometry) geometries.add(mesh.geometry); for(const g of (mesh.userData.lodGeometries??[]) as THREE.BufferGeometry[]) geometries.add(g); if (mesh.material) for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) { materials.add(m); for(const key of ['map','bumpMap','roughnessMap','normalMap'] as const)if((m as THREE.MeshStandardMaterial)[key])textures.add((m as THREE.MeshStandardMaterial)[key]!); } });
-    skeletons.forEach(s => s.dispose()); geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); textures.forEach(t => t.dispose()); this.renderer.dispose(); canvas.remove(); this.debug?.remove();
+    skeletons.forEach(s => s.dispose()); geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); textures.forEach(t => t.dispose()); this.renderer.dispose(); canvas.remove(); this.debug?.remove(); this.trafficOverlay?.dispose();
   }
 }
