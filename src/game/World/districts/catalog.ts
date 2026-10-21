@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { hill, maidan } from './nature';
 import type { District, DistrictSpec } from './District';
-import { bench, bungalow, busStop, glassTower, hangar, hoarding, midrise, neoclassical, palm, sign, stall, streetLight, tetrapods, tree, backdropBlock, type Ctx } from './buildings';
+import { bench, bungalow, busStop, glassTower, hangar, hoarding, midrise, neoclassical, palm, sign, stall, streetLight, tetrapods, tree, backdropBlock, towerRelief, type Ctx } from './buildings';
 import type { Outfit } from './CityFolk';
 import type { V3 } from './ColorMesh';
 import { powaiLab, type PowaiLab } from './powaiLabs';
@@ -132,16 +132,23 @@ const powai: DistrictSpec = {
   traffic: ['sedan', 'suv', 'hatch', 'auto', 'bike', 'bus', 'taxi', 'hatch', 'suv', 'auto', 'sedan', 'bike'],
   *build(d) {
     const c = d.ctx, { kit } = c;
-    // Lakeside promenade, railing and Powai Lake with the far shore's hills.
-    kit.box([8.9, .08, 290], [-8.25, .02, -22], '#b9ae99', 'paving'); yield;
-    for (let z = 118; z > -160; z -= 1.7) kit.box([.24, .14, 1.6], [-3.98, .06, z], '#2f2e2b'); yield;
-    kit.box([.12, .1, 290], [-12.6, 1.05, -22], '#4f5853', 'metal'); kit.box([.06, .06, 290], [-12.6, .55, -22], '#4f5853', 'metal'); yield;
-    for (let z = 118; z > -160; z -= 2.4) kit.box([.08, 1.05, .08], [-12.6, .53, z], '#4f5853', 'metal'); yield;
-    kit.box([1.2, .9, 290], [-13.3, -.4, -22], '#8e8a7d', 'stone'); yield;
-    d.water(160, 300, [-92, -.35, -22], '#41626a', .05); yield;
-    // The far shore: a chain of wooded hills behind the water.
-    for (let i = 0; i < 6; i++) hill(kit, [-158 + (i % 2) * 14, -3, 70 - i * 38], 42 + (i % 3) * 8, 30, 16 + (i % 4) * 5, i * 3.1, 12, 32); yield;
-    for (let i = 0; i < 6; i++) kit.frame([-108 - (i % 2) * 6, 0, -70 + i * 18], Math.PI / 2, () => backdropBlock(c, 14, 28 + (i % 3) * 8, 12, '#e3d7bf')); yield;
+    // Lakeside promenade along the district's street (the avenues carry on past it), railing, and Powai Lake.
+    kit.box([8.9, .08, 86], [-8.25, .02, -22], '#b9ae99', 'paving'); yield;
+    for (let z = 20; z > -65; z -= 1.7) kit.box([.24, .14, 1.6], [-3.98, .06, z], '#2f2e2b'); yield;
+    kit.box([.12, .1, 86], [-12.6, 1.05, -22], '#4f5853', 'metal'); kit.box([.06, .06, 86], [-12.6, .55, -22], '#4f5853', 'metal'); yield;
+    for (let z = 20.5; z > -65; z -= 2.4) kit.box([.08, 1.05, .08], [-12.6, .53, z], '#4f5853', 'metal'); yield;
+    kit.box([1.2, .9, 86], [-13.3, -.4, -22], '#8e8a7d', 'stone'); yield;
+    d.water(140, 520, [-84, -.35, -22], '#41626a', .05); yield;
+    // The far shore: Hiranandani's cream towers with their domes at the water's edge, a wooded bank, the hills behind.
+    kit.box([160, .1, 520], [-234, -.08, -22], '#6f7550', 'stone'); kit.box([4, .6, 520], [-155, -.2, -22], '#8e8a7d', 'stone'); yield;
+    // Seen from 150 m across the water the trees on the bank read as one wooded strip: a low green ridge.
+    hill(kit, [-160, -2, -22], 7, 190, 9, 4.2, 6, 28); yield;
+    for (let i = 0; i < 10; i++) {
+      const h = 42 + (i * 7) % 26, w = 15 + (i % 3) * 3, cream = ['#ece2cc', '#e6d6b8', '#f1e8d6'][i % 3];
+      kit.frame([-168 - (i % 2) * 14, 0, 110 - i * 30], Math.PI / 2, () => { backdropBlock(c, w, h, 14, cream); towerRelief(c, w, h, 14, cream); kit.shape('sphere', [w * .45, w * .32, w * .45], [0, h + .2, -7], '#d9c8a4', 'stone'); kit.cylinder(.3, 5, [0, h + w * .3, -7], '#cdb98f', 'stone'); });
+      if (i % 2) yield;
+    }
+    for (let i = 0; i < 6; i++) hill(kit, [-228 + (i % 2) * 14, -3, 100 - i * 50], 48 + (i % 3) * 8, 34, 26 + (i % 4) * 6, i * 3.1, 12, 32); yield;
     for (let z = 10; z > -60; z -= 16) streetLight(c, -11.8, z, -1); yield;
     for (let z = 4; z > -58; z -= 12) { palm(c, -11.4, z - 6, 7); bench(c, -11.6, z, Math.PI / 2); }
     // One workplace per project along the lake front; the towers stand behind them.
@@ -168,7 +175,7 @@ const powai: DistrictSpec = {
 /* ============================================================ DADAR */
 const dadar: DistrictSpec = {
   id: 'dadar', guide: 'the platform announcer', guideOutfit: 'kurta',
-  traffic: ['bus', 'taxi', 'hatch', 'sedan', 'tempo', 'bike', 'sedan', 'taxi', 'suv', 'bus', 'hatch', 'bike'],
+  traffic: ['bus', 'taxi', 'hatch', 'sedan', 'tempo', 'bike', 'auto', 'sedan', 'taxi', 'suv', 'bus', 'hatch', 'bike'],
   *build(d) {
     const c = d.ctx, { kit } = c;
     const chawlShops: Array<[string, string?]> = [['VADA PAV CENTRE', 'वडा पाव'], ['STATIONERY · NOTEBOOKS', 'वह्या'], ['CHEMIST', 'औषधे'], ['TAILOR', 'शिंपी'], ['SWEETS · MITHAI', 'मिठाई'], ['KIRANA', 'किराणा'], ['XEROX · PRINTS'], ['BHAJI PAV', 'भाजी']]; yield;
@@ -212,17 +219,17 @@ const dadar: DistrictSpec = {
 const worli: DistrictSpec = {
   id: 'worli', guide: 'the signal keeper', guideOutfit: 'office', west: 'open', westLimit: 13.4, skyline: 'east',
   palette: ['#e1d3b7', '#cfd8d2', '#e6c9b4', '#d5d0bd'],
-  traffic: ['sedan', 'taxi', 'suv', 'hatch', 'bike', 'bus', 'taxi', 'sedan', 'suv', 'hatch', 'taxi', 'bike'],
+  traffic: ['sedan', 'taxi', 'suv', 'hatch', 'bike', 'bus', 'auto', 'taxi', 'sedan', 'suv', 'hatch', 'taxi', 'bike'],
   *build(d) {
     const c = d.ctx, { kit } = c;
-    kit.box([9.4, .08, 290], [-8.5, .02, -22], '#c2b49b', 'paving'); for (let z = 118; z > -160; z -= 1.7) kit.box([.24, .14, 1.6], [-3.98, .06, z], '#2f2e2b'); yield;
-    // Sea wall the whole city sits on at sunset, then tetrapods and the Arabian Sea.
-    kit.box([.7, .75, 290], [-13.5, .38, -22], '#b7ad98', 'stone'); kit.box([.9, .12, 290], [-13.5, .8, -22], '#cfc5ae', 'stone'); yield;
-    kit.box([8, 2.2, 290], [-18, -1.2, -22], '#8b867a', 'stone'); yield;
-    tetrapods(c, -15, -21, 60, -110, 260); yield;
-    d.water(170, 320, [-100, -.55, -22], '#4e6f78', .16); yield;
-    // Bandra–Worli Sea Link on the north-western horizon.
-    const deck: V3 = [-72, 7, -95]; kit.frame(deck, -.55, () => {
+    kit.box([9.4, .08, 86], [-8.5, .02, -22], '#c2b49b', 'paving'); for (let z = 20; z > -65; z -= 1.7) kit.box([.24, .14, 1.6], [-3.98, .06, z], '#2f2e2b'); yield;
+    // Sea wall the whole city sits on at sunset, then tetrapods and the Arabian Sea out to the horizon.
+    kit.box([.7, .75, 86], [-13.5, .38, -22], '#b7ad98', 'stone'); kit.box([.9, .12, 86], [-13.5, .8, -22], '#cfc5ae', 'stone'); yield;
+    kit.box([8, 2.2, 86], [-18, -1.2, -22], '#8b867a', 'stone'); yield;
+    tetrapods(c, -15, -21, 20, -64, 90); yield;
+    d.water(640, 520, [-334, -.55, -22], '#4e6f78', .16); yield;
+    // Bandra–Worli Sea Link out on the water to the north-west.
+    const deck: V3 = [-150, 7, -150]; kit.frame(deck, -.55, () => {
       kit.box([1.2, .9, 190], [0, 0, 0], '#cfc8b8', 'stone');
       for (const z of [-40, 40]) { kit.rod([0, -8, z], [-1.8, 30, z], .5, '#d8d0bd', 'stone'); kit.rod([0, -8, z], [1.8, 30, z], .5, '#d8d0bd', 'stone'); kit.box([4.2, 1, 1], [0, 30, z], '#d8d0bd', 'stone'); for (let i = 1; i <= 9; i++) for (const s of [-1, 1]) kit.rod([0, 28 - i * 1.4, z], [0, .3, z + s * i * 4.3], .05, '#e6e2d6', 'metal'); }
       for (let z = -90; z <= 90; z += 15) kit.box([1.4, 8, 1.4], [0, -4.5, z], '#bdb6a6', 'stone');
@@ -236,7 +243,7 @@ const worli: DistrictSpec = {
       { w: 16, build: c => midrise(c, { w: 16, d: 13, floors: 5, style: 'deco', ground: 'wall', color: '#e3d2b2', corner: true, name: ['SEA VIEW', 'सी व्ह्यू'] }) },
       { w: 14, build: c => midrise(c, { w: 14, d: 13, floors: 4, style: 'deco', ground: 'wall', color: '#d5ddd5', name: ['SAGAR DARSHAN', 'सागर दर्शन'] }) },
       { w: 17, build: c => midrise(c, { w: 17, d: 13, floors: 6, style: 'deco', ground: 'lobby', color: '#e8c9b2', corner: true, name: ['NEPTUNE COURT'] }) },
-      { w: 14, build: c => midrise(c, { w: 14, d: 13, floors: 4, style: 'deco', ground: 'wall', color: '#d9d2bd', name: ['SHANTI NIWAS', 'शांती निवास'] }) },
+      { w: 14, build: c => midrise(c, { w: 14, d: 13, floors: 4, style: 'deco', ground: 'lobby', color: '#d9d2bd', name: ['SHANTI NIWAS', 'शांती निवास'] }) },
     ]); yield;
     hoarding(c, 9.4, 7, -55, -Math.PI / 2 + .35, 8, poster('#3a2f6a', '#e9a33c', 'PROOF, NOT ADJECTIVES', 'Big Code qualifier · five merged upstream PRs · metrics with sources'), 'AD'); yield;
     sign(c, 'WORLI SEA FACE', 3.2, [-5.6, 2.4, 9], { bg: '#1e4b6e', fg: '#ffffff', local: 'वरळी सी फेस', tier: 1 }, [768, 160], Math.PI / 2); yield;
@@ -255,12 +262,13 @@ const juhu: DistrictSpec = {
   traffic: ['suv', 'sedan', 'auto', 'bus', 'taxi', 'hatch', 'sedan', 'suv', 'bike', 'sedan', 'auto', 'hatch'],
   *build(d) {
     const c = d.ctx, { kit } = c;
-    kit.box([2.9, .08, 290], [-5.35, .02, -22], '#aea493', 'paving'); for (let z = 118; z > -160; z -= 1.7) kit.box([.24, .14, 1.6], [-3.98, .06, z], '#2f2e2b'); yield;
-    kit.box([1, .5, 290], [-7.2, .25, -22], '#c9bda6', 'stone'); yield;
-    kit.box([28, .1, 300], [-21.5, -.02, -22], '#dcc8a0', 'plaster'); kit.box([10, .1, 300], [-40.5, -.06, -22], '#a8946f', 'plaster'); yield;
-    const sea = d.water(200, 320, [-139, -.1, -22], '#557780', .09); yield;
-    const foam = new THREE.Mesh(new THREE.BoxGeometry(1.2, .03, 300), new THREE.MeshBasicMaterial({ color: '#efe9db', transparent: true, opacity: .75 })); d.group.add(foam); yield;
-    d.animate(time => { foam.position.set(-40 + Math.sin(time * .5) * 1.2, .02, -22); }); void sea; yield;
+    kit.box([2.9, .08, 86], [-5.35, .02, -22], '#aea493', 'paving'); for (let z = 20; z > -65; z -= 1.7) kit.box([.24, .14, 1.6], [-3.98, .06, z], '#2f2e2b'); yield;
+    kit.box([1, .5, 86], [-7.2, .25, -22], '#c9bda6', 'stone'); yield;
+    // Dry sand, then wet sand shelving under the Arabian Sea, which runs out to the horizon; the surf line moves with the waves.
+    kit.box([38, .1, 86], [-26.5, -.02, -22], '#dcc8a0', 'plaster'); kit.box([14, .1, 86], [-52.5, -.09, -22], '#a8946f', 'plaster'); kit.box([12, .1, 86], [-65, -.2, -22], '#8f7f60', 'plaster'); yield;
+    const sea = d.water(640, 520, [-379, -.22, -22], '#557780', .06); yield;
+    const foam = new THREE.Mesh(new THREE.BoxGeometry(1.6, .03, 86), new THREE.MeshBasicMaterial({ color: '#efe9db', transparent: true, opacity: .7 })); d.group.add(foam); yield;
+    d.animate(time => { foam.position.set(-59.5 + Math.sin(time * .5) * 1.4, -.1 + Math.sin(time * .5) * .04, -22); }); void sea; yield;
     // Chowpatty food stalls on the sand.
     const food: Array<[string, string, string]> = [['PAV BHAJI', 'पाव भाजी', '#c0392b'], ['BHEL PURI', 'भेळ', '#d68a1c'], ['PANI PURI', 'पाणी पुरी', '#1f7a5c'], ['KALA KHATTA GOLA', 'गोला', '#6b2d8c'], ['KULFI', 'कुल्फी', '#2a6fb0'], ['SUGARCANE JUICE', 'ऊस रस', '#3d8a2f']]; yield;
     food.forEach(([t, l, col], i) => stall(c, -13.5, 6 - i * 6.2, Math.PI / 2, col, ['#f2e3b0', '#e8b04a', '#c45a2a', '#7aa54a'], t, l)); yield;
@@ -287,7 +295,7 @@ const juhu: DistrictSpec = {
 /* ============================================================ FILM CITY */
 const filmcity: DistrictSpec = {
   id: 'filmcity', guide: 'the projectionist', guideOutfit: 'shirt', palette: ['#c9c2b0', '#b8b29e', '#d0c4ad'], eastOpen: [[-7.8, 13.8]],
-  traffic: ['suv', 'bus', 'sedan', 'auto', 'hatch', 'sedan', 'tempo', 'suv', 'bike', 'hatch'],
+  traffic: ['suv', 'bus', 'sedan', 'auto', 'hatch', 'taxi', 'sedan', 'tempo', 'suv', 'bike', 'auto', 'hatch'],
   *build(d) {
     const c = d.ctx, { kit } = c;
     // Gate arch at the studio entrance.

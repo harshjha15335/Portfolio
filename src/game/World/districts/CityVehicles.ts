@@ -3,7 +3,7 @@ import { ColorMesh, paintMaterial, type V3 } from './ColorMesh';
 import { arch, carBody, CAR_SHAPES, sweep } from './CarBodies';
 import { createSeatedDriver } from '../npc/NPCFactory';
 import { seededRandom } from '../StreetArchitecture';
-import { cityVehicleGeometry, type VehicleDetail } from './CityVehicleModels';
+import { cityVehicleGeometry, scooterGeometry, type VehicleDetail } from './CityVehicleModels';
 
 /**
  * Mumbai road traffic as single-draw meshes: BEST double-decker, hatchbacks and sedans,
@@ -86,13 +86,16 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
       m.rounded([.2, .12, .08], [0, .9, -1.22], lamp); m.rounded([.7, .1, .05], [0, .72, 1.19], '#e8d24a');
       m.rod([-.32, 1.18, -.62], [.32, 1.18, -.62], .015, '#202020');
       m.wheel(.25, .14, [0, .25, -.94]); for (const s of [-1, 1]) m.wheel(.255, .16, [s * .69, .255, .78]);
-      ride(`${seed}:auto`, 0, -.27, -.25); break;
+      ride(`${seed}:auto`, 0, -.15, -.25); break;
     }
     case 'bike': case 'cycle': {
       const scooter = kind === 'bike' && r() < .6, q = lite ? 8 : 14;
       if (scooter) {
         // A gearless scooter: swollen rear cowl, step-through floor, curved front apron, handlebar cowl.
         const body = pick(['#e9e7e1', '#b52a24', '#8d9399', '#2b4f7a', '#1e1f21', '#c8b89a', '#5e6b52']), rad = .22;
+        // The authored Vino scooter once loaded: half keep its own blue, the rest in Mumbai's usual scooter colours.
+        const modelled = scooterGeometry(level, r() < .5 ? undefined : body);
+        if (modelled) { m.model(modelled); ride(`${seed}:rider`, 0, -.12, .25); break; }
         m.wheel(rad, .1, [0, rad, -.62], tyre, '#9a9c98'); m.wheel(rad, .1, [0, rad, .6], tyre, '#9a9c98');
         m.loft(sweep([[-.08, .1, .34, .5], [.08, .2, .3, .66], [.4, .23, .3, .74], [.72, .2, .34, .72], [.9, .1, .44, .64]], q, 2.6), body);
         m.loft(sweep([[-.05, .16, .73, .79], [.35, .17, .74, .82], [.7, .14, .72, .79]], q, 3), '#1b1b1c');

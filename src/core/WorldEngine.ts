@@ -19,15 +19,16 @@ import { DISTRICT_JUNCTIONS, FORT_JUNCTIONS, PassengerRide, kerbRoom } from '../
 import { JunctionReservations, TrafficSpace, onCarriageway, type ViewCone } from '../game/World/traffic/TrafficSafety';
 import { TrafficOverlay } from '../game/World/traffic/TrafficOverlay';
 import { preloadCityVehicleModels } from '../game/World/districts/CityVehicleModels';
-import { STREET_SPAWN, streetStops, pickupRoutes, walkingVelocity, cityRideLegs, cityZones, zoneIndexAt, districtViews } from '../game/World/streetLayout';
+import { STREET_SPAWN, streetStops, pickupRoutes, walkingVelocity, cityRideLegs, cityZones, zoneIndexAt, districtViews, acrossSeam, avenueNeighbour, onAvenue, seamNorth, SEAM_SOUTH } from '../game/World/streetLayout';
 import { CityDistricts } from '../game/World/districts/CityDistricts';
-import { setCityDensity } from '../game/World/districts/District';
+import { AVENUE_PACE, setCityDensity } from '../game/World/districts/District';
+import { Avenue } from '../game/World/districts/avenue';
 import { createFortRoadTraffic, FORT_LOOP_LANE } from '../game/World/districts/FortRoadTraffic';
 import { DistrictCast, districtCast, setDistrictCast } from '../game/World/districts/DistrictCast';
 import { setFriendSource } from '../game/World/npc/FriendSlot';
 import { setTalkiesActive, setTalkiesReduced, setTalkiesSound } from '../game/World/districts/TalkiesHouse';
 import type { GLBAssetLibrary } from '../game/World/assets/GLBAssetLibrary';
-import { VEHICLE_HIDDEN, type LaneTraffic } from '../game/World/districts/DistrictSystems';
+import { SignAtlas, VEHICLE_HIDDEN, type LaneTraffic } from '../game/World/districts/DistrictSystems';
 import { districts as directory } from '../data/city';
 import { pickTarget } from '../game/World/interactionTargeting';
 import type { TourView } from '../data/tours';
@@ -75,6 +76,12 @@ export class WorldEngine {
   /** Index into cityZones of the district being drawn; 0 is CST–Fort. */
   private zone = 0;
   private sky!: THREE.Mesh;
+  /** Fort Road's avenue to BKC (the districts build their own); `streetAvenueJob` builds it in slices. */
+  private streetAvenue!: Avenue; private streetAvenueSigns = new SignAtlas(); private streetAvenueJob: Generator<void> | null = null;
+  private stepStreetAvenue(budgetMs: number) {
+    const job = this.streetAvenueJob; if (!job) return; const start = performance.now();
+    do { if (job.next().done) { this.streetAvenueJob = null; const signs = this.streetAvenueSigns.build(); if (signs) { signs.name = 'street:avenue-signs'; this.streetAvenue.group.add(signs); } applyStreetAtmosphere(this.streetAvenue.group, this.atmosphere); this.warm(this.streetAvenue.group); this.renderer.shadowMap.needsUpdate = true; break; } } while (performance.now() - start < budgetMs);
+  }
   /** The hailed or boarded cab: a collision-safe vehicle in the traffic (see PassengerRide). */
   private cab = Object.assign(new PassengerRide(), { distanceScale: CITY_METRES_PER_WORLD_METRE });
   /** The current district's road this frame: every vehicle, the cab, the visitor and people on the carriageway (local). */
@@ -144,7 +151,10 @@ export class WorldEngine {
     // Districts are built on first need and receive the same weathering/haze patch as the street.
     setCityDensity(this.renderPreset);
     // Modelled district traffic loads in the background; lofted bodies stand in until it arrives.
-    this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); const before = this.renderer.info.programs?.length ?? 0; this.compiling = this.warm(district.group); this.linkStarted = performance.now(); this.linkPrograms = (this.renderer.info.programs?.length ?? 0) - before; if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.fortTraffic = createFortRoadTraffic(() => this.street.loopVehicles); applyStreetAtmosphere(this.fortTraffic.group, this.atmosphere); this.scene.add(this.fortTraffic.group); if (typeof location !== 'undefined') void preloadCityVehicleModels(location.origin).then(() => { if (this.disposed) return; this.fortTraffic.refresh(); this.city.refreshVehicles(); this.warm(this.scene); this.pausedFrameDirty = true; }); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}});
+    this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); const before = this.renderer.info.programs?.length ?? 0; this.compiling = this.warm(district.group); this.linkStarted = performance.now(); this.linkPrograms = (this.renderer.info.programs?.length ?? 0) - before; if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.fortTraffic = createFortRoadTraffic(() => this.street.loopVehicles); applyStreetAtmosphere(this.fortTraffic.group, this.atmosphere); this.scene.add(this.fortTraffic.group);
+    // Fort Road's avenue north to BKC, built over the first frames (see `frame`), with the street's other zone-0 parts.
+    this.streetAvenue = new Avenue(this.physics, this.street.surfaceLibrary, new THREE.Vector3(), { index: 0, end: 'south', signs: this.streetAvenueSigns, ground: true, onParked: (kind, x, z, yaw) => this.fortTraffic.parkedAt(kind, x, z, yaw) });
+    this.streetAvenueJob = this.streetAvenue.steps(); this.street.group.add(this.streetAvenue.group); if (typeof location !== 'undefined') void preloadCityVehicleModels(location.origin).then(() => { if (this.disposed) return; this.fortTraffic.refresh(); this.city.refreshVehicles(); this.warm(this.scene); this.pausedFrameDirty = true; }); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}});
     const preview=import.meta.env.DEV?new URLSearchParams(location.search).get('characterPreview'):null;
     // Licensed street cast: approved characters load at runtime; DEV ?characterPreview also shows candidates.
     const castPreview=preview==='idle'||preview==='walk'||preview==='cast';
@@ -301,8 +311,31 @@ export class WorldEngine {
       const route = routes[routes.length - 1], ox = cityZones[zoneIndexAt(route[0].x)].originX;
       this.trafficAt(zoneIndexAt(route[0].x))?.clearAround(route.slice(-2).map(p => ({ x: p.x - ox, z: p.z })), 2.2, true);
       this.cab.standAt(kind, route); this.transit.visible = true;
-    } else { this.cab.hail(kind, routes); this.transit.visible = false; }
+    } else if (this.flagDown(kind, routes[0])) this.transit.visible = true;
+    else { this.cab.hail(kind, routes); this.transit.visible = false; }
     this.placeTransit(0); this.options.onRide({ ...this.ride });
+  }
+  /** A passing auto or taxi coming toward the visitor standing at the kerb, which they could wave down. */
+  private passingCab(kind?: TransitKind) {
+    const p = this.visitor.position, index = zoneIndexAt(p.x), ox = cityZones[index].originX, lx = p.x - ox;
+    if (Math.abs(lx) < 3.6 || Math.abs(lx) > 8.5) return null;
+    const v = this.trafficAt(index)?.passing(lx, p.z) ?? null; return v && (!kind || v.kind === kind) ? { ...v, ox } : null;
+  }
+  /** Wave down a passing auto or taxi: that very vehicle leaves the traffic and pulls in at the kerb beside the visitor. */
+  private flagDown(kind: TransitKind, pickup: Point[]) {
+    const v = this.passingCab(kind); if (!v) return false;
+    // Only the pull-in (lane entry, settle, kerb) and only if the cab can still reach the entry going straight on.
+    const pull = pickup.slice(-3), fx = -Math.sin(v.yaw), fz = -Math.cos(v.yaw);
+    if ((pull[0].x - v.ox - v.x) * fx + (pull[0].z - v.z) * fz < 4) return false;
+    this.trafficAt(zoneIndexAt(v.ox))?.withdraw(v.id);
+    this.cab.pullOver(kind, [{ x: v.ox + v.x, z: v.z }, ...pull], v.speed); return true;
+  }
+  /** Every few frames: offer to wave down a cab that is coming, when nothing else is under the visitor's gaze. */
+  private updatePassing() {
+    if (this.ride.phase !== 'idle' || this.tween || (this.nearest && !this.nearest.startsWith('flag-'))) return;
+    const v = this.passingCab(), next = v ? `flag-${v.kind}` : null;
+    if (next !== this.nearest) { this.nearest = next; this.options.onNear(next, v ? `Wave down the ${v.kind === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : undefined); }
+    if (v) this.markerBase.set(v.ox + v.x, 2.4, v.z);
   }
   /** True when a cab of `kind` standing at the kerb at (x, z) (world) would not touch a parked vehicle. */
   private kerbClear(x: number, z: number, kind: TransitKind) { const index = zoneIndexAt(x); return kerbRoom(this.trafficAt(index)?.parked ?? [], x - cityZones[index].originX, z, kind); }
@@ -312,8 +345,8 @@ export class WorldEngine {
     if (!streetStops[id] || this.ride.phase === 'idle') return;
     if (this.ride.phase === 'hailing') { this.queuedDestination = id; return; }
     this.cab.depart(cityRideLegs({ x: this.cab.pose.x, z: this.cab.pose.z }, id), this.hopDistance(id));
-    // Build the destination district now, while the cab is still pulling away.
-    this.city.prepare(zoneIndexAt(streetStops[id].x));
+    // Build the first district on the way now, while the cab is still pulling away (the rest as it nears them).
+    const next = this.cab.nextLeg; if (next) this.city.prepare(zoneIndexAt(next.x));
     this.meter.apply('hire'); playCue('meter-hire'); this.ride = { ...this.ride, phase: 'riding', destination: id, elapsed: 0, progress: 0 }; this.readMeter();
     if (this.reducedMotion) this.skipRide(); else this.options.onRide({ ...this.ride });
   }
@@ -332,14 +365,41 @@ export class WorldEngine {
     return Math.round(Math.hypot(a[0] - b[0], a[2] - b[2]) * CITY_METRES_PER_MAP_UNIT);
   }
   /** Draw and simulate only the district that contains x. */
-  private syncZone(x: number) {
+  private syncZone(x: number, keep = -1) {
     const index = zoneIndexAt(x); if (index === this.zone && (index === 0 || this.city.peek(index)?.group.visible)) return;
     this.zone = index; const ox = cityZones[index].originX;
-    this.street.group.visible = index === 0; this.fortTraffic.group.visible = index === 0; this.city.activate(index);
+    this.street.group.visible = index === 0; this.fortTraffic.group.visible = index === 0; this.city.activate(index, keep);
     // The hidden street's people rebuild their bone textures on return; releasing them keeps a district's texture count to its own.
     if (index !== 0) this.street.group.traverse(o => { const m = o as THREE.SkinnedMesh; if (m.isSkinnedMesh && m.skeleton?.boneTexture) m.skeleton.dispose(); });
     this.environment.configure(ox, this.renderer.shadowMap.enabled);
-    this.sky.position.x = ox; this.renderer.shadowMap.needsUpdate = true; this.pausedFrameDirty = true;
+    this.renderer.shadowMap.needsUpdate = true; this.pausedFrameDirty = true;
+  }
+  /**
+   * The visitor walked past the seam halfway along an avenue: carry them into the next district's copy of it, which
+   * looks the same. Until that district is built they wait at the seam (it is prepared from the avenue's start).
+   */
+  private crossSeam() {
+    const v = this.visitor, p = v.position, to = acrossSeam(p.x, p.z); if (!to) return;
+    if (!this.city.isReady(to.index)) {
+      this.city.prepare(to.index);
+      p.z = to.index > this.zone ? seamNorth(this.zone) + .01 : SEAM_SOUTH - .01; v.velocity.z = 0; v.previousPosition.copy(p); return;
+    }
+    const dx = to.x - p.x, dz = to.z - p.z, from = this.zone;
+    p.x += dx; p.z += dz; v.previousPosition.x += dx; v.previousPosition.z += dz; v.interpolatedPosition.x += dx; v.interpolatedPosition.z += dz;
+    this.tween = null; this.syncZone(p.x, from); this.updateCamera(); this.updateNear();
+  }
+  /**
+   * Build the district an avenue leads to while the visitor (or the cab) is on it, and release districts left
+   * behind once they are back on a district's own street.
+   */
+  private manageNeighbours() {
+    const onFoot = this.ride.phase === 'idle' || this.ride.phase === 'hailing', p = onFoot ? this.visitor.position : this.transit.position;
+    const next = avenueNeighbour(p.x, p.z);
+    if (next !== null) { if (next > 0 && !this.city.peek(next)) this.city.prepare(next); }
+    else if (!this.arrivingAt && this.ride.phase !== 'riding' && this.city.size > (this.zone ? 1 : 0)) this.city.trim(this.zone);
+    // The sky dome and the shadowed box travel with the view along the avenues.
+    this.sky.position.set(this.camera.position.x, 0, this.camera.position.z);
+    this.environment.follow(this.camera.position.z);
   }
   /** What the visitor can see now, in district `originX`'s local frame (spawn and despawn rules). */
   private viewCone(originX: number): ViewCone {
@@ -402,12 +462,15 @@ export class WorldEngine {
   private updateRide(delta: number) {
     const before = this.cab.pose.yaw, zone = zoneIndexAt(this.cab.active ? this.cab.pose.x : this.visitor.position.x), ox = cityZones[zone].originX;
     if (zone !== this.zone) return;
-    const was = this.cab.driven, event = this.cab.step(delta, { space: this.traffic, originX: ox, time: this.time, junctions: this.junctions[zone], view: this.viewCone(ox) });
+    const next = this.cab.nextLeg, nextReady = !next || this.city.isReady(zoneIndexAt(next.x));
+    if (!nextReady) this.city.prepare(zoneIndexAt(next!.x));
+    const cruise = onAvenue(zone, this.cab.pose.z) ? AVENUE_PACE : 1;
+    const was = this.cab.driven, event = this.cab.step(delta, { space: this.traffic, originX: ox, time: this.time, junctions: this.junctions[zone], view: this.viewCone(ox), cruise, nextReady });
     if (event === 'dispatched') this.transit.visible = true;
     if (event === 'cut') {
+      // Over the seam: the next district's copy of the avenue looks the same. Only a vehicle on the cab's own spot makes way.
       this.syncZone(this.cab.pose.x);
-      // The arrival road was out of sight until now: anything on the cab's first metres of it makes way.
-      const nx = cityZones[this.zone].originX, path = this.cab.path, ahead = [0, 6, 12, 18, 24].map(d => { const q = path.at(d); return { x: q.x - nx, z: q.z }; });
+      const nx = cityZones[this.zone].originX, path = this.cab.path, ahead = [0, 4].map(d => { const q = path.at(d); return { x: q.x - nx, z: q.z }; });
       this.trafficAt(this.zone)?.clearAround(ahead, 2.4, true);
     }
     const turn = Math.atan2(Math.sin(this.cab.pose.yaw - before), Math.cos(this.cab.pose.yaw - before));
@@ -415,8 +478,8 @@ export class WorldEngine {
     this.placeTransit(turn); animateTransit(this.ride.kind === 'taxi' ? this.taxi : this.auto, this.cabTravelled, turn * 8);
     if (this.ride.phase === 'riding') {
       this.ride.elapsed += delta; this.street.updateDrivers(this.reducedMotion ? 0 : delta, turn * 8);
-      // Waiting is not charged while the road ahead is still being built (the cut's district not ready).
-      this.meter.tick(delta, this.cab.chargeable, this.cab.speed, !this.city.isReady(this.zone) && this.zone !== 0); this.readMeter();
+      // Waiting is not charged while the road ahead is still being built (the next district not ready).
+      this.meter.tick(delta, this.cab.chargeable, this.cab.speed, !nextReady); this.readMeter();
       this.ride.progress = this.cab.tripLength ? Math.min(1, this.cab.chargeable / this.cab.tripLength) : 1;
     }
     if (event === 'pulled-up') {
@@ -444,7 +507,7 @@ export class WorldEngine {
   /** Act on the target under the visitor's gaze: hail at a stand, otherwise open it. Also used by click. */
   interact() {
     if (this.ride.phase !== 'idle' || !this.nearest) return;
-    this.unlock(); if (this.nearest.startsWith('hail-')) this.options.onHail(this.nearest.endsWith('taxi') ? 'taxi' : 'auto'); else this.options.onSelect(this.nearest);
+    this.unlock(); if (this.nearest.startsWith('hail-') || this.nearest.startsWith('flag-')) this.options.onHail(this.nearest.endsWith('taxi') ? 'taxi' : 'auto'); else this.options.onSelect(this.nearest);
   }
   private keyUp = (event: KeyboardEvent) => { this.keys.delete(event.key.toLowerCase()); };
   private pointerDown = (event: PointerEvent) => {
@@ -549,7 +612,8 @@ export class WorldEngine {
     const target = pickTarget(eye, forward, district?.interactions ?? this.street.interactions, t => spatial.visible(chest, t.position as THREE.Vector3));
     const next = target?.id ?? null;
     if (target) this.markerBase.copy(target.position as THREE.Vector3).y += .34;
-    if (next !== this.nearest) { this.nearest = next; this.options.onNear(next, target?.label); }
+    // A cab offered for waving down stays offered until updatePassing withdraws it.
+    if (next !== this.nearest && !(next === null && this.nearest?.startsWith('flag-'))) { this.nearest = next; this.options.onNear(next, target?.label); }
   }
   private updateCamera() {
     if (this.ride.phase !== 'idle' && this.ride.phase !== 'hailing') {
@@ -588,7 +652,7 @@ export class WorldEngine {
     if (this.environment.update()) this.pausedFrameDirty = true;
     // A quarter of a typical frame where frames are slow everywhere (software rendering), else 6 ms. The typical frame
     // leaves out frames that built: one long slice must not widen the next budget into another long frame.
-    const tickStart = performance.now(); this.city.tick(Math.max(DISTRICT_SLICE_MS, this.typicalFrameMs * .25)); const tickMs = performance.now() - tickStart;
+    const tickStart = performance.now(); this.city.tick(Math.max(DISTRICT_SLICE_MS, this.typicalFrameMs * .25)); this.stepStreetAvenue(DISTRICT_SLICE_MS * .5); const tickMs = performance.now() - tickStart;
     if (elapsed > 0 && tickMs < 1 && this.builtLastFrame === false) this.typicalFrameMs += (Math.min(elapsed * 1000, 4000) - this.typicalFrameMs) * .1;
     this.builtLastFrame = tickMs >= 1;
     if (this.arrivingAt && this.city.isReady(zoneIndexAt(streetStops[this.arrivingAt].x)) && (this.shadersReady() || timestamp - this.arrivalStarted > ARRIVAL_SHADER_WAIT_MS)) { this.lastArrival = { parallel: this.renderer.extensions.has('KHR_parallel_shader_compile'), newPrograms: this.linkPrograms, linkWaitMs: performance.now() - this.linkStarted, capped: this.compiling.size > 0 }; this.land(this.arrivingAt); this.pausedFrameDirty = true; }
@@ -622,11 +686,12 @@ export class WorldEngine {
           }
           if (this.visitor.position.y < -2) this.reset();
           this.gait += Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z) * physicsDelta * 3;
-          this.updateNearIfMoved();
+          this.updateNearIfMoved(); this.updatePassing();
+          this.crossSeam();
         }
       }
       this.syncZone(this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? this.visitor.position.x : this.transit.position.x);
-      this.updateCamera(); this.street.nearDetail=this.ride.phase==='idle'||this.ride.phase==='hailing';
+      this.updateCamera(); this.manageNeighbours(); this.street.nearDetail=this.ride.phase==='idle'||this.ride.phase==='hailing';
       this.marker.visible = !!this.nearest && this.ride.phase === 'idle' && !this.tween; if (this.marker.visible) { this.marker.position.copy(this.markerBase); if (!this.reducedMotion) { this.marker.position.y += Math.sin(this.time * 3) * .025; this.marker.rotation.y = this.time * 1.4; } } 
       this.advanceTraffic(this.paused ? 0 : step);
       const needsRender=!this.reducedMotion||forceRender||this.camera.position.distanceToSquared(this.lastRenderPosition)>1e-8||this.camera.quaternion.angleTo(this.lastRenderRotation)>.0001||(this.renderer.shadowMap.enabled&&this.renderer.shadowMap.needsUpdate);

@@ -17,8 +17,8 @@ test('departure board marks a destination and the waypoint leads there', async (
   await expect(page.locator('.proximity-prompt')).toContainText('Read the departure board');
   await page.keyboard.press('e');
   const board = page.getByRole('dialog', { name: 'CST / DEPARTURE BOARD' });
-  await expect(board.getByRole('button', { name: /Research/ })).toBeVisible();
-  await board.getByRole('button', { name: /Research/ }).click();
+  await expect(board.getByRole('button', { name: /Fort Open Source Hall/ })).toBeVisible();
+  await board.getByRole('button', { name: /Fort Open Source Hall/ }).click();
   await board.getByRole('button', { name: 'MARK ON MY MAP' }).click();
   await expect(page.getByRole('status', { name: 'Next stop Fort Open Source Hall' })).toContainText('ahead');
   await standAt(page, { x: -5.1, z: -35, yaw: Math.PI / 2, pitch: 0 });

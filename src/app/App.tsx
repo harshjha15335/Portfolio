@@ -288,7 +288,7 @@ export default function App() {
   const filtered = filterCommands(commands, query);
   const finale = useCallback(() => track({ type: 'discover', id: 'theatre-end' }), [track]);
   const nearDistrict = districts.find(d => d.id === near);
-  const boardNear = near?.startsWith('hail-') ? (near.endsWith('taxi') ? 'taxi' : 'auto') : null;
+  const boardNear = near?.startsWith('hail-') || near?.startsWith('flag-') ? (near.endsWith('taxi') ? 'taxi' : 'auto') : null;
 
   return <div className={`app mode-${mode} ${overlayOpen ? 'has-overlay' : ''}`}>
     <a className="skip-link" href="#main-content" onClick={e => { e.preventDefault(); navigate('quick'); setTimeout(() => document.getElementById('main-content')?.focus(), 0); }}>Skip to portfolio content</a>
@@ -311,7 +311,7 @@ export default function App() {
       {arriving && <p className="district-arriving" role="status">Heading to {districts.find(d => d.id === arriving)?.title ?? 'the next stop'}…</p>}
       <div className="street-location"><span className="street-live" /> {zoneAt(position.x).label} <small><time dateTime={new Date(india.epoch).toISOString()}>{india.time} IST</time> · {india.label}{worldClock().overridden ? ' · TIME OVERRIDE' : ''}</small></div>
       {near && <div className="street-reticle" aria-hidden="true" />}
-      {ride.phase === 'idle' && near && !BENCH && <button className="proximity-prompt" onClick={() => boardNear ? hail(boardNear) : openProject(near)}><kbd>{mobile ? '↗' : 'E'}</kbd><strong>{boardNear ? `Hail ${boardNear === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : near === 'ffprime' ? 'Read the FFprime work' : nearDistrict ? `Talk · ${nearDistrict.guide}` : nearLabel ?? 'Inspect'}</strong></button>}
+      {ride.phase === 'idle' && near && !BENCH && <button className="proximity-prompt" onClick={() => boardNear ? hail(boardNear) : openProject(near)}><kbd>{mobile ? '↗' : 'E'}</kbd><strong>{near.startsWith('flag-') ? nearLabel : boardNear ? `Hail ${boardNear === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : near === 'ffprime' ? 'Read the FFprime work' : nearDistrict ? `Talk · ${nearDistrict.guide}` : nearLabel ?? 'Inspect'}</strong></button>}
       {ready && !BENCH && !progress.orientationDismissed && !tour && ride.phase === 'idle' && <Orientation progress={progress} onSkip={() => track({ type: 'dismiss-orientation' })} />}
       {tourData && tour && <TourCard tour={tourData} step={tour.step} onStep={step => setTour({ ...tour, step })} onOpen={openProject} onNext={id => { setTour(null); setWaypoint(id); }} onLeave={() => setTour(null)} />}
       {arrivalCard && !tour && ride.phase === 'idle' && <ArrivalCard district={arrivalCard} onDone={clearArrivalCard} />}

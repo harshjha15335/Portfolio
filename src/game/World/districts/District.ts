@@ -4,7 +4,9 @@ import type * as CANNON from 'cannon-es';
 import type { StreetMaterials } from '../StreetMaterials';
 import type { StreetInteraction } from '../MumbaiStreet';
 import { SpatialIndex } from '../spatial/SpatialIndex';
-import type { CityZone } from '../streetLayout';
+import { seededRandom } from '../StreetArchitecture';
+import { cityZones, hasNorthAvenue, hasSouthAvenue, northEdge, onAvenue, SEAM_SOUTH, seamNorth, SOUTH_EDGE, type CityZone } from '../streetLayout';
+import { Avenue } from './avenue';
 import { DistrictKit, foliageWind } from './DistrictKit';
 import { Crowd, LaneTraffic, SignAtlas, Water } from './DistrictSystems';
 import { backdropBlock, constructionSite, rooftop, skylineCrown, streetClutter, streetLight, towerRelief, PASTELS, ZEBRA_Z, type Ctx } from './buildings';
@@ -24,19 +26,23 @@ import { FRIENDS, friendInteraction } from '../../../data/friends';
  * (a district already built keeps its crowd until it is rebuilt on the next visit).
  */
 /** Where district traffic enters and leaves the road (z): far enough out that vehicles appear and vanish beyond the haze. */
-const LANE_END = [150, -190] as const;
+const LANE_END = [SEAM_SOUTH + 125, seamNorth(1) - 125] as const;
 /**
  * A district street's through traffic: a northbound lane on the east side and a southbound one on the west
  * (Mumbai drives on the left), vehicles of `kinds` spread along both (scaled by cityDensity), and stop lines
  * either side of the zebra. A generator, one vehicle per step, so the build can be time-sliced.
  */
 export function* districtTraffic(traffic: LaneTraffic, mix: CityVehicleKind[], id: string): Generator<void> {
-  const n = Math.round(mix.length * cityDensity.traffic), kinds = Array.from({ length: n }, (_, i) => mix[(i * 7) % mix.length]);
+  // A seeded shuffle, so every kind in the mix turns up in both lanes rather than a stride that repeats one kind.
+  const r = seededRandom(`traffic:${id}`), order = mix.map(k => ({ k, w: r() })).sort((a, b) => a.w - b.w).map(o => o.k);
+  const n = Math.round(mix.length * cityDensity.traffic), kinds = Array.from({ length: n }, (_, i) => order[i % order.length]);
   const north = traffic.lane([[1.6, 0, LANE_END[0]], [1.6, 0, LANE_END[1]]], false, () => [], 'north'), south = traffic.lane([[-1.6, 0, LANE_END[1]], [-1.6, 0, LANE_END[0]]], false, () => [], 'south');
   for (const [i, kind] of kinds.entries()) { traffic.vehicle(i % 2 ? south : north, kind, ((i >> 1) + (i % 2) * .5) / Math.ceil(kinds.length / 2), `${id}:${i}`); yield; }
   // Both lanes stop short of the zebra (z −13.3…−10.7) while the crossing is held.
   traffic.stopLine(north, ZEBRA_Z + 2.8, crossingHeld); traffic.stopLine(south, ZEBRA_Z - 2.8, crossingHeld);
 }
+/** How much faster than on a district's street vehicles drive on the avenues. */
+export const AVENUE_PACE = 2.1;
 export const cityDensity = { crowd: 1.35, traffic: 1.7 };
 export function setCityDensity(preset: 'low' | 'medium' | 'high') {
   Object.assign(cityDensity, preset === 'low' ? { crowd: .9, traffic: 1 } : preset === 'high' ? { crowd: 2.6, traffic: 2.4 } : { crowd: 1.35, traffic: 1.7 });
@@ -70,6 +76,8 @@ export class District {
   readonly interactions: StreetInteraction[] = [];
   readonly origin: THREE.Vector3;
   spatial!: SpatialIndex;
+  /** The avenues to the neighbouring districts (north and south), drawn on their own atlas of shop signs. */
+  readonly avenues: Avenue[] = []; private avenueSigns = new SignAtlas();
   private waters: Water[] = []; private motion: Array<(time: number, delta: number, view: THREE.Vector3) => void> = []; private previous = 0;
   readonly ctx: Ctx;
   /** Exhibit boards' own atlas (null when the district has none). */
@@ -83,7 +91,7 @@ export class District {
    * A deferred district builds in small slices through `step` (a ride or a directory jump spreads it over
    * frames instead of freezing for a second); otherwise it is complete when the constructor returns.
    */
-  constructor(private physics: CANNON.World, surfaces: StreetMaterials, readonly zone: CityZone, readonly spec: DistrictSpec, deferred = false) {
+  constructor(private physics: CANNON.World, private surfaces: StreetMaterials, readonly zone: CityZone, readonly spec: DistrictSpec, deferred = false) {
     this.origin = new THREE.Vector3(zone.originX, 0, 0); this.group.position.copy(this.origin); this.group.name = `district:${spec.id}`; this.group.visible = false;
     this.kit = new DistrictKit(this.origin, physics, surfaces, spec.id); this.ctx = { kit: this.kit, signs: this.signs };
     this.job = this.construct();
@@ -101,6 +109,7 @@ export class District {
   finish() { this.step(Infinity); }
   private *construct(): Generator<void> {
     yield* this.street();
+    yield* this.buildAvenues();
     const spec = this.spec.build(this); if (spec) yield* spec; yield;
     while (this.queued.length) { this.queued.shift()!(); yield; }
     this.exhibitSigns = buildExhibits(this); this.guide(); this.friends(); yield;
@@ -108,43 +117,54 @@ export class District {
     yield* this.streetLife();
     yield* this.kit.buildSteps(); this.kit.group.children.slice().forEach(m => { this.group.add(m); m.position.set(0, 0, 0); });
     const signs = this.signs.build(); if (signs) this.group.add(signs);
+    const avenueSigns = this.avenueSigns.build(); if (avenueSigns) { avenueSigns.name = 'district:avenue-signs'; this.group.add(avenueSigns); }
     const boards = this.exhibitSigns?.build(); if (boards) { boards.name = 'district:exhibits'; this.group.add(boards); }
     this.group.add(this.crowd.group, this.traffic.group); for (const w of this.waters) this.group.add(w.mesh);
     // Low solids (stalls, benches, posts, parked rows) are what walkers on the pavement must step around.
-    for (const b of this.kit.lowSolids) this.crowd.obstacles.push({ minX: b.min.x, maxX: b.max.x, minZ: b.min.z, maxZ: b.max.z });
+    for (const b of [...this.kit.lowSolids, ...this.avenues.flatMap(a => a.kit.lowSolids)]) this.crowd.obstacles.push({ minX: b.min.x, maxX: b.max.x, minZ: b.min.z, maxZ: b.max.z });
     this.spatial = new SpatialIndex(this.kit.colliders); this.kit.colliders.forEach(g => g.dispose()); this.kit.colliders.length = 0;
   }
   /** Shared road, pavements, lights, limits and backdrop. */
   private *street(): Generator<void> {
-    const { kit } = this, c = this.ctx, palette = this.spec.palette ?? PASTELS;
-    kit.box([300, .1, 340], [0, -.12, -22], '#6d6f69', 'asphalt');
-    kit.box([7.8, .04, 340], [0, -.03, -22], '#55585a', 'asphalt');
-    for (let z = 118; z > -160; z -= 6) kit.box([.1, .01, 2.2], [0, .0, z], '#b8b09a');
+    const { kit } = this, c = this.ctx, palette = this.spec.palette ?? PASTELS, index = cityZones.indexOf(this.zone);
+    // The road runs on as the avenues where a neighbour lies that way (they lay their own); else into the haze.
+    const north = hasNorthAvenue(index) ? northEdge(index) : -160, south = SOUTH_EDGE, roadLength = south - north, roadMid = (south + north) / 2;
+    // An open west side (lake, sea) leaves the ground off beyond the promenade along the district's own street, so the
+    // water shows; beside the avenues only the strip their frontage and towers stand on is laid, the water runs on behind.
+    if (this.spec.west === 'open') {
+      kit.box([164, .1, 520], [68, -.12, -22], '#6d6f69', 'asphalt');
+      for (const [z0, z1] of [[SOUTH_EDGE, 238], [-282, northEdge(index)]]) kit.box([46, .1, z1 - z0], [-37, -.12, (z0 + z1) / 2], '#6d6f69', 'asphalt');
+    } else kit.box([300, .1, 520], [0, -.12, -22], '#6d6f69', 'asphalt');
+    kit.box([7.8, .04, roadLength], [0, -.03, roadMid], '#55585a', 'asphalt');
+    for (let z = south - 3; z > north; z -= 6) kit.box([.1, .01, 2.2], [0, .0, z], '#b8b09a');
     for (let i = 0; i < 8; i++) kit.box([.55, .01, 2.6], [-3 + i * .85, .0, ZEBRA_Z], '#d4cfbf');
     kit.box([60, .035, 7], [0, -.015, 16.5], '#5a5d5e', 'asphalt'); kit.box([60, .035, 8], [0, -.015, -60.5], '#5a5d5e', 'asphalt');
     for (const side of [-1, 1]) {
       if ((side < 0 ? this.spec.west : this.spec.east) === 'open') continue;
-      kit.box([2.9, .08, 340], [side * 5.35, .02, -22], '#aea493', 'paving');
-      for (let z = 118; z > -160; z -= 1.7) kit.box([.24, .14, 1.6], [side * 3.98, .06, z], Math.floor(z / 1.7) % 2 ? '#c7a84f' : '#2f2e2b');
+      kit.box([2.9, .08, roadLength], [side * 5.35, .02, roadMid], '#aea493', 'paving');
+      for (let z = south - 1; z > north; z -= 1.7) kit.box([.24, .14, 1.6], [side * 3.98, .06, z], Math.floor(z / 1.7) % 2 ? '#c7a84f' : '#2f2e2b');
       for (let z = 10; z > -60; z -= 16) streetLight(c, side * 6.4, z, side);
       for (let z = 9; z > -60; z -= 4.5) kit.box([.65, .015, .45], [side * 3.45, .005, z], '#2a2e33', 'metal');
       streetClutter(c, side, this.zone.stop); yield;
     }
-    // The walkable envelope. Invisible; the road visibly continues past it.
-    for (const side of [-1, 1]) {
-      const x = side * ((side < 0 ? this.spec.westLimit : this.spec.eastLimit) ?? 19.5);
+    // The walkable envelope. Invisible; where an avenue continues, the ends stay open between its pavements.
+    const limits = [-(this.spec.westLimit ?? 19.5), this.spec.eastLimit ?? 19.5];
+    for (const [side, x] of [[-1, limits[0]], [1, limits[1]]]) {
       // The limit runs z −65…21, broken where a walk-in building takes over.
       const open = side > 0 ? [...(this.spec.eastOpen ?? [])].sort((a, b) => b[1] - a[1]) : [];
       let top = 21;
       for (const [z0, z1] of [...open, [-65, -65] as [number, number]]) { if (top - z1 > .01) kit.solid([1, 4, top - z1], [x, 2, (top + z1) / 2]); top = Math.min(top, z0); }
     }
-    kit.solid([40, 4, 1], [0, 2, -64]); kit.solid([40, 4, 1], [0, 2, 21]);
-    // Continuation blocks beyond the walkable ends, facing the road.
+    for (const [z, joined] of [[-64, hasNorthAvenue(index)], [21, hasSouthAvenue(index)]] as Array<[number, boolean]>) {
+      if (!joined) { kit.solid([limits[1] - limits[0] + 1, 4, 1], [(limits[0] + limits[1]) / 2, 2, z]); continue; }
+      for (const x of limits) { const w = Math.abs(x) - 6.95; kit.solid([w + .5, 4, 1], [Math.sign(x) * (6.95 + w / 2), 2, z]); }
+    }
+    // Continuation blocks beyond a walkable end that has no avenue, facing the road.
     for (const side of [-1, 1]) {
-      if ((side < 0 ? this.spec.west : this.spec.east) === 'open') continue;
-      for (const [z0, z1] of [[21, 118], [-66, -160]]) for (let z = z0; z0 > 0 ? z < z1 : z > z1; z += (z0 > 0 ? 1 : -1) * 15) {
+      if ((side < 0 ? this.spec.west : this.spec.east) === 'open' || hasNorthAvenue(index)) continue;
+      for (let z = -66; z > -160; z -= 15) {
         const h = 10 + Math.abs(Math.sin(z * 1.7 + side)) * 16, w = 13.5;
-        kit.frame([side * (8.5 + (Math.abs(z) % 3)), 0, z + (z0 > 0 ? 7 : -7)], side > 0 ? -Math.PI / 2 : Math.PI / 2, () => { backdropBlock(c, w, h, 12, palette[Math.abs(Math.round(z)) % palette.length]); rooftop(c, w, h, 12); });
+        kit.frame([side * (8.5 + (Math.abs(z) % 3)), 0, z - 7], side > 0 ? -Math.PI / 2 : Math.PI / 2, () => { backdropBlock(c, w, h, 12, palette[Math.abs(Math.round(z)) % palette.length]); rooftop(c, w, h, 12); });
       }
       yield;
     }
@@ -153,6 +173,8 @@ export class District {
     for (let i = 0; i < 34; i++) {
       const a = i * Math.PI * 2 / 34 + (this.kit.rand() - .5) * .05, ring = 118 + (i % 3) * 14, x = Math.sin(a) * ring, z = -22 + Math.cos(a) * ring;
       if (this.spec.skyline === 'east' && x < 10) continue;
+      // The avenues run out through the ring north and south; their own towers line them.
+      if (Math.abs(x) < 40 && ((z < -60 && hasNorthAvenue(index)) || (z > 16 && hasSouthAvenue(index)))) continue;
       const pickType = this.kit.rand(), tone = tones[i % tones.length];
       kit.frame([x, 0, z], a + Math.PI, () => {
         if (pickType < .28) { const h = 55 + this.kit.rand() * 45; backdropBlock(c, 16, h, 16, tone); towerRelief(c, 16, h, 16, tone); skylineCrown(c, 16, h, this.kit.rand()); }
@@ -165,6 +187,21 @@ export class District {
     // A tower going up somewhere on the horizon, with its crane.
     const ca = (this.spec.skyline === 'east' ? .6 : -.9) + this.kit.rand() * .4;
     kit.frame([Math.sin(ca) * 132, 0, -22 + Math.cos(ca) * 132], ca + Math.PI, () => constructionSite(c));
+  }
+  /** Both avenues, whole (see Avenue): the district builds its copy of each in its own frame. */
+  private *buildAvenues(): Generator<void> {
+    const index = cityZones.indexOf(this.zone);
+    const ends: Array<[number, 'south' | 'north']> = [];
+    if (hasNorthAvenue(index)) ends.push([index, 'south']);
+    if (hasSouthAvenue(index)) ends.push([index - 1, 'north']);
+    for (const [at, end] of ends) {
+      const avenue = new Avenue(this.physics, this.surfaces, this.origin, { index: at, end, signs: this.avenueSigns, into: this.kit, onParked: (kind, x, z, yaw) => this.traffic.parkedAt(kind, x, z, yaw) });
+      this.avenues.push(avenue); yield* avenue.steps(); this.group.add(avenue.group);
+    }
+    // People on the avenue pavements, a few each way.
+    const mix: Outfit[] = ['shirt', 'office', 'sari', 'kurta', 'salwar', 'school', 'elder'];
+    if (hasNorthAvenue(index)) this.walkers(mix.slice(0, 5), [5.5, -5.5, 6.1], northEdge(index) - 2, seamNorth(index) - 30, 1.1);
+    if (hasSouthAvenue(index)) this.walkers(mix.slice(2), [-5.5, 5.5, -6.1], SEAM_SOUTH + 30, SOUTH_EDGE + 2, 1.1);
   }
   private guide() {
     // Beside the arrival point, towards the buildings, turned to greet the visitor.
@@ -184,6 +221,8 @@ export class District {
     }
   }
   private *populateTraffic(): Generator<void> {
+    // On the avenues traffic runs at arterial speed; on the district's own street at street speed.
+    const index = cityZones.indexOf(this.zone); this.traffic.cruiseAt = z => onAvenue(index, z) ? AVENUE_PACE : 1;
     for (const _ of districtTraffic(this.traffic, this.spec.traffic, this.spec.id)) yield;
   }
   /** The zebra's signals and the people who use it. */
@@ -315,6 +354,7 @@ export class District {
     if (this.job) { this.job = null; this.kit.discard(); }
     this.releases.forEach(release => release()); this.releases = [];
     for (const body of this.kit.bodies) this.physics.removeBody(body);
+    for (const avenue of this.avenues) avenue.dispose(this.physics); this.avenueSigns.texture.dispose();
     // Friends hold leases on the shared character templates; release them before the GPU sweep below.
     this.friendSlots.forEach(f => f.dispose()); this.friendSlots = [];
     this.spatial?.dispose(); this.signs.texture.dispose(); this.exhibitSigns?.texture.dispose(); this.group.removeFromParent();

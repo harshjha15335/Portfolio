@@ -47,6 +47,10 @@ export interface RideContext {
   junctions?: JunctionReservations;
   /** What the visitor sees (local), for choosing where a hailed cab starts. */
   view?: ViewCone;
+  /** Cruising speed as a multiple of the street's (the avenues between districts are faster). */
+  cruise?: number;
+  /** False while the district the next leg drives through is still being built: the cab waits at the seam. */
+  nextReady?: boolean;
 }
 
 /**
@@ -58,7 +62,7 @@ export interface RideContext {
 export class PassengerRide {
   stage: RideStage = 'idle'; kind: TransitKind = 'taxi';
   readonly driver: Driver;
-  /** Route legs (world); a cross-district ride has an exit leg and an arrival leg with a cut between. */
+  /** Route legs (world), one per district driven through; consecutive legs meet at the seams between districts. */
   private legs: RoutePath[] = []; private leg = 0; private s = 0;
   private candidates: RoutePath[] = []; private dispatchFor = 0;
   /** Where the cab is (world) and which way it faces. */
@@ -85,9 +89,11 @@ export class PassengerRide {
   get chargeable() {
     const road = this.driven * this.distanceScale;
     if (this.stage === 'arrived') return road + this.hop;
-    if (this.stage !== 'riding' || this.leg === 0) return road;
-    const arrival = this.legs[this.leg].length; return road + this.hop * (arrival > 0 ? Math.min(1, this.s / arrival) : 1);
+    if (this.stage !== 'riding') return road;
+    const total = this.legs.reduce((t, l) => t + l.length, 0); return road + this.hop * (total > 0 ? Math.min(1, this.driven / total) : 1);
   }
+  /** Where the next leg starts (world), or null on the last one. */
+  get nextLeg() { return this.legs[this.leg + 1]?.at(0) ?? null; }
   get path() { return this.legs[this.leg]; }
   /** Distance (m) left to the end of the current leg. */
   get remaining() { return this.legs[this.leg] ? this.legs[this.leg].length - this.s : 0; }
@@ -100,6 +106,8 @@ export class PassengerRide {
   hail(kind: TransitKind, routes: Point[][]) { this.reset(); this.setKind(kind); this.stage = 'dispatching'; this.candidates = routes.map(r => new RoutePath(r)); }
   /** The cab is already at the kerb (reduced motion, or a direct board): it waits there. */
   standAt(kind: TransitKind, route: Point[]) { this.reset(); this.setKind(kind); const p = new RoutePath(route); this.legs = [p]; this.s = p.length; this.place(); this.stage = 'waiting'; }
+  /** A passing cab waved down: it carries on from where it is, at the speed it had, and pulls in along `route`. */
+  pullOver(kind: TransitKind, route: Point[], speed: number) { this.reset(); this.setKind(kind); this.legs = [new RoutePath(route)]; this.place(); this.stage = 'approaching'; this.driver.speed = Math.min(speed, this.driver.desired); }
   /** Leave for a destination along `legs`, adding `hop` metres of virtual distance at the cut. */
   depart(legs: Point[][], hop: number) { this.legs = legs.map(l => new RoutePath(l)); this.leg = 0; this.s = 0; this.driven = 0; this.hop = hop; this.waited = 0; this.stage = 'riding'; this.place(); }
   /** Jump to the end of the trip (skip). */
@@ -148,14 +156,15 @@ export class PassengerRide {
     }
     const path = this.legs[this.leg], last = this.leg === this.legs.length - 1, d = this.driver;
     this.envelopeIn(ctx.originX); if (ctx.space.drivers.get('ride') !== d) ctx.space.addDriver(d);
-    const holds: Hold[] = []; if (last) holds.push({ distance: path.length - this.s, state: 'stopping' });
+    d.desired = RIDE_SPEED[this.kind] * (this.stage === 'riding' ? ctx.cruise ?? 1 : 1);
+    const holds: Hold[] = []; if (last || ctx.nextReady === false) holds.push({ distance: path.length - this.s, state: 'stopping' });
     const zebra = this.zebraHold(path, ctx); if (zebra) holds.push(zebra);
     // The passenger is in the cab; while it pulls in, someone on the pavement (the visitor waiting) is not in its way.
     const ignore = (e: Envelope) => e.category === 'visitor' && (this.stage === 'riding' || Math.abs(e.x) > 3.6);
     const moved = drive(ctx.space, d, s => { const q = path.at(this.s + s); return { x: q.x - ctx.originX, z: q.z, yaw: q.yaw }; }, dt, holds, ignore, ctx.junctions ? { reservations: ctx.junctions, time: ctx.time } : undefined);
     this.s += moved; if (this.stage === 'riding') { this.driven += moved; if (d.speed < .05) this.waited += dt; }
     if (!last && this.s >= path.length) {
-      // The cut to the next district's arrival road (it carries on from the leg's end speed).
+      // Across the seam into the next district's copy of the avenue (it carries on at the leg's end speed).
       this.leg++; this.s = 0; this.place(); ctx.space.remove('ride'); return 'cut';
     }
     this.s = Math.min(this.s, path.length); this.place(); this.envelopeIn(ctx.originX);

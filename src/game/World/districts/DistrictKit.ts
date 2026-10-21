@@ -50,7 +50,11 @@ export class DistrictKit {
   private matrix = new THREE.Matrix4();
   private stack: THREE.Matrix4[] = [];
   private random: () => number;
-  constructor(readonly origin: THREE.Vector3, private physics: CANNON.World, private surfaces: StreetMaterials, seed: string) {
+  /**
+   * `pattern` is where texture tiling and baked grime are measured from (default `origin`). An avenue is built
+   * twice, once in each district it joins; giving both the same pattern frame makes the two copies identical.
+   */
+  constructor(readonly origin: THREE.Vector3, private physics: CANNON.World, private surfaces: StreetMaterials, seed: string, private pattern = origin) {
     this.group.position.copy(origin); this.random = seededRandom(`district:${seed}`);
   }
   /** The current local frame (district space), for placing signs on a building. */
@@ -58,14 +62,27 @@ export class DistrictKit {
   /** Walk-in rooms in the district frame (for indoor sound); see `markRoom`. */
   readonly rooms: THREE.Box3[] = [];
   /** Record a room's interior (local min/max in the current frame) as a district-frame box. */
-  markRoom(min: V3, max: V3) { this.rooms.push(new THREE.Box3(new THREE.Vector3(...min), new THREE.Vector3(...max)).applyMatrix4(this.matrix)); }
+  markRoom(min: V3, max: V3) { if (this.muted) return; this.rooms.push(new THREE.Box3(new THREE.Vector3(...min), new THREE.Vector3(...max)).applyMatrix4(this.matrix)); }
   rand() { return this.random(); }
+  /**
+   * Draw with a random stream of its own (seeded by `seed`), leaving the kit's stream as it was: a piece drawn in
+   * more or less detail, or not at all, then cannot shift what is drawn after it.
+   */
+  isolated(seed: string, draw: () => void) { const was = this.random; this.random = seededRandom(seed); try { draw(); } finally { this.random = was; } }
+  /** While set, parts, solids and signs are worked out (drawing the same random numbers) but not kept. */
+  muted = false;
   /** Run `build` with `matrix` as the current frame (a frame captured earlier with `here`). */
   within(matrix: THREE.Matrix4, build: () => void) { this.stack.push(this.matrix.clone()); this.matrix.copy(matrix); build(); this.matrix.copy(this.stack.pop()!); }
   /** Run `build` inside a local frame (a building, a stall). Frames nest. */
   frame(position: V3, rotationY: number, build: () => void) {
     const local = new THREE.Matrix4().compose(new THREE.Vector3(...position), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationY), new THREE.Vector3(1, 1, 1));
     this.stack.push(this.matrix.clone()); this.matrix.multiply(local); build(); this.matrix.copy(this.stack.pop()!);
+  }
+  /** `frame` for a builder that yields between pieces (a time-sliced build). */
+  *frameSteps(position: V3, rotationY: number, build: () => Generator<void>): Generator<void> {
+    const local = new THREE.Matrix4().compose(new THREE.Vector3(...position), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationY), new THREE.Vector3(1, 1, 1));
+    this.stack.push(this.matrix.clone()); this.matrix.multiply(local);
+    try { yield* build(); } finally { this.matrix.copy(this.stack.pop()!); }
   }
   add(source: THREE.BufferGeometry, color: string, surface: KitSurface, position: V3, scale: V3 = [1, 1, 1], rotation: V3 = [0, 0, 0], jitter = .05) {
     const g = plain(source);
@@ -76,6 +93,7 @@ export class DistrictKit {
     const c = new THREE.Color(color).multiplyScalar(1 - jitter + this.random() * jitter * 2), n = g.getAttribute('position').count, colors = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) { colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b; }
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    if (this.muted) return g;
     const list = this.parts.get(surface) ?? []; list.push(g); this.parts.set(surface, list); return g;
   }
   /** Merge a geometry that carries its own vertex colours (trees, terrain) in the current frame. */
@@ -83,12 +101,13 @@ export class DistrictKit {
     const g = plain(source); g.setAttribute('color', source.getAttribute('color').clone());
     const m = new THREE.Matrix4().compose(new THREE.Vector3(...position), new THREE.Quaternion().setFromEuler(new THREE.Euler(...rotation)), new THREE.Vector3(...scale));
     g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(this.matrix, m));
+    if (this.muted) return g;
     const list = this.parts.get(surface) ?? []; list.push(g); this.parts.set(surface, list); return g;
   }
   shape(kind: UnitShape | 'plane', size: V3, position: V3, color: string, surface: KitSurface = 'solid', rotation: V3 = [0, 0, 0]) {
     const source = kind === 'box' && AGED.has(surface) && Math.max(...size) > 3.5 ? segmentedBox(segments(size[0]), segments(size[1]), segments(size[2])) : unit[kind];
     const g = this.add(source, color, surface, position, size, rotation);
-    if (SOLID_KINDS.has(kind) && !WALK_THROUGH.has(surface)) this.consider(g, kind === 'box' || kind === 'rounded' ? 1 : 4, size);
+    if (SOLID_KINDS.has(kind) && !WALK_THROUGH.has(surface) && !this.muted) this.consider(g, kind === 'box' || kind === 'rounded' ? 1 : 4, size);
     return g;
   }
   /**
@@ -126,6 +145,7 @@ export class DistrictKit {
   }
   /** Physics + line-of-sight collider for an axis box in the current frame. */
   solid(size: V3, position: V3, rotationY = 0) {
+    if (this.muted) return;
     const m = new THREE.Matrix4().multiplyMatrices(new THREE.Matrix4().makeTranslation(this.origin.x, this.origin.y, this.origin.z), this.matrix)
       .multiply(new THREE.Matrix4().compose(new THREE.Vector3(...position), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationY), new THREE.Vector3(1, 1, 1)));
     const p = new THREE.Vector3(), q = new THREE.Quaternion(); m.decompose(p, q, new THREE.Vector3());
@@ -140,14 +160,39 @@ export class DistrictKit {
   readonly bodies: CANNON.Body[] = [];
   /** Merge everything into one mesh per surface. Returns the number of meshes created. */
   build() { let meshes = 0; for (const _ of this.buildSteps()) meshes++; return meshes; }
-  /** `build`, one surface per step. */
-  *buildSteps(): Generator<void> {
+  /** Triangles this kit handed to another (`bakeInto`): an avenue's share of its district's meshes. */
+  bakedTriangles = 0;
+  /** Finished surfaces another kit handed over (`bakeInto`), drawn with this kit's own. */
+  private baked = new Map<KitSurface, THREE.BufferGeometry[]>();
+  private finish(g: THREE.BufferGeometry, surface: KitSurface) {
+    if (surface !== 'facade' && surface !== 'pool') worldUv(g, surface, this.pattern, this.surfaces);
+    age(g, surface, this.pattern);
+  }
+  /**
+   * Merge and finish this kit's surfaces (tiling and grime measured from its own pattern frame) and hand them to
+   * `target`, which draws them in its own meshes: an avenue built into a district adds no draws of its own.
+   */
+  *bakeInto(target: DistrictKit): Generator<void> {
     this.solidifyCandidates();
     for (const [surface, list] of this.parts) {
       if (!list.length) continue;
-      const g = mergeGeometries(list)!; list.forEach(p => p.dispose());
-      if (surface !== 'facade' && surface !== 'pool') worldUv(g, surface, this.origin, this.surfaces);
-      age(g, surface, this.origin);
+      const g = mergeGeometries(list)!; list.forEach(p => p.dispose()); this.finish(g, surface);
+      this.bakedTriangles += (g.index ? g.index.count : g.getAttribute('position').count) / 3;
+      if (!target.baked.has(surface)) target.baked.set(surface, []);
+      target.baked.get(surface)!.push(g); yield;
+    }
+    this.parts.clear();
+  }
+  /** `build`, one surface per step. */
+  *buildSteps(): Generator<void> {
+    this.solidifyCandidates();
+    for (const surface of new Set([...this.parts.keys(), ...this.baked.keys()])) {
+      const list = this.parts.get(surface) ?? [], handed = this.baked.get(surface) ?? [];
+      if (!list.length && !handed.length) continue;
+      let g = list.length ? mergeGeometries(list)! : null; list.forEach(p => p.dispose());
+      if (g) this.finish(g, surface);
+      if (handed.length) { const all = g ? [g, ...handed] : handed; g = mergeGeometries(all)!; all.forEach(p => p.dispose()); }
+      if (!g) continue;
       if (surface === 'pool') {
         const mesh = lightPoolMesh(g, POOL_COLOR); mesh.name = 'district:pool'; this.group.add(mesh); yield; continue;
       }
@@ -160,10 +205,10 @@ export class DistrictKit {
       mesh.castShadow = surface !== 'glow' && surface !== 'glass'; mesh.receiveShadow = surface !== 'glow';
       this.group.add(mesh); yield;
     }
-    this.parts.clear();
+    this.parts.clear(); this.baked.clear();
   }
   /** Drop everything not yet merged (an unfinished build being thrown away). */
-  discard() { for (const list of this.parts.values()) list.forEach(p => p.dispose()); this.parts.clear(); this.colliders.forEach(g => g.dispose()); this.colliders.length = 0; }
+  discard() { for (const list of [...this.parts.values(), ...this.baked.values()]) list.forEach(p => p.dispose()); this.parts.clear(); this.baked.clear(); this.colliders.forEach(g => g.dispose()); this.colliders.length = 0; }
 }
 
 /** Seconds of world time driving the foliage sway; `District.update` advances it. Shared by every district. */

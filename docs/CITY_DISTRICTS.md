@@ -17,13 +17,41 @@ original Fort Road street (`MumbaiStreet`). The other seven are separate walkabl
 ## Layout
 
 * Each district sits `DISTRICT_SPACING` (600 m) further along X and reuses Fort Road's local frame:
-  road along Z, pavements at |x| ≈ 5, walkable box x ∈ [−19.5, 19.5], z ∈ [−64, 21]. The road runs on
-  into the haze at both ends, so a district reads as part of a longer street.
-* `cityZones`, `zoneAt` and `zoneIndexAt` in `streetLayout.ts` map world X to a zone. District stops are
-  added to `streetStops`, so the existing ride, directory and review code addresses them like Fort.
-* A ride to another district is two legs (`cityRideLegs`): the vehicle drives off the current street,
-  the world cuts to the destination district, and it drives up to the stop. The meter adds the map
-  distance between the two stops at the cut.
+  road along Z, pavements at |x| ≈ 5, the district's own street z ∈ [−65, 21] (CST's north edge −68).
+  `cityZones`, `zoneAt` and `zoneIndexAt` in `streetLayout.ts` map world X to a zone.
+* **Avenues join the districts end to end** in map order: CST → BKC → Andheri → Powai → Dadar → Worli →
+  Juhu → Film City. Each street runs on north as a 170 m arterial (`AVENUE_LENGTH`, `avenue.ts`) into the
+  next district's south end: shophouses with shops, signs, awnings, balconies and water tanks, lanes,
+  gardens, a wayside shrine, towers behind, palms, lamps, poles and cables, BEST stops, a hoarding,
+  green direction gantries ("ANDHERI ↑ · 2.6 KM") and a Western Railway girder bridge halfway.
+* Both districts build the *same* avenue in their own frame: same seed, same draw order, texture tiling
+  and grime measured from a shared `pattern` frame, and every loop runs over the whole avenue with the
+  copy's own stretch drawn and the rest `muted` (random draws still made). Fine detail (shop fronts,
+  scooters, poles, street trees, tower relief) is drawn only on a copy's own half plus 40 m, each piece
+  on its own random stream (`DistrictKit.isolated`), so leaving it out never shifts anything else.
+* **The seam** is the avenue's midpoint (`seamNorth(i)` in district i, `SEAM_SOUTH` = z 106 in i + 1).
+  Walking across it moves the visitor into the next district's copy (`acrossSeam`); nothing visible
+  changes. `avenueNeighbour` builds the district ahead while the visitor walks the avenue; if it is not
+  ready at the seam the visitor waits a moment there.
+* **Rides drive the whole way.** `cityRideLegs` returns one leg per district driven through; the legs
+  meet at the seams and the cab carries on across each at speed (a `cut` only changes frames). On the
+  avenues traffic and rides run at arterial pace (`AVENUE_PACE` = 2.1 × street speed). The district
+  ahead is prepared as the cab nears it; the cab waits at the seam if it is still building. The meter
+  releases the map distance between the stops in step with the road driven.
+* **Water sides.** Powai, Worli and Juhu leave the ground off beyond their promenade along their own
+  street, so the lake/sea is open water reaching the horizon; beside the avenues only the strip their
+  frontage stands on is laid and the water runs on behind. Powai's far shore has Hiranandani-style
+  domed towers on a wooded bank with the hills behind; Worli has the Sea Link out on the water; Juhu's
+  beach shelves from dry to wet sand into the surf.
+
+## Getting a ride
+
+* **Wave one down.** Standing on the pavement, an auto or taxi coming toward you in the kerb-side lane
+  (9–60 m off) is offered as "E · Wave down the auto"; that very vehicle leaves the traffic
+  (`LaneTraffic.passing` / `withdraw`) and pulls in beside you (`PassengerRide.pullOver`).
+  The HAIL TAXI / HAIL AUTO buttons do the same when one is passing, else call one from out of sight.
+* Every district's traffic mix has autos and taxis, shuffled per district (`districtTraffic`).
+* Avenue kerbs hold parked scooters only: a parked car would stand in the traffic lane.
 
 ## Streaming and budget
 
@@ -42,6 +70,9 @@ original Fort Road street (`MumbaiStreet`). The other seven are separate walkabl
   bone textures. Far figures use a meshoptimizer-simplified index (20%). Until the cast has loaded,
   the procedural `CityFolk` bodies stand in and are swapped out by `CityDistricts.adoptCast`.
   `Crowd` handles walkers, idlers (talk, sit, sell, wave, bowl, bat) and distance LOD.
+* Avenues add no draws: their architecture is baked into the district's own surface meshes
+  (`DistrictKit.bakeInto`). Each avenue copy is budgeted apart from its district (< 75k triangles;
+  the district's own street stays < 180k), see `tests/districts.test.ts`.
 * `LaneTraffic` runs BEST buses, hatchbacks, sedans, SUVs, kaali-peeli taxis, autos, bikes, cycles,
   tempos and handcarts on two lanes, yielding to the visitor and the ride camera.
 

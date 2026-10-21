@@ -1,6 +1,10 @@
 import { FORT_LOOP, crossingHeld, type LoopVehicle } from '../traffic/RoadTraffic';
 import { LaneTraffic } from './DistrictSystems';
-import { cityDensity } from './District';
+import { AVENUE_PACE, cityDensity } from './District';
+import { seamNorth } from '../streetLayout';
+
+/** Where Fort Road's avenue lanes run out of the scene, well beyond the seam to BKC. */
+const AVENUE_END = seamNorth(0) - 125;
 import type { CityVehicleKind } from './CityVehicles';
 
 /** Fort Road is a dead end at the station, so through traffic uses the cross street at its north end (z ≈ −62). */
@@ -43,6 +47,11 @@ export function createFortRoadTraffic(loop: () => LoopVehicle[]) {
   onLoop.forEach((kind, i) => traffic.vehicle(ring, kind, (i * 2 + 1) / 12 + 1 / 24, `fort:${i}`));
   const across = crossKinds.slice(0, Math.max(2, Math.round(crossKinds.length * scale))), half = Math.ceil(across.length / 2);
   across.forEach((kind, i) => traffic.vehicle(i % 2 ? west : east, kind, ((i >> 1) + (i % 2) * .5) / half, `fort:cross:${i}`));
+  // The avenue north to BKC: through traffic both ways (taxis and autos among it), at arterial speed past the cross street.
+  const up = traffic.lane([[1.6, 0, -71], [1.6, 0, AVENUE_END]], false, () => [], 'avenue-north'), down = traffic.lane([[-1.6, 0, AVENUE_END], [-1.6, 0, -71]], false, () => [], 'avenue-south');
+  const avenueKinds: CityVehicleKind[] = ['taxi', 'hatch', 'auto', 'sedan', 'bus', 'auto', 'suv', 'bike', 'taxi', 'hatch'], count = Math.max(4, Math.round(avenueKinds.length * cityDensity.traffic * .6));
+  for (let i = 0; i < count; i++) traffic.vehicle(i % 2 ? down : up, avenueKinds[i % avenueKinds.length], ((i >> 1) + .3) / Math.ceil(count / 2), `fort:avenue:${i}`);
+  traffic.cruiseAt = z => z < -72 ? AVENUE_PACE : 1;
   traffic.occluded = hiddenByFrontage;
   traffic.group.name = 'fort-road:through-traffic';
   return traffic;
