@@ -19,7 +19,7 @@ import type { WorldEngine } from '../core/WorldEngine';
 import { record, loadProgress, saveProgress, emptyProgress, districtAt, nextObjective, type Achievement, type ProgressEvent } from '../game/progress';
 import { TOURS } from '../data/tours';
 import { ExhibitPanel, isExhibit } from '../ui/Exhibits';
-import { AchievementToasts, Journal, Orientation, TourCard, Waypoint } from '../ui/GameHud';
+import { ARRIVAL_CARDS, AchievementToasts, ArrivalCard, Journal, Orientation, TourCard, Waypoint } from '../ui/GameHud';
 import { VisitorBenchmark } from '../ui/VisitorBenchmark';
 import { AUDIO_BUSES, loadAudioSettings, saveAudioSettings, type AudioLevels } from '../core/audio/audioSettings';
 import { playCue } from '../core/audio/cues';
@@ -48,6 +48,8 @@ export default function App() {
   const [exhibit, setExhibit] = useState<string | null>(null);
   const [tour, setTour] = useState<{ id: string; step: number } | null>(null);
   const [waypoint, setWaypoint] = useState<string | null>(null);
+  const [arrivalCard, setArrivalCard] = useState<string | null>(null);
+  const clearArrivalCard = useCallback(() => setArrivalCard(null), []);
   const [journal, setJournal] = useState(false);
   const [, setSpeed] = useState(0);
   const [ready, setReady] = useState(false);
@@ -169,6 +171,8 @@ export default function App() {
   // Visits, walking, arrivals at a waypoint and finished rides feed the journal.
   const here = districtAt(zoneAt(position.x).id, position.z);
   useEffect(() => { if (ready && mode === 'world' && !fallback && !BENCH) track({ type: 'visit', district: here }); }, [here, ready, mode, fallback, track]);
+  // Walking (or arriving) into a district with an arrival card shows it once per entry.
+  useEffect(() => { if (ready && mode === 'world' && !fallback && !BENCH) setArrivalCard(here in ARRIVAL_CARDS ? here : null); }, [here, ready, mode, fallback]);
   useEffect(() => { if (Math.hypot(position.x - STREET_SPAWN.x, position.z - STREET_SPAWN.z) > 4 && ride.phase === 'idle') track({ type: 'orientation', step: 'walk' }); }, [position, ride.phase, track]);
   useEffect(() => { if (ride.phase === 'arrived') track({ type: 'ride-complete' }); }, [ride.phase, track]);
   useEffect(() => { if (map) track({ type: 'orientation', step: 'map' }); }, [map, track]);
@@ -290,7 +294,7 @@ export default function App() {
     <a className="skip-link" href="#main-content" onClick={e => { e.preventDefault(); navigate('quick'); setTimeout(() => document.getElementById('main-content')?.focus(), 0); }}>Skip to portfolio content</a>
     <div className="world-container" ref={container} aria-hidden={mode !== 'world'} />
     <header className="header">
-      <button className="brand" onClick={() => navigate('intro')}><span className="brand-mark" aria-hidden="true">h<span>j</span><i /></span><span className="brand-copy">HARSH JHA<small>ENGINEER / RESEARCHER</small></span></button>
+      <button className="brand" onClick={() => navigate('intro')}><span className="brand-mark" aria-hidden="true">h<span>j</span><i /></span><span className="brand-copy">HARSH JHA<small>ENGINEER / OPEN SOURCE</small></span></button>
       <nav aria-label="Main navigation" className="header-nav">
         {!(fallback && mode === 'quick') && <button onClick={() => mode === 'quick' ? navigate('world') : navigate('quick')}>{mode === 'quick' ? 'ENTER WORLD' : 'QUICK VIEW'} <span>↗</span></button>}
         {resumeAvailable && <a href={portfolio.resume} target="_blank" rel="noreferrer">RÉSUMÉ <span>↗</span></a>}
@@ -307,9 +311,10 @@ export default function App() {
       {arriving && <p className="district-arriving" role="status">Heading to {districts.find(d => d.id === arriving)?.title ?? 'the next stop'}…</p>}
       <div className="street-location"><span className="street-live" /> {zoneAt(position.x).label} <small><time dateTime={new Date(india.epoch).toISOString()}>{india.time} IST</time> · {india.label}{worldClock().overridden ? ' · TIME OVERRIDE' : ''}</small></div>
       {near && <div className="street-reticle" aria-hidden="true" />}
-      {ride.phase === 'idle' && near && !BENCH && <button className="proximity-prompt" onClick={() => boardNear ? hail(boardNear) : openProject(near)}><kbd>{mobile ? '↗' : 'E'}</kbd><strong>{boardNear ? `Hail ${boardNear === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : near === 'ffprime' ? 'Read the FFprime research' : nearDistrict ? `Talk · ${nearDistrict.guide}` : nearLabel ?? 'Inspect'}</strong></button>}
+      {ride.phase === 'idle' && near && !BENCH && <button className="proximity-prompt" onClick={() => boardNear ? hail(boardNear) : openProject(near)}><kbd>{mobile ? '↗' : 'E'}</kbd><strong>{boardNear ? `Hail ${boardNear === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : near === 'ffprime' ? 'Read the FFprime work' : nearDistrict ? `Talk · ${nearDistrict.guide}` : nearLabel ?? 'Inspect'}</strong></button>}
       {ready && !BENCH && !progress.orientationDismissed && !tour && ride.phase === 'idle' && <Orientation progress={progress} onSkip={() => track({ type: 'dismiss-orientation' })} />}
       {tourData && tour && <TourCard tour={tourData} step={tour.step} onStep={step => setTour({ ...tour, step })} onOpen={openProject} onNext={id => { setTour(null); setWaypoint(id); }} onLeave={() => setTour(null)} />}
+      {arrivalCard && !tour && ride.phase === 'idle' && <ArrivalCard district={arrivalCard} onDone={clearArrivalCard} />}
       {waypoint && !tour && ride.phase === 'idle' && <Waypoint target={waypoint} position={position} onRide={() => hail('taxi', waypoint)} onClear={() => setWaypoint(null)} />}
       {BENCH && <VisitorBenchmark engine={engine.current} ready={ready && !fallback} preset={mobile ? `${renderPreset} (phones run the low tier)` : renderPreset} adaptive={!benchParams.has('fixed')} sampleS={Number(benchParams.get('seconds')) || undefined} worldReadyMs={worldReadyMs.current} />}
       <AchievementToasts toasts={toasts} />
@@ -321,8 +326,8 @@ export default function App() {
 
     </main>}
     {mode === 'quick' && <main className="quick-view" id="main-content" tabIndex={-1}>
-      <section className="quick-hero"><div><p className="eyebrow"><i className="status-dot" /> MINI MUMBAI / THE WORK, AT A GLANCE</p><h1>Engineering,<br /><span>with evidence.</span></h1><p>Harsh Jha. {portfolio.education}<br />Scientific computing, AI systems, and full-stack products.</p><div className="quick-links">{resumeAvailable && <a className="primary-button" href={portfolio.resume} target="_blank" rel="noreferrer">DOWNLOAD RÉSUMÉ <span>↓</span></a>}<button className="text-button" onClick={() => setContact(true)}>GET IN TOUCH ↗</button></div></div><aside className="research-card"><span className="eyebrow">FEATURED EXPERIENCE / 2026</span><ProjectGraphic project={projects[0]} className="research-symbol" /><h2>Google Summer<br />of Code.</h2><Annotation mark="circle" className="research-note">research gets weird over here</Annotation><p>QC-Devs / Theochem<br />Multipole electrostatics in FFprime</p><button onClick={() => openProject('ffprime')}>EXPLORE THE RESEARCH <span>↗</span></button></aside></section>
-      <section className="selected-work" id="projects"><div className="section-heading"><h2>Selected work<span> / 06</span></h2><span className="eyebrow">RESEARCH → SYSTEMS → PRODUCTS</span></div>{projects.map((p, i) => <ProjectRow key={p.id} project={p} index={i} onOpen={() => openProject(p.id)} />)}</section>
+      <section className="quick-hero"><div><p className="eyebrow"><i className="status-dot" /> MINI MUMBAI / THE WORK, AT A GLANCE</p><h1>Engineering,<br /><span>with evidence.</span></h1><p>Harsh Jha. {portfolio.education}<br />Scientific computing, AI systems, and full-stack products.</p><div className="quick-links">{resumeAvailable && <a className="primary-button" href={portfolio.resume} target="_blank" rel="noreferrer">DOWNLOAD RÉSUMÉ <span>↓</span></a>}<button className="text-button" onClick={() => setContact(true)}>GET IN TOUCH ↗</button></div></div><aside className="research-card"><span className="eyebrow">FEATURED EXPERIENCE / 2026</span><ProjectGraphic project={projects[0]} className="research-symbol" /><h2>Google Summer<br />of Code.</h2><Annotation mark="circle" className="research-note">open source, merged upstream</Annotation><p>GSoC Contributor at QC-Devs<br />Multipole electrostatics in FFprime</p><button onClick={() => openProject('ffprime')}>EXPLORE THE CONTRIBUTION <span>↗</span></button></aside></section>
+      <section className="selected-work" id="projects"><div className="section-heading"><h2>Selected work<span> / {String(projects.length).padStart(2, '0')}</span></h2><span className="eyebrow">OPEN SOURCE → SYSTEMS → PRODUCTS</span></div>{projects.map((p, i) => <ProjectRow key={p.id} project={p} index={i} onOpen={() => openProject(p.id)} />)}</section>
       <section className="experience-section" id="about"><div className="section-heading"><h2>Experience</h2><span className="eyebrow">REAL SYSTEMS. REAL CONSTRAINTS.</span></div>{experience.map(item => <article className="experience-item" key={item.title}><span className="eyebrow">{item.period}</span><div><h3>{item.title}</h3><p className="experience-org">{item.organization}</p><p>{item.description}</p><ul>{item.highlights.map(point => <li key={point}>{point}</li>)}</ul><a href={item.source} target="_blank" rel="noreferrer">SOURCE ↗</a></div></article>)}</section>
       <section id="skills" className="skills-section"><div className="section-heading"><h2>Skills, backed by work.</h2><span className="eyebrow">SELECT A SKILL TO SEE THE EVIDENCE</span></div>{skills.map(group => <SkillGroup key={group.title} group={group} onOpen={openProject} />)}</section>
       <section className="achievements-section"><div className="section-heading"><h2>Recognition</h2><span className="eyebrow">SELECTED ACHIEVEMENTS</span></div>{achievements.slice(0, 2).map(item => <article key={item.title}><h3>{item.title}</h3><p>{item.detail}</p><a href={item.source} target="_blank" rel="noreferrer">SOURCE ↗</a></article>)}</section>

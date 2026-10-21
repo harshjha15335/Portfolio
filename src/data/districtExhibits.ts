@@ -7,7 +7,7 @@
  */
 import { achievements, experience } from './experience';
 import { journey } from './city';
-import { projects } from './projects';
+import { POWAI_PROJECTS, projects } from './projects';
 import { SHOPS } from './shops';
 
 export interface DistrictExhibit {
@@ -18,45 +18,50 @@ export interface DistrictExhibit {
   x: number; z: number;
   /** 'board' stands on posts (default); 'wall' hangs flush on a wall behind it; 'marker' builds nothing (the place itself is the exhibit). */
   mount?: 'board' | 'wall' | 'marker';
+  /** A shop-sign header over a free-standing board, so it reads from down the street. */
+  topper?: string;
   panel: { eyebrow: string; title: string; lines: string[] };
   /** What the guide says about it on the tour. */
   tour: { title: string; body: string };
 }
 
-const flagships = projects.filter(p => p.id !== 'ffprime');
-/** Powai's workplaces along the east frontage: one per flagship project, then ASTFLOW (built by `catalog.ts` with the same spacing). */
+const flagships = POWAI_PROJECTS.map(id => projects.find(p => p.id === id)!);
+/** Powai's workplaces along the east frontage: one per Powai project, then ASTFLOW (built by `catalog.ts` with the same spacing). */
 export const POWAI_PODS = { start: 14, w: 8.5, gap: 1.2, setback: 3.5, depth: 7 };
 export const powaiPodZ = (i: number) => POWAI_PODS.start - i * (POWAI_PODS.w + POWAI_PODS.gap) - POWAI_PODS.w / 2;
-/** Each board hangs on its workplace's back wall, right of the door as you walk in. */
-const powaiBoard = (i: number) => ({ x: 7 + POWAI_PODS.setback + POWAI_PODS.depth - .34, z: powaiPodZ(i) + 1.6, mount: 'wall' as const });
+/** Each board stands on the forecourt at its workplace's entrance, beside the door, facing the road. */
+export const powaiBoard = (i: number) => ({ x: 7 + POWAI_PODS.setback - 1.2, z: powaiPodZ(i) + 2.4 });
+
+/** Andheri's skill-shop boards (local x, z): at the shopfronts, alternating sides; `catalog.ts` keeps the pavement stalls clear of them. */
+export const ANDHERI_SHOP_BOARDS: Array<[number, number]> = [[6.45, -11], [-6.45, -11], [6.45, -26], [-6.45, -26], [6.45, -41]];
 
 export const DISTRICT_EXHIBITS: DistrictExhibit[] = [
-  /* ---------------- BKC: inside the Systems Office lobby, the internship floor */
-  { id: 'bkc-brief', district: 'bkc', label: 'Read the internship brief', x: 27.15, z: 3, mount: 'wall',
+  /* ---------------- BKC: the internship brief at the Systems Office entrance, the rest inside the lobby */
+  { id: 'bkc-brief', district: 'bkc', label: 'Read the internship brief', x: 9.7, z: 7.8, topper: `${experience[1].organization} INTERNSHIP`,
     panel: { eyebrow: `${experience[1].organization.toUpperCase()} · ${experience[1].period.toUpperCase()}`, title: experience[1].title, lines: ['Python policy-analysis CLI', 'Manifest V3 browser extension', 'OAuth2 · rate-limited ingestion'] },
     tour: { title: 'The brief', body: `${experience[1].description} The board lists what was built; press E for the full brief and its source.` } },
-  { id: 'bkc-ratelimit', district: 'bkc', label: 'Run the rate-limit console', x: 17, z: -.5,
+  { id: 'bkc-ratelimit', district: 'bkc', label: 'Run the rate-limit console', x: 23.4, z: 4.9,
     panel: { eyebrow: 'BKC / SYSTEMS ACTIVITY', title: 'Rate-limit console', lines: ['Ingest 40 pages from a rate-limited API', 'without a single 429.', 'Teaching model, not the internship code'] },
     tour: { title: 'Your turn: the rate limit', body: 'Enterprise APIs ration requests. This console simulates a token-bucket limit: choose how fast to send and whether to back off, and try to ingest every page without a 429 in the least time.' } },
   { id: 'bkc-flow', district: 'bkc', label: 'Follow the request path', x: 27.15, z: 7.2, mount: 'wall',
     panel: { eyebrow: 'BKC / HOW THE PIECES MEET', title: 'Policy → OAuth2 → Access', lines: ['The pieces of the integration', 'and how a request moves', 'through them']},
     tour: { title: 'How the pieces meet', body: 'A security tool is only as useful as its integration: authenticate with OAuth2, call the API within its limits, then analyse what comes back. Press E to step through the path.' } },
 
-  /* ---------------- Andheri: one kiosk per skill shop, in the gaps between the pavement stalls */
+  /* ---------------- Andheri: one big board per skill shop, at a shopfront; the pavement stalls keep clear of them (no header: the awnings would hide it) */
   ...SHOPS.map((shop, i) => ({
     id: `andheri-shop-${shop.id}`, district: 'andheri', label: `Visit ${shop.name}`,
-    x: [6.3, -6.3, 6.3, -6.3, 6.3][i], z: [-11, -11, -26, -26, -41][i],
+    x: ANDHERI_SHOP_BOARDS[i][0], z: ANDHERI_SHOP_BOARDS[i][1],
     panel: { eyebrow: `SHOP ${shop.sign} · ANDHERI TECH BAZAAR`, title: shop.name, lines: [shop.skills.slice(0, 3).map(s => s.name).join(' · '), 'Every skill linked to its source', 'Working bench inside'] },
     tour: { title: shop.name, body: `${shop.pitch} Press E to open the shop and its bench.` },
   })),
 
-  /* ---------------- Powai: each project's board inside its own workplace */
+  /* ---------------- Powai: each project's board at the entrance of its own workplace */
   ...flagships.map((p, i) => ({
-    id: p.id, district: 'powai', label: `Open ${p.title}`, ...powaiBoard(i),
+    id: p.id, district: 'powai', label: `Open ${p.title}`, ...powaiBoard(i), topper: `${p.title.toUpperCase()} · ${p.id === 'reco' ? 'CASE STUDY' : 'WORKING DEMO'}`,
     panel: { eyebrow: p.category.toUpperCase(), title: p.title, lines: [p.subtitle, p.architecture.slice(0, 3).join(' → '), p.id === 'reco' ? 'Case study inside' : 'Working demo inside'] },
     tour: { title: p.title, body: `${p.shortDescription} Press E to ${p.id === 'reco' ? 'read the case study' : 'run the working demo'}.` },
   })),
-  { id: 'astflow', district: 'powai', label: 'Open the ASTFLOW lab', ...powaiBoard(6),
+  { id: 'astflow', district: 'powai', label: 'Open the ASTFLOW lab', ...powaiBoard(flagships.length), topper: 'ASTFLOW · WORKING LAB',
     panel: { eyebrow: 'POWAI / ASTFLOW LAB', title: 'ASTFLOW', lines: ['BM25 + dense retrieval, fused', 'The experiment record, replayed', 'Working lab inside'] },
     tour: { title: 'The ASTFLOW lab', body: 'ASTFLOW’s engineering lab shows the shipped retrieval results and replays the fusion experiments on the frozen runs: change k, the weighting or the depth and see the ranking move.' } },
 

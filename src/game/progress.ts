@@ -48,7 +48,7 @@ const count = (p: Progress, pattern: RegExp) => new Set(p.discovered.filter(id =
 const solved = (p: Progress, id: string) => has(p, `${id}:solved`);
 export const ACHIEVEMENTS: Achievement[] = [
   { id: 'first-steps', title: 'First Steps', detail: 'Met Harsh at the station or read the CST departure board.', earned: p => has(p, 'cst') || has(p, 'cst-board') },
-  { id: 'research-explorer', title: 'Research Explorer', detail: 'Followed the five reviewed FFprime pull requests at Fort.', earned: p => has(p, 'fort-source') },
+  { id: 'research-explorer', title: 'Open Source Explorer', detail: 'Followed the five reviewed FFprime pull requests at Fort.', earned: p => has(p, 'fort-source') },
   { id: 'gradient-check', title: 'Finite Differences', detail: 'Found the field implementation that passes the gradient check.', earned: p => solved(p, 'fort-gradient') },
   { id: 'systems-thinker', title: 'Systems Thinker', detail: 'Ingested every page at BKC without a single 429.', earned: p => solved(p, 'bkc-ratelimit') },
   { id: 'skill-collector', title: 'Skill Collector', detail: 'Visited three skill shops at the Andheri Tech Bazaar.', earned: p => count(p, /^andheri-shop-/) >= 3 },
@@ -65,7 +65,7 @@ export const QUEST = {
   id: 'discover-the-engineer',
   title: 'Discover the Engineer',
   steps: [
-    { id: 'fort', label: 'Follow the research at Fort', done: (p: Progress) => has(p, 'fort-source') || has(p, 'fort-tour') },
+    { id: 'fort', label: 'Follow the open-source work at Fort', done: (p: Progress) => has(p, 'fort-source') || has(p, 'fort-tour') },
     { id: 'bkc', label: 'Inspect the BKC Systems Office', done: (p: Progress) => has(p, 'bkc') || any(p, 'bkc-') },
     { id: 'powai', label: 'Explore one Powai project', done: (p: Progress) => FLAGSHIPS.some(id => has(p, id)) },
     { id: 'andheri', label: 'Visit the Andheri Tech Bazaar', done: (p: Progress) => has(p, 'andheri') || any(p, 'andheri-shop-') },
@@ -94,7 +94,7 @@ export function record(progress: Progress, event: ProgressEvent): { progress: Pr
   return { progress: next, unlocked };
 }
 
-/** Which district a world position belongs to. Fort is the research end of the CST street. */
+/** Which district a world position belongs to. Fort is the open-source end of the CST street. */
 export function districtAt(zoneId: string, z: number) { return zoneId === 'cst' && z < -24 ? 'fort' : zoneId; }
 
 const KEY = 'hj-progress-v1';

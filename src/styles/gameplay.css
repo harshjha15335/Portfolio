@@ -17,6 +17,12 @@
 .tour-actions button { border:1px solid #f0e4c9aa; padding:9px 12px; font:10px var(--mono); }
 .tour-actions button:disabled { opacity:.35; }
 .tour-actions .primary-button { background:#f9c847; color:#283536; border-color:#f9c847; }
+.arrival-card { position:absolute; left:50%; top:30%; transform:translateX(-50%); display:grid; justify-items:center; gap:6px; width:min(620px,92vw); padding:18px 22px 16px; text-align:center; background:#283536f2; color:#f0e4c9; border-top:4px solid #f9c847; border-bottom:4px solid #f9c847; pointer-events:auto; cursor:pointer; animation:arrival-card 6.5s ease both; }
+.arrival-card .eyebrow { color:#f9c847; }
+.arrival-card strong { font:600 clamp(28px,5vw,46px)/1.05 var(--display); }
+.arrival-card small { font:11px/1.4 var(--mono); color:#d6cbb2; }
+@keyframes arrival-card { 0% { opacity:0; transform:translate(-50%,8px); } 8%,82% { opacity:1; transform:translate(-50%,0); } 100% { opacity:0; } }
+[data-motion="reduced"] .arrival-card { animation:none; }
 .waypoint { position:absolute; left:50%; top:76px; transform:translateX(-50%); display:flex; align-items:center; gap:12px; padding:8px 12px; background:#f3e5c7f2; border:1px solid #283c41; color:#283c41; pointer-events:auto; }
 .waypoint-arrow { display:inline-grid; place-items:center; width:30px; height:30px; border-radius:50%; background:#283c41; color:#f9c847; font:700 17px var(--mono); transition:transform 140ms linear; }
 .waypoint strong { display:block; font:600 19px/1.1 var(--display); }

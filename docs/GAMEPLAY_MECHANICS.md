@@ -44,9 +44,9 @@ A two-sided station indicator hung over the pavement 6 m in front of the spawn p
 
 `src/data/tours.ts`, `TourCard` in `src/ui/GameHud.tsx`, `WorldEngine.frameView`.
 
-The station host and the research fellow offer **Take the guided tour** in their dialogue. Each step carries the visitor to a framing pose with a short eased move (instant under reduced motion; any walk key or mouse look cancels it), explains one exhibit, and can open it. Back, Next and the close button work at every step. The last step suggests the next district and sets a waypoint to it. Tours are also in the command palette.
+The station host and the fellow contributor offer **Take the guided tour** in their dialogue. Each step carries the visitor to a framing pose with a short eased move (instant under reduced motion; any walk key or mouse look cancels it), explains one exhibit, and can open it. Back, Next and the close button work at every step. The last step suggests the next district and sets a waypoint to it. Tours are also in the command palette.
 
-## Fort Research Institute exhibits
+## Fort Open Source Hall exhibits
 
 The research room is now a set of separate physical exhibits, each opening only its part of the exhibition (`ExhibitPanel`):
 

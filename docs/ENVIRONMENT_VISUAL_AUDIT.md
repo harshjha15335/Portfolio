@@ -78,7 +78,7 @@ tier, centre, facing and size (`SignAtlas.records`, `MumbaiStreet.signRecords`).
 | Andheri shop boards (all bays with awnings) | the awning's top edge cut across the bottom of the board | awnings hung lower, below the board |
 | Andheri shop boards (deco blocks) | the central fin covered the middle bay's board | as for Worli |
 | ARDUINO · RASPBERRY PI (Andheri) | the gateway pillar stood in front of the board's end | pillars moved onto the pavement |
-| Fort Road door notices (THE JOURNEY SO FAR / EVENING CLASSES) | cut by the corner pilaster on every bay; fully buried in the Fort Research Institute's front wall | moved clear of the pilaster; not placed on the institute |
+| Fort Road door notices (THE JOURNEY SO FAR / EVENING CLASSES) | cut by the corner pilaster on every bay; fully buried in the Fort Open Source Hall's front wall | moved clear of the pilaster; not placed on the institute |
 | FILM CITY · GOREGAON (back of the gate) | faces out of the walkable area | marked Tier 2 (the street-facing copy is Tier 1 and legible) |
 | RADIO HOUSE · 1938 | period lettering high on the parapet, at most 13 px tall from anywhere legal | marked Tier 2; the building's shop board, RADIO REPAIR, is legible |
 

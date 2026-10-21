@@ -21,7 +21,7 @@ for (const kind of ['TAXI', 'AUTO']) {
     // The auto drives the whole way (round the street's U-turns); the taxi skips.
     await expect(meter.getByRole('status')).toContainText('Arrived', { timeout: kind === 'TAXI' ? 30_000 : 420_000 });
     await page.getByRole('button', { name: 'STEP OUT & MEET THE GUIDE' }).click();
-    await expect(page.getByRole('dialog', { name: kind === 'TAXI' ? 'Fort Research Institute' : 'CST Arrival Terminus' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: kind === 'TAXI' ? 'Fort Open Source Hall' : 'CST Arrival Terminus' })).toBeVisible();
     await expect(meter).toHaveCount(0);
     expect(errors).toEqual([]);
   });
@@ -200,9 +200,9 @@ test('phone directional controls move the first-person visitor', async ({ page }
 test('visitor walks through the research doorway and opens the physical FFprime terminal', async ({ page }) => {
   await page.goto('/?debug#world');
   const canvas=page.locator('canvas'); await expect(canvas).toHaveAttribute('data-camera-mode','first-person');
-  await page.keyboard.press('m'); await page.getByRole('button',{name:'Travel to Fort Research Institute',exact:true}).click();
+  await page.keyboard.press('m'); await page.getByRole('button',{name:'Travel to Fort Open Source Hall',exact:true}).click();
   await expect(canvas).toHaveAttribute('data-world-z','-35.000');
   await page.keyboard.down('w'); await expect.poll(async()=>Number(await canvas.getAttribute('data-world-x'))).toBeLessThan(-9.7); await page.keyboard.up('w');
-  await expect(page.locator('.proximity-prompt')).toContainText('Read the FFprime research');
+  await expect(page.locator('.proximity-prompt')).toContainText('Read the FFprime work');
   await page.keyboard.press('e'); await expect(page.getByRole('dialog',{name:'CASE STUDY / FFprime'})).toBeVisible();
 });

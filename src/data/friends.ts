@@ -18,10 +18,10 @@ export interface Friend {
 
 export const FRIENDS: Friend[] = [
   {
-    id: 'aarush', name: 'Aarush Shetty', role: 'Research fellow, Fort Research Institute', cast: 'aarush', district: 'fort', offset: [0, 0],
+    id: 'aarush', name: 'Aarush Shetty', role: 'Fellow contributor, Fort Open Source Hall', cast: 'aarush', district: 'fort', offset: [0, 0],
     lines: [
-      'Hey, I’m Aarush. I look after the research room while Harsh is out on the streets.',
-      'Everything in here is FFprime: multipole electrostatics, written upstream for Theochem during Google Summer of Code 2026.',
+      'Hey, I’m Aarush. I look after the Open Source Hall while Harsh is out on the streets.',
+      'Harsh was a GSoC contributor at QC-Devs. Everything in here is FFprime: multipole electrostatics, written upstream for QC-Devs during Google Summer of Code 2026.',
       'Five pull requests were merged after review. The cork board on the wall strings them together in order, and each card links to GitHub.',
       'My favourite is the gradient check by the door. Three field formulas, one correct. One of Harsh’s PRs fixed exactly that factor of two.',
     ],

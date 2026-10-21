@@ -362,11 +362,11 @@ export class MumbaiStreet {
       }
       if(!hero)frontageBox([width,.28,.68],[0,2.82,-.1],color,false,g,false,true);
     }
-    const names=side<0?[['IRANI CHAI','चाय'],['RADIO REPAIR','रेडियो'],['FORT BOOK HOUSE','किताबें'],['SADAF TEXTILES','कपड़े'],['FORT RESEARCH INSTITUTE','फोर्ट'],['SHANTI STORES','दुकान'],['COASTAL CAFE','चाय']]:[['CST NEWS & PAPERS','मुंबई'],['SAHIL ELECTRICALS','बिजली'],['PRABHAT OPTICS','चश्मे'],['CITY CYCLE WORKS','साइकिल'],['VIDYA STATIONERY','किताबें'],['AZAD BAKERY','बेकरी'],['KONKAN LUNCH HOME','भोजन']];
+    const names=side<0?[['IRANI CHAI','चाय'],['RADIO REPAIR','रेडियो'],['FORT BOOK HOUSE','किताबें'],['SADAF TEXTILES','कपड़े'],['FORT OPEN SOURCE HALL','फोर्ट'],['SHANTI STORES','दुकान'],['COASTAL CAFE','चाय']]:[['CST NEWS & PAPERS','मुंबई'],['SAHIL ELECTRICALS','बिजली'],['PRABHAT OPTICS','चश्मे'],['CITY CYCLE WORKS','साइकिल'],['VIDYA STATIONERY','किताबें'],['AZAD BAKERY','बेकरी'],['KONKAN LUNCH HOME','भोजन']];
     // Shop boards sit at the ground floor, not across first-floor windows.
     if(!hero)frontageBox([width,.36,.7],[0,3.12,-.15],style==='heritage'?'#b8aa91':'#918c7d',false,g,false,false,'stone');
     if(hero){this.sign(g,'IRANI CHAI','चाय · BUN MASKA',[-1.87,2.90,.105],3.43,'#304d45','#e3d3ad');this.sign(g,'CHAI · BUN MASKA','Fresh from the kitchen',[-2.3,1.72,-1.999],1.28,'#354b42','#ded0aa').scale.y=2.1;this.sign(g,'PLEASE COME IN','चाय',[-3.75,1.60,-.057],.60,'#31433c','#d5c7a6').scale.y=4.1;this.sign(g,'TEA · BISCUITS · BUNS','Made here, served warm',[2.28,2.88,.12],3.2,'#af9f7d','#354b42');}
-    else { const board=this.sign(g,names[index][0],names[index][1],[0,2.83,.32],6.35,index%2?'#744d3c':'#35504b'); if(names[index][0]==='FORT RESEARCH INSTITUTE')this.named(board); }
+    else { const board=this.sign(g,names[index][0],names[index][1],[0,2.83,.32],6.35,index%2?'#744d3c':'#35504b'); if(names[index][0]==='FORT OPEN SOURCE HALL')this.named(board); }
     if(!fort&&!hero) {
       const awning=this.shape(this.awnings[(index+(side>0?1:0))%4],[1,1,1],[0,2.40,.61],'#ffffff',g,false,false,true,'fabric');
       const cloth=awning.material as THREE.MeshStandardMaterial;cloth.vertexColors=true;cloth.side=THREE.DoubleSide;
@@ -651,7 +651,7 @@ export class MumbaiStreet {
       this.shape(this.leafGeometry,[.75,.8,.75],[side*2.15,.63,.34],'#758f64',g,false,false,true,'foliage');
     }
     this.shape(this.archGeometry,[1.70,.65,.7],[0,2.23,.14],'#c5b394',g,false,false,true,'stone');
-    this.sign(g,'RESEARCH · OPEN SOURCE','फोर्ट',[2.48,1.70,.12],.88,'#d0b994','#3c5147').scale.y=1.3;
+    this.named(this.sign(g,'GSOC CONTRIBUTOR · QC-DEVS','Open source · FFprime',[3.0,1.70,.12],1.6,'#d0b994','#3c5147'));
     const floor=this.box([8.5, .035, 6.5], [0, .025, -3.3], '#aaa793', false, g, false, false, 'stone');
     g.updateMatrixWorld(true);this.shelteredBounds.setFromObject(floor);this.shelteredBounds.max.y=3.2;
     this.box([8.5, 3, .3], [0, 1.5, -6.5], '#c4c2a9', true, g);
@@ -667,9 +667,10 @@ export class MumbaiStreet {
     this.box([3.4, .012, 2.3], [0, .048, -2.7], '#8a4434', false, g, false, false, 'fabric');
     this.box([3.0, .013, 1.9], [0, .05, -2.7], '#b0814f', false, g, false, false, 'fabric');
     this.box([2.7, .014, 1.6], [0, .052, -2.7], '#7c3b2f', false, g, false, false, 'fabric');
-    this.named(this.sign(g, 'FFPRIME / OPEN SCIENCE', 'फोर्ट', [0, 2.76, -6.22], 2.5, '#344d48', '#dce2c8'));
-    this.named(this.sign(g, 'GSOC 2026 · THEOCHEM', 'Research, reviewed upstream', [-2.6, 2.76, -6.22], 2.5));
-    this.named(this.sign(g, '5 MERGED PULL REQUESTS', 'GitHub verified · 10 Oct 2026', [2.6, 2.76, -6.22], 2.5));
+    // Straight ahead of the door, the first thing a visitor reads on walking in: the role itself.
+    this.named(this.sign(g, 'GSOC CONTRIBUTOR AT QC-DEVS', 'Google Summer of Code 2026', [0, 2.72, -6.22], 3.6, '#344d48', '#f3e6bd'));
+    this.named(this.sign(g, 'FFPRIME / OPEN SOURCE', 'Reviewed and merged upstream', [-3.02, 2.76, -6.22], 2.0));
+    this.named(this.sign(g, '5 MERGED PULL REQUESTS', 'GitHub verified · 10 Oct 2026', [3.02, 2.76, -6.22], 2.0));
     this.box([4.2, .15, .85], [0, .78, -4.7], '#8c775a', true, g, false, false, 'wood');
     for(const x of [-1.9,1.9])for(const z of [-4.96,-4.44])this.box([.055,.7,.055],[x,.35,z],'#5d6c62',false,g,false,false,'metal');
     // Museum-style field table, calibrated to the same arbitrary teaching moments as the HTML exhibit.
@@ -750,14 +751,14 @@ export class MumbaiStreet {
       ctx.fillStyle = '#7e9790'; ctx.fillText('Which one passes?  Press E', 18, 226);
     }, [0, 0, .032], .8);
     this.person([-5.9, 0, -35.8], '#718d86', false, false, 'office-woman');
-    this.interactions.push({ id: 'fort', position: new THREE.Vector3(-5.9, 1.4, -35.8), label: 'Talk to the research fellow' });
+    this.interactions.push({ id: 'fort', position: new THREE.Vector3(-5.9, 1.4, -35.8), label: 'Talk to the fellow contributor' });
     // Aarush keeps the research room: on the rug between the door and the kiosk, turned to people coming in.
     const aarush = FRIENDS.find(f => f.id === 'aarush')!;
     this.person([-9.4, 0, -36.0], '#ece9df', false, false, aarush.cast).rotation.y = -2.0;
     this.interactions.push({ id: friendInteraction(aarush.id), position: new THREE.Vector3(-9.4, 1.45, -36.0), label: `Talk to ${aarush.name}` });
     g.updateMatrixWorld(true); const at = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyMatrix4(g.matrixWorld);
     this.interactions.push(
-      { id: 'ffprime', position: at(1.25, 1.42, -4.85), label: 'Read the FFprime research' },
+      { id: 'ffprime', position: at(1.25, 1.42, -4.85), label: 'Read the FFprime work' },
       { id: 'fort-workstation', position: at(-1.25, 1.42, -4.85), label: 'Use the coordinate workstation' },
       { id: 'fort-field', position: at(-2.45, 1.08, -4.46), label: 'Inspect the field table' },
       { id: 'fort-source', position: at(-4.05, 1.68, -2.2), label: 'Follow the five merged pull requests' },

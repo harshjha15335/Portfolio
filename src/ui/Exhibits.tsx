@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal } from './Modal';
+import { Modal, useModalClose } from './Modal';
 import { ResearchExhibition } from './ResearchExhibition';
 import { CoordinateWorkstation } from './CoordinateWorkstation';
 import { CORRECT_FIELD, FIELD_CANDIDATES, finiteDifferenceCheck, type CheckResult } from '../research/gradientCheck';
@@ -45,7 +45,7 @@ export function ExhibitPanel({ id, onClose, onSolved, onDeparture, onOpen, onPro
 
 /** A short conversation with one of Harsh's friends: their lines one at a time, then where they suggest going next. */
 function FriendDialogue({ friend, onAction }: { friend: Friend; onAction: (id: string) => void }) {
-  const [line, setLine] = useState(0), last = line === friend.lines.length - 1;
+  const [line, setLine] = useState(0), last = line === friend.lines.length - 1, close = useModalClose(() => {});
   return <section className="friend-dialogue guide-dialogue" aria-label={`Conversation with ${friend.name}`}>
     <div className="guide-avatar" aria-hidden="true">{friend.name.split(' ').map(w => w[0]).join('')}</div>
     <div><span className="eyebrow">{friend.role.toUpperCase()}</span><h2>{friend.name}</h2>
@@ -53,7 +53,8 @@ function FriendDialogue({ friend, onAction }: { friend: Friend; onAction: (id: s
       <div className="guide-actions">
         {!last && <button className="primary-button" onClick={() => setLine(line + 1)}>NEXT →</button>}
         {last && friend.actions.map(a => <button key={a.open} className="primary-button" onClick={() => onAction(a.open)}>{a.label}</button>)}
-        {line > 0 && <button className="text-button" onClick={() => setLine(0)}>FROM THE START</button>}
+        <button className="back-button" onClick={() => line > 0 ? setLine(line - 1) : close()}>{line > 0 ? '← BACK' : '← BACK TO THE CITY'}</button>
+        {line > 1 && <button className="text-button" onClick={() => setLine(0)}>FROM THE START</button>}
       </div>
     </div>
   </section>;
@@ -83,7 +84,7 @@ export function GradientCheck({ onSolved }: { onSolved: () => void }) {
   const answer = (id: string) => { setGuess(id); if (id === CORRECT_FIELD) onSolved(); };
   const solved = guess === CORRECT_FIELD;
   return <section className="gradient-check" aria-label="Gradient check activity">
-    <header><span className="eyebrow">FORT / RESEARCH ACTIVITY</span><h2>Which field is right?</h2>
+    <header><span className="eyebrow">FORT / OPEN-SOURCE ACTIVITY</span><h2>Which field is right?</h2>
       <p>For a symmetric quadrupole the potential is V = rᵀQr / r⁵, and the field is E = −∇V. Three implementations of E are below. Run each one against central finite differences of V at eight fixed points (h = 10⁻⁴), then pick the one you would merge. One of Harsh’s FFprime contributions corrected a factor of two in exactly this formula and added this kind of check.</p></header>
     <ol className="gradient-candidates">{FIELD_CANDIDATES.map(c => { const r = results[c.id]; return <li key={c.id}>
       <div><strong>{c.label}</strong><code>{c.formula}</code></div>
