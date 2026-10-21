@@ -175,7 +175,7 @@ Anyone can measure a device by opening `/?bench` on it: the camera tours all nin
 1. Re-run `/?bench` on the live site on a phone and on the PC. It is the only way to know whether the latest PRs cost frame rate, and it decides whether the character normal maps should drop on the low tier.
 2. Finish the phone check and fix whatever it finds.
 3. Fix the first-view shader stalls at CST, Fort and BKC by warming those programs during the intro.
-4. Run the full Playwright suite once on `main`, and investigate the intermittent WebKit smoke failure on CI.
+4. Run the full Playwright suite once on `main`.
 5. Refresh `CURRENT_IMPLEMENTATION.md` and `GPU_BENCHMARK.md` from this report.
 6. If there is time after that: the exhibit-board sign audit, tree LOD so more species fit the budget, and lane changes.
 
