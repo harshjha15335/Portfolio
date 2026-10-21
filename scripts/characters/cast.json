@@ -398,7 +398,7 @@
    "avatarSha256": "78c6ffd6899afe415f7e22f088ac36f153046592a6867e5a9e80a10695d996c6",
    "atlas": 1024,
    "normalMap": false,
-   "skinToneShift": 0.6,
+   "skinToneShift": 0.45,
    "clips": {
     "Idle": {
      "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_01.max.fbx",
@@ -421,11 +421,18 @@
    "hairCard": false,
    "likeness": true,
    "glasses": {
-    "w": 0.047,
-    "h": 0.041,
-    "radius": 0.011,
-    "thick": 0.0065
-   }
+    "w": 0.052,
+    "h": 0.035,
+    "radius": 0.005,
+    "thick": 0.0085
+   },
+   "dropBody": [
+    0.3,
+    0.74,
+    0.7,
+    1.0,
+    0.7
+   ]
   },
   {
    "id": "ranjan",

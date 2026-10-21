@@ -33,6 +33,7 @@ for c in cast['characters']:
     atlas = json.loads(subprocess.check_output([sys.executable, '-I', os.path.join(HERE, 'rocketbox_atlas.py'), textures, work, c['id'], c['textureCode'], str(c['atlas']), '1' if c['normalMap'] else '0', str(c['skinToneShift'])]))
     cfg = dict(name=c['id'], avatar=fbx, out=os.path.join(work, f"{c['id']}.raw.glb"), lod_ratio=.3, clips=clips, trim=c['trim'], **atlas)
     if c.get('likeness'): cfg['radialHair'] = True
+    if c.get('dropBody'): cfg['dropBody'] = c['dropBody']
     if c.get('glasses'):
         # The frame samples the swatch likeness.py paints in the head map's corner (head half of the atlas, above any hair strip).
         sys.path.insert(0, HERE); from likeness import GLASSES_UV

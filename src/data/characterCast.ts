@@ -598,20 +598,20 @@ export const characterCast:Record<string,CastMember>={
   "visualReview": {
    "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
    "date": "2026-10-21",
-   "notes": "Rebuilt on the round-faced Male_Adult_20 base from a new photo: thick short black hair, thin moustache and sparse chin goatee, square black glasses, warm skin; purple tee (hoodie strings and pocket shaded out) and black track pants with grey side stripe."
+   "notes": "Redone from Harsh's second photo: round-faced Male_Adult_20 base with the hoodie's hood dropped and its opening closed; thick rectangular black frames, short black hair, light stubble; dusty-rose tee with navy GAP letters, black track pants with grey side stripe. Checked front, close and back."
   },
   "role": "Arham Jain · demo lead at Powai",
   "height": 1.72,
   "asset": {
    "id": "cast-arham",
-   "url": "/models/characters/arham-7b55e33fbc30ecd8.glb",
-   "sha256": "7b55e33fbc30ecd8cf335b3f4ae6d37e8d4b975a03df7a707865a5f01da4fc00",
+   "url": "/models/characters/arham-984f0d34c4a9087c.glb",
+   "sha256": "984f0d34c4a9087c3474dec1f2991c5ed2a930a3b3c9707009330ea16a5b53c5",
    "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_20",
    "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
    "license": "MIT"
   },
   "inspection": {
-   "triangles": 7500,
+   "triangles": 7110,
    "primitives": 1,
    "joints": [
     80

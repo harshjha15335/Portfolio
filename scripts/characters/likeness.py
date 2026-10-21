@@ -149,8 +149,7 @@ def beard(a, code, density, kind='stubble', colour='#2a1f1a', seed=3):
     tache = ellipse(a, cx, mouth - .022, .062, .016, .6)
     lips = ellipse(a, cx, mouth + .002, .046, .013, .3)
     if kind == 'goatee':
-        # From under the lower lip down to the chin, soft-edged so the sides thin out like the real one.
-        m = np.maximum(np.clip(tache * 1.3, 0, 1), ellipse(a, cx, (mouth + chin) / 2 + .008, .062, (chin - mouth) / 2 + .014, .7))
+        m = np.maximum(tache, ellipse(a, cx, chin - .012, .045, .045, .5))
     else:
         x, y = grid(a); jawm = ellipse(a, cx, mouth + .012, jaw, (chin - mouth) + .03, .35) * np.clip((y - (mouth - .05)) / .03, 0, 1)
         # Fade out up the cheeks: full along the jaw edge and chin, thinner beside the mouth.
@@ -231,18 +230,23 @@ def head_harsh(a):
     a = brows(a, 'm014', .9); a = beard(a, 'm014', .14); a = irises(a); return frame_patch(a, '#2b1d16')
 
 def body_arham(a):
-    # The base is a hoodie: take the sleeves down over their cuffs and shade the drawstrings and pocket flat, so it reads as a tee.
-    tee = garment(a, region(a, [(.325, 0, .675, .92), (0, .42, .31, .7), (.69, .42, 1, .7)]))
-    a = recolour(a, tee, '#74386c', contrast=.9, ignore=box(a, .42, .42, .6, .8))
+    # The base is a hoodie (its hood is dropped in the build, see cast.json dropBody): take the sleeves down over their
+    # cuffs and shade the drawstrings and pocket flat, so it reads as his dusty-rose tee with navy appliqué letters.
+    tee = garment(a, region(a, [TORSO, (0, .42, .31, .7), (.69, .42, 1, .7)]))
+    a = recolour(a, tee, '#99596a', contrast=.85, ignore=box(a, .42, .42, .6, .8))
+    a = text_print(a, .45, .53, ['GAP'], 120, '#1f2a4d', outline=11)
+    # With the hood gone, the black inside of its neck opening shows as a collar: make it a darker rib of the tee.
+    rib = blur(ellipse(a, .5, .4, .06, .055, .2) * (lum(a) < .12), 1.5)
+    a = a * (1 - rib[..., None]) + rgb('#7f4757')[None, None] * rib[..., None]
     legs = garment(a, region(a, LEGS)); a = recolour(a, legs, '#1d1d20', contrast=.8)
     # The grey side stripe runs down the outer seam, which is the outer edge of each leg panel.
     for x0, x1 in ((.012, .022), (.978, .988)):
         s = box(a, x0, .02, x1, .4) * legs; a = a * (1 - s[..., None]) + rgb('#8d9096')[None, None] * s[..., None]
     return a
 def head_arham(a):
-    # Round-faced base (Male_Adult_20): thick short black hair, a thin moustache over the lip and a sparse chin goatee.
+    # Round-faced base (Male_Adult_20): thick short black hair, light stubble with a faint moustache, no goatee.
     a = darken_hair(a, hair_mask(a, 'm027'), '#0c0908', curls=.4, seed=51)
-    a = brows(a, 'm027', 1.0); a = beard(a, 'm027', .7, 'goatee', '#181210'); a = irises(a); return frame_patch(a, '#121214')
+    a = brows(a, 'm027', 1.0); a = beard(a, 'm027', .34, 'stubble', '#1e1714'); a = irises(a); return frame_patch(a, '#0e0e10')
 
 def brush_print(a, m, seed):
     """Ranjan's shirt: big abstract brush strokes in mustard, orange, navy and grey on white."""
@@ -257,7 +261,7 @@ def brush_print(a, m, seed):
     paint = np.asarray(layer).astype(np.float32) / 255 * shading(a, m)[..., None]
     return a * (1 - k) + paint * k
 
-def text_print(a, x, y, lines, size, colour='#f4efe6'):
+def text_print(a, x, y, lines, size, colour='#f4efe6', outline=None):
     """Small chest lettering (body map); `x`, `y` are the centre of the block."""
     from PIL import ImageFont
     H, W = a.shape[:2]; layer = Image.new('L', (W, H), 0); d = ImageDraw.Draw(layer)
@@ -266,6 +270,10 @@ def text_print(a, x, y, lines, size, colour='#f4efe6'):
     for i, line in enumerate(lines):
         w = d.textlength(line, font=font); d.text((x * W - w / 2, y * H + (i - len(lines) / 2) * size * 1.15), line, fill=255, font=font)
     m = np.asarray(layer.filter(ImageFilter.GaussianBlur(.6))).astype(np.float32) / 255 * .9
+    if outline:
+        # An appliqué edge: the same letters grown by a few pixels underneath, in the outline colour.
+        edge = np.asarray(layer.filter(ImageFilter.MaxFilter(outline)).filter(ImageFilter.GaussianBlur(.6))).astype(np.float32) / 255 * .95
+        a = a * (1 - edge[..., None]) + rgb('#f2efe9')[None, None] * edge[..., None]
     return a * (1 - m[..., None]) + rgb(colour)[None, None] * m[..., None]
 
 def body_ranjan(a):
