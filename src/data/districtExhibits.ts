@@ -92,14 +92,14 @@ export const DISTRICT_EXHIBITS: DistrictExhibit[] = [
 
   /* ---------------- Film City: box office and scene board in the Talkies lobby, and the screen itself */
   { id: 'filmcity-boxoffice', district: 'filmcity', label: 'Buy a ticket at the box office', x: 13.5, z: -4.5,
-    panel: { eyebrow: 'FILM CITY TALKIES · BOX OFFICE', title: 'Tonight: one story', lines: ['Nine scenes · you set the pace', 'Restart, skip or leave any time', 'Press E for a seat'] },
-    tour: { title: 'The box office', body: 'The Talkies shows Harsh’s story in nine scenes. You control the pace: next, previous, autoplay, restart, skip to the end, or leave.' } },
+    panel: { eyebrow: 'FILM CITY TALKIES · BOX OFFICE', title: 'House full tonight', lines: ['The trailer · 42 s · with sound', 'Pause, replay or leave any time', 'Press E for a seat'] },
+    tour: { title: 'The box office', body: 'Tonight the Talkies is house full for a 42-second action trailer of Harsh’s work: open source, the internship, the builds and the signals, cut from this city with an original score. Pause, replay, read the nine scenes as text, or leave.' } },
   { id: 'filmcity-scenes', district: 'filmcity', label: 'Read the scene board', x: 14.93, z: 7.5, mount: 'wall',
     panel: { eyebrow: 'FILM CITY TALKIES · PROGRAMME', title: 'Nine scenes', lines: ['Arrival · Foundations · First builds', 'Open source · Enterprise · Products', 'Signals · Next chapter · Finale'] },
     tour: { title: 'The programme', body: 'The scene board lists all nine scenes. Pick any scene to start the film there.' } },
   { id: 'filmcity-screen', district: 'filmcity', label: 'Take a seat for the film', x: 30.5, z: 1.2, mount: 'marker',
-    panel: { eyebrow: 'FILM CITY TALKIES · SCREEN 1', title: 'Nine scenes', lines: ['The auditorium', 'Press E to start the film'] },
-    tour: { title: 'The auditorium', body: 'Through the lobby doors is the hall itself: ten rows facing the screen. Stand in the aisle and press E to start the film from the first scene.' } },
+    panel: { eyebrow: 'FILM CITY TALKIES · SCREEN 1', title: 'House full', lines: ['The trailer is on the big screen', 'Press E to watch with sound'] },
+    tour: { title: 'The auditorium', body: 'Through the lobby doors is the hall itself: ten full rows facing the screen, where the trailer is already running. Stand in the aisle and press E to watch it from the start with sound.' } },
 ];
 
 export const exhibitsOf = (district: string) => DISTRICT_EXHIBITS.filter(e => e.district === district);

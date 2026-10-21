@@ -12,7 +12,7 @@ export const districts: District[] = [
   { id: 'dadar', title: 'Dadar Junction', shortName: 'Dadar', descriptor: 'The route from student to builder', position: [0, 0, 35], color: '#b65442', guide: 'The platform announcer', greeting: 'Some routes meet, others branch. Here’s Harsh’s journey, with the dates we can actually source.' },
   { id: 'worli', title: 'Worli Proof Deck', shortName: 'Worli', descriptor: 'Achievements · evidence · engineering signals', position: [25, 0, 25], color: '#5965a3', guide: 'The signal keeper', greeting: 'Good views. Better evidence. These numbers come with their sources and qualifiers.' },
   { id: 'juhu', title: 'Juhu Studio', shortName: 'Juhu', descriptor: 'The human bit · résumé · say hello', position: [-25, 0, 25], color: '#bd7884', guide: 'The studio neighbour', greeting: 'Sea breeze, a desk, and too many ideas. Meet the person behind the systems.' },
-  { id: 'filmcity', title: 'Film City Talkies', shortName: 'Film City', descriptor: 'Nine scenes · one engineering story', position: [0, 0, -35], color: '#8a4e68', guide: 'The projectionist', greeting: 'Your seat is ready. No trailers, just the journey. You control the pace.' },
+  { id: 'filmcity', title: 'Film City Talkies', shortName: 'Film City', descriptor: 'House full · the trailer, with sound', position: [0, 0, -35], color: '#8a4e68', guide: 'The projectionist', greeting: 'Your seat is ready. House full tonight: one trailer, the whole story, with sound.' },
 ];
 export const districtForProject = (id: string) => id === 'ffprime' ? 'fort' : 'powai';
 

@@ -55,6 +55,7 @@ test('skill evidence opens the existing case study and theatre supports scene co
   await page.goto('/#/place/filmcity');
   await page.getByRole('button', { name: 'TAKE A SEAT' }).click();
   const theatre = page.getByRole('region', { name: 'Film City story theatre' });
+  await theatre.getByRole('button', { name: 'READ THE NINE SCENES' }).click();
   await expect(theatre).toContainText('Harsh Jha. Builder, in motion.');
   await theatre.getByRole('button', { name: 'NEXT →', exact: true }).click();
   await expect(theatre).toContainText('VIT. A place to start.');
@@ -169,12 +170,33 @@ test('theatre autoplay advances and pause holds the current scene', async ({ pag
   await page.getByRole('button', { name: 'TAKE A SEAT' }).click();
   await page.clock.install();
   const theatre = page.getByRole('region', { name: 'Film City story theatre' });
+  await theatre.getByRole('button', { name: 'READ THE NINE SCENES' }).click();
   await theatre.getByRole('button', { name: 'AUTOPLAY', exact: true }).click();
   await page.clock.fastForward(7100);
   await expect(theatre).toContainText('VIT. A place to start.');
   await theatre.getByRole('button', { name: 'PAUSE', exact: true }).click();
   await page.clock.fastForward(15000);
   await expect(theatre).toContainText('VIT. A place to start.');
+});
+
+test('the Talkies plays the trailer with sound controls and keeps the scenes as text', async ({ page }) => {
+  await page.goto('/?webgl=off#/place/filmcity');
+  await page.getByRole('button', { name: 'TAKE A SEAT' }).click();
+  const theatre = page.getByRole('region', { name: 'Film City story theatre' });
+  const video = theatre.locator('video');
+  await expect(video).toHaveAttribute('poster', '/media/talkies-trailer.jpg');
+  // Whichever source this browser can play loads (MP4/H.264 or WebM/VP9), and its length is the 42 s cut.
+  await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.readyState >= 1 ? Math.round(v.duration) : 0), { timeout: 30_000 }).toBe(42);
+  const sound = theatre.getByRole('button', { name: /^SOUND (ON|OFF)$/ });
+  const before = await sound.textContent();
+  await sound.click();
+  await expect(sound).not.toHaveText(before!);
+  await theatre.getByRole('button', { name: 'READ THE NINE SCENES' }).click();
+  await expect(theatre).toContainText('Harsh Jha. Builder, in motion.');
+  await theatre.getByRole('button', { name: '▶ WATCH THE TRAILER' }).click();
+  await expect(theatre.locator('video')).toBeVisible();
+  await theatre.getByRole('button', { name: 'EXIT THEATRE' }).click();
+  await expect(page.getByRole('region', { name: 'Film City story theatre' })).toHaveCount(0);
 });
 
 test('drag-to-look remains usable when pointer lock is denied', async ({ page }) => {
