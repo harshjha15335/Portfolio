@@ -2,6 +2,8 @@
 
 **Snapshot:** 21 October 2026, `main` at `65b812c` (merge of PR #26). Live at <https://portfolio-beta-murex-52.vercel.app/>.
 
+> **Later work:** PR #28 (real Mumbai time, day and night) and the city-sound PR are tracked in [FINAL_COMPLETION_MATRIX.md](FINAL_COMPLETION_MATRIX.md), which supersedes this snapshot where they differ (full Playwright suite 57/57, exhibit-board audit, WAITING seen in a live ride).
+
 Statuses used below: **PASS** (checked, with the evidence named), **PARTIAL** (some of it checked, or it works with a known gap), **FAIL**, and **NOT TESTED** (no evidence either way). "Inferred" means reasoned from code or nearby evidence rather than measured.
 
 ## 1. Summary

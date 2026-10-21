@@ -60,6 +60,7 @@ export function room(c: Ctx, o: RoomOptions) {
   kit.box([w - T * 2, .02, d - T * 2], [0, h - .005, -d / 2], shade(o.ceiling ?? '#f2eee6', .7), 'glow');
   const [rows, cols] = o.lights ?? [Math.max(1, Math.round(d / 4)), Math.max(1, Math.round(w / 4))];
   for (let r = 0; r < rows; r++) for (let k = 0; k < cols; k++) kit.box([1.2, .03, .6], [-w / 2 + w * (k + .5) / cols, h - .02, -d * (r + .5) / rows], '#fff4dc', 'glow');
+  kit.markRoom([-w / 2 + T, 0, -d + T], [w / 2 - T, h, -T]);
   return { minX: -w / 2 + T, maxX: w / 2 - T, minZ: -d + T, maxZ: -T, h };
 }
 

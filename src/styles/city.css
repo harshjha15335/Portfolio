@@ -191,3 +191,8 @@
 .ride-meter select { font:12px var(--body); max-width:60vw; }
 .ride-meter .ride-exit { width:34px; height:34px; padding:0; color:#f0e4c9; background:#161d21b3; font-size:15px; }
 .studio-stage .ride-meter { position:static; flex-wrap:wrap; }
+.mode-world .city-transport-actions .sound-chip[aria-pressed="true"] { color:#ffd27a; border-color:#ffd27a80; }
+.sound-levels { display:grid; gap:8px; margin:4px 0; padding:10px 12px; border:1px solid currentColor; border-radius:0; font:11px var(--mono); }
+.sound-levels legend { padding:0 4px; letter-spacing:.06em; text-transform:uppercase; }
+.sound-levels label { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); align-items:center; gap:10px; }
+.sound-levels input[type=range] { width:100%; min-height:24px; accent-color:#c8862f; }

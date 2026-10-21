@@ -51,3 +51,7 @@ Research graphics/formulas are original teaching work. Their convention and cont
 ## Gamified CST–Fort pass — 2026-10-15
 
 No external asset was added. The departure board, research-room furniture, monitors, cork board and kiosk are project-authored geometry, and their faces are painted at runtime into the existing sign-atlas canvas. The reference portfolios (Bruno Simon's folio-2019 and folio-2025, Room_Portfolio, questopia, interactive-resume) were studied for ideas only; no code, model, texture, sound or shader was copied. Their licence findings are in [PORTFOLIO_REFERENCE_RESEARCH.md](PORTFOLIO_REFERENCE_RESEARCH.md). The gradient-check tensor is a teaching example, not molecular data.
+
+## City sound — 2026-10-21
+
+Every sound in the world is synthesized at runtime in Web Audio by `src/core/audio/Soundscape.ts`: three noise buffers (white, pink, brown) generated from a fixed seed, filtered and shaped, plus oscillators for horns, birds, chimes, the cab engine and interface tones. No recording, sample, sound library or generated voice is bundled or fetched, and no real person's voice is imitated. Sound is off until the visitor turns it on.

@@ -21,6 +21,8 @@ import { TOURS } from '../data/tours';
 import { ExhibitPanel, isExhibit } from '../ui/Exhibits';
 import { AchievementToasts, Journal, Orientation, TourCard, Waypoint } from '../ui/GameHud';
 import { VisitorBenchmark } from '../ui/VisitorBenchmark';
+import { AUDIO_BUSES, loadAudioSettings, saveAudioSettings, type AudioLevels } from '../core/audio/audioSettings';
+import { playCue } from '../core/audio/cues';
 
 /** `/?bench[&preset=high|medium|low][&fixed]`: the visitor-runnable performance tour. */
 const benchParams = new URLSearchParams(location.search);
@@ -55,6 +57,7 @@ export default function App() {
   const [palette, setPalette] = useState(false);
   const [renderPreset,setRenderPreset]=useState<'high'|'medium'|'low'>(BENCH_PRESET ?? 'medium');
   const [sound, setSound] = useState(false);
+  const [audio, setAudio] = useState(loadAudioSettings);
   const [menu, setMenu] = useState(false);
   const [map, setMap] = useState(false);
   const [contact, setContact] = useState(false);
@@ -85,6 +88,7 @@ export default function App() {
     const { progress: next, unlocked } = record(progressRef.current, event);
     if (next === progressRef.current) return;
     progressRef.current = next; saveProgress(next); setProgress(next);
+    if (unlocked.length) playCue('achievement');
     if (unlocked.length) setToasts(list => [...list, ...unlocked.map(achievement => ({ key: ++toastKey.current, achievement }))]);
   }, []);
   useEffect(() => { if (!toasts.length) return; const timer = window.setTimeout(() => setToasts(list => list.slice(1)), 4200); return () => clearTimeout(timer); }, [toasts]);
@@ -190,6 +194,20 @@ export default function App() {
   }, [fallback, reduced]);
   useEffect(()=>{engine.current?.setRenderPreset(renderPreset);},[renderPreset,ready]);
   useEffect(() => { engine.current?.setSound(sound); }, [sound, ready]);
+  useEffect(() => { engine.current?.setAudioLevels(audio.levels); }, [audio.levels, ready]);
+  useEffect(() => { saveAudioSettings(audio); }, [audio]);
+  // Browsers only start sound after a gesture, so a remembered "sound on" waits for the first press or tap in the world.
+  useEffect(() => {
+    if (mode !== 'world' || !audio.enabled || sound) return;
+    const start = () => setSound(true);
+    window.addEventListener('pointerdown', start, { once: true }); window.addEventListener('keydown', start, { once: true });
+    return () => { window.removeEventListener('pointerdown', start); window.removeEventListener('keydown', start); };
+  }, [mode, audio.enabled, sound]);
+  const toggleSound = () => { const next = !sound; setSound(next); setAudio(value => ({ ...value, enabled: next })); };
+  const setLevel = (bus: keyof AudioLevels, value: number) => setAudio(current => ({ ...current, levels: { ...current.levels, [bus]: value } }));
+  useEffect(() => { if (map) playCue('map'); }, [map]);
+  useEffect(() => { if (journal) playCue('journal'); }, [journal]);
+  useEffect(() => { if (menu) playCue('open'); }, [menu]);
   useEffect(() => { engine.current?.setMode(mode); }, [mode, ready]);
   useEffect(() => { engine.current?.setPaused(overlayOpen); }, [overlayOpen, ready]);
   useEffect(() => {
@@ -295,7 +313,7 @@ export default function App() {
       {waypoint && !tour && ride.phase === 'idle' && <Waypoint target={waypoint} position={position} onRide={() => hail('taxi', waypoint)} onClear={() => setWaypoint(null)} />}
       {BENCH && <VisitorBenchmark engine={engine.current} ready={ready && !fallback} preset={mobile ? `${renderPreset} (phones run the low tier)` : renderPreset} adaptive={!benchParams.has('fixed')} sampleS={Number(benchParams.get('seconds')) || undefined} worldReadyMs={worldReadyMs.current} />}
       <AchievementToasts toasts={toasts} />
-      <div className="city-transport-actions"><button disabled={!ready} onClick={() => hail('taxi')}>HAIL TAXI ↗</button><button disabled={!ready} onClick={() => hail('auto')}>HAIL AUTO ↗</button></div>
+      <div className="city-transport-actions"><button disabled={!ready} onClick={() => hail('taxi')}>HAIL TAXI ↗</button><button disabled={!ready} onClick={() => hail('auto')}>HAIL AUTO ↗</button><button className="sound-chip" aria-pressed={sound} onClick={toggleSound}>{sound ? 'SOUND ON ♪' : 'SOUND OFF'}</button></div>
       {ride.phase === 'boarding' && !reduced && <div className="passenger-entry-fade" aria-hidden="true" />}
       <RideMeter ride={ride} onChoose={id => engine.current?.rideTo(id)} onSkip={() => engine.current?.skipRide()} onExit={() => engine.current?.endRide()} onOpen={openProject} />
       <div className="world-bottom"><div className="controls">{mobile ? <span>DRAG TO LOOK · HOLD ARROWS TO WALK</span> : <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> WALK · <kbd>SHIFT</kbd> RUN · <kbd>SPACE</kbd> JUMP · CLICK TO LOOK · <kbd>E</kbd> TALK</span>}<button onClick={() => setMap(true)}><kbd>M</kbd> MAP</button><button onClick={() => setJournal(true)}><kbd>J</kbd> JOURNAL</button></div><nav aria-label="City navigation"><button onClick={() => setMap(true)}>CITY DIRECTORY ↗</button><button onClick={() => openProject('filmcity')}>TALKIES ↗</button><button onClick={() => setMenu(true)} aria-label="Open world menu">☰</button></nav></div>
@@ -319,7 +337,7 @@ export default function App() {
       onOpen={openProject} onProject={id => { setExhibit(null); openProject(id); }} onContact={() => { setExhibit(null); setContact(true); }} onFinale={finale}
       reduced={reduced} resumeAvailable={resumeAvailable} discovered={progress.discovered} />}
     {journal && <Journal progress={progress} onClose={() => setJournal(false)} onTravel={id => { setJournal(false); travel(id); }} onReset={() => { const fresh = { ...emptyProgress(), orientationDismissed: progress.orientationDismissed }; progressRef.current = fresh; saveProgress(fresh); setProgress(fresh); }} />}
-    {menu && <Modal title="WORLD MENU" onClose={() => setMenu(false)} className="small-modal"><h2>Take a moment.</h2><div className="menu-actions"><label>Street detail <select aria-label="Street detail" value={renderPreset} onChange={e=>setRenderPreset(e.target.value as typeof renderPreset)}><option value="high">High · contact shadows</option><option value="medium">Medium</option><option value="low">Low · lighter rendering</option></select></label><button className="primary-button" onClick={() => setMenu(false)}>CONTINUE EXPLORING →</button><button onClick={() => navigate('quick')}>OPEN QUICK VIEW ↗</button><button onClick={() => { engine.current?.reset(); setMenu(false); }}>RETURN TO CST ↻</button><button onClick={() => { setMenu(false); setJournal(true); }}>OPEN JOURNAL ✎</button><button aria-pressed={sound} onClick={() => setSound(value=>!value)}>{sound ? 'MUTE CITY SOUND' : 'ENABLE CITY SOUND'}</button><button onClick={toggleReduced}>{reduced ? 'USE FULL MOTION' : 'REDUCE MOTION'} ◐</button><button onClick={() => navigate('intro')}>RETURN TO INTRO ←</button></div></Modal>}
+    {menu && <Modal title="WORLD MENU" onClose={() => setMenu(false)} className="small-modal"><h2>Take a moment.</h2><div className="menu-actions"><label>Street detail <select aria-label="Street detail" value={renderPreset} onChange={e=>setRenderPreset(e.target.value as typeof renderPreset)}><option value="high">High · contact shadows</option><option value="medium">Medium</option><option value="low">Low · lighter rendering</option></select></label><button className="primary-button" onClick={() => setMenu(false)}>CONTINUE EXPLORING →</button><button onClick={() => navigate('quick')}>OPEN QUICK VIEW ↗</button><button onClick={() => { engine.current?.reset(); setMenu(false); }}>RETURN TO CST ↻</button><button onClick={() => { setMenu(false); setJournal(true); }}>OPEN JOURNAL ✎</button><button aria-pressed={sound} onClick={toggleSound}>{sound ? 'MUTE CITY SOUND' : 'ENABLE CITY SOUND'}</button><fieldset className="sound-levels"><legend>Sound levels</legend>{[{ id: 'master' as const, label: 'Master' }, ...AUDIO_BUSES].map(bus => <label key={bus.id} htmlFor={`sound-${bus.id}`}>{bus.label}<input id={`sound-${bus.id}`} type="range" min={0} max={100} step={5} value={Math.round(audio.levels[bus.id] * 100)} onChange={e => setLevel(bus.id, Number(e.target.value) / 100)} /></label>)}</fieldset><button onClick={toggleReduced}>{reduced ? 'USE FULL MOTION' : 'REDUCE MOTION'} ◐</button><button onClick={() => navigate('intro')}>RETURN TO INTRO ←</button></div></Modal>}
     {contact && <Modal title="CONTACT" onClose={() => setContact(false)} className="small-modal"><h2>Let’s build<br />something.</h2><p>For engineering opportunities, research, or a good technical conversation.</p><a className="contact-email" href={`mailto:${portfolio.email}`}>{portfolio.email} ↗</a><div className="contact-social"><a href={portfolio.linkedin} target="_blank" rel="noreferrer">LINKEDIN ↗</a><a href={portfolio.github} target="_blank" rel="noreferrer">GITHUB ↗</a>{resumeAvailable && <a href={portfolio.resume} target="_blank" rel="noreferrer">RÉSUMÉ ↓</a>}</div></Modal>}
     {about && <Modal title="ABOUT / CAREER" onClose={() => setAbout(false)} className="about-modal"><h2>Harsh Jha<span className="blue-period">.</span></h2><p className="case-lead">{portfolio.education}<br />Expected graduation: {portfolio.graduation}</p>{experience.map(item => <section className="about-experience" key={item.title}><span className="eyebrow">{item.period}</span><h3>{item.title}</h3><p>{item.organization}</p><p>{item.description}</p></section>)}<div className="about-recognition"><span className="eyebrow">SELECTED ACHIEVEMENTS</span>{achievements.slice(0, 2).map(item => <article key={item.title}><h3>{item.title}</h3><p>{item.detail}</p><a href={item.source} target="_blank" rel="noreferrer">SOURCE ↗</a></article>)}</div><div className="case-links"><a className="primary-button" href={portfolio.github} target="_blank" rel="noreferrer">GITHUB ↗</a>{resumeAvailable && <a className="text-button" href={portfolio.resume} target="_blank" rel="noreferrer">RÉSUMÉ ↓</a>}<button className="text-button" onClick={() => { setAbout(false); setContact(true); }}>CONTACT ↗</button></div></Modal>}
     {!mobile && <div id="cursor" className="custom-cursor" aria-hidden="true"><svg viewBox="0 0 20 24"><path d="M2 2 17 15 9 15 6 22Z" /></svg><span /></div>}

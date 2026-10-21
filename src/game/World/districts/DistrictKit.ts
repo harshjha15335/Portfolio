@@ -55,6 +55,10 @@ export class DistrictKit {
   }
   /** The current local frame (district space), for placing signs on a building. */
   get here() { return this.matrix.clone(); }
+  /** Walk-in rooms in the district frame (for indoor sound); see `markRoom`. */
+  readonly rooms: THREE.Box3[] = [];
+  /** Record a room's interior (local min/max in the current frame) as a district-frame box. */
+  markRoom(min: V3, max: V3) { this.rooms.push(new THREE.Box3(new THREE.Vector3(...min), new THREE.Vector3(...max)).applyMatrix4(this.matrix)); }
   rand() { return this.random(); }
   /** Run `build` with `matrix` as the current frame (a frame captured earlier with `here`). */
   within(matrix: THREE.Matrix4, build: () => void) { this.stack.push(this.matrix.clone()); this.matrix.copy(matrix); build(); this.matrix.copy(this.stack.pop()!); }
