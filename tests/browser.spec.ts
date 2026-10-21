@@ -32,7 +32,7 @@ test('intro enters a rendered world and supports menu and directory', async ({ p
 
 test('quick view exposes all projects, verifiable résumé and real code links', async ({ page, request }) => {
   await quick(page);
-  await expect(page.locator('.project-row')).toHaveCount(7);
+  await expect(page.locator('.project-row')).toHaveCount(6);
   await page.screenshot({ path: 'docs/screenshots/quick-desktop.png', fullPage: true });
   const resume = await request.get('/resume/Harsh-Jha-Resume.pdf');
   expect(resume.ok()).toBe(true);

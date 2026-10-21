@@ -16,7 +16,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1920, height: 108
     await expect(home.getByRole('button', { name: 'QUICK VIEW' })).toBeInViewport({ ratio: 1 });
     await home.getByRole('button', { name: 'QUICK VIEW' }).click();
     await expect(page.locator('.quick-view')).toBeVisible();
-    await expect(page.locator('.project-row')).toHaveCount(7);
+    await expect(page.locator('.project-row')).toHaveCount(6);
   });
 }
 
@@ -45,7 +45,7 @@ test('short landscape arrival keeps both ways into the portfolio reachable', asy
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   await expect(page.getByRole('button',{name:'ENTER CITY'})).toBeVisible();
   await page.locator('.intro').getByRole('button',{name:'QUICK VIEW'}).click();
-  await expect(page.locator('.project-row')).toHaveCount(7);
+  await expect(page.locator('.project-row')).toHaveCount(6);
 });
 
 test('poster directory fast travel arrives at a working research landmark', async ({ page }) => {

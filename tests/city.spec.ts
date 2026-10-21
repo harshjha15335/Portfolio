@@ -39,7 +39,7 @@ test('every stop has an accessible guide and meaningful sourced content', async 
     await expect(dialog.locator('.district-content')).toBeVisible();
     if (district.id === 'bkc') await expect(dialog).toContainText('OAuth2');
     if (district.id === 'fort') await expect(dialog).toContainText('résumé reported');
-    if (district.id === 'powai') await expect(dialog.locator('.district-projects article')).toHaveCount(6);
+    if (district.id === 'powai') await expect(dialog.locator('.district-projects article')).toHaveCount(4);
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);
   }

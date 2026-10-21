@@ -143,7 +143,7 @@ function CompilerWorkshop() {
       <div className="lab-columns">
         <div><span className="eyebrow">FOLLOWPOS</span><table className="lab-table"><thead><tr><th>pos</th><th>symbol</th><th>followpos</th></tr></thead>
           <tbody>{built.leaves.map(l => <tr key={l.pos}><td>{l.pos}</td><td><code>{l.symbol}</code></td><td>{'{'}{built.followpos[l.pos!].join(', ')}{'}'}</td></tr>)}</tbody></table></div>
-        <div><span className="eyebrow">DFA · {built.dfa.states.length} STATES</span><table className="lab-table"><thead><tr><th>state</th><th>positions</th>{built.dfa.alphabet.map(a => <th key={a}><code>{a}</code></th>)}</tr></thead>
+        <div><span className="eyebrow">DFA · {built.dfa.states.length} STATES</span><table className="lab-table"><thead><tr><th>state</th><th>positions</th>{built.dfa.alphabet.map(a => <th key={a} style={{ textTransform: 'none' }}>on <code>{a}</code></th>)}</tr></thead>
           <tbody>{built.dfa.states.map(s => <tr key={s.name}><td>{s.name === built.dfa.start ? '→' : ''}{s.name}{s.accepting ? ' *' : ''}</td><td>{'{'}{s.positions.join(', ')}{'}'}</td>{built.dfa.alphabet.map(a => <td key={a}>{built.dfa.transitions.find(t => t.from === s.name && t.symbol === a)?.to ?? '·'}</td>)}</tr>)}</tbody></table>
           <p className="caption">→ START · * ACCEPTING · “·” NO TRANSITION (REJECT)</p></div>
       </div>
