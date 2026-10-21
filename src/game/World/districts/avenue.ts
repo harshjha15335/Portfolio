@@ -80,38 +80,42 @@ export class Avenue {
    */
   private *content(c: Ctx, [u0, u1]: [number, number]): Generator<void> {
     const { kit } = c, from = cityZones[this.options.index], to = cityZones[this.options.index + 1];
+    // Every loop runs over the whole avenue with both tails, drawing only this copy's stretch (`at`), so each copy
+    // makes the same random draws in the same order whichever stretch it draws.
+    const F0 = -AVENUE_TAIL, F1 = L + AVENUE_TAIL;
+    const at = (u: number, draw: () => void) => { const was = kit.muted; kit.muted = was || u < u0 || u > u1; try { draw(); } finally { kit.muted = was; } };
     const span = u1 - u0, mid = -(u0 + u1) / 2;
     if (this.options.ground) kit.box([160, .1, span + 40], [0, -.13, mid], '#6d6f69', 'asphalt');
     // Carriageway, lane line, kerbs (black and yellow, as Mumbai paints them) and pavements.
     kit.box([7.8, .04, span], [0, -.03, mid], '#55585a', 'asphalt');
-    for (let u = u0 + 2; u < u1; u += 6) kit.box([.1, .01, 2.2], [0, 0, -u], '#b8b09a');
+    for (let u = F0 + 2; u < F1; u += 6) at(u, () => kit.box([.1, .01, 2.2], [0, 0, -u], '#b8b09a'));
     for (const side of [-1, 1]) {
       kit.box([2.9, .08, span], [side * 5.35, .02, mid], '#aea493', 'paving');
-      for (let u = u0; u < u1; u += 1.7) kit.box([.24, .14, 1.6], [side * 3.98, .06, -u - .8], Math.floor(u / 1.7) % 2 ? '#c7a84f' : '#2f2e2b');
+      for (let u = F0; u < F1; u += 1.7) at(u + .8, () => kit.box([.24, .14, 1.6], [side * 3.98, .06, -u - .8], Math.floor((u + 1000) / 1.7) % 2 ? '#c7a84f' : '#2f2e2b'));
       // The pavement's back edge: the visitor walks the avenue, not into the lanes between its buildings.
       kit.solid([.6, 4, L + 2], [side * 7.25, 2, -L / 2]);
     }
     yield;
     // Frontages, south to north on each side, from a shared seeded sequence.
-    for (const side of [-1, 1]) { yield* this.frontage(c, side, u0, u1); }
+    for (const side of [-1, 1]) { yield* this.frontage(c, side, F0, F1, at); }
     // Second row: towers behind the frontage close the sky over the shops.
-    for (const side of [-1, 1]) for (let u = u0 + 8; u < u1; u += 22 + kit.rand() * 10) {
+    for (const side of [-1, 1]) for (let u = F0 + 8; u < F1; u += 22 + kit.rand() * 10) {
       const h = 22 + kit.rand() * 40, w = 14 + kit.rand() * 8, tone = PASTELS[Math.floor(kit.rand() * PASTELS.length)];
       if (Math.abs(u - L / 2) < 14) continue;
-      kit.frame([side * (24 + kit.rand() * 10), 0, -u], side > 0 ? -Math.PI / 2 : Math.PI / 2, () => { backdropBlock(c, w, h, 14, tone); towerRelief(c, w, h, 14, tone); if (kit.rand() > .5) rooftop(c, w, h, 14); });
+      at(u, () => kit.frame([side * (24 + kit.rand() * 10), 0, -u], side > 0 ? -Math.PI / 2 : Math.PI / 2, () => { backdropBlock(c, w, h, 14, tone); towerRelief(c, w, h, 14, tone); if (kit.rand() > .5) rooftop(c, w, h, 14); }));
       yield;
     }
     // Street lamps, trees and the odd utility pole with its sagging cables.
     for (const side of [-1, 1]) {
-      for (let u = u0 + (side > 0 ? 6 : 18); u < u1 - 2; u += 24) if (Math.abs(u - L / 2) > 9) streetLight(c, side * 6.4, -u, side);
-      for (let u = u0 + (side > 0 ? 14 : 3); u < u1 - 2; u += 21) {
+      for (let u = F0 + (side > 0 ? 6 : 18); u < F1 - 2; u += 24) if (Math.abs(u - L / 2) > 9) at(u, () => streetLight(c, side * 6.4, -u, side));
+      for (let u = F0 + (side > 0 ? 14 : 3); u < F1 - 2; u += 21) {
         if (Math.abs(u - L / 2) < 10) continue;
-        if (kit.rand() < .7) tree(c, side * 5.9, -u, 6 + kit.rand() * 2, kit.rand() > .5 ? '#5d7f43' : '#4f7a3c', .75, 'almond'); else palm(c, side * 5.9, -u, 7 + kit.rand() * 2, .2);
+        at(u, () => { if (kit.rand() < .7) tree(c, side * 5.9, -u, 6 + kit.rand() * 2, kit.rand() > .5 ? '#5d7f43' : '#4f7a3c', .75, 'almond'); else palm(c, side * 5.9, -u, 7 + kit.rand() * 2, .2); });
       }
-      for (let u = u0 + 9 + (side > 0 ? 0 : 11); u < u1; u += 31) {
+      for (let u = F0 + 9 + (side > 0 ? 0 : 11); u < F1; u += 31) at(u, () => {
         const x = side * 4.25; kit.cylinder(.11, 8.5, [x, 4.25, -u], '#5a4c3e', 'wood', true); kit.solid([.3, 3, .3], [x, 1.5, -u]); kit.box([1.2, .08, .08], [x, 7.6, -u], '#4a3e33', 'wood');
         for (let k = 0; k < 3; k++) { const y = 7 + k * .2, end: V3 = [side * 7.1, y - 1.1, -u + (k - 1) * 1.6], sag: V3 = [(x + end[0]) / 2, y - .5, (-u + end[2]) / 2]; kit.rod([x, y, -u], sag, .012, '#1d1e1e'); kit.rod(sag, end, .012, '#1d1e1e'); }
-      }
+      });
       yield;
     }
     // A BEST stop on each side, a hoarding over the roofs, the direction gantries and the railway bridge.
@@ -121,20 +125,19 @@ export class Avenue {
     this.gantry(c, -12, `${place(to)} ↑`, `${place(to)} · ${(2 + this.options.index * .6).toFixed(1)} KM`, 0);
     this.gantry(c, -(L - 12), `${place(from)} ↓`, `${place(from)} · ${(2 + this.options.index * .6).toFixed(1)} KM`, Math.PI); yield;
     this.railBridge(c, -L / 2); yield;
-    // Kerbside parking: scooter rows and the odd car, parallel to the kerb.
+    // Kerbside parking: scooter rows nose-in at the kerb (a parked car would stand in the traffic lane here).
     for (const side of [-1, 1]) {
-      for (let u = u0 + 10 + kit.rand() * 6; u < u1 - 6; u += 18 + kit.rand() * 12) {
+      for (let u = F0 + 10 + kit.rand() * 6; u < F1 - 6; u += 18 + kit.rand() * 12) {
         if (Math.abs(u - L / 2) < 12 || Math.abs(u - L * .3) < 7 || Math.abs(u - L * .7) < 7) continue;
-        if (kit.rand() < .3) { this.park('hatch', side * 3.3, -u, side > 0 ? Math.PI : 0); continue; }
-        const n = 2 + Math.floor(kit.rand() * 3);
-        for (let i = 0; i < n; i++) this.park('bike', side * 3.45, -u - i * 2.1, (side > 0 ? Math.PI : 0) + (kit.rand() - .5) * .14, false);
-        kit.solid([.8, 1.2, n * 2.1], [side * 3.45, .6, -u - (n - 1) * 1.05]);
+        const n = 2 + Math.floor(kit.rand() * 4);
+        for (let i = 0; i < n; i++) { const yaw = (side > 0 ? Math.PI : 0) + (kit.rand() - .5) * .14; at(u, () => this.park('bike', side * 3.45, -u - i * 2.1, yaw, false)); }
+        at(u, () => kit.solid([.8, 1.2, n * 2.1], [side * 3.45, .6, -u - (n - 1) * 1.05]));
       }
       yield;
     }
   }
-  /** One side's buildings, gaps and set pieces from u0 to u1. */
-  private *frontage(c: Ctx, side: number, u0: number, u1: number): Generator<void> {
+  /** One side's buildings, gaps and set pieces from u0 to u1 (drawn through `at`). */
+  private *frontage(c: Ctx, side: number, u0: number, u1: number, at: (u: number, draw: () => void) => void): Generator<void> {
     const { kit } = c, r = () => kit.rand();
     let u = u0 + .5;
     while (u < u1 - 4) {
@@ -142,13 +145,13 @@ export class Avenue {
       if (u < L / 2 + 6 && u + 10 > L / 2 - 6) { u = L / 2 + 6; continue; }
       const pickType = r();
       let w: number;
-      if (pickType < .1) { w = 6; this.lane(c, side, -(u + w / 2)); }
-      else if (pickType < .16) { w = 14; this.garden(c, side, -(u + w / 2)); }
-      else if (pickType < .2) { w = 7; this.shrine(c, side, -(u + w / 2)); }
+      if (pickType < .1) { w = 6; at(u + w / 2, () => this.lane(c, side, -(u + w / 2))); }
+      else if (pickType < .16) { w = 14; at(u + w / 2, () => this.garden(c, side, -(u + w / 2))); }
+      else if (pickType < .2) { w = 7; at(u + w / 2, () => this.shrine(c, side, -(u + w / 2))); }
       else {
         w = 10 + Math.floor(r() * 4) * 2;
         const floors = 2 + Math.floor(r() * 4), color = PASTELS[Math.floor(r() * PASTELS.length)];
-        kit.frame([side * 7.4, 0, -(u + w / 2)], side > 0 ? -Math.PI / 2 : Math.PI / 2, () => shophouse(c, w, floors, color));
+        at(u + w / 2, () => kit.frame([side * 7.4, 0, -(u + w / 2)], side > 0 ? -Math.PI / 2 : Math.PI / 2, () => shophouse(c, w, floors, color)));
       }
       u += w + .3; yield;
     }
@@ -204,6 +207,7 @@ export class Avenue {
     for (const s of [-1, 1]) sign(c, 'WESTERN RAILWAY', 6, [0, 7.95, z + s * 4.03], { bg: '#6f685d', fg: '#f2e6c8', border: 'none', local: 'पश्चिम रेल्वे' }, [512, 128], s > 0 ? 0 : Math.PI);
   }
   private park(kind: CityVehicleKind, x: number, z: number, yaw: number, solid = true) {
+    if (this.kit.muted) return;
     const mesh = createCityVehicle(kind, `avenue:${this.options.index}:${x}:${z.toFixed(2)}`, false, true);
     // Avenue space → the district's frame: the kit frame is a translation along z.
     const lz = z + this.frameZ; mesh.position.set(x, .02, lz); mesh.rotation.y = yaw; mesh.updateMatrix(); this.parts.push(mesh.geometry.applyMatrix4(mesh.matrix));

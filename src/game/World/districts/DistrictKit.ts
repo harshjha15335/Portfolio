@@ -62,8 +62,10 @@ export class DistrictKit {
   /** Walk-in rooms in the district frame (for indoor sound); see `markRoom`. */
   readonly rooms: THREE.Box3[] = [];
   /** Record a room's interior (local min/max in the current frame) as a district-frame box. */
-  markRoom(min: V3, max: V3) { this.rooms.push(new THREE.Box3(new THREE.Vector3(...min), new THREE.Vector3(...max)).applyMatrix4(this.matrix)); }
+  markRoom(min: V3, max: V3) { if (this.muted) return; this.rooms.push(new THREE.Box3(new THREE.Vector3(...min), new THREE.Vector3(...max)).applyMatrix4(this.matrix)); }
   rand() { return this.random(); }
+  /** While set, parts, solids and signs are worked out (drawing the same random numbers) but not kept. */
+  muted = false;
   /** Run `build` with `matrix` as the current frame (a frame captured earlier with `here`). */
   within(matrix: THREE.Matrix4, build: () => void) { this.stack.push(this.matrix.clone()); this.matrix.copy(matrix); build(); this.matrix.copy(this.stack.pop()!); }
   /** Run `build` inside a local frame (a building, a stall). Frames nest. */
@@ -86,6 +88,7 @@ export class DistrictKit {
     const c = new THREE.Color(color).multiplyScalar(1 - jitter + this.random() * jitter * 2), n = g.getAttribute('position').count, colors = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) { colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b; }
     g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    if (this.muted) return g;
     const list = this.parts.get(surface) ?? []; list.push(g); this.parts.set(surface, list); return g;
   }
   /** Merge a geometry that carries its own vertex colours (trees, terrain) in the current frame. */
@@ -93,12 +96,13 @@ export class DistrictKit {
     const g = plain(source); g.setAttribute('color', source.getAttribute('color').clone());
     const m = new THREE.Matrix4().compose(new THREE.Vector3(...position), new THREE.Quaternion().setFromEuler(new THREE.Euler(...rotation)), new THREE.Vector3(...scale));
     g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(this.matrix, m));
+    if (this.muted) return g;
     const list = this.parts.get(surface) ?? []; list.push(g); this.parts.set(surface, list); return g;
   }
   shape(kind: UnitShape | 'plane', size: V3, position: V3, color: string, surface: KitSurface = 'solid', rotation: V3 = [0, 0, 0]) {
     const source = kind === 'box' && AGED.has(surface) && Math.max(...size) > 3.5 ? segmentedBox(segments(size[0]), segments(size[1]), segments(size[2])) : unit[kind];
     const g = this.add(source, color, surface, position, size, rotation);
-    if (SOLID_KINDS.has(kind) && !WALK_THROUGH.has(surface)) this.consider(g, kind === 'box' || kind === 'rounded' ? 1 : 4, size);
+    if (SOLID_KINDS.has(kind) && !WALK_THROUGH.has(surface) && !this.muted) this.consider(g, kind === 'box' || kind === 'rounded' ? 1 : 4, size);
     return g;
   }
   /**
@@ -136,6 +140,7 @@ export class DistrictKit {
   }
   /** Physics + line-of-sight collider for an axis box in the current frame. */
   solid(size: V3, position: V3, rotationY = 0) {
+    if (this.muted) return;
     const m = new THREE.Matrix4().multiplyMatrices(new THREE.Matrix4().makeTranslation(this.origin.x, this.origin.y, this.origin.z), this.matrix)
       .multiply(new THREE.Matrix4().compose(new THREE.Vector3(...position), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationY), new THREE.Vector3(1, 1, 1)));
     const p = new THREE.Vector3(), q = new THREE.Quaternion(); m.decompose(p, q, new THREE.Vector3());

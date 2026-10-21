@@ -106,6 +106,8 @@ export class PassengerRide {
   hail(kind: TransitKind, routes: Point[][]) { this.reset(); this.setKind(kind); this.stage = 'dispatching'; this.candidates = routes.map(r => new RoutePath(r)); }
   /** The cab is already at the kerb (reduced motion, or a direct board): it waits there. */
   standAt(kind: TransitKind, route: Point[]) { this.reset(); this.setKind(kind); const p = new RoutePath(route); this.legs = [p]; this.s = p.length; this.place(); this.stage = 'waiting'; }
+  /** A passing cab waved down: it carries on from where it is, at the speed it had, and pulls in along `route`. */
+  pullOver(kind: TransitKind, route: Point[], speed: number) { this.reset(); this.setKind(kind); this.legs = [new RoutePath(route)]; this.place(); this.stage = 'approaching'; this.driver.speed = Math.min(speed, this.driver.desired); }
   /** Leave for a destination along `legs`, adding `hop` metres of virtual distance at the cut. */
   depart(legs: Point[][], hop: number) { this.legs = legs.map(l => new RoutePath(l)); this.leg = 0; this.s = 0; this.driven = 0; this.hop = hop; this.waited = 0; this.stage = 'riding'; this.place(); }
   /** Jump to the end of the trip (skip). */

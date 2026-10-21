@@ -6,6 +6,8 @@ type Kind='taxi'|'auto';
 const SEATS:Record<Kind,{x:number;y:number;z:number}>={taxi:{x:.34,y:.645,z:-.02},auto:{x:0,y:.645,z:-.2}};
 const WHEEL={centre:new THREE.Vector3(.34,1.07,-.53),radius:.195,tilt:-.36};
 const BAR={pivot:new THREE.Vector3(0,1.06,-.75),half:.21};
+/** Ankle targets on the cabin floor in vehicle space: feet forward on the pedals or the auto's footboard, inside the body. */
+const FEET:Record<Kind,{y:number;z:number;spread:number}>={taxi:{y:.42,z:-.74,spread:.13},auto:{y:.46,z:-.8,spread:.11}};
 const SIDES=['L','R'] as const;
 /** Grip shaping applied after the arm reaches: wrist twist about the forearm (palms toward the rim) and finger curl. */
 export const DRIVER_HANDS={twist:{taxi:0,auto:0},bend:{taxi:-.25,auto:-.35},curl:1.0,thumb:.5};
@@ -33,11 +35,13 @@ export function solveTwoBone(a:THREE.Bone,b:THREE.Bone,c:THREE.Bone,target:THREE
 
 /** A licensed character seated at a vehicle's controls: hands on the wheel or handlebar grips, steering with the vehicle. */
 export class DriverRig {
- private arms:Array<{upper:THREE.Bone;fore:THREE.Bone;hand:THREE.Bone;rest:THREE.Quaternion;fingers:THREE.Bone[];thumbs:THREE.Bone[]}>=[];private baked:THREE.Mesh[]=[];
+ private arms:Array<{upper:THREE.Bone;fore:THREE.Bone;hand:THREE.Bone;rest:THREE.Quaternion;fingers:THREE.Bone[];thumbs:THREE.Bone[]}>=[];private legs:Array<[THREE.Bone,THREE.Bone,THREE.Bone]>=[];private baked:THREE.Mesh[]=[];
  constructor(readonly actor:GLBCharacter,readonly vehicle:THREE.Group,readonly kind:Kind,readonly live:boolean){
   const seat=SEATS[kind];actor.pose('Sit',0);actor.update(0,false);
   actor.root.rotation.y=Math.PI;actor.root.position.set(seat.x,0,seat.z);actor.seat(seat.y);
   for(const side of SIDES){const upper=actor.bone(`Bip01_${side}_UpperArm`),fore=actor.bone(`Bip01_${side}_Forearm`),hand=actor.bone(`Bip01_${side}_Hand`);if(upper&&fore&&hand)this.arms.push({upper,fore,hand,rest:restLocal(actor,fore,hand),fingers:[1,2,3,4].flatMap(n=>['',`${n}`,'2'].map(k=>actor.bone(`Bip01_${side}_Finger${n}${k}`))).filter((b):b is THREE.Bone=>Boolean(b)),thumbs:['0','01','02'].map(k=>actor.bone(`Bip01_${side}_Finger${k}`)).filter((b):b is THREE.Bone=>Boolean(b))});}
+  // The sitting clip drops the shins straight down, through a cabin floor; the legs reach forward to the floor instead.
+  for(const side of SIDES){const thigh=actor.bone(`Bip01_${side}_Thigh`),calf=actor.bone(`Bip01_${side}_Calf`),foot=actor.bone(`Bip01_${side}_Foot`);if(thigh&&calf&&foot)this.legs.push([thigh,calf,foot]);}
   vehicle.add(actor.root);vehicle.traverse(o=>{if(o.name===`${kind}:driver`)o.visible=false;});
   this.reach(0);
   if(!live)this.bake();
@@ -54,7 +58,9 @@ export class DriverRig {
   }
   return out;
  }
- private reach(steering:number){this.actor.root.updateMatrixWorld(true);const t=this.targets(steering);this.arms.forEach((arm,i)=>{solveTwoBone(arm.upper,arm.fore,arm.hand,t[i]);
+ private reach(steering:number){this.vehicle.updateMatrixWorld(true);
+  const seat=SEATS[this.kind],feet=FEET[this.kind];this.legs.forEach(([thigh,calf,foot],i)=>solveTwoBone(thigh,calf,foot,new THREE.Vector3(seat.x+(i===0?-1:1)*feet.spread,feet.y,feet.z).applyMatrix4(this.vehicle.matrixWorld)));
+  const t=this.targets(steering);this.arms.forEach((arm,i)=>{solveTwoBone(arm.upper,arm.fore,arm.hand,t[i]);
   // Straight wrist from the bind pose, turned so the palm wraps the rim, then fingers closed around it.
   const side=i===0?-1:1;arm.hand.quaternion.copy(arm.rest).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(side*DRIVER_HANDS.twist[this.kind],0,DRIVER_HANDS.bend[this.kind])));
   for(const f of arm.fingers)f.rotation.z+=DRIVER_HANDS.curl;for(const f of arm.thumbs)f.rotation.z+=DRIVER_HANDS.thumb;arm.hand.updateMatrixWorld(true);});}

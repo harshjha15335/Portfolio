@@ -159,7 +159,7 @@ const powai: DistrictSpec = {
 /* ============================================================ DADAR */
 const dadar: DistrictSpec = {
   id: 'dadar', guide: 'the platform announcer', guideOutfit: 'kurta',
-  traffic: ['bus', 'taxi', 'hatch', 'sedan', 'tempo', 'bike', 'sedan', 'taxi', 'suv', 'bus', 'hatch', 'bike'],
+  traffic: ['bus', 'taxi', 'hatch', 'sedan', 'tempo', 'bike', 'auto', 'sedan', 'taxi', 'suv', 'bus', 'hatch', 'bike'],
   *build(d) {
     const c = d.ctx, { kit } = c;
     const chawlShops: Array<[string, string?]> = [['VADA PAV CENTRE', 'वडा पाव'], ['STATIONERY · NOTEBOOKS', 'वह्या'], ['CHEMIST', 'औषधे'], ['TAILOR', 'शिंपी'], ['SWEETS · MITHAI', 'मिठाई'], ['KIRANA', 'किराणा'], ['XEROX · PRINTS'], ['BHAJI PAV', 'भाजी']]; yield;
@@ -203,7 +203,7 @@ const dadar: DistrictSpec = {
 const worli: DistrictSpec = {
   id: 'worli', guide: 'the signal keeper', guideOutfit: 'office', west: 'open', westLimit: 13.4, skyline: 'east',
   palette: ['#e1d3b7', '#cfd8d2', '#e6c9b4', '#d5d0bd'],
-  traffic: ['sedan', 'taxi', 'suv', 'hatch', 'bike', 'bus', 'taxi', 'sedan', 'suv', 'hatch', 'taxi', 'bike'],
+  traffic: ['sedan', 'taxi', 'suv', 'hatch', 'bike', 'bus', 'auto', 'taxi', 'sedan', 'suv', 'hatch', 'taxi', 'bike'],
   *build(d) {
     const c = d.ctx, { kit } = c;
     kit.box([9.4, .08, 290], [-8.5, .02, -22], '#c2b49b', 'paving'); for (let z = 118; z > -160; z -= 1.7) kit.box([.24, .14, 1.6], [-3.98, .06, z], '#2f2e2b'); yield;
@@ -278,7 +278,7 @@ const juhu: DistrictSpec = {
 /* ============================================================ FILM CITY */
 const filmcity: DistrictSpec = {
   id: 'filmcity', guide: 'the projectionist', guideOutfit: 'shirt', palette: ['#c9c2b0', '#b8b29e', '#d0c4ad'], eastOpen: [[-7.8, 13.8]],
-  traffic: ['suv', 'bus', 'sedan', 'auto', 'hatch', 'sedan', 'tempo', 'suv', 'bike', 'hatch'],
+  traffic: ['suv', 'bus', 'sedan', 'auto', 'hatch', 'taxi', 'sedan', 'tempo', 'suv', 'bike', 'auto', 'hatch'],
   *build(d) {
     const c = d.ctx, { kit } = c;
     // Gate arch at the studio entrance.

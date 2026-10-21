@@ -16,6 +16,7 @@ export const PASTELS = ['#d8c6a6', '#c8b69d', '#b7c3b9', '#d6b59c', '#a9b7bd', '
 const SHOP_COLORS = ['#244a5c', '#7d2a24', '#2f5a3a', '#7a5a1d', '#3a3a6a', '#1f1f1f', '#a33a2a', '#0f5e5a'];
 
 export function sign({ kit, signs }: Ctx, text: string, width: number, position: V3, style: SignStyle = {}, px: [number, number] = [512, 128], rotationY = 0) {
+  if (kit.muted) return null;
   return signs.add(text, width, placed(position, rotationY, kit.here), style, px);
 }
 

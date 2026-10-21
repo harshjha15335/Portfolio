@@ -401,6 +401,21 @@ export class LaneTraffic {
     if (Math.hypot(x - v.x, z - v.z) - radius > VEHICLE_HIDDEN || !inView(v, x, z, radius)) return false;
     return !this.occluded?.(new THREE.Vector3(x, 0, z), length, this.viewPoint);
   }
+  /**
+   * A passing auto or taxi that someone at the kerb at (x, z) (local) can wave down: coming toward them in the lane on
+   * their side of the road, 9 to 60 m off. The nearest, or null.
+   */
+  passing(x: number, z: number) {
+    let best: Agent | null = null, nearest = 60;
+    for (const a of this.agents) {
+      if (!a.active || a.max === 0 || (a.kind !== 'auto' && a.kind !== 'taxi') || Math.sign(a.mesh.position.x) !== Math.sign(x)) continue;
+      const fx = -Math.sin(a.mesh.rotation.y), fz = -Math.cos(a.mesh.rotation.y), dx = x - a.mesh.position.x, dz = z - a.mesh.position.z;
+      const ahead = dx * fx + dz * fz; if (ahead > 9 && ahead < nearest && Math.abs(dx * fz - dz * fx) < 6) { nearest = ahead; best = a; }
+    }
+    return best && { id: best.driver.env.id, kind: best.kind as 'auto' | 'taxi', x: best.mesh.position.x, z: best.mesh.position.z, yaw: best.mesh.rotation.y, speed: best.driver.speed };
+  }
+  /** A vehicle waved down becomes the visitor's ride: it leaves the traffic (and re-enters at its lane start later). */
+  withdraw(id: string) { const a = this.agents.find(a => a.driver.env.id === id); if (a?.active) this.retire(a); }
   /** Take a vehicle off the road (it re-enters at its lane start when the spawn rules allow). */
   private retire(a: Agent, space?: TrafficSpace) {
     a.active = false; a.mesh.visible = false; a.driver.speed = 0; a.driver.state = 'inactive'; a.driver.blockedBy = null;

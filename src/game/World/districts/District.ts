@@ -4,6 +4,7 @@ import type * as CANNON from 'cannon-es';
 import type { StreetMaterials } from '../StreetMaterials';
 import type { StreetInteraction } from '../MumbaiStreet';
 import { SpatialIndex } from '../spatial/SpatialIndex';
+import { seededRandom } from '../StreetArchitecture';
 import { cityZones, hasNorthAvenue, hasSouthAvenue, northEdge, onAvenue, SEAM_SOUTH, seamNorth, SOUTH_EDGE, type CityZone } from '../streetLayout';
 import { Avenue } from './avenue';
 import { DistrictKit, foliageWind } from './DistrictKit';
@@ -32,7 +33,9 @@ const LANE_END = [SEAM_SOUTH + 125, seamNorth(1) - 125] as const;
  * either side of the zebra. A generator, one vehicle per step, so the build can be time-sliced.
  */
 export function* districtTraffic(traffic: LaneTraffic, mix: CityVehicleKind[], id: string): Generator<void> {
-  const n = Math.round(mix.length * cityDensity.traffic), kinds = Array.from({ length: n }, (_, i) => mix[(i * 7) % mix.length]);
+  // A seeded shuffle, so every kind in the mix turns up in both lanes rather than a stride that repeats one kind.
+  const r = seededRandom(`traffic:${id}`), order = mix.map(k => ({ k, w: r() })).sort((a, b) => a.w - b.w).map(o => o.k);
+  const n = Math.round(mix.length * cityDensity.traffic), kinds = Array.from({ length: n }, (_, i) => order[i % order.length]);
   const north = traffic.lane([[1.6, 0, LANE_END[0]], [1.6, 0, LANE_END[1]]], false, () => [], 'north'), south = traffic.lane([[-1.6, 0, LANE_END[1]], [-1.6, 0, LANE_END[0]]], false, () => [], 'south');
   for (const [i, kind] of kinds.entries()) { traffic.vehicle(i % 2 ? south : north, kind, ((i >> 1) + (i % 2) * .5) / Math.ceil(kinds.length / 2), `${id}:${i}`); yield; }
   // Both lanes stop short of the zebra (z −13.3…−10.7) while the crossing is held.

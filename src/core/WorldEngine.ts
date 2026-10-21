@@ -308,8 +308,31 @@ export class WorldEngine {
       const route = routes[routes.length - 1], ox = cityZones[zoneIndexAt(route[0].x)].originX;
       this.trafficAt(zoneIndexAt(route[0].x))?.clearAround(route.slice(-2).map(p => ({ x: p.x - ox, z: p.z })), 2.2, true);
       this.cab.standAt(kind, route); this.transit.visible = true;
-    } else { this.cab.hail(kind, routes); this.transit.visible = false; }
+    } else if (this.flagDown(kind, routes[0])) this.transit.visible = true;
+    else { this.cab.hail(kind, routes); this.transit.visible = false; }
     this.placeTransit(0); this.options.onRide({ ...this.ride });
+  }
+  /** A passing auto or taxi coming toward the visitor standing at the kerb, which they could wave down. */
+  private passingCab(kind?: TransitKind) {
+    const p = this.visitor.position, index = zoneIndexAt(p.x), ox = cityZones[index].originX, lx = p.x - ox;
+    if (Math.abs(lx) < 3.6 || Math.abs(lx) > 8.5) return null;
+    const v = this.trafficAt(index)?.passing(lx, p.z) ?? null; return v && (!kind || v.kind === kind) ? { ...v, ox } : null;
+  }
+  /** Wave down a passing auto or taxi: that very vehicle leaves the traffic and pulls in at the kerb beside the visitor. */
+  private flagDown(kind: TransitKind, pickup: Point[]) {
+    const v = this.passingCab(kind); if (!v) return false;
+    // Only the pull-in (lane entry, settle, kerb) and only if the cab can still reach the entry going straight on.
+    const pull = pickup.slice(-3), fx = -Math.sin(v.yaw), fz = -Math.cos(v.yaw);
+    if ((pull[0].x - v.ox - v.x) * fx + (pull[0].z - v.z) * fz < 4) return false;
+    this.trafficAt(zoneIndexAt(v.ox))?.withdraw(v.id);
+    this.cab.pullOver(kind, [{ x: v.ox + v.x, z: v.z }, ...pull], v.speed); return true;
+  }
+  /** Every few frames: offer to wave down a cab that is coming, when nothing else is under the visitor's gaze. */
+  private updatePassing() {
+    if (this.ride.phase !== 'idle' || this.tween || (this.nearest && !this.nearest.startsWith('flag-'))) return;
+    const v = this.passingCab(), next = v ? `flag-${v.kind}` : null;
+    if (next !== this.nearest) { this.nearest = next; this.options.onNear(next, v ? `Wave down the ${v.kind === 'taxi' ? 'kaali-peeli taxi' : 'auto'}` : undefined); }
+    if (v) this.markerBase.set(v.ox + v.x, 2.4, v.z);
   }
   /** True when a cab of `kind` standing at the kerb at (x, z) (world) would not touch a parked vehicle. */
   private kerbClear(x: number, z: number, kind: TransitKind) { const index = zoneIndexAt(x); return kerbRoom(this.trafficAt(index)?.parked ?? [], x - cityZones[index].originX, z, kind); }
@@ -481,7 +504,7 @@ export class WorldEngine {
   /** Act on the target under the visitor's gaze: hail at a stand, otherwise open it. Also used by click. */
   interact() {
     if (this.ride.phase !== 'idle' || !this.nearest) return;
-    this.unlock(); if (this.nearest.startsWith('hail-')) this.options.onHail(this.nearest.endsWith('taxi') ? 'taxi' : 'auto'); else this.options.onSelect(this.nearest);
+    this.unlock(); if (this.nearest.startsWith('hail-') || this.nearest.startsWith('flag-')) this.options.onHail(this.nearest.endsWith('taxi') ? 'taxi' : 'auto'); else this.options.onSelect(this.nearest);
   }
   private keyUp = (event: KeyboardEvent) => { this.keys.delete(event.key.toLowerCase()); };
   private pointerDown = (event: PointerEvent) => {
@@ -586,7 +609,8 @@ export class WorldEngine {
     const target = pickTarget(eye, forward, district?.interactions ?? this.street.interactions, t => spatial.visible(chest, t.position as THREE.Vector3));
     const next = target?.id ?? null;
     if (target) this.markerBase.copy(target.position as THREE.Vector3).y += .34;
-    if (next !== this.nearest) { this.nearest = next; this.options.onNear(next, target?.label); }
+    // A cab offered for waving down stays offered until updatePassing withdraws it.
+    if (next !== this.nearest && !(next === null && this.nearest?.startsWith('flag-'))) { this.nearest = next; this.options.onNear(next, target?.label); }
   }
   private updateCamera() {
     if (this.ride.phase !== 'idle' && this.ride.phase !== 'hailing') {
@@ -659,7 +683,7 @@ export class WorldEngine {
           }
           if (this.visitor.position.y < -2) this.reset();
           this.gait += Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z) * physicsDelta * 3;
-          this.updateNearIfMoved();
+          this.updateNearIfMoved(); this.updatePassing();
           this.crossSeam();
         }
       }
