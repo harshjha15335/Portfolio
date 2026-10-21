@@ -129,7 +129,7 @@ material, texture or draw call.
 | Arham Jain | Powai, past the guide | Male_Adult_09 | purple t-shirt, black track pants with a grey side stripe, goatee, glasses |
 | Ranjan Jha | Dadar, past the guide | Male_Adult_01 | white shirt with mustard, orange, navy and grey brush strokes, plain shorts, orange thread on the wrist |
 | Rina Jha | Worli, past the guide | Female_Adult_05 | red long-sleeve top with a front ruffle, blue jeans |
-| Abhinav Jha | Worli, beside Rina | Male_Child_01 | rust-orange "POWER UP IN PROGRESS" t-shirt, dark jeans |
+| Abhinav Jha | Juhu Studio, past the guide (moved from Worli on 21 October so every named person has a district of their own) | Male_Child_01 | rust-orange "POWER UP IN PROGRESS" t-shirt, dark jeans |
 
 Abhinav is a young teenager, so his face is the generic Rocketbox child's; only his hair colour and outfit follow
 the photos. Three people share the Male_Adult_01 body in three different districts, so they are never seen together.
@@ -150,4 +150,4 @@ stripes that read as a patterned cap; the radial normals shade the hair like the
 
 Cost: one atlas texture per person, no normal map: 1664×1248 RGBA for the six with hair cards (the importer caps a
 texture at 2048×1024 pixels in area), 2048×1024 for Anuj and Abhinav. At CST, Harsh replaces the host's two
-textures with one. Each district adds one character (two at Worli) and one bone texture per character in view.
+textures with one. Each district adds one character and one bone texture while its friend is in view.

@@ -73,13 +73,13 @@ export const FRIENDS: Friend[] = [
     actions: [{ label: 'SEE THE ACHIEVEMENTS ↗', open: 'worli' }],
   },
   {
-    id: 'abhinav', name: 'Abhinav Jha', role: 'Achievements runner, Worli Proof Deck', cast: 'abhinav', district: 'worli', offset: [0, -3.5],
+    id: 'abhinav', name: 'Abhinav Jha', role: 'Studio helper, Juhu Studio', cast: 'abhinav', district: 'juhu', offset: [0, -2.4],
     lines: [
       'Hi! I’m Abhinav. Power up in progress!',
-      'I keep score of the achievements in your journal. Press J to see how many you have unlocked.',
-      'Visit all nine stops and you get the best one. I’m still collecting mine.',
+      'This is Juhu Studio, the human side of the city: who Harsh is, his résumé, and how to say hello.',
+      'Start with the notice board, pick up a résumé, then leave a message at the contact terminal. Press J any time to see your achievements.',
     ],
-    actions: [{ label: 'SEE THE ACHIEVEMENTS ↗', open: 'worli' }],
+    actions: [{ label: 'READ THE NOTICE BOARD', open: 'juhu-about' }, { label: 'PICK UP THE RÉSUMÉ', open: 'juhu-resume' }, { label: 'USE THE CONTACT TERMINAL', open: 'juhu-contact' }],
   },
 ];
 
