@@ -294,7 +294,7 @@
   {
    "id": "aarush",
    "role": "Aarush Shetty · fellow contributor at Fort",
-   "height": 1.76,
+   "height": 1.86,
    "avatar": "Assets/Avatars/Adults/Male_Adult_01",
    "avatarSha256": "8d1edb51b4dc3427ae2456f4407fc105532c145dd019e53cd42bab31cc948a29",
    "atlas": 832,
@@ -394,11 +394,11 @@
    "id": "arham",
    "role": "Arham Jain · demo lead at Powai",
    "height": 1.72,
-   "avatar": "Assets/Avatars/Adults/Male_Adult_09",
-   "avatarSha256": "ebb89800dbad28b4352369c7149314e010806268a28d7f5bb954a4393bba3d00",
-   "atlas": 832,
+   "avatar": "Assets/Avatars/Adults/Male_Adult_20",
+   "avatarSha256": "78c6ffd6899afe415f7e22f088ac36f153046592a6867e5a9e80a10695d996c6",
+   "atlas": 1024,
    "normalMap": false,
-   "skinToneShift": 0.6,
+   "skinToneShift": 0.45,
    "clips": {
     "Idle": {
      "file": "Assets/Animations/all_animations_max_motextr_static/m_idle_neutral_01.max.fbx",
@@ -417,15 +417,22 @@
     "Idle": 12,
     "Talk": 9
    },
-   "textureCode": "m017",
-   "hairCard": true,
+   "textureCode": "m027",
+   "hairCard": false,
    "likeness": true,
    "glasses": {
-    "w": 0.05,
-    "h": 0.04,
-    "radius": 0.011,
-    "thick": 0.0055
-   }
+    "w": 0.052,
+    "h": 0.035,
+    "radius": 0.005,
+    "thick": 0.0085
+   },
+   "dropBody": [
+    0.3,
+    0.74,
+    0.7,
+    1.0,
+    0.7
+   ]
   },
   {
    "id": "ranjan",

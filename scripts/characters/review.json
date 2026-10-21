@@ -80,11 +80,11 @@
   }
  },
  "arham": {
-  "sha256": "4d0a961d4f983c1c9bf4723ec35d6f64139a0dc147d982a4c4d7832dbd39de2c",
+  "sha256": "984f0d34c4a9087c3474dec1f2991c5ed2a930a3b3c9707009330ea16a5b53c5",
   "visualReview": {
    "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
-   "date": "2026-10-20",
-   "notes": "Powai pavement, face and full body: side-swept hair, round-square glasses, moustache and goatee, purple tee, black track pants with a grey stripe."
+   "date": "2026-10-21",
+   "notes": "Redone from Harsh's second photo: round-faced Male_Adult_20 base with the hoodie's hood dropped and its opening closed; thick rectangular black frames, short black hair, light stubble; dusty-rose tee with navy GAP letters, black track pants with grey side stripe. Checked front, close and back."
   }
  },
  "pavit": {

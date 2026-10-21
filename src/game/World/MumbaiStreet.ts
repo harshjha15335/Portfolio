@@ -1,7 +1,7 @@
 import type {VerifiedGLB,GLBAssetLibrary} from './assets/GLBAssetLibrary';
 import type {GLBCharacter} from './assets/GLBCharacter';
 import {loadable,placementNoise,STANDING_CAST,WALKER_CAST,type CastMember} from './npc/cast';
-import {FRIENDS,HOST,friendInteraction} from '../../data/friends';
+import {FRIENDS,HOST,friendInteraction,talkHeight} from '../../data/friends';
 import {DriverRig} from './npc/DriverRig';
 import * as THREE from 'three';
 import {casterPrefix,restrictInstanceShadows} from '../../core/ShadowInstances';
@@ -757,7 +757,7 @@ export class MumbaiStreet {
     // Aarush keeps the research room: on the rug between the door and the kiosk, turned to people coming in.
     const aarush = FRIENDS.find(f => f.id === 'aarush')!;
     this.person([-9.4, 0, -36.0], '#ece9df', false, false, aarush.cast).rotation.y = -2.0;
-    this.interactions.push({ id: friendInteraction(aarush.id), position: new THREE.Vector3(-9.4, 1.45, -36.0), label: `Talk to ${aarush.name}` });
+    this.interactions.push({ id: friendInteraction(aarush.id), position: new THREE.Vector3(-9.4, talkHeight(aarush.cast), -36.0), label: `Talk to ${aarush.name}` });
     g.updateMatrixWorld(true); const at = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyMatrix4(g.matrixWorld);
     this.interactions.push(
       { id: 'ffprime', position: at(1.25, 1.42, -4.85), label: 'Read the FFprime work' },

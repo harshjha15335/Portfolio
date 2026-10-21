@@ -69,6 +69,22 @@ for clip in clips:
     tr=arm.animation_data.nla_tracks.new(); tr.name=clip
     a=bpy.data.actions[clip]; tr.strips.new(clip,int(a.frame_range[0]),a)
 arm.animation_data.action=None
+# --- optional: drop a garment piece (e.g. a hoodie's hood) by its body-map island; [u0, y0, u1, y1] with y down, above a height fraction
+if cfg.get('dropBody'):
+    import bmesh
+    u0,y0,u1,y1,above=cfg['dropBody']; me=mesh.data; uvl=me.uv_layers.active.data; M=mesh.matrix_world
+    zs=[(M@v.co).z for v in me.vertices]; lo,hi=min(zs),max(zs)
+    drop=[p.index for p in me.polygons if 'head' not in me.materials[p.material_index].name.lower() and 'opacity' not in me.materials[p.material_index].name.lower()
+          and all(u0<=uvl[l].uv.x<=u1 and y0<=1-uvl[l].uv.y<=y1 for l in p.loop_indices) and ((M@p.center).z-lo)/(hi-lo)>above]
+    bm=bmesh.new(); bm.from_mesh(me); bm.faces.ensure_lookup_table(); edge={v for i in drop for v in bm.faces[i].verts}; bmesh.ops.delete(bm,geom=[bm.faces[i] for i in drop],context='FACES_KEEP_BOUNDARY')
+    loose=[v for v in bm.verts if not v.link_faces]; bmesh.ops.delete(bm,geom=loose,context='VERTS')
+    # Nothing was modelled under the piece: close the opening it leaves, textured from a plain patch of the garment (cfg dropFillUV).
+    filled=bmesh.ops.holes_fill(bm,edges=[e for e in bm.edges if e.is_boundary and all(v in edge for v in e.verts)],sides=0)['faces']
+    lay=bm.loops.layers.uv.active; fu,fy=cfg.get('dropFillUV',(.5,.2)); body=[i for i,m in enumerate(me.materials) if 'head' not in m.name.lower()][0]
+    for f in bmesh.ops.triangulate(bm,faces=filled)['faces']:
+        f.material_index=body
+        for l in f.loops: l[lay].uv=(fu,1-fy)
+    bm.to_mesh(me); bm.free(); print('dropped faces',len(drop),'filled',len(filled))
 # --- atlas UVs: body -> left half, head -> right half; hair cards (if any) -> strip below the head
 me=mesh.data; uv=me.uv_layers.active.data
 mat_kind=[]

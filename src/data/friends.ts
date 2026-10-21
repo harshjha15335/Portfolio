@@ -3,6 +3,8 @@
  * Each is a stylised likeness on a licensed Rocketbox body (scripts/characters/likeness.py), built from photos
  * shared with their consent; Abhinav is a generic young-teen figure with only his outfit matched.
  */
+import { characterCast } from './characterCast';
+
 export interface FriendAction { label: string; open: string }
 export interface Friend {
   id: string; name: string; role: string;
@@ -85,6 +87,9 @@ export const FRIENDS: Friend[] = [
 
 /** The CST arrival host is Harsh himself; he keeps the district's guide role (interaction id 'cst'). */
 export const HOST = { name: 'Harsh Jha', cast: 'harsh' } as const;
+
+/** Height of a friend's talk point; the prompt marker floats .34 m above it, so tall friends get theirs raised to clear the head. */
+export const talkHeight = (cast: string) => Math.max(1.45, (characterCast[cast]?.height ?? 1.75) - .27);
 
 export const friendInteraction = (id: string) => `friend-${id}`;
 export const friendById = (interaction: string) => FRIENDS.find(f => friendInteraction(f.id) === interaction);

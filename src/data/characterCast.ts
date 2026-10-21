@@ -469,7 +469,7 @@ export const characterCast:Record<string,CastMember>={
    "notes": "Fort research room, face and full body: white shirt with green leaf print and chain, dark hair, warm skin tone; hair cards shade with the scalp."
   },
   "role": "Aarush Shetty · fellow contributor at Fort",
-  "height": 1.76,
+  "height": 1.86,
   "asset": {
    "id": "cast-aarush",
    "url": "/models/characters/aarush-e51e898790e9e808.glb",
@@ -597,30 +597,30 @@ export const characterCast:Record<string,CastMember>={
   "status": "approved",
   "visualReview": {
    "reviewer": "Claude Code rendered review, pending sign-off by Harsh",
-   "date": "2026-10-20",
-   "notes": "Powai pavement, face and full body: side-swept hair, round-square glasses, moustache and goatee, purple tee, black track pants with a grey stripe."
+   "date": "2026-10-21",
+   "notes": "Redone from Harsh's second photo: round-faced Male_Adult_20 base with the hoodie's hood dropped and its opening closed; thick rectangular black frames, short black hair, light stubble; dusty-rose tee with navy GAP letters, black track pants with grey side stripe. Checked front, close and back."
   },
   "role": "Arham Jain · demo lead at Powai",
   "height": 1.72,
   "asset": {
    "id": "cast-arham",
-   "url": "/models/characters/arham-4d0a961d4f983c1c.glb",
-   "sha256": "4d0a961d4f983c1c9bf4723ec35d6f64139a0dc147d982a4c4d7832dbd39de2c",
-   "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_09",
+   "url": "/models/characters/arham-984f0d34c4a9087c.glb",
+   "sha256": "984f0d34c4a9087c3474dec1f2991c5ed2a930a3b3c9707009330ea16a5b53c5",
+   "source": "https://github.com/microsoft/Microsoft-Rocketbox/tree/0943055db6ec570bcef9f2c8b41c9e5467c808f9/Assets/Avatars/Adults/Male_Adult_20",
    "author": "Microsoft Rocketbox Avatar Library (Microsoft Research; original avatars by Rocketbox Studios)",
    "license": "MIT"
   },
   "inspection": {
-   "triangles": 7806,
+   "triangles": 7110,
    "primitives": 1,
    "joints": [
     80
    ],
    "textures": [
     {
-     "width": 1664,
-     "height": 1248,
-     "mimeType": "image/png"
+     "width": 2048,
+     "height": 1024,
+     "mimeType": "image/jpeg"
     }
    ],
    "clips": [
