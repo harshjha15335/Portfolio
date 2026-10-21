@@ -81,7 +81,7 @@ export function midrise(c: Ctx, o: MidriseOptions) {
   kit.box([w + .06, .4, .16], [0, .2, .05], shade(color, .7), 'stone');
   if (o.ground === 'shops') shopRow(c, w, o.shops ?? [['GENERAL STORES', 'किराना']], color);
   else if (o.ground === 'lobby') { kit.box([w * .5, 2.8, .3], [0, 1.4, -.1], '#2e3a3c', 'glass'); kit.box([w * .55, .15, 1.6], [0, 3.0, .8], shade(color, .9), 'stone'); kit.box([w * .4, .06, .06], [0, 2.85, .3], '#ffe1ae', 'glow'); }
-  else if (o.ground === 'wall') { kit.box([w, 1.6, .25], [0, .8, 1.2], shade(color, .95), 'plaster'); kit.solid([w, 1.6, .25], [0, .8, 1.2]); for (let x = -w / 2 + 1; x < w / 2; x += 2.2) kit.shape('sphere', [.7, .6, .5], [x, 1.9, .9], '#5c8a43', 'foliage'); }
+  else if (o.ground === 'wall') { kit.box([w, 1.6, .25], [0, .8, 1.2], shade(color, .95), 'plaster'); kit.solid([w, 1.6, .25], [0, .8, 1.2]); kit.box([w, .1, .32], [0, 1.65, 1.2], shade(color, .82), 'stone'); }
   if (o.name) sign(c, o.name[0], Math.min(w * .4, 4.6), [0, G - .15, .3], { bg: '#1d2b33', fg: '#f2e6c4', local: o.name[1], tier: 1 });
   const n = Math.max(2, Math.round(w / (style === 'deco' ? 2.8 : 2.4))), step = w / n;
   for (let f = 0; f < o.floors; f++) {

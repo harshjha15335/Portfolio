@@ -129,7 +129,12 @@ export class District {
     const { kit } = this, c = this.ctx, palette = this.spec.palette ?? PASTELS, index = cityZones.indexOf(this.zone);
     // The road runs on as the avenues where a neighbour lies that way (they lay their own); else into the haze.
     const north = hasNorthAvenue(index) ? northEdge(index) : -160, south = SOUTH_EDGE, roadLength = south - north, roadMid = (south + north) / 2;
-    kit.box([300, .1, 520], [0, -.12, -22], '#6d6f69', 'asphalt');
+    // An open west side (lake, sea) leaves the ground off beyond the promenade along the district's own street, so the
+    // water shows; beside the avenues only the strip their frontage and towers stand on is laid, the water runs on behind.
+    if (this.spec.west === 'open') {
+      kit.box([164, .1, 520], [68, -.12, -22], '#6d6f69', 'asphalt');
+      for (const [z0, z1] of [[SOUTH_EDGE, 238], [-282, northEdge(index)]]) kit.box([46, .1, z1 - z0], [-37, -.12, (z0 + z1) / 2], '#6d6f69', 'asphalt');
+    } else kit.box([300, .1, 520], [0, -.12, -22], '#6d6f69', 'asphalt');
     kit.box([7.8, .04, roadLength], [0, -.03, roadMid], '#55585a', 'asphalt');
     for (let z = south - 3; z > north; z -= 6) kit.box([.1, .01, 2.2], [0, .0, z], '#b8b09a');
     for (let i = 0; i < 8; i++) kit.box([.55, .01, 2.6], [-3 + i * .85, .0, ZEBRA_Z], '#d4cfbf');
@@ -190,7 +195,7 @@ export class District {
     if (hasNorthAvenue(index)) ends.push([index, 'south']);
     if (hasSouthAvenue(index)) ends.push([index - 1, 'north']);
     for (const [at, end] of ends) {
-      const avenue = new Avenue(this.physics, this.surfaces, this.origin, { index: at, end, signs: this.avenueSigns, onParked: (kind, x, z, yaw) => this.traffic.parkedAt(kind, x, z, yaw) });
+      const avenue = new Avenue(this.physics, this.surfaces, this.origin, { index: at, end, signs: this.avenueSigns, into: this.kit, onParked: (kind, x, z, yaw) => this.traffic.parkedAt(kind, x, z, yaw) });
       this.avenues.push(avenue); yield* avenue.steps(); this.group.add(avenue.group);
     }
     // People on the avenue pavements, a few each way.
