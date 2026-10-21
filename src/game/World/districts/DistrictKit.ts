@@ -50,7 +50,11 @@ export class DistrictKit {
   private matrix = new THREE.Matrix4();
   private stack: THREE.Matrix4[] = [];
   private random: () => number;
-  constructor(readonly origin: THREE.Vector3, private physics: CANNON.World, private surfaces: StreetMaterials, seed: string) {
+  /**
+   * `pattern` is where texture tiling and baked grime are measured from (default `origin`). An avenue is built
+   * twice, once in each district it joins; giving both the same pattern frame makes the two copies identical.
+   */
+  constructor(readonly origin: THREE.Vector3, private physics: CANNON.World, private surfaces: StreetMaterials, seed: string, private pattern = origin) {
     this.group.position.copy(origin); this.random = seededRandom(`district:${seed}`);
   }
   /** The current local frame (district space), for placing signs on a building. */
@@ -66,6 +70,12 @@ export class DistrictKit {
   frame(position: V3, rotationY: number, build: () => void) {
     const local = new THREE.Matrix4().compose(new THREE.Vector3(...position), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationY), new THREE.Vector3(1, 1, 1));
     this.stack.push(this.matrix.clone()); this.matrix.multiply(local); build(); this.matrix.copy(this.stack.pop()!);
+  }
+  /** `frame` for a builder that yields between pieces (a time-sliced build). */
+  *frameSteps(position: V3, rotationY: number, build: () => Generator<void>): Generator<void> {
+    const local = new THREE.Matrix4().compose(new THREE.Vector3(...position), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationY), new THREE.Vector3(1, 1, 1));
+    this.stack.push(this.matrix.clone()); this.matrix.multiply(local);
+    try { yield* build(); } finally { this.matrix.copy(this.stack.pop()!); }
   }
   add(source: THREE.BufferGeometry, color: string, surface: KitSurface, position: V3, scale: V3 = [1, 1, 1], rotation: V3 = [0, 0, 0], jitter = .05) {
     const g = plain(source);
@@ -146,8 +156,8 @@ export class DistrictKit {
     for (const [surface, list] of this.parts) {
       if (!list.length) continue;
       const g = mergeGeometries(list)!; list.forEach(p => p.dispose());
-      if (surface !== 'facade' && surface !== 'pool') worldUv(g, surface, this.origin, this.surfaces);
-      age(g, surface, this.origin);
+      if (surface !== 'facade' && surface !== 'pool') worldUv(g, surface, this.pattern, this.surfaces);
+      age(g, surface, this.pattern);
       if (surface === 'pool') {
         const mesh = lightPoolMesh(g, POOL_COLOR); mesh.name = 'district:pool'; this.group.add(mesh); yield; continue;
       }

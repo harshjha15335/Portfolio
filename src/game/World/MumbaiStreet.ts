@@ -262,7 +262,8 @@ export class MumbaiStreet {
       this.solidProxy([1,4,82],[side*19,2,-22],this.group);
     }
     // Original invisible safety limits remain exactly where route/nav authoring expects them.
-    this.solidProxy([38,4,1],[0,2,-63],this.group);
+    // The north limit opens between the pavements: Fort Road carries on over the cross street as the avenue to BKC.
+    for(const side of [-1,1]){this.solidProxy([12.6,4,1],[side*12.95,2,-63],this.group);this.solidProxy([1,4,6.5],[side*19,2,-66.25],this.group);this.solidProxy([12.6,4,1],[side*12.95,2,-69],this.group);}
     this.solidProxy([38,4,1],[0,2,20],this.group);
     this.streetContinuation();
     for (let z = -54; z < 12; z += 6) this.box([.08, .008, 2], [0, .005, z], '#a2997e');
@@ -277,7 +278,6 @@ export class MumbaiStreet {
   private streetContinuation(){
     // A cross street and oblique corner mask the non-traversable north limit.
     this.box([72,.035,9],[0,-.012,-62],'#585b5d',false,this.group,false,false,'asphalt');
-    this.box([9,.035,48],[-23,-.012,-83],'#585b5d',false,this.group,false,false,'asphalt');
     for(const z of [-67,-57])this.box([74,.05,2.0],[0,.014,z],'#afa392',false,this.group,false,false,'paving');
     // Three layers continue beyond both termini. No distant façade is a navigation surface.
     const blocks=[[-1.5,-112,18,13,12],[-26,-23,15,13,18],[26,-29,18,14,20],[-9,-75,13,10,13],[8,-72,12,8,11],[26,-71,17,12,16],[-34,-82,14,10,12],[-10,-99,18,11,14],[13,-104,22,12,16],[34,-112,26,14,17],[-36,-116,24,13,16],[-14,41,16,12,15],[15,44,19,13,15],[-36,58,23,14,17],[34,66,27,15,18],[-12,82,29,16,18],[12,108,32,17,20]];
@@ -285,6 +285,8 @@ export class MumbaiStreet {
     const north=new FacadeBatch(),south=new FacadeBatch(),skyline=new FacadeBatch();
     const facade=(batch:FacadeBatch,parent:THREE.Object3D,offset:THREE.Vector3,yaw:number,width:number,height:number,color:string,seed:number,coarse=false)=>batch.add({frame:faceFrame(this.group,parent,offset,yaw),width,height,tint:new THREE.Color(color),seed,coarse,ground:!coarse});
     for(const [i,[x,z,h,w,d]] of blocks.entries()){
+      // North of the cross street the avenue to BKC and its own buildings take over.
+      if(z<-60)continue;
       const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=(i>0&&i<5?-.22:i%3===0?.13:0);this.group.add(g);
       const color=['#aa9987','#9b9e93','#b5aa98','#8e9994'][i%4],batch=z<-20?north:south;
       this.box([w,h,d],[0,h/2,0],color,false,g,false,true);
@@ -306,7 +308,7 @@ export class MumbaiStreet {
     // Fogged, overlapping skyline closes every azimuth instead of revealing a bare ground/sky seam.
     // It is static backdrop geometry outside the original safety envelope, not explorable districts.
     for(let i=0;i<32;i++){
-      const angle=i*Math.PI/16,h=16+(i%5)*3,g=new THREE.Group();g.position.set(Math.sin(angle)*120,0,-22+Math.cos(angle)*120);g.rotation.y=angle;this.group.add(g);
+      const angle=i*Math.PI/16,h=16+(i%5)*3;if(Math.abs(Math.sin(angle)*120)<40&&Math.cos(angle)<0)continue;const g=new THREE.Group();g.position.set(Math.sin(angle)*120,0,-22+Math.cos(angle)*120);g.rotation.y=angle;this.group.add(g);
       const color=['#9ba69e','#afb1a2','#97a4a0'][i%3];
       this.box([25,h,12],[0,h/2,0],color,false,g,false,true).castShadow=false;
       this.box([25.2,.25,12.2],[0,h+.13,0],'#8a938b',false,g,false,false,'stone').castShadow=false;

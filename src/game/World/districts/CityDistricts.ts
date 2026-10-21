@@ -25,13 +25,23 @@ export class CityDistricts {
   peek(index: number) { return this.built.get(index) ?? null; }
   /** True when arriving at `index` needs no more building (the street, or a finished district). */
   isReady(index: number) { return index <= 0 || index >= cityZones.length || Boolean(this.built.get(index)?.ready); }
-  /** Show only `index`; districts left behind are released so memory stays at one district. */
-  activate(index: number) {
+  /**
+   * Show only `index`. Districts left behind are released so memory stays at one district, except the one being
+   * prepared and `keep` (the district the visitor just walked out of along an avenue, which they may turn back to).
+   */
+  activate(index: number, keep = -1) {
     const active = this.get(index);
-    for (const [i, d] of this.built) { if (i === index) d.setActive(true); else if (i !== this.pending) { d.dispose(); this.built.delete(i); } }
+    for (const [i, d] of this.built) { if (i === index) d.setActive(true); else { d.setActive(false); if (i !== this.pending && i !== keep) { d.dispose(); this.built.delete(i); } } }
     if (index === this.pending) this.pending = -1;
+    if (keep > 0 && this.built.has(keep)) this.pending = keep;
     return active;
   }
+  /** Release every district but `index` and `keep` (once the visitor has left the avenue between them). */
+  trim(index: number, keep = -1) {
+    for (const [i, d] of this.built) if (i !== index && i !== keep) { d.dispose(); this.built.delete(i); if (i === this.pending) this.pending = -1; }
+  }
+  /** How many districts exist now (built or building). */
+  get size() { return this.built.size; }
   private pending = -1;
   /** Start building a district ahead of arrival (a ride or jump towards it) without disposing the current one; `tick` continues it. */
   prepare(index: number) {

@@ -335,6 +335,8 @@ export class LaneTraffic {
   readonly id = `traffic${trafficSystems++}`;
   /** True when buildings hide a vehicle (centre, length) from `view`; such vehicles draw nothing. */
   occluded: ((position: THREE.Vector3, length: number, view: THREE.Vector3) => boolean) | null = null;
+  /** Speed factor at a lane position (local z): the avenues between districts are faster than the streets. */
+  cruiseAt: (z: number) => number = () => 1;
   /** Areas where movements cross; set by the street that owns this traffic. */
   junctions: JunctionReservations | null = null;
   /** What the visitor saw at the last update (local), for spawn and despawn decisions. */
@@ -499,6 +501,7 @@ export class LaneTraffic {
       }
       // Another system's vehicles on a shared loop, when they are not in the space themselves.
       if (!context.space) for (const b of lane.shared()) { const ahead = ((b.s - a.s) % lane.length + lane.length) % lane.length; if (ahead < lane.length / 2) holds.push({ distance: ahead - (a.length + b.length) / 2 - d.profile.minGap, state: 'following' }); }
+      d.desired = a.max * this.cruiseAt(a.mesh.position.z);
       const moved = drive(space, d, s => this.at(lane, a.s + s), delta, holds, undefined, junctions);
       a.s += moved;
       if (lane.closed) a.s %= lane.length;

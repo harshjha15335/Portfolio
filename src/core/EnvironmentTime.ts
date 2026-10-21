@@ -26,7 +26,7 @@ export type EnvironmentRig = {
  */
 export class EnvironmentTime {
   sample: ClockSample; look: EnvironmentLook;
-  private computedAt = -Infinity; private shadowAt = -Infinity; private originX = 0; private shadows = true;
+  private computedAt = -Infinity; private shadowAt = -Infinity; private originX = 0; private shadows = true; private shiftZ = 0;
   private lightDir = new THREE.Vector3(); private appliedDir = new THREE.Vector3(Infinity, 0, 0);
   constructor(readonly clock: IndiaWorldClock, private rig: EnvironmentRig) {
     this.sample = clock.sample(); this.look = environmentLook(this.sample.altitude, this.sample.morning);
@@ -39,6 +39,14 @@ export class EnvironmentTime {
   }
   /** Re-fit to a zone (a district 600 m away) or a shadow setting change, keeping the same moment. */
   configure(originX: number, shadows: boolean) { this.originX = originX; this.shadows = shadows; this.apply(true, performance.now()); }
+  /**
+   * Keep the shadowed box over the visitor out along an avenue (local z of the view): it moves in 30 m steps
+   * once the view leaves the district's own street, and comes home when it returns.
+   */
+  follow(z: number) {
+    const shift = z < ZONE_BOX.min.z + 8 || z > ZONE_BOX.max.z - 4 ? Math.round((z + 23) / 30) * 30 : 0;
+    if (shift === this.shiftZ) return; this.shiftZ = shift; this.fitShadow();
+  }
   private apply(moveLight: boolean, now: number) {
     const { scene, renderer, sun, bounce, fill, sky, atmosphere } = this.rig, look = this.look, s = this.sample;
     const rgb = (c: THREE.Color, v: Rgb) => c.setRGB(v[0], v[1], v[2], THREE.SRGBColorSpace);
@@ -66,7 +74,7 @@ export class EnvironmentTime {
   }
   /** Place the sun along its direction and size its shadow camera to the zone's street seen from the light. */
   private fitShadow() {
-    const { sun, renderer } = this.rig, box = ZONE_BOX.clone().translate(new THREE.Vector3(this.originX, 0, 0)), centre = box.getCenter(new THREE.Vector3());
+    const { sun, renderer } = this.rig, box = ZONE_BOX.clone().translate(new THREE.Vector3(this.originX, 0, this.shiftZ)), centre = box.getCenter(new THREE.Vector3());
     centre.y = 0; sun.target.position.copy(centre); sun.position.copy(centre).addScaledVector(this.appliedDir, 90);
     sun.target.updateMatrixWorld(); sun.updateMatrixWorld();
     const view = new THREE.Matrix4().lookAt(sun.position, centre, new THREE.Vector3(0, 1, 0)).setPosition(sun.position).invert();
