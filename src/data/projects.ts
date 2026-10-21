@@ -24,18 +24,21 @@ export interface Project {
   priority: number;
 }
 
+/** The projects shown as Powai workplaces, in street order (ASTFLOW follows them; RECO stays a Quick View case study). */
+export const POWAI_PROJECTS = ['northstar', 'moneymetrics', 'repolens', 'compilerlab'];
+
 export const projects: Project[] = [
   {
     id: 'ffprime', title: 'FFprime', subtitle: 'Electrostatics beyond atomic charges',
     category: 'GSoC 2026 · Scientific Computing', year: '2026',
     shortDescription: 'Reviewed, upstream scientific Python for molecular multipole electrostatics.',
-    longDescription: 'Google Summer of Code work with QC-Devs / Theochem, extending FFprime with Cartesian and spherical multipole potentials, electric fields, analysis utilities and numerical validation.',
+    longDescription: 'Google Summer of Code work with QC-Devs, extending FFprime with Cartesian and spherical multipole potentials, electric fields, analysis utilities and numerical validation.',
     problem: 'Atomic charges alone lose directional information. FFprime needed a reliable way to evaluate potentials and fields from atom-centered dipoles and quadrupoles.',
     approach: 'Built vectorized NumPy evaluation with broadcasting and np.einsum, fixed representation conventions explicitly, and validated the physics using analytical cases and path-equivalence tests.',
     architecture: ['Atomic multipole moments', 'Shape & convention validation', 'Cartesian ↔ spherical conversion', 'Vectorized potential / field evaluation', 'Field comparison & molecular examples'],
     challenges: 'Keeping spherical normalization, traceless quadrupoles and field gradients consistent; handling singularities and matching the conventions of an established scientific codebase.',
     results: 'Five merged upstream pull requests cover the vectorized core, validation, direct spherical potential evaluation, MultipoleExpansion container and molecular notebooks. Speedup and RMSE figures below are résumé-reported; the public report does not include benchmark datasets.',
-    ownership: 'Harsh authored the electrostatics contributions and tests through upstream review. FFprime is a collaborative research codebase; the wider force-field toolkit is the maintainers’ work.',
+    ownership: 'Harsh authored the electrostatics contributions and tests through upstream review. FFprime is a collaborative open-source codebase; the wider force-field toolkit is the maintainers’ work.',
     metrics: [
       { value: '~3×', label: 'runtime speedup · résumé reported', source: '/resume/Harsh-Jha-Resume.pdf' },
       { value: '~25%', label: 'lower RMSE · résumé reported', source: '/resume/Harsh-Jha-Resume.pdf' },
@@ -109,37 +112,6 @@ export const projects: Project[] = [
     worldPosition: [-30, 0, 0], worldRotation: Math.PI / 2, landmarkType: 'vault', color: '#b8a4fa', priority: 4,
   },
   {
-    id: 'meeting-intelligence-service', title: 'Meeting Intelligence', subtitle: 'From transcript to accountable action',
-    category: 'Backend · Applied AI', year: '2026',
-    shortDescription: 'A typed meeting API with cited AI extraction, action tracking and scheduled reminders.',
-    longDescription: 'A Node.js service that manages meeting transcripts, extracts summaries and action items through Gemini, stores results in PostgreSQL and sends overdue reminders through Telegram.',
-    problem: 'Meeting decisions and commitments are easy to lose when transcripts, tasks and reminders live in separate tools.',
-    approach: 'Separated Express controllers, services and Prisma repositories. Prompted for transcript-grounded JSON with timestamp citations and validated requests through Zod.',
-    architecture: ['JWT authentication', 'Meeting transcript API', 'Gemini extraction', 'PostgreSQL / Prisma', 'Action items', 'Cron / Telegram reminders'],
-    challenges: 'Grounding outputs in transcript evidence, propagating trace IDs and exposing provider failures cleanly. Re-analysis currently does not deduplicate action items.',
-    results: 'Repository provides OpenAPI documentation, Jest/Supertest test workflows, Docker configuration and explicit AI limitations. No production usage or accuracy metric is claimed.',
-    ownership: 'Built the backend API, persistence layers, integrations and documented analysis strategy.',
-    metrics: [], skills: ['Node.js', 'TypeScript', 'Express', 'PostgreSQL', 'Prisma', 'JWT', 'Zod', 'Jest', 'Docker'],
-    github: 'https://github.com/harshjha15335/meeting-intelligence-service',
-    source: 'https://github.com/harshjha15335/meeting-intelligence-service/blob/main/README.md',
-    worldPosition: [23, 0, 32], worldRotation: 0, landmarkType: 'garage', color: '#e6bc8b', priority: 5,
-  },
-  {
-    id: 'rideflow', title: 'RideFlow', subtitle: 'One journey, multiple modes',
-    category: 'Full Stack · Mobility Prototype', year: '2026',
-    shortDescription: 'A multimodal journey-planning prototype with ranked routes and a simulated travel flow.',
-    longDescription: 'Combines walking, bus, metro, train, auto-rickshaw and taxi options into a journey interface, with route explanations, booking flow, digital passes and simulated live tracking.',
-    problem: 'Multimodal travel requires comparing routes across transport types and understanding the complete journey before booking.',
-    approach: 'Built a React/TypeScript interface over a Python/FastAPI backend, with route ranking, recommendations and a guided booking experience.',
-    architecture: ['Journey request', 'Multimodal routes', 'Ranking & explanation', 'Booking flow', 'Mock payment', 'Journey simulation'],
-    challenges: 'Making transfers and tradeoffs readable while keeping booking and tracking coherent across multiple transport modes.',
-    results: 'Repository documents the route-planning and booking prototype. Payments and live journey tracking are simulations; no live transport-provider integration is claimed.',
-    ownership: 'Built the journey-planning prototype and frontend/backend flow.',
-    metrics: [], skills: ['React', 'TypeScript', 'FastAPI', 'Python', 'Tailwind CSS', 'Framer Motion'],
-    github: 'https://github.com/harshjha15335/rideflow', source: 'https://github.com/harshjha15335/rideflow/blob/main/README.md',
-    worldPosition: [27, 0, 32], worldRotation: 0, landmarkType: 'garage', color: '#a1d9b6', priority: 6,
-  },
-  {
     id: 'repolens', title: 'RepoLens', subtitle: 'AST-aware hybrid code retrieval',
     category: 'Applied AI · Retrieval Systems', year: '2026',
     shortDescription: 'Ask questions about a codebase and get answers grounded in cited, line-accurate source chunks.',
@@ -156,6 +128,25 @@ export const projects: Project[] = [
     ],
     skills: ['Python', 'FastAPI', 'TypeScript', 'Next.js', 'Tree-sitter', 'FAISS', 'BM25', 'Retrieval'],
     github: 'https://github.com/harshjha15335/RepoLens', source: 'https://github.com/harshjha15335/RepoLens/blob/main/README.md',
-    worldPosition: [31, 0, 32], worldRotation: 0, landmarkType: 'garage', color: '#9fc3d8', priority: 7,
+    worldPosition: [23, 0, 32], worldRotation: 0, landmarkType: 'garage', color: '#9fc3d8', priority: 5,
+  },
+  {
+    id: 'compilerlab', title: 'Compiler Lab', subtitle: 'Operator precedence parsing and regex → DFA, step by step',
+    category: 'Compiler Design · Teaching Tool', year: '2026',
+    shortDescription: 'An interactive GUI that replays operator precedence parsing and the direct regex-to-DFA construction one rule at a time.',
+    longDescription: 'A React teaching instrument for two Compiler Design topics: operator precedence parsing (LEADING / TRAILING, the relation table, shift/reduce with visible handles) and converting a regular expression to a DFA with the direct method (syntax tree, nullable / firstpos / lastpos, followpos, DFA construction and string simulation).',
+    problem: 'Textbook compiler algorithms are usually shown as finished tables, so students see the answer but not which rule produced each entry.',
+    approach: 'Kept every algorithm as plain, tested JavaScript that returns its result plus a list of steps. The interface only replays those steps, so moving back re-derives the exact earlier state, and each step says what changed, why, and which rule caused it.',
+    architecture: ['Grammar / regex input', 'Tested algorithm core', 'steps[] replay', 'Precedence table / followpos', 'Shift-reduce / DFA view', 'String simulation'],
+    challenges: 'Making every intermediate state reproducible from the step list, flagging precedence conflicts and invalid operator grammars, and keeping a self-contained build that opens from file:// with no network.',
+    results: 'The repository\u2019s 27 node:test tests (algorithms, step schema and replay) pass, and an offline audit drives the built app through 106 checks from file://. The Powai lab runs a TypeScript port of its regex parser, direct-method DFA construction and simulator, checked against the repository\u2019s own tests.',
+    ownership: 'Built the algorithm core, replay model and interface. The repository’s LR parsing page is not built yet and is not presented here.',
+    metrics: [
+      { value: '27', label: 'passing tests · node:test', source: 'https://github.com/harshjha15335/CompilerLab-OPP-RegexDFA/tree/main/test' },
+      { value: '106', label: 'offline audit checks · README', source: 'https://github.com/harshjha15335/CompilerLab-OPP-RegexDFA/blob/main/README.md' },
+    ],
+    skills: ['JavaScript', 'React', 'Algorithms', 'Compiler design', 'Automata', 'Vite', 'node:test'],
+    github: 'https://github.com/harshjha15335/CompilerLab-OPP-RegexDFA', source: 'https://github.com/harshjha15335/CompilerLab-OPP-RegexDFA/blob/main/README.md',
+    worldPosition: [27, 0, 32], worldRotation: 0, landmarkType: 'garage', color: '#f0b45a', priority: 6,
   },
 ];

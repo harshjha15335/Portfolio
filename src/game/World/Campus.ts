@@ -222,7 +222,7 @@ export class Campus {
     }
     this.box(group, [16, 3.2, 0.34], [0, 2.3, -6.1], PAPER, true);
     this.label(group, 'MULTIPOLE', 'MONO / DIPOLE / QUAD · FFPRIME', [0, 2.45, -5.91], 15, PAPER, INK);
-    this.label(group, 'RESEARCH', 'QC-DEVS / THEOCHEM · GSOC 2026', [-8, 5.2, -1], 8, BLUE, PAPER).rotation.z = Math.PI / 2;
+    this.label(group, 'RESEARCH', 'QC-DEVS · GSOC 2026', [-8, 5.2, -1], 8, BLUE, PAPER).rotation.z = Math.PI / 2;
     const molecule = new THREE.Group(); molecule.position.set(0, 4.9, -1.7); group.add(molecule);
     for (let index = 0; index < 6; index++) {
       const angle = index / 6 * Math.PI * 2;
@@ -328,7 +328,7 @@ export class Campus {
     for (const x of [-8, 8]) for (const z of [-5, 1.7]) this.box(group, [0.25, 5.3, 0.25], [x, 2.85, z], PAPER, true);
     this.box(group, [16, 3.5, 0.3], [0, 2.3, -5.3], BLUE, true);
     this.label(group, 'PROBABLY OVER-ENGINEERED', 'BUILD / TEST / ITERATE', [0, 3.5, -5.12], 14, BLUE, PAPER);
-    ['MEETING INTELLIGENCE', 'RIDEFLOW', 'WORK IN PROGRESS'].forEach((title, index) => {
+    ['REPOLENS', 'COMPILER LAB', 'WORK IN PROGRESS'].forEach((title, index) => {
       const x = -5.2 + index * 5.2, z = -1.7 + index % 2 * 1.5;
       this.box(group, [4, 0.25, 2.3], [x, 1.55, z], PAPER, true);
       for (const side of [-1, 1]) this.box(group, [0.22, 1.3, 0.22], [x + side * 1.7, 0.84, z], GREY, true);
@@ -483,7 +483,7 @@ export class Campus {
         }
         this.box(group, [13, 0.35, 5], [0, 4.75, -2], d.color);
         this.sphere(group, 1.2, [0, 6.3, -2], cream);
-        this.label(group, 'FFPRIME / GSOC 26', 'QC-DEVS / THEOCHEM', [0, 3.2, -0.36], 10, d.color, cream);
+        this.label(group, 'FFPRIME / GSOC 26', 'QC-DEVS', [0, 3.2, -0.36], 10, d.color, cream);
         const sculpture = new THREE.Group(); sculpture.position.set(4, 5.8, -2); group.add(sculpture);
         for (let n = 0; n < 3; n++) { const r = this.ring(sculpture, 1.7, 0.04, gold, [0, 0, 0]); r.rotation.set(n, n * 0.5, 0); }
         this.sphere(sculpture, 0.5, [0, 0, 0], cream, false, true);
@@ -504,7 +504,7 @@ export class Campus {
         });
         this.label(group, 'NO PROGRESS BARS', 'JUST WORK YOU CAN INSPECT', [0, 5.3, -3], 11, d.color, cream);
       } else if (id === 'powai') {
-        ['NORTHSTAR', 'RECO', 'MONEY', 'MEETING', 'RIDEFLOW'].forEach((name, i) => {
+        ['NORTHSTAR', 'RECO', 'MONEY', 'REPOLENS', 'COMPILER'].forEach((name, i) => {
           const x = (i - 2) * 2.65, h = [6, 4, 5, 3.5, 4.5][i];
           this.box(group, [2.3, h, 4], [x, h / 2 + 0.12, -2], i % 2 ? '#60908b' : d.color, true);
           this.box(group, [2.5, 0.16, 4.2], [x, h + 0.2, -2], gold);

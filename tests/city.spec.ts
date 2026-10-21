@@ -21,7 +21,7 @@ for (const kind of ['TAXI', 'AUTO']) {
     // The auto drives the whole way (round the street's U-turns); the taxi skips.
     await expect(meter.getByRole('status')).toContainText('Arrived', { timeout: kind === 'TAXI' ? 30_000 : 420_000 });
     await page.getByRole('button', { name: 'STEP OUT & MEET THE GUIDE' }).click();
-    await expect(page.getByRole('dialog', { name: kind === 'TAXI' ? 'Fort Research Institute' : 'CST Arrival Terminus' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: kind === 'TAXI' ? 'Fort Open Source Hall' : 'CST Arrival Terminus' })).toBeVisible();
     await expect(meter).toHaveCount(0);
     expect(errors).toEqual([]);
   });
@@ -39,7 +39,7 @@ test('every stop has an accessible guide and meaningful sourced content', async 
     await expect(dialog.locator('.district-content')).toBeVisible();
     if (district.id === 'bkc') await expect(dialog).toContainText('OAuth2');
     if (district.id === 'fort') await expect(dialog).toContainText('résumé reported');
-    if (district.id === 'powai') await expect(dialog.locator('.district-projects article')).toHaveCount(6);
+    if (district.id === 'powai') await expect(dialog.locator('.district-projects article')).toHaveCount(4);
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);
   }
@@ -80,11 +80,12 @@ test('Andheri shops show evidence and run each bench', async ({ page }) => {
   await sign(/Frontend Studio/).click();
   await shops.getByRole('button', { name: 'SKIP TO ARRIVAL' }).click();
   await expect(shops.getByRole('list', { name: 'Callbacks fired' })).toContainText('onSkip()');
-  // Backend Workshop: a missing token stops at authenticate with the service's real message.
+  // Backend Workshop: a valid BUY fills on paper; the kill switch stops it in the risk engine.
   await sign(/Backend Workshop/).click();
-  await shops.locator('label', { hasText: /^Authorization/ }).locator('select').selectOption('missing');
-  await expect(shops.getByRole('status')).toContainText('HTTP 401');
-  await expect(shops.locator('.hop-list li.stop')).toContainText('authenticate');
+  await expect(shops.getByRole('status')).toContainText('Paper order filled');
+  await shops.getByLabel('Kill switch on').check();
+  await expect(shops.getByRole('status')).toContainText('No order');
+  await expect(shops.locator('.hop-list li.stop')).toContainText('RiskEngine.evaluate');
   // DevOps Garage: failing a backend step blocks RootCause's gated deploy.
   await sign(/DevOps Garage/).click();
   await shops.getByRole('button', { name: /backend: pytest -q \(pass\)/ }).click();
@@ -200,9 +201,9 @@ test('phone directional controls move the first-person visitor', async ({ page }
 test('visitor walks through the research doorway and opens the physical FFprime terminal', async ({ page }) => {
   await page.goto('/?debug#world');
   const canvas=page.locator('canvas'); await expect(canvas).toHaveAttribute('data-camera-mode','first-person');
-  await page.keyboard.press('m'); await page.getByRole('button',{name:'Travel to Fort Research Institute',exact:true}).click();
+  await page.keyboard.press('m'); await page.getByRole('button',{name:'Travel to Fort Open Source Hall',exact:true}).click();
   await expect(canvas).toHaveAttribute('data-world-z','-35.000');
   await page.keyboard.down('w'); await expect.poll(async()=>Number(await canvas.getAttribute('data-world-x'))).toBeLessThan(-9.7); await page.keyboard.up('w');
-  await expect(page.locator('.proximity-prompt')).toContainText('Read the FFprime research');
+  await expect(page.locator('.proximity-prompt')).toContainText('Read the FFprime work');
   await page.keyboard.press('e'); await expect(page.getByRole('dialog',{name:'CASE STUDY / FFprime'})).toBeVisible();
 });

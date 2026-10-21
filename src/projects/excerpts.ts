@@ -15,13 +15,5 @@ export const EXCERPTS = {
    208
   ],
   "code": "function calculateWeeklyAverages(transactions) {\n  const now = new Date();\n  const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n  \n  const historicalTotals = {};\n  const currentWeekTotals = {};\n  let oldestDate = now;\n\n  transactions.forEach(t => {\n    if (t.type === 'expense') {\n      const tDate = new Date(t.date);\n      if (tDate < oldestDate) oldestDate = tDate;\n      \n      if (tDate >= oneWeekAgo) {\n        currentWeekTotals[t.category] = (currentWeekTotals[t.category] || 0) + t.amount;\n      } else {\n        historicalTotals[t.category] = (historicalTotals[t.category] || 0) + t.amount;\n      }\n    }\n  });\n\n  const millisInWeek = 7 * 24 * 60 * 60 * 1000;\n  const weeksElapsed = Math.max(1, (oneWeekAgo - oldestDate) / millisInWeek);\n  \n  const anomalies = [];\n  const anomalyCategories = new Set();\n  \n  for (const [cat, currentSpent] of Object.entries(currentWeekTotals)) {\n    const histSpent = historicalTotals[cat] || 0;\n    const avgWeekly = histSpent / weeksElapsed;\n    \n    // Anomaly if current week is 40% higher than average and amount is somewhat meaningful\n    if (avgWeekly > 500 && currentSpent > avgWeekly * 1.4) {\n      anomalies.push({ cat, current: currentSpent, avg: avgWeekly });\n      anomalyCategories.add(cat);\n    }\n  }\n\n  return { anomalies, anomalyCategories };\n}"
- },
- "typescript": {
-  "file": "src/validators/meeting.validator.ts",
-  "lines": [
-   1,
-   15
-  ],
-  "code": "import { z } from 'zod';\n\nconst transcriptEntrySchema = z.object({\n  timestamp: z.string().min(1, 'Timestamp is required'),\n  speaker: z.string().min(1, 'Speaker is required'),\n  text: z.string().min(1, 'Text is required'),\n});\n\nexport const createMeetingSchema = z.object({\n  title: z.string().min(1, 'Title is required').max(500),\n  participants: z.array(z.string().min(1)).min(1, 'At least one participant is required'),\n  meetingDate: z.coerce.date({ invalid_type_error: 'Invalid meeting date' }),\n  transcript: z.array(transcriptEntrySchema).min(1, 'Transcript must have at least one entry'),\n});"
  }
 } as const;

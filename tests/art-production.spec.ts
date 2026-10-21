@@ -10,6 +10,6 @@ test('Fort teaching exhibit is inspectable and sourced without WebGL',async({pag
  await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);expect(errors).toEqual([]);
 });
 test('Fort exhibition remains readable and operable on mobile fallback',async({page})=>{
- await page.setViewportSize({width:390,height:844});await page.goto('/?webgl=off#/place/fort');const dialog=page.getByRole('dialog',{name:'Fort Research Institute'});await dialog.getByRole('button',{name:'SHOW ME AROUND'}).click();const exhibit=dialog.getByRole('region',{name:'Fort open-science exhibition'});await exhibit.getByRole('button',{name:'Add dipole',exact:true}).click();await expect(exhibit.getByRole('button',{name:'Add dipole',exact:true})).toHaveAttribute('aria-pressed','true');
+ await page.setViewportSize({width:390,height:844});await page.goto('/?webgl=off#/place/fort');const dialog=page.getByRole('dialog',{name:'Fort Open Source Hall'});await dialog.getByRole('button',{name:'SHOW ME AROUND'}).click();const exhibit=dialog.getByRole('region',{name:'Fort open-science exhibition'});await exhibit.getByRole('button',{name:'Add dipole',exact:true}).click();await expect(exhibit.getByRole('button',{name:'Add dipole',exact:true})).toHaveAttribute('aria-pressed','true');
  expect(await exhibit.evaluate(e=>e.scrollWidth<=e.clientWidth+1)).toBe(true);
 });

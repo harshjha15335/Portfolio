@@ -22,7 +22,7 @@ try{
   await page.getByRole('dialog',{name:'FORT / GRADIENT CHECK'}).waitFor();for(const n of [0,1,2])await page.getByRole('button',{name:/RUN CHECK/}).first().click();
   await page.getByRole('button',{name:'THIS ONE'}).nth(2).click();await page.waitForTimeout(400);await page.screenshot({path:`${root}/1440-panel-gradient.png`});await page.keyboard.press('Escape');await page.waitForTimeout(400);
   await page.keyboard.press('j');await page.getByRole('dialog',{name:'EXPLORATION JOURNAL'}).waitFor();await page.screenshot({path:`${root}/1440-journal.png`});await page.keyboard.press('Escape');await page.waitForTimeout(400);
-  await page.evaluate(()=>window.__world.reset());await page.waitForTimeout(800);await page.keyboard.press('e');await page.getByRole('dialog',{name:'Fort Research Institute'}).waitFor({timeout:3000}).catch(()=>{});
+  await page.evaluate(()=>window.__world.reset());await page.waitForTimeout(800);await page.keyboard.press('e');await page.getByRole('dialog',{name:'Fort Open Source Hall'}).waitFor({timeout:3000}).catch(()=>{});
  }
  await page.close();
 }finally{await browser.close();}

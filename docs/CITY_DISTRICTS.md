@@ -1,6 +1,6 @@
 # City districts
 
-The world is nine stops on one map. CST Arrival Terminus and Fort Research Institute share the
+The world is nine stops on one map. CST Arrival Terminus and Fort Open Source Hall share the
 original Fort Road street (`MumbaiStreet`). The other seven are separate walkable streets built by
 `src/game/World/districts/`:
 

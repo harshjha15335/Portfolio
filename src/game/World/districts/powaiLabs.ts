@@ -10,7 +10,7 @@ import { desk, plant, room } from './interiors';
  */
 export type LabForm = 'observatory' | 'tower' | 'bank' | 'timber' | 'transit' | 'lens' | 'lab';
 export interface PowaiLab { id: string; title: string; form: LabForm; color: string; accent: string; still: Still }
-export type Still = 'chart' | 'queue' | 'flows' | 'transcript' | 'route' | 'code' | 'ranking';
+export type Still = 'chart' | 'queue' | 'flows' | 'transcript' | 'route' | 'code' | 'ranking' | 'automaton';
 
 /** Width along the street, depth and height of every workplace; `PODS` in districtExhibits uses the same spacing. */
 export const LAB = { w: 8, d: 7, h: 3.6 };
@@ -80,6 +80,7 @@ function still(kind: Still, accent: string) {
       case 'transcript': for (let i = 0; i < 7; i++) { ctx.globalAlpha = i % 3 === 2 ? 1 : .45; ctx.fillRect(px(i % 3 === 2 ? .05 : 0), py(i / 7), w * .88 * [.8, .6, .5, .75, .7, .4, .65][i], h * .05); } ctx.globalAlpha = 1; break;
       case 'route': ctx.beginPath(); ctx.moveTo(px(0), py(.9)); ctx.lineTo(px(.3), py(.6)); ctx.lineTo(px(.55), py(.65)); ctx.lineTo(px(.8), py(.2)); ctx.lineTo(px(1), py(.1)); ctx.stroke(); for (const [u, v] of [[0, .9], [.3, .6], [.55, .65], [.8, .2]]) ctx.fillRect(px(u) - 6, py(v) - 6, 12, 12); break;
       case 'code': for (let i = 0; i < 8; i++) { ctx.globalAlpha = i === 3 || i === 4 ? 1 : .35; ctx.fillRect(px((i % 4) * .04), py(i / 8), w * .88 * [.5, .7, .4, .8, .6, .3, .55, .45][i], h * .05); } ctx.globalAlpha = 1; break;
+      case 'automaton': for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc?.(px(.1 + i * .27), py(.5), h * .1, 0, Math.PI * 2); ctx.stroke(); if (i < 3) ctx.fillRect(px(.1 + i * .27) + h * .1, py(.5) - 1, w * .88 * .27 - h * .2, 3); } ctx.beginPath(); ctx.arc?.(px(.91), py(.5), h * .07, 0, Math.PI * 2); ctx.stroke(); break;
       case 'ranking': for (let i = 0; i < 6; i++) { ctx.globalAlpha = 1 - i * .1; ctx.fillRect(px(.08), py(i / 6), w * .8 * (1 - i * .13), h * .07); ctx.fillRect(px(0), py(i / 6), w * .03, h * .07); } ctx.globalAlpha = 1; break;
     }
   };

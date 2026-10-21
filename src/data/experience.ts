@@ -1,9 +1,9 @@
 export const experience = [
   {
     title: 'Google Summer of Code Contributor',
-    organization: 'QC-Devs / Theochem',
+    organization: 'QC-Devs',
     period: 'May – August 2026',
-    description: 'Multipole electrostatics in FFprime: scientific Python developed through research mentorship, numerical validation and upstream code review.',
+    description: 'Multipole electrostatics in FFprime: scientific Python developed with maintainer mentorship, numerical validation and upstream code review.',
     highlights: [
       'Implemented monopole, dipole and quadrupole potentials and electric fields with vectorized NumPy routines.',
       'Contributed representation conversion, input validation, a typed multipole container and molecular example notebooks.',
@@ -33,7 +33,7 @@ export const achievements = [
   },
   {
     title: 'Google Summer of Code 2026',
-    detail: 'Selected as a contributor with QC-Devs / Theochem',
+    detail: 'Selected as a contributor with QC-Devs',
     source: 'https://github.com/harshjha15335/gsoc-2026-final-report',
   },
   {
