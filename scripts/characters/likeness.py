@@ -106,6 +106,7 @@ def blur_f(x, r):
 FACES = {  # cx, mouth y, chin y, jaw half-width, eyebrow y
     'm002': (.493, .400, .468, .150, .248), 'm014': (.493, .400, .475, .155, .250),
     'm019': (.500, .401, .505, .165, .255), 'm017': (.490, .401, .470, .170, .248),
+    'm027': (.497, .403, .482, .168, .250),
     'f005': (.500, .405, .470, .140, .245), 'cm001': (.500, .405, .480, .150, .265),
 }
 def hair_mask(a, code):
@@ -122,7 +123,7 @@ def hair_mask(a, code):
     # Ears are shaded skin, not hair; on short-haired bases they sit in the open.
     ears = np.maximum(ellipse(a, .225, .365, .042, .07, .5), ellipse(a, .775, .365, .042, .07, .5)) if code in OPEN_EARS else 0
     return blur(m * (1 - face * (y > brow + .02)) * (1 - ears), 1.5)
-OPEN_EARS = {'m014', 'm019', 'm017', 'cm001'}
+OPEN_EARS = {'m014', 'm019', 'm017', 'm027', 'cm001'}
 BLOND = {'m019'}
 
 def darken_hair(a, m, base='#1b1512', curls=0.0, seed=1):
@@ -148,7 +149,8 @@ def beard(a, code, density, kind='stubble', colour='#2a1f1a', seed=3):
     tache = ellipse(a, cx, mouth - .022, .062, .016, .6)
     lips = ellipse(a, cx, mouth + .002, .046, .013, .3)
     if kind == 'goatee':
-        m = np.maximum(tache, ellipse(a, cx, chin - .012, .045, .045, .5))
+        # From under the lower lip down to the chin, soft-edged so the sides thin out like the real one.
+        m = np.maximum(np.clip(tache * 1.3, 0, 1), ellipse(a, cx, (mouth + chin) / 2 + .008, .062, (chin - mouth) / 2 + .014, .7))
     else:
         x, y = grid(a); jawm = ellipse(a, cx, mouth + .012, jaw, (chin - mouth) + .03, .35) * np.clip((y - (mouth - .05)) / .03, 0, 1)
         # Fade out up the cheeks: full along the jaw edge and chin, thinner beside the mouth.
@@ -229,17 +231,18 @@ def head_harsh(a):
     a = brows(a, 'm014', .9); a = beard(a, 'm014', .14); a = irises(a); return frame_patch(a, '#2b1d16')
 
 def body_arham(a):
-    tattoo = box(a, .03, .67, .13, .8) * (lum(a) < blur_f(lum(a), 12) - .04)
-    a = erase_print(a, np.clip(blur(tattoo.astype(np.float32), 3) * 3, 0, 1))
-    tee = garment(a, region(a, [TORSO] + SLEEVES)); a = recolour(a, tee, '#74386c', contrast=.9, ignore=box(a, .4, .55, .66, .86))
+    # The base is a hoodie: take the sleeves down over their cuffs and shade the drawstrings and pocket flat, so it reads as a tee.
+    tee = garment(a, region(a, [(.325, 0, .675, .92), (0, .42, .31, .7), (.69, .42, 1, .7)]))
+    a = recolour(a, tee, '#74386c', contrast=.9, ignore=box(a, .42, .42, .6, .8))
     legs = garment(a, region(a, LEGS)); a = recolour(a, legs, '#1d1d20', contrast=.8)
     # The grey side stripe runs down the outer seam, which is the outer edge of each leg panel.
     for x0, x1 in ((.012, .022), (.978, .988)):
         s = box(a, x0, .02, x1, .4) * legs; a = a * (1 - s[..., None]) + rgb('#8d9096')[None, None] * s[..., None]
     return a
 def head_arham(a):
-    a = darken_hair(a, hair_mask(a, 'm017'), '#16110e', curls=0, seed=51)
-    a = brows(a, 'm017', .9); a = beard(a, 'm017', .62, 'goatee'); a = irises(a); return frame_patch(a, '#18181a')
+    # Round-faced base (Male_Adult_20): thick short black hair, a thin moustache over the lip and a sparse chin goatee.
+    a = darken_hair(a, hair_mask(a, 'm027'), '#0c0908', curls=.4, seed=51)
+    a = brows(a, 'm027', 1.0); a = beard(a, 'm027', .7, 'goatee', '#181210'); a = irises(a); return frame_patch(a, '#121214')
 
 def brush_print(a, m, seed):
     """Ranjan's shirt: big abstract brush strokes in mustard, orange, navy and grey on white."""

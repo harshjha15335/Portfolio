@@ -17,7 +17,7 @@ import { exhibitsOf } from '../../../data/districtExhibits';
 import { crossingHeld, pedestrianGreen, zebraBusy } from '../traffic/RoadTraffic';
 import { FriendSlot } from '../npc/FriendSlot';
 import { PERSON_RADIUS } from '../collision/DynamicBlockers';
-import { FRIENDS, friendInteraction } from '../../../data/friends';
+import { FRIENDS, friendInteraction, talkHeight } from '../../../data/friends';
 
 /**
  * How full the districts are, set from the graphics preset before a district is built
@@ -180,7 +180,7 @@ export class District {
     for (const f of FRIENDS.filter(f => f.district === this.spec.id)) {
       const x = s.x + side * (1.05 + f.offset[0]), z = s.z - 2.3 + f.offset[1], slot = new FriendSlot(f.cast, Math.atan2(x - s.x, z - s.z));
       slot.group.position.set(x, .03, z); this.group.add(slot.group); this.friendSlots.push(slot);
-      this.interactions.push({ id: friendInteraction(f.id), label: `Talk to ${f.name}`, position: new THREE.Vector3(this.origin.x + x, 1.45, z) });
+      this.interactions.push({ id: friendInteraction(f.id), label: `Talk to ${f.name}`, position: new THREE.Vector3(this.origin.x + x, talkHeight(f.cast), z) });
     }
   }
   private *populateTraffic(): Generator<void> {
