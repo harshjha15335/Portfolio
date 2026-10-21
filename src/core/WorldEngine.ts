@@ -48,7 +48,10 @@ const DISTRICT_SLICE_MS = 6;
 /** Longest a directory jump waits on the driver linking the new district's shaders before landing anyway. */
 const ARRIVAL_SHADER_WAIT_MS = 4000;
 import { AdaptiveQuality } from './AdaptiveQuality';
-import { StreetAudio } from './StreetAudio';
+import { Soundscape } from './audio/Soundscape';
+import { DEFAULT_AUDIO, type AudioLevels } from './audio/audioSettings';
+import { playCue } from './audio/cues';
+import type { Surface } from './audio/soundscapeMix';
 import { StreetRenderer, type RenderPreset } from './StreetRenderer';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 type Mode = 'intro' | 'world' | 'quick';
@@ -90,7 +93,7 @@ export class WorldEngine {
   private rendering!:StreetRenderer;
   private renderPreset:RenderPreset='medium';
   private environmentTarget!:THREE.WebGLRenderTarget;
-  private audio: StreetAudio | null=null;
+  private audio: Soundscape | null=null; private audioLevels: AudioLevels = DEFAULT_AUDIO.levels;
   private soundEnabled=false;
   private keys = new Set<string>(); private touchKeys = new Set<string>();
   private yaw = STREET_SPAWN.yaw; private pitch = -.015;
@@ -185,7 +188,7 @@ export class WorldEngine {
     this.scene.background = new THREE.Color('#c0b29b'); this.scene.fog = new THREE.Fog(STREET_MOOD.fogColor, STREET_MOOD.fogNear, STREET_MOOD.fogFar);
     this.scene.add(this.fill);
     const sun = this.sun; sun.position.set(...STREET_MOOD.sunPosition); sun.castShadow = !this.options.mobile;
-    // Low north-western sun down the street axis. The frustum is sized in light space so the whole
+    // Initial (golden-hour) sun; EnvironmentTime moves it to the real one and re-fits this frustum. Sized in light space so the whole
     // walkable street, from the station forecourt to the north limit, receives building shadows.
     sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -52, right: 52, top: 41, bottom: -12, near: 1, far: 120 });
     sun.target.position.set(...STREET_MOOD.sunTarget); sun.shadow.normalBias = .06; sun.shadow.bias = -.0002; this.scene.add(sun, sun.target);
@@ -211,7 +214,11 @@ export class WorldEngine {
     if (this.debug) this.debug.hidden = mode !== 'world';
   }
   setPaused(paused: boolean) { this.paused = paused; this.audio?.setActive(this.soundEnabled&&!paused&&this.mode==='world'&&!document.hidden); this.pausedFrameDirty = true; this.releaseInput(); this.accumulator = 0; this.visitor.velocity.setZero(); if (paused) this.unlock(); }
-  setSound(enabled:boolean) { this.soundEnabled=enabled; if(enabled&&!this.audio){try{this.audio=new StreetAudio();}catch{this.soundEnabled=false;}} this.audio?.setActive(enabled&&this.mode==='world'&&!this.paused&&!document.hidden); }
+  /** Turn city sound on or off. The audio context is created on the first turn-on, which is always a visitor's gesture (autoplay rules). */
+  setSound(enabled:boolean) { this.soundEnabled=enabled; if(enabled&&!this.audio){try{this.audio=new Soundscape(this.audioLevels);}catch{this.soundEnabled=false;}} this.audio?.setActive(this.soundEnabled&&this.mode==='world'&&!this.paused&&!document.hidden); this.renderer.domElement.dataset.audio=this.audio&&this.soundEnabled?'on':'off'; }
+  setAudioLevels(levels:AudioLevels) { this.audioLevels={...levels}; this.audio?.setLevels(levels); }
+  /** Sound diagnostics: context state, one-shot voices, levels (dev overlay, tests). */
+  get audioStats() { return this.audio?.stats() ?? null; }
   setRenderPreset(preset:RenderPreset){this.renderPreset=preset;setCityDensity(preset);this.rendering.setPreset(this.quality.low?'low':preset);this.street.setDensity(preset==='high'&&!this.quality.low);this.renderer.shadowMap.enabled=preset!=='low'&&!this.options.mobile&&!this.quality.low;this.syncSunBalance();this.renderer.shadowMap.needsUpdate=true;this.resize();this.pausedFrameDirty=true;}
   setReducedMotion(reduced: boolean) { this.reducedMotion = reduced;this.pausedFrameDirty=true; }
   /** Visitor benchmark (`?bench`): per-rendered-frame cost, a look override, quality pinning and the GPU name. */
@@ -304,7 +311,7 @@ export class WorldEngine {
     this.cab.depart(cityRideLegs({ x: this.cab.pose.x, z: this.cab.pose.z }, id), this.hopDistance(id));
     // Build the destination district now, while the cab is still pulling away.
     this.city.prepare(zoneIndexAt(streetStops[id].x));
-    this.meter.apply('hire'); this.ride = { ...this.ride, phase: 'riding', destination: id, elapsed: 0, progress: 0 }; this.readMeter();
+    this.meter.apply('hire'); playCue('meter-hire'); this.ride = { ...this.ride, phase: 'riding', destination: id, elapsed: 0, progress: 0 }; this.readMeter();
     if (this.reducedMotion) this.skipRide(); else this.options.onRide({ ...this.ride });
   }
   skipRide() {
@@ -365,6 +372,7 @@ export class WorldEngine {
   private get district() { return this.zone ? this.city.get(this.zone) : null; }
   private finishRide() {
     if (!streetStops[this.ride.destination ?? '']) return;
+    playCue('arrive');
     this.syncZone(this.cab.pose.x);
     this.meter.tick(0, this.cab.chargeable, 0); this.meter.apply('complete'); this.ride = { ...this.ride, phase: 'arrived', progress: 1 }; this.readMeter(); this.options.onRide({ ...this.ride });
   }
@@ -509,9 +517,10 @@ export class WorldEngine {
    */
   stepVisitor(blockers: Blocker[]) {
     const v = this.visitor;
-    if (this.jumpQueued && this.grounded()) { v.velocity.y = 5.4; v.wakeUp(); this.airborne = true; }
+    if (this.jumpQueued && this.grounded()) { v.velocity.y = 5.4; v.wakeUp(); this.airborne = true; if (this.soundEnabled) this.audio?.jump(); }
     this.jumpQueued = false;
     this.physics.step(1 / 60);
+    if (this.airborne && v.position.y <= FLOOR_Y + .005 && v.velocity.y <= 0 && this.soundEnabled) this.audio?.land(-v.velocity.y);
     if (!this.airborne || (v.position.y <= FLOOR_Y + .005 && v.velocity.y <= 0)) { this.airborne = false; v.position.y = FLOOR_Y; if (v.velocity.y > 0) v.velocity.y = 0; }
     // Traffic and people have no physics bodies: step back out of any the visitor walked into.
     if (resolveBlockers(v.position, VISITOR_RADIUS, blockers, v.velocity)) v.previousPosition.copy(v.position);
@@ -550,6 +559,24 @@ export class WorldEngine {
       this.camera.position.set(this.visitor.position.x, this.visitor.position.y + 1.36 + bob, this.visitor.position.z);
       this.camera.rotation.set(this.pitch, this.yaw, 0);
     }
+  }
+  /** What the soundscape needs this frame: where the visitor is, how they move, the Mumbai hour and the traffic around. */
+  private soundFrame() {
+    const zone = cityZones[this.zone], ox = zone.originX, riding = this.ride.phase !== 'idle' && this.ride.phase !== 'hailing';
+    const p = this.camera.position, lx = p.x - ox, s = this.environment.sample, [h, m] = s.time.split(':').map(Number);
+    const rooms = this.zone === 0 ? [this.street.shelteredBounds] : this.district?.kit.rooms ?? [];
+    const probe = new THREE.Vector3(this.zone === 0 ? p.x : lx, 1, p.z), indoors = !riding && rooms.some(b => b.containsPoint(probe));
+    const surface: Surface = indoors ? 'tile' : zone.id === 'juhu' && lx < -7.7 ? 'sand' : onCarriageway(lx, p.z) ? 'asphalt' : 'stone';
+    // Nearest moving vehicle, in the listener's right/ahead frame (yaw 0 looks along −Z).
+    const yaw = riding ? this.transit.rotation.y + this.rideYaw : this.yaw, fx = -Math.sin(yaw), fz = -Math.cos(yaw);
+    let nearest: { right: number; ahead: number; speed: number; kind: string } | null = null, best = Infinity, around = 0;
+    for (const e of this.traffic.entries) {
+      if (e.category !== 'vehicle') continue;
+      const dx = e.x - lx, dz = e.z - p.z, d = Math.hypot(dx, dz); if (d < 45) around++;
+      if (e.speed > .5 && d < best) { best = d; nearest = { right: dx * -fz + dz * fx, ahead: dx * fx + dz * fz, speed: e.speed, kind: e.id }; }
+    }
+    return { district: zone.id, hour: h + m / 60, altitude: s.altitude, riding, rideKind: this.ride.kind === 'auto' ? 'auto' as const : 'taxi' as const, cabSpeed: riding ? this.cab.speed : 0,
+      walkSpeed: Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z), grounded: !this.airborne, surface, indoors, nearest, traffic: Math.min(1, around / 8) };
   }
   private frame = (timestamp: number) => {
     if (this.disposed) return; this.frameId = requestAnimationFrame(this.frame);if(this.inspectionFrozen)return;
@@ -602,7 +629,7 @@ export class WorldEngine {
       const needsRender=!this.reducedMotion||forceRender||this.camera.position.distanceToSquared(this.lastRenderPosition)>1e-8||this.camera.quaternion.angleTo(this.lastRenderRotation)>.0001||(this.renderer.shadowMap.enabled&&this.renderer.shadowMap.needsUpdate);
       if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)&&!this.applyLowTier())this.resize();
       if(!this.reducedMotion&&!this.paused&&this.time-this.lastShadow>.2&&this.renderer.shadowMap.enabled){this.renderer.shadowMap.needsUpdate=true;this.lastShadow=this.time;}
-      this.audio?.update(this.ride.phase==='riding'?this.cab.speed:Math.hypot(this.visitor.velocity.x,this.visitor.velocity.z),this.ride.phase!=='idle'&&this.ride.phase!=='hailing',this.ride.kind==='auto');
+      if(this.audio&&this.soundEnabled)this.audio.update(this.soundFrame());
       if(needsRender){this.renderer.info.reset();this.profiler?.beforeRender();const renderStart=performance.now();this.rendering.render(delta);this.frameObserver?.({tickMs,renderMs:performance.now()-renderStart,frameMs:elapsed*1000,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,low:this.quality.low});this.profiler?.afterRender({frameMs:elapsed*1000,renderCpuMs:performance.now()-renderStart,draws:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,textures:this.renderer.info.memory.textures,geometries:this.renderer.info.memory.geometries,programs:this.renderer.info.programs?.length??0,scale:this.quality.scale,preset:this.renderPreset,phase:this.ride.phase,worldX:this.visitor.position.x,worldZ:this.visitor.position.z,walkingSimulatedMs:simulatedWalkingMs,shadowRefreshed:this.rendering.frameCost.shadowDraws>0,shadowDraws:this.rendering.frameCost.shadowDraws,shadowTriangles:this.rendering.frameCost.shadowTriangles,shadowDrawCpuMs:this.rendering.frameCost.shadowDrawCpuMs,mainAndOtherDraws:this.rendering.frameCost.mainAndOtherDraws,mainAndOtherTriangles:this.rendering.frameCost.mainAndOtherTriangles});this.lastRenderPosition.copy(this.camera.position);this.lastRenderRotation.copy(this.camera.quaternion);this.debugFrames++;}
       if (timestamp - this.lastHud > 125) {
         if (this.benchmarkEnabled){this.renderer.domElement.dataset.benchmarkReady='true';this.renderer.domElement.dataset.ridePhase=this.ride.phase;this.renderer.domElement.dataset.renderMode=this.reducedMotion?'on-demand':'continuous';}
@@ -612,7 +639,7 @@ export class WorldEngine {
         if (this.ride.phase !== 'idle') this.options.onRide({ ...this.ride }); this.lastHud = timestamp;
       }
       if (this.trafficOverlay && this.trafficZone >= 0) this.trafficLine = this.trafficOverlay.update(this.traffic, cityZones[this.trafficZone].originX);
-      if (this.debug) { this.debugTime += elapsed; if (this.debugTime > .75) { const info = this.renderer.info; this.debug.textContent = `${this.debugFrames?`${(this.debugFrames / this.debugTime).toFixed(1)} fps`:'idle'} · ${info.render.calls} draws · ${info.render.triangles} triangles · ${info.memory.textures} textures · ${info.programs?.length??0} shaders · ${Math.round(((performance as Performance & {memory?:{usedJSHeapSize:number}}).memory?.usedJSHeapSize??0)/1048576)} MB JS · scale ${this.quality.scale.toFixed(2)} · eye ${this.camera.position.y.toFixed(2)}m\n${this.environment.describe()}${this.trafficLine ? `\n${this.trafficLine}` : ''}`; this.debugTime = 0; this.debugFrames = 0; } }
+      if (this.debug) { this.debugTime += elapsed; if (this.debugTime > .75) { const info = this.renderer.info; this.debug.textContent = `${this.debugFrames?`${(this.debugFrames / this.debugTime).toFixed(1)} fps`:'idle'} · ${info.render.calls} draws · ${info.render.triangles} triangles · ${info.memory.textures} textures · ${info.programs?.length??0} shaders · ${Math.round(((performance as Performance & {memory?:{usedJSHeapSize:number}}).memory?.usedJSHeapSize??0)/1048576)} MB JS · scale ${this.quality.scale.toFixed(2)} · eye ${this.camera.position.y.toFixed(2)}m\n${this.environment.describe()}${this.audio?` · audio ${this.audio.stats().state}, ${this.audio.stats().voices} voices`:''}${this.trafficLine ? `\n${this.trafficLine}` : ''}`; this.debugTime = 0; this.debugFrames = 0; } }
     } catch (error) { this.dispose(); this.options.onError(error); }
   };
   dispose() {

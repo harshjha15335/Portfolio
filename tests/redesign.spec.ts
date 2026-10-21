@@ -75,5 +75,8 @@ test(`city sound starts muted and its menu is reachable at ${width}px`,async({pa
   const enable=menu.getByRole('button',{name:'ENABLE CITY SOUND'});await expect(enable).toHaveAttribute('aria-pressed','false');await enable.click();
   await expect(menu.getByRole('button',{name:'MUTE CITY SOUND'})).toHaveAttribute('aria-pressed','true');await menu.getByRole('button',{name:'CONTINUE EXPLORING'}).click();
   await page.getByRole('button',{name:'Open world menu'}).click();await menu.getByRole('button',{name:'MUTE CITY SOUND'}).click();await expect(menu.getByRole('button',{name:'ENABLE CITY SOUND'})).toHaveAttribute('aria-pressed','false');
+  await menu.getByLabel('Traffic and vehicles').fill('25');await expect(menu.getByLabel('Traffic and vehicles')).toHaveValue('25');
+  await expect.poll(()=>page.evaluate(()=>JSON.parse(localStorage.getItem('hj-audio-v1')??'{}').levels?.traffic)).toBe(.25);
+  await menu.getByRole('button',{name:'CONTINUE EXPLORING'}).click();await expect(page.getByRole('button',{name:'SOUND OFF'})).toHaveAttribute('aria-pressed','false');
 });
 }
