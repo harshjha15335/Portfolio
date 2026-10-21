@@ -8,16 +8,16 @@ This page describes what ships today. Older checkpoints are kept for history: th
 
 Two ways into the same portfolio:
 
-- **The world**: a first-person, golden-hour Mumbai. All nine canonical districts are walkable streets. CST Arrival Terminus and Fort Research Institute share one street; the other seven (BKC, Andheri, Powai, Dadar, Worli, Juhu, Film City) are built one at a time, each 600 m apart along X, and stream in when you travel there.
+- **The world**: a first-person, golden-hour Mumbai. All nine canonical districts are walkable streets. CST Arrival Terminus and Fort Open Source Hall share one street; the other seven (BKC, Andheri, Powai, Dadar, Worli, Juhu, Film City) are built one at a time, each 600 m apart along X, and stream in when you travel there.
 - **Quick View**: an HTML portfolio (projects, case studies, experience, skills, résumé, contact) that never loads the 3D engine. It is also the fallback when WebGL fails or the context is lost.
 
 | District | Content | Physical state |
 | --- | --- | --- |
 | CST Arrival Terminus | Intro, orientation, departure board indexing every district | Station front, Radio House benchmark façade, taxi and auto stands, Rocketbox crowd, modelled traffic |
-| Fort Research Institute | GSoC 2026, QC-Devs/Theochem, FFprime | Furnished research room: gradient-check activity, coordinate workstation, FFprime terminal, contribution board |
+| Fort Open Source Hall | GSoC 2026, QC-Devs/Theochem, FFprime | Furnished research room: gradient-check activity, coordinate workstation, FFprime terminal, contribution board |
 | BKC Systems Office | CCIEeXpert internship | Boulevard, plaza and a walk-in lobby floor: reception, open-plan desks, a glass meeting room, the brief and request path on the wall, a rate-limit console |
 | Andheri Tech Bazaar | Skills with evidence | Lane with five skill shops running real logic |
-| Powai Builder's District | Flagship projects | A walk-in workplace per project along the lake (observatory, control tower, bank, timber studio, transit kiosk, lens, lab), each with its board and a demo desk inside; working demo labs for NORTHSTAR, MoneyMetrics, Meeting Intelligence, RideFlow, RepoLens and ASTFLOW, a case study for RECO |
+| Powai Builder's District | Flagship projects | A walk-in workplace per project along the lake (observatory, bank, lens, timber studio, lab), each with its board and a demo desk inside; working demo labs for NORTHSTAR, MoneyMetrics, RepoLens, Compiler Lab and ASTFLOW, a case study for RECO |
 | Dadar Junction | Education and timeline | Station, chawl and maidan; six platform boards |
 | Worli Proof Deck | Achievements | Sea face with four evidence cases |
 | Juhu Studio | About, résumé, contact | Beach, stalls and a walk-in studio behind a garden gate: work table, bookshelf, sofa, notice board, résumé stand, contact terminal |

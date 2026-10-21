@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { canopyTree, coconutPalm } from './nature';
+import { canopyTree, coconutPalm, type TreeSpecies } from './nature';
 import type { DistrictKit } from './DistrictKit';
 import { placed, type SignAtlas, type SignStyle } from './DistrictSystems';
 import type { V3 } from './ColorMesh';
@@ -16,6 +16,7 @@ export const PASTELS = ['#d8c6a6', '#c8b69d', '#b7c3b9', '#d6b59c', '#a9b7bd', '
 const SHOP_COLORS = ['#244a5c', '#7d2a24', '#2f5a3a', '#7a5a1d', '#3a3a6a', '#1f1f1f', '#a33a2a', '#0f5e5a'];
 
 export function sign({ kit, signs }: Ctx, text: string, width: number, position: V3, style: SignStyle = {}, px: [number, number] = [512, 128], rotationY = 0) {
+  if (kit.muted) return null;
   return signs.add(text, width, placed(position, rotationY, kit.here), style, px);
 }
 
@@ -68,7 +69,7 @@ export function shopRow(c: Ctx, w: number, names: Array<[string, string?]>, wall
     for (const s of [-1, 1]) kit.box([.32, 3.4, .4], [cx + s * bw / 2, 1.7, 0], wall, 'plaster');
     const bg = pick(kit, SHOP_COLORS);
     sign(c, en, bw - .35, [cx, o.signY ?? 3.0, .24], { bg, fg: '#f4e6c0', local }, [384, 96]);
-    if (o.awnings !== false && kit.rand() > .25) kit.shape('box', [bw - .3, .05, 1.2], [cx, 2.78, .65], pick(kit, ['#2c6f8f', '#b23a32', '#3d7a4f', '#c7892f', '#5a4a8a', '#2b5d9b']), 'fabric', [.28, 0, 0]);
+    if (o.awnings !== false && kit.rand() > .25) kit.shape('box', [bw - .3, .05, 1.2], [cx, 2.48, .65], pick(kit, ['#2c6f8f', '#b23a32', '#3d7a4f', '#c7892f', '#5a4a8a', '#2b5d9b']), 'fabric', [.28, 0, 0]);
   }
 }
 
@@ -80,8 +81,8 @@ export function midrise(c: Ctx, o: MidriseOptions) {
   kit.box([w + .06, .4, .16], [0, .2, .05], shade(color, .7), 'stone');
   if (o.ground === 'shops') shopRow(c, w, o.shops ?? [['GENERAL STORES', 'किराना']], color);
   else if (o.ground === 'lobby') { kit.box([w * .5, 2.8, .3], [0, 1.4, -.1], '#2e3a3c', 'glass'); kit.box([w * .55, .15, 1.6], [0, 3.0, .8], shade(color, .9), 'stone'); kit.box([w * .4, .06, .06], [0, 2.85, .3], '#ffe1ae', 'glow'); }
-  else if (o.ground === 'wall') { kit.box([w, 1.6, .25], [0, .8, 1.2], shade(color, .95), 'plaster'); kit.solid([w, 1.6, .25], [0, .8, 1.2]); for (let x = -w / 2 + 1; x < w / 2; x += 2.2) kit.shape('sphere', [.7, .6, .5], [x, 1.9, .9], '#5c8a43', 'foliage'); }
-  if (o.name) sign(c, o.name[0], Math.min(w * .4, 4.6), [0, G - .15, .3], { bg: '#1d2b33', fg: '#f2e6c4', local: o.name[1] });
+  else if (o.ground === 'wall') { kit.box([w, 1.6, .25], [0, .8, 1.2], shade(color, .95), 'plaster'); kit.solid([w, 1.6, .25], [0, .8, 1.2]); kit.box([w, .1, .32], [0, 1.65, 1.2], shade(color, .82), 'stone'); }
+  if (o.name) sign(c, o.name[0], Math.min(w * .4, 4.6), [0, G - .15, .3], { bg: '#1d2b33', fg: '#f2e6c4', local: o.name[1], tier: 1 });
   const n = Math.max(2, Math.round(w / (style === 'deco' ? 2.8 : 2.4))), step = w / n;
   for (let f = 0; f < o.floors; f++) {
     const y0 = G + f * fh, wy = y0 + fh * .5;
@@ -109,7 +110,8 @@ export function midrise(c: Ctx, o: MidriseOptions) {
     }
   }
   if (style === 'deco') {
-    kit.box([1.2, H + 2.2, .5], [0, (H + 2.2) / 2, .2], trim, 'plaster');
+    // The central fin rises from above the ground floor, so it never covers a shop board or the name over the entrance.
+    const fin = G + .7; kit.box([1.2, H + 2.2 - fin, .5], [0, fin + (H + 2.2 - fin) / 2, .2], trim, 'plaster');
     for (let i = 0; i < 3; i++) kit.box([w * (.55 - i * .14), .3, .35], [0, H + .45 + i * .3, .05], trim, 'stone');
     if (o.corner) { kit.cylinder(1.8, H, [w / 2 - .4, H / 2, -1.4], color, 'plaster'); for (let f = 0; f < o.floors; f++) kit.cylinder(1.9, .08, [w / 2 - .4, G + f * fh + fh * .9, -1.4], trim, 'stone'); kit.solid([3.6, H, 3.6], [w / 2 - .4, H / 2, -1.4]); }
   }
@@ -132,7 +134,7 @@ export function glassTower(c: Ctx, o: { w: number; d: number; h: number; glass?:
   kit.box([w * .7, P - 1.2, .2], [0, (P - 1.2) / 2, -1.3], '#2c3c42', 'glass'); kit.box([w * .66, .08, .08], [0, P - 1.4, -1.1], '#ffe7bd', 'glow');
   for (let x = -w / 2 + 1; x < w / 2; x += 3) kit.box([.5, P, .5], [x, P / 2, -.3], o.podium ?? '#d7d1c4', 'stone');
   kit.box([w * .5, .25, 3.2], [0, 4.4, 1.2], shade(frame, .9), 'metal'); for (const s of [-1, 1]) kit.rod([s * w * .22, 0, 2.6], [s * w * .22, 4.3, 2.6], .09, '#aeb1ad');
-  if (o.name) sign(c, o.name, Math.min(w * .7, 10), [0, P - .6, .45], { bg: '#18242c', fg: '#e9f1f4', border: 'none', local: o.nameLocal }, [1024, 192]);
+  if (o.name) sign(c, o.name, Math.min(w * .7, 10), [0, P - .6, .45], { bg: '#18242c', fg: '#e9f1f4', border: 'none', local: o.nameLocal, tier: 1 }, [1024, 192]);
   if (o.crown !== false) { kit.box([w * .7, 3, d * .7], [0, h + 1.5, -d / 2], frame, 'metal'); kit.rod([0, h + 3, -d / 2], [0, h + 9, -d / 2], .12, '#9a9d98'); }
 }
 
@@ -148,7 +150,8 @@ export function neoclassical(c: Ctx, o: { w: number; d: number; floors: number; 
   // Colonnaded podium with an entablature.
   kit.box([w + .6, .6, 2.6], [0, G - .3, 1.1], trim, 'stone'); for (let x = -w / 2 + 1; x <= w / 2 - .9; x += 2.4) kit.cylinder(.28, G - .6, [x, (G - .6) / 2, 2.0], trim, 'stone');
   kit.box([w * .6, 3.4, .2], [0, 1.7, -.2], '#2f3b3f', 'glass'); kit.box([w * .55, .07, .07], [0, 3.3, 0], '#ffe1ae', 'glow');
-  if (o.name) sign(c, o.name, Math.min(8, w * .6), [0, G + .05, 2.42], { bg: '#efe6d1', fg: '#5a4630', border: 'none' }, [1024, 160]);
+  // The name runs across the second floor, above anything built in front of a set-back block (Powai's lab pods).
+  if (o.name) sign(c, o.name, Math.min(10, w * .6), [0, G + fh * 2, .48], { bg: '#efe6d1', fg: '#5a4630', border: 'none', tier: 1 }, [1024, 160]);
   kit.box([w + .8, .5, d + .8], [0, H + .25, -d / 2], trim, 'stone');
   if (o.dome !== false) { kit.cylinder(3.2, 3, [0, H + 2, -d / 2], trim, 'stone'); for (let a = 0; a < 12; a++) kit.box([.3, 2.6, .3], [Math.cos(a / 12 * Math.PI * 2) * 3.25, H + 2, -d / 2 + Math.sin(a / 12 * Math.PI * 2) * 3.25], color, 'stone'); kit.shape('sphere', [3.3, 2.8, 3.3], [0, H + 3.5, -d / 2], '#c8a76a', 'metal'); kit.rod([0, H + 6, -d / 2], [0, H + 8, -d / 2], .1, '#c8a76a'); }
   return H;
@@ -165,7 +168,7 @@ export function bungalow(c: Ctx, o: { w: number; d: number; color?: string; name
   else for (const y of [1.6, 4.6]) for (const x of [-w * .3, 0, w * .3]) { kit.box([1.3, 1.5, .06], [x, y, -.97], '#2d393c', 'glass'); for (const s of [-1, 1]) kit.box([.6, 1.5, .06], [x + s * .98, y, -.95], '#5b7a5e', 'wood'); }
   kit.box([w + .8, .2, 2.6], [0, 3.3, .1], '#d8cdb6', 'stone'); for (const x of [-w / 2 + .5, w / 2 - .5]) kit.cylinder(.16, 3.2, [x, 1.6, 1.1], '#efe9dc', 'stone');
   for (const s of [-1, 1]) kit.shape('box', [w + 1.2, .14, d * .62], [0, H + 1.05, -1 - d / 2 + s * d * .27], '#a1503a', 'stone', [s * -.42, 0, 0]);
-  if (o.name) sign(c, o.name[0], Math.min(w * .5, 5), [-w * .2, 2.1, 2.36], { bg: '#efe8da', fg: '#2c3a3f', border: 'none', local: o.name[1] }, [768, 160]);
+  if (o.name) sign(c, o.name[0], Math.min(w * .5, 5), [-w * .2, 2.85, 2.4], { bg: '#efe8da', fg: '#2c3a3f', border: 'none', local: o.name[1], tier: 1 }, [768, 160]);
 }
 
 export function hangar(c: Ctx, o: { w: number; d: number; h: number; label: string; color?: string }) {
@@ -182,10 +185,12 @@ export function hangar(c: Ctx, o: { w: number; d: number; h: number; label: stri
 export function streetLight(c: Ctx, x: number, z: number, side: number) {
   const { kit } = c; kit.cylinder(.08, 7.6, [x, 3.8, z], '#5a5f5c', 'metal', true); kit.box([2.2, .08, .08], [x - side * 1.05, 7.55, z], '#5a5f5c', 'metal');
   kit.box([.55, .14, .26], [x - side * 2.05, 7.48, z], '#3d413f', 'metal'); kit.box([.45, .03, .2], [x - side * 2.05, 7.4, z], '#ffe5b0', 'glow');
+  // The pool of sodium-warm light it throws on the road at night (see nightLights).
+  kit.shape('plane', [7, 7, 1], [x - side * 2.05, .035, z], '#ffffff', 'pool', [-Math.PI / 2, 0, 0]);
   kit.solid([.3, 3, .3], [x, 1.5, z]);
 }
 /** A broad street tree; see nature.canopyTree. */
-export function tree(c: Ctx, x: number, z: number, h = 6, crown = '#5d7f43', size = 1) { canopyTree(c.kit, x, z, h, crown, size); }
+export function tree(c: Ctx, x: number, z: number, h = 6, crown = '#5d7f43', size = 1, species: TreeSpecies = 'raintree') { canopyTree(c.kit, x, z, h, crown, size, species); }
 /** A coconut palm; see nature.coconutPalm. */
 export function palm(c: Ctx, x: number, z: number, h = 7.5, lean = .3) { coconutPalm(c.kit, x, z, h, lean); }
 export function bench(c: Ctx, x: number, z: number, rotationY = 0) {

@@ -50,7 +50,7 @@ Hail a taxi or auto, wait for pickup and choose any district. The camera enters 
 | Location | Content |
 | --- | --- |
 | CST Arrival Terminus | Introduction and orientation |
-| Fort Research Institute | GSoC / QC-Devs / Theochem / FFprime |
+| Fort Open Source Hall | GSoC / QC-Devs / FFprime |
 | BKC Systems Office | CCIEeXpert internship |
 | Andheri Tech Bazaar | Skills and project evidence |
 | Powai Builder’s District | Five main projects |

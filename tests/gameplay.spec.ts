@@ -17,12 +17,12 @@ test('departure board marks a destination and the waypoint leads there', async (
   await expect(page.locator('.proximity-prompt')).toContainText('Read the departure board');
   await page.keyboard.press('e');
   const board = page.getByRole('dialog', { name: 'CST / DEPARTURE BOARD' });
-  await expect(board.getByRole('button', { name: /Research/ })).toBeVisible();
-  await board.getByRole('button', { name: /Research/ }).click();
+  await expect(board.getByRole('button', { name: /Fort Open Source Hall/ })).toBeVisible();
+  await board.getByRole('button', { name: /Fort Open Source Hall/ }).click();
   await board.getByRole('button', { name: 'MARK ON MY MAP' }).click();
-  await expect(page.getByRole('status', { name: 'Next stop Fort Research Institute' })).toContainText('ahead');
+  await expect(page.getByRole('status', { name: 'Next stop Fort Open Source Hall' })).toContainText('ahead');
   await standAt(page, { x: -5.1, z: -35, yaw: Math.PI / 2, pitch: 0 });
-  await expect(page.getByRole('status', { name: 'Next stop Fort Research Institute' })).toHaveCount(0);
+  await expect(page.getByRole('status', { name: 'Next stop Fort Open Source Hall' })).toHaveCount(0);
   await page.keyboard.press('j');
   await expect(page.getByRole('dialog', { name: 'EXPLORATION JOURNAL' }).locator('.journal-achievements li.done')).toContainText('First Steps');
   expect(errors).toEqual([]);
@@ -44,17 +44,17 @@ test('Fort gradient check can be retried and solved, and the journal records it'
   await page.keyboard.press('j');
   const journal = page.getByRole('dialog', { name: 'EXPLORATION JOURNAL' });
   await expect(journal.locator('.journal-achievements li.done')).toContainText('Finite Differences');
-  await expect(journal).toContainText('Fort Research Institute');
+  await expect(journal).toContainText('Fort Open Source Hall');
 });
 
-test('the research fellow gives a skippable guided tour that frames each exhibit', async ({ page }) => {
+test('the fellow contributor gives a skippable guided tour that frames each exhibit', async ({ page }) => {
   await ready(page);
-  await page.keyboard.press('m'); await page.getByRole('button', { name: 'Travel to Fort Research Institute', exact: true }).click();
-  await expect(page.locator('.proximity-prompt')).toContainText('The research fellow');
+  await page.keyboard.press('m'); await page.getByRole('button', { name: 'Travel to Fort Open Source Hall', exact: true }).click();
+  await expect(page.locator('.proximity-prompt')).toContainText('The fellow contributor');
   await page.keyboard.press('e');
   await page.getByRole('button', { name: 'TAKE THE GUIDED TOUR' }).click();
-  const tour = page.getByRole('region', { name: 'Guided tour: Fort Research Institute' });
-  await expect(tour).toContainText('Research, reviewed upstream');
+  const tour = page.getByRole('region', { name: 'Guided tour: Fort Open Source Hall' });
+  await expect(tour).toContainText('Open source, reviewed upstream');
   await tour.getByRole('button', { name: 'NEXT' }).click(); await tour.getByRole('button', { name: 'NEXT' }).click();
   await expect(tour).toContainText('The field table');
   await expect.poll(async () => Number(await page.locator('canvas').getAttribute('data-world-x'))).toBeLessThan(-10);
@@ -69,6 +69,7 @@ test('theatre can skip to the end, restart and exit by keyboard', async ({ page 
   await page.goto('/?webgl=off#/place/filmcity');
   await page.getByRole('button', { name: 'TAKE A SEAT' }).click();
   const theatre = page.getByRole('region', { name: 'Film City story theatre' });
+  await theatre.getByRole('button', { name: 'READ THE NINE SCENES' }).click();
   await theatre.focus(); await page.keyboard.press('End');
   await expect(theatre.getByRole('button', { name: 'GET IN TOUCH' })).toBeVisible();
   await theatre.getByRole('button', { name: '↺ RESTART' }).click();

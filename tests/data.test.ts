@@ -6,7 +6,7 @@ import { skills } from '../src/data/skills';
 
 describe('portfolio content integrity', () => {
   it('keeps the four featured landmarks and six case studies addressable', () => {
-    expect(projects.map(project => project.id)).toEqual(['ffprime', 'northstar', 'reco', 'moneymetrics', 'meeting-intelligence-service', 'rideflow', 'repolens']);
+    expect(projects.map(project => project.id)).toEqual(['ffprime', 'northstar', 'reco', 'moneymetrics', 'repolens', 'compilerlab']);
     expect(new Set(projects.map(project => project.id)).size).toBe(projects.length);
     expect(projects.filter(project => project.priority <= 4).map(project => project.landmarkType)).toEqual(['research', 'terminal', 'tower', 'vault']);
     expect(new Set(projects.map(project => project.priority)).size).toBe(projects.length);
@@ -37,7 +37,7 @@ describe('portfolio content integrity', () => {
     expect(reco.metrics.every(metric => /seeded/.test(metric.label) && !!metric.source)).toBe(true);
     expect(reco.results).toMatch(/not production/);
     expect(projects.find(project => project.id === 'northstar')!.results).toMatch(/Real broker execution remains disabled/);
-    expect(projects.find(project => project.id === 'rideflow')!.results).toMatch(/simulations/);
+    expect(projects.find(project => project.id === 'compilerlab')!.ownership).toMatch(/LR parsing page is not built yet/);
   });
 
   it('uses consistent identity, résumé, experience, and skill data', () => {

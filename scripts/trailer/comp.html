@@ -1,0 +1,143 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: Barlow; font-weight: 800; src: url(../../public/fonts/barlow-condensed-800-latin.woff2) format('woff2'); }
+@font-face { font-family: Barlow; font-weight: 600; src: url(../../public/fonts/barlow-condensed-600-latin.woff2) format('woff2'); }
+@font-face { font-family: Plex; font-weight: 500; src: url(../../public/fonts/ibm-plex-mono-500-latin.woff2) format('woff2'); }
+html, body { margin: 0; width: 1280px; height: 544px; background: #000; overflow: hidden; }
+#stage { position: relative; width: 1280px; height: 544px; overflow: hidden; background: #000; }
+#shot { position: absolute; inset: -12px; width: 1304px; height: 568px; object-fit: cover; filter: contrast(1.12) saturate(1.2) brightness(1.08); }
+#grade { position: absolute; inset: 0; mix-blend-mode: soft-light; background:
+  radial-gradient(ellipse at 72% 18%, rgba(255,170,70,.75), rgba(255,140,40,0) 60%),
+  linear-gradient(180deg, rgba(255,150,60,.25), rgba(0,90,110,.55)); }
+#dim { position: absolute; inset: 0; background: #000; opacity: 0; }
+#vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(0,0,0,0) 58%, rgba(0,0,0,.5) 100%); }
+#grain { position: absolute; inset: -64px;  opacity: .07; mix-blend-mode: overlay; }
+#band { position: absolute; left: 0; right: 0; height: 220px; opacity: 0; background: radial-gradient(ellipse 60% 50% at center, rgba(0,0,0,.6), rgba(0,0,0,0) 100%); }
+#flash { position: absolute; inset: 0; background: #fff4e0; opacity: 0; }
+#streak { position: absolute; left: -10%; width: 120%; height: 3px; top: 50%; opacity: 0;
+  background: linear-gradient(90deg, rgba(80,160,255,0), rgba(120,190,255,.95) 35%, #fff 50%, rgba(255,190,120,.95) 65%, rgba(255,150,80,0));
+  filter: blur(1.5px); box-shadow: 0 0 22px 6px rgba(120,180,255,.45); }
+#flare { position: absolute; width: 260px; height: 260px; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, rgba(255,240,210,.95), rgba(255,180,90,.35) 30%, rgba(255,140,60,0) 70%); mix-blend-mode: screen; }
+.cue { position: absolute; left: 0; right: 0; text-align: center; color: #fff; text-transform: uppercase; white-space: nowrap; opacity: 0; }
+.big { font: 800 92px/1 Barlow, sans-serif; letter-spacing: .14em; text-indent: .14em; text-shadow: 0 2px 24px rgba(0,0,0,.65); }
+.huge { font: 800 150px/1 Barlow, sans-serif; letter-spacing: .2em; text-indent: .2em; }
+.metal { -webkit-text-stroke: 0; background: linear-gradient(180deg, #fff9ec 0%, #ffe2a6 38%, #b9772f 52%, #ffd27a 70%, #fff3d6 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 2px 2px rgba(0,0,0,.8)) drop-shadow(0 4px 22px rgba(0,0,0,.75)); }
+.small { font: 600 26px/1 Barlow, sans-serif; letter-spacing: .5em; text-indent: .5em; color: #f4e6cc; text-shadow: 0 2px 12px rgba(0,0,0,.8); }
+.mono { font: 500 20px/1 Plex, monospace; letter-spacing: .32em; text-indent: .32em; color: #e8dccb; }
+.quiet { font: 600 34px/1 Barlow, sans-serif; letter-spacing: .6em; color: #efe3cf; }
+</style></head>
+<body><div id="stage">
+  <img id="shot" alt="">
+  <div id="grade"></div><div id="dim"></div><div id="vignette"></div>
+  <div id="band"></div><div id="cues"></div>
+  <div id="flare"></div><div id="streak"></div>
+  <div id="grain"></div><div id="flash"></div>
+</div>
+<script type="module">
+const WORK = new URLSearchParams(location.search).get('work');
+// Film grain: a fixed noise tile drawn once.
+{ const c = document.createElement('canvas'); c.width = 1408; c.height = 672; const x = c.getContext('2d'), d = x.createImageData(c.width, c.height); let s = 3; for (let i = 0; i < d.data.length; i += 4) { s = (s * 16807) % 2147483647; const v = 128 + ((s / 2147483647) - .5) * 160; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; } x.putImageData(d, 0, 0); document.getElementById('grain').style.backgroundImage = `url(${c.toDataURL()})`; }
+// Cue: [start, end, class, text, top(px), effect]. effect: fade | slam | track
+const CUES = [
+  [0.5, 1.95, 'quiet', 'Every city has a story', 252, 'track'],
+  [3.2, 5.85, 'quiet', 'This one runs on code', 252, 'track'],
+  [6.0, 7.95, 'huge metal', 'Harsh Jha', 186, 'slam'],
+  [6.6, 7.95, 'small', 'Software · AI · Scientific computing', 352, 'fade'],
+  [8.0, 9.95, 'small', 'Open source', 196, 'fade'],
+  [8.08, 9.95, 'big', 'Google Summer of Code 2026', 232, 'slam'],
+  [10.0, 11.95, 'big', 'GSoC Contributor', 210, 'slam'],
+  [10.2, 11.95, 'small', 'QC-Devs', 318, 'fade'],
+  [12.0, 12.97, 'big metal', '~3× faster', 214, 'slam'],
+  [12.08, 12.97, 'small', 'Runtime speedup', 320, 'fade'],
+  [13.0, 13.97, 'big metal', '−25% RMSE', 214, 'slam'],
+  [13.08, 13.97, 'small', 'Lower numerical error', 320, 'fade'],
+  [14.0, 14.97, 'big', '30+ unit tests', 214, 'slam'],
+  [14.08, 14.97, 'small', 'Coverage ~60% → ~90%', 320, 'fade'],
+  [15.0, 15.97, 'big', '4+ merged upstream', 214, 'slam'],
+  [15.08, 15.97, 'small', 'Open-source pull requests', 320, 'fade'],
+  [16.0, 17.95, 'big metal', 'CCIEeXpert', 210, 'slam'],
+  [16.2, 17.95, 'small', 'Full stack developer intern', 318, 'fade'],
+  [18.0, 19.95, 'big', 'Cisco Secure Access', 210, 'slam'],
+  [18.2, 19.95, 'mono', 'OAuth2 · Python CLI · MV3 extension · shipped', 320, 'fade'],
+  [20.0, 23.95, 'small', 'The builds', 168, 'fade'],
+  [20.0, 20.97, 'big metal', 'MoneyMetrics', 210, 'slam'],
+  [20.1, 20.97, 'mono', '~40% fewer data errors', 318, 'fade'],
+  [21.0, 21.47, 'big metal', 'ASTFLOW', 210, 'slam'],
+  [21.5, 21.97, 'big metal', 'NorthStar', 210, 'slam'],
+  [22.0, 22.47, 'big metal', 'RepoLens', 210, 'slam'],
+  [22.5, 23.22, 'big metal', 'CompilerLab', 210, 'slam'],
+  [23.25, 23.97, 'big metal', 'FFprime', 210, 'slam'],
+  [24.0, 25.95, 'big', 'Google Big Code 2026', 210, 'slam'],
+  [24.2, 25.95, 'small', 'Top 15,000 nationally', 318, 'fade'],
+  [26.0, 27.95, 'big', 'Python · Java · C++', 210, 'slam'],
+  [26.2, 27.95, 'mono', 'JavaScript · React · SQL · NumPy · SciPy', 318, 'fade'],
+  [28.0, 29.95, 'big', 'VIT Vellore', 210, 'slam'],
+  [28.2, 29.95, 'small', 'B.Tech CSE · Class of 2028', 318, 'fade'],
+  [30.0, 30.97, 'big', 'Nine districts.', 222, 'slam'],
+  [31.0, 31.97, 'big', 'One engineer.', 222, 'slam'],
+  [32.0, 32.97, 'big', 'It’s not the stack.', 222, 'slam'],
+  [33.0, 34.0, 'big metal', 'It’s the builder.', 222, 'slam'],
+  [35.2, 39.0, 'huge metal', 'Harsh Jha', 170, 'slam'],
+  [36.6, 39.0, 'small', 'Built for what’s next', 344, 'fade'],
+  [39.3, 42.0, 'small', 'Now showing', 170, 'fade'],
+  [39.5, 42.0, 'big metal', 'Film City Talkies', 214, 'slam'],
+  [40.1, 42.0, 'mono', 'github.com/harshjha15335', 330, 'fade'],
+];
+// Footage: [start, end, shot dir, first frame]. Gaps are black.
+const EDIT = [
+  [2, 6, 's01-cst-aerial', 0], [8, 10, 's03-fort-dolly', 0], [10, 12, 's04-fort-tilt', 0], [12, 14, 's05-cst-whip', 0],
+  [14, 16, 's06-bkc-crane', 0], [16, 18, 's07-bkc-chase', 0], [18, 20, 's08-bkc-flyby', 0], [20, 21.5, 's09-powai', 0],
+  [21.5, 23, 's10-andheri', 0], [23, 24, 's11-andheri-whip', 0], [24, 26, 's12-dadar-chase', 0], [26, 28, 's13-worli-aerial', 0],
+  [28, 30, 's14-dadar-station', 0], [30, 32, 's15-juhu', 0],
+  // The riser montage: quarter-second cuts.
+  ...['s07-bkc-chase', 's12-dadar-chase', 's08-bkc-flyby', 's01-cst-aerial', 's06-bkc-crane', 's13-worli-aerial', 's03-fort-dolly', 's15-juhu']
+    .map((s, i) => [32 + i * .25, 32.25 + i * .25, s, 24 + (i * 5) % 20]),
+  [34.5, 39, 's17-talkies', 0],
+];
+const HITS = [6.0, 12.0, 13.0, 14.0, 15.0, 16.0, 20.0, 24.0, 28.0, 34.5, 39.5];
+const FLASH = [[6.0, .9], [34.5, 1], [8.0, .5], [16.0, .4], [24.0, .4], [32.0, .3], [32.5, .35], [33.0, .45], [33.5, .55], [39.3, .5]];
+const $ = id => document.getElementById(id), cueEls = CUES.map(c => { const e = document.createElement('div'); e.className = 'cue ' + c[2]; e.textContent = c[3]; e.style.top = c[4] + 'px'; $('cues').append(e); return e; });
+// Fit long lines inside the frame.
+await document.fonts.ready; cueEls.forEach(e => { e.style.opacity = 1; const w = e.scrollWidth, fs = parseFloat(getComputedStyle(e).fontSize); const span = document.createElement('span'); span.textContent = e.textContent; span.style.cssText = 'display:inline-block'; e.textContent = ''; e.append(span); const sw = span.getBoundingClientRect().width; if (sw > 1180) e.style.fontSize = fs * 1180 / sw + 'px'; e.style.opacity = 0; });
+const clamp = x => Math.max(0, Math.min(1, x)), rnd = s => { const x = Math.sin(s * 12.9898) * 43758.5453; return x - Math.floor(x); };
+window.renderAt = async (t, frameIndex) => {
+  const cut = EDIT.find(e => t >= e[0] - 1e-6 && t < e[1] - 1e-6), img = $('shot');
+  if (cut) {
+    const n = cut[3] + Math.round((t - cut[0]) * 24), src = `shots-out/${cut[2]}/${String(n).padStart(4, '0')}.jpg`;
+    if (!img.src.endsWith(src)) { img.src = src; await img.decode().catch(() => {}); }
+    img.style.visibility = 'visible';
+  } else img.style.visibility = 'hidden';
+  $('grade').style.visibility = $('vignette').style.visibility = cut ? 'visible' : 'hidden';
+  // Darken footage under text so titles read; fade in/out on the first and last shot.
+  const texting = CUES.some(c => t >= c[0] && t < c[1] && !c[2].includes('small') && !c[2].includes('mono'));
+  let dim = texting ? .16 : .04;
+  if (cut && t - cut[0] < .2 && (cut[0] === 2 || cut[0] === 34.5)) dim = Math.max(dim, 1 - (t - cut[0]) / .2);
+  if (cut && cut[0] === 2) dim = Math.max(dim, 1 - clamp((t - 2) / 1.0));
+  $('dim').style.opacity = dim;
+  // Camera shake after hits.
+  const hit = HITS.filter(h => t >= h).pop(), since = hit === undefined ? 9 : t - hit, amp = since < .5 ? 9 * Math.exp(-since * 9) : 0;
+  img.style.transform = `translate(${(rnd(frameIndex) - .5) * amp}px, ${(rnd(frameIndex + 99) - .5) * amp}px) scale(${1 + (cut ? (t - cut[0]) * .006 : 0)})`;
+  const main = CUES.filter(c => t >= c[0] && t < c[1] && /big|huge/.test(c[2])).pop();
+  $('band').style.opacity = main && cut ? .9 : 0; if (main) $('band').style.top = (main[4] + (main[2].includes('huge') ? 75 : 46) - 110) + 'px';
+  // Flash.
+  let fl = 0; for (const [at, a] of FLASH) if (t >= at && t < at + .2) fl = Math.max(fl, a * (1 - (t - at) / .2)); $('flash').style.opacity = fl;
+  // Anamorphic streak and flare on slams.
+  const slam = CUES.filter(c => c[5] === 'slam' && t >= c[0] && t < c[0] + .5).pop();
+  if (slam) { const s = (t - slam[0]) / .5; $('streak').style.opacity = (1 - s) * .9; $('streak').style.top = (slam[4] + (slam[2].includes('huge') ? 82 : 50)) + 'px'; $('streak').style.transform = `scaleX(${.6 + s * .8})`; }
+  else $('streak').style.opacity = 0;
+  const sunShot = cut && /s01|s09|s13|s15/.test(cut[2]);
+  $('flare').style.opacity = sunShot ? .35 + .15 * Math.sin(t * 3) : 0; $('flare').style.left = (780 + Math.sin(t) * 20) + 'px'; $('flare').style.top = '-40px';
+  CUES.forEach((c, i) => {
+    const e = cueEls[i], [a, b, , , , fx] = c;
+    if (t < a || t >= b) { e.style.opacity = 0; return; }
+    const tin = t - a, tout = b - t;
+    let o = Math.min(clamp(tin / (fx === 'slam' ? .06 : .35)), clamp(tout / (fx === 'slam' ? .1 : .3))), scale = 1, ls = '';
+    if (fx === 'slam') scale = 1 + .22 * Math.exp(-tin * 14) + .015 * tin;
+    if (fx === 'track') { ls = `${.6 + tin * .08}em`; }
+    e.style.opacity = o; e.style.transform = `scale(${scale})`; if (ls) e.style.letterSpacing = ls;
+  });
+  $('grain').style.transform = `translate(${Math.floor(rnd(frameIndex * 3) * 64) - 32}px, ${Math.floor(rnd(frameIndex * 7) * 64) - 32}px)`;
+};
+</script></body></html>

@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { hill, maidan } from './nature';
 import type { District, DistrictSpec } from './District';
-import { bench, bungalow, busStop, glassTower, hangar, hoarding, midrise, neoclassical, palm, sign, stall, streetLight, tetrapods, tree, backdropBlock, type Ctx } from './buildings';
+import { bench, bungalow, busStop, glassTower, hangar, hoarding, midrise, neoclassical, palm, sign, stall, streetLight, tetrapods, tree, backdropBlock, towerRelief, type Ctx } from './buildings';
 import type { Outfit } from './CityFolk';
 import type { V3 } from './ColorMesh';
 import { powaiLab, type PowaiLab } from './powaiLabs';
-import { POWAI_PODS } from '../../../data/districtExhibits';
-import { projects } from '../../../data/projects';
+import { ANDHERI_SHOP_BOARDS, POWAI_PODS } from '../../../data/districtExhibits';
+import { POWAI_PROJECTS, projects } from '../../../data/projects';
 import { bkcOffice, juhuStudio, studioBungalow, systemsOffice, talkies, talkiesInterior } from './interiors';
+import { TalkiesAudience, TalkiesScreen } from './TalkiesHouse';
 
 /* Painted hoardings and posters. Plain canvas calls only: original artwork, no assets. */
 type Draw = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => void;
@@ -32,9 +33,9 @@ const titleCard: Draw = (ctx, x, y, w, h) => {
   const g = ctx.createLinearGradient?.(x, y, x, y + h); if (g) { g.addColorStop(0, '#2a1d18'); g.addColorStop(1, '#0d0a09'); ctx.fillStyle = g; } else ctx.fillStyle = '#1a1210';
   ctx.fillRect(x, y, w, h); ctx.fillStyle = '#f7e2b0'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.font = `${Math.round(h * .07)}px Arial, sans-serif`; ctx.fillText('FILM CITY TALKIES PRESENTS', x + w / 2, y + h * .26, w * .8);
-  ctx.font = `bold ${Math.round(h * .2)}px Georgia, serif`; ctx.fillText('NINE SCENES', x + w / 2, y + h * .47, w * .86);
-  ctx.font = `${Math.round(h * .065)}px Arial, sans-serif`; ctx.fillText('one engineering story · you control the pace', x + w / 2, y + h * .64, w * .8);
-  ctx.fillStyle = '#d8a84a'; ctx.font = `bold ${Math.round(h * .055)}px Arial, sans-serif`; ctx.fillText('STAND IN THE AISLE AND PRESS E', x + w / 2, y + h * .82, w * .8);
+  ctx.font = `bold ${Math.round(h * .2)}px Georgia, serif`; ctx.fillText('HARSH JHA', x + w / 2, y + h * .47, w * .86);
+  ctx.font = `${Math.round(h * .065)}px Arial, sans-serif`; ctx.fillText('built for what’s next · the trailer · 42 s', x + w / 2, y + h * .64, w * .8);
+  ctx.fillStyle = '#d8a84a'; ctx.font = `bold ${Math.round(h * .055)}px Arial, sans-serif`; ctx.fillText('HOUSE FULL · PRESS E IN THE AISLE TO WATCH WITH SOUND', x + w / 2, y + h * .82, w * .8);
 };
 const railBoard: Draw = (ctx, x, y, w, h) => {
   ctx.fillStyle = '#f2c52e'; ctx.fillRect(x, y, w, h); ctx.strokeStyle = '#111'; ctx.lineWidth = h * .05; ctx.strokeRect(x + h * .05, y + h * .05, w - h * .1, h - h * .1);
@@ -97,14 +98,16 @@ const andheri: DistrictSpec = {
     const shops = (k: number) => Array.from({ length: k }, () => andheriShops[n++ % andheriShops.length]); yield;
     const block = (w: number, floors: number, style: 'concrete' | 'deco' = 'concrete') => ({ w, build: (c: Ctx) => { const H = midrise(c, { w, d: 12, floors, ground: 'shops', shops: shops(Math.max(2, Math.round(w / 3.6))), style }); for (let f = 0; f < Math.min(floors, 3); f++) sign(c, andheriShops[(n + f * 3) % andheriShops.length][0], w * .42, [(f % 2 ? 1 : -1) * w * .2, 4.9 + f * 3, .45], { bg: ['#c22f2f', '#1f5d9c', '#e0a72a', '#178a6b'][(n + f) % 4], fg: '#ffffff' }, [384, 96]); void H; } }); yield;
     // Gateway arch over the lane (first, so its sign always gets atlas space).
-    for (const s of [-1, 1]) { kit.wall([.8, 7.2, .8], [s * 6.1, 3.6, -3], '#c06a2e', 'plaster'); kit.box([1.1, .4, 1.1], [s * 6.1, 7.3, -3], '#e2b04a', 'stone'); }
-    kit.box([13, 1.4, .6], [0, 6.6, -3], '#2a2f6a', 'plaster'); for (const s of [-1, 1]) sign(c, 'ANDHERI TECH BAZAAR', 11.6, [0, 6.6, -3 + s * .31], { bg: '#2a2f6a', fg: '#ffd35a', local: 'अंधेरी टेक बाज़ार · skills with receipts' }, [1024, 128], s < 0 ? Math.PI : 0); yield;
+    for (const s of [-1, 1]) { kit.wall([.8, 7.2, .8], [s * 5.25, 3.6, -3], '#c06a2e', 'plaster'); kit.box([1.1, .4, 1.1], [s * 5.25, 7.3, -3], '#e2b04a', 'stone'); } // on the pavement, clear of the shop boards
+    kit.box([13, 1.4, .6], [0, 6.6, -3], '#2a2f6a', 'plaster'); for (const s of [-1, 1]) sign(c, 'ANDHERI TECH BAZAAR', 11.6, [0, 6.6, -3 + s * .31], { bg: '#2a2f6a', fg: '#ffd35a', local: 'अंधेरी टेक बाज़ार · skills with receipts', tier: 1 }, [1024, 128], s < 0 ? Math.PI : 0); yield;
     d.frontage(1, [block(11, 4), block(9, 3), block(13, 5), block(10, 3, 'deco'), block(12, 4), block(10, 4)]); yield;
     d.frontage(-1, [block(10, 3), block(12, 5), block(9, 4), block(14, 3), block(11, 4), block(10, 5)]); yield;
     // Pavement stalls under blue tarps, and the overhead tangle of cables.
     const goods = ['#1c1c1c', '#e8e8e2', '#d33b3b', '#2f7fd0', '#f0c43a', '#3caa5a']; yield;
     const labels: Array<[string, string?]> = [['CHARGERS ₹99'], ['EARPHONES'], ['USB-C · HDMI'], ['SCREEN GUARD'], ['POWER BANK'], ['MOUSE · KEYBOARD']]; yield;
-    let i = 0; for (const side of [-1, 1]) for (let z = 8; z > -54; z -= 7.5) if (Math.abs(z + 3) > 3) { const [t] = labels[i++ % labels.length]; stall(c, side * 6.15, z, side > 0 ? -Math.PI / 2 : Math.PI / 2, i % 3 ? '#2f5f9e' : '#c9442f', goods, t); }
+    // Stalls keep clear of the arch and of the skill-shop boards, so the boards read from the road.
+    const nearBoard = (side: number, z: number) => ANDHERI_SHOP_BOARDS.some(([x, bz]) => Math.sign(x) === side && Math.abs(bz - z) < 3.8);
+    let i = 0; for (const side of [-1, 1]) for (let z = 8; z > -54; z -= 7.5) if (Math.abs(z + 3) > 3 && !nearBoard(side, z)) { const [t] = labels[i++ % labels.length]; stall(c, side * 6.15, z, side > 0 ? -Math.PI / 2 : Math.PI / 2, i % 3 ? '#2f5f9e' : '#c9442f', goods, t); }
     for (let z = 10; z > -56; z -= 5.5) for (let k = 0; k < 3; k++) kit.rod([-7.2, 6.2 + k * .35, z + k], [7.2, 6.5 + (k % 2) * .3, z + k * .8 - .6], .012, '#1f2020'); yield;
     for (const [x, z] of [[3.35, -16], [3.35, -17], [3.35, -18], [-3.35, -30], [-3.35, -31], [3.35, -40]] as const) d.parked('bike', x, z, x > 0 ? Math.PI : 0); yield;
     d.parked('cart', -3.7, -9.5, 0); d.parked('cart', 3.7, -46, Math.PI); yield;
@@ -116,10 +119,12 @@ const andheri: DistrictSpec = {
 /* ============================================================ POWAI */
 const project = (id: string) => projects.find(p => p.id === id)!;
 const lab = (id: string, form: PowaiLab['form'], color: string, still: PowaiLab['still']): PowaiLab => ({ id, title: project(id).title, form, color, accent: project(id).color, still });
-/** In the order of the Powai exhibits: the six flagships, then ASTFLOW. */
+/** In the order of the Powai exhibits (POWAI_PROJECTS), then ASTFLOW. */
+const LAB_LOOK: Record<string, [PowaiLab['form'], string, PowaiLab['still']]> = {
+  northstar: ['observatory', '#33456a', 'chart'], moneymetrics: ['bank', '#d9d0bd', 'flows'], repolens: ['lens', '#3a6f8a', 'code'], compilerlab: ['timber', '#d8c9ae', 'automaton'],
+};
 const POWAI_LABS: PowaiLab[] = [
-  lab('northstar', 'observatory', '#33456a', 'chart'), lab('reco', 'tower', '#b0613f', 'queue'), lab('moneymetrics', 'bank', '#d9d0bd', 'flows'),
-  lab('meeting-intelligence-service', 'timber', '#d8c9ae', 'transcript'), lab('rideflow', 'transit', '#e1c37e', 'route'), lab('repolens', 'lens', '#3a6f8a', 'code'),
+  ...POWAI_PROJECTS.map(id => lab(id, ...LAB_LOOK[id])),
   { id: 'astflow', title: 'ASTFLOW', form: 'lab', color: '#5b3d73', accent: '#d7b8f0', still: 'ranking' },
 ];
 const powai: DistrictSpec = {
@@ -127,27 +132,38 @@ const powai: DistrictSpec = {
   traffic: ['sedan', 'suv', 'hatch', 'auto', 'bike', 'bus', 'taxi', 'hatch', 'suv', 'auto', 'sedan', 'bike'],
   *build(d) {
     const c = d.ctx, { kit } = c;
-    // Lakeside promenade, railing and Powai Lake with the far shore's hills.
-    kit.box([8.9, .08, 290], [-8.25, .02, -22], '#b9ae99', 'paving'); yield;
-    for (let z = 118; z > -160; z -= 1.7) kit.box([.24, .14, 1.6], [-3.98, .06, z], '#2f2e2b'); yield;
-    kit.box([.12, .1, 290], [-12.6, 1.05, -22], '#4f5853', 'metal'); kit.box([.06, .06, 290], [-12.6, .55, -22], '#4f5853', 'metal'); yield;
-    for (let z = 118; z > -160; z -= 2.4) kit.box([.08, 1.05, .08], [-12.6, .53, z], '#4f5853', 'metal'); yield;
-    kit.box([1.2, .9, 290], [-13.3, -.4, -22], '#8e8a7d', 'stone'); yield;
-    d.water(160, 300, [-92, -.35, -22], '#41626a', .05); yield;
-    // The far shore: a chain of wooded hills behind the water.
-    for (let i = 0; i < 6; i++) hill(kit, [-158 + (i % 2) * 14, -3, 70 - i * 38], 42 + (i % 3) * 8, 30, 16 + (i % 4) * 5, i * 3.1, 12, 32); yield;
-    for (let i = 0; i < 6; i++) kit.frame([-108 - (i % 2) * 6, 0, -70 + i * 18], Math.PI / 2, () => backdropBlock(c, 14, 28 + (i % 3) * 8, 12, '#e3d7bf')); yield;
+    // Lakeside promenade along the district's street (the avenues carry on past it), railing, and Powai Lake.
+    kit.box([8.9, .08, 86], [-8.25, .02, -22], '#b9ae99', 'paving'); yield;
+    for (let z = 20; z > -65; z -= 1.7) kit.box([.24, .14, 1.6], [-3.98, .06, z], '#2f2e2b'); yield;
+    kit.box([.12, .1, 86], [-12.6, 1.05, -22], '#4f5853', 'metal'); kit.box([.06, .06, 86], [-12.6, .55, -22], '#4f5853', 'metal'); yield;
+    for (let z = 20.5; z > -65; z -= 2.4) kit.box([.08, 1.05, .08], [-12.6, .53, z], '#4f5853', 'metal'); yield;
+    kit.box([1.2, .9, 86], [-13.3, -.4, -22], '#8e8a7d', 'stone'); yield;
+    d.water(140, 520, [-84, -.35, -22], '#41626a', .05); yield;
+    // The far shore: Hiranandani's cream towers with their domes at the water's edge, a wooded bank, the hills behind.
+    kit.box([160, .1, 520], [-234, -.08, -22], '#6f7550', 'stone'); kit.box([4, .6, 520], [-155, -.2, -22], '#8e8a7d', 'stone'); yield;
+    // Seen from 150 m across the water the trees on the bank read as one wooded strip: a low green ridge.
+    hill(kit, [-160, -2, -22], 7, 190, 9, 4.2, 6, 28); yield;
+    for (let i = 0; i < 10; i++) {
+      const h = 42 + (i * 7) % 26, w = 15 + (i % 3) * 3, cream = ['#ece2cc', '#e6d6b8', '#f1e8d6'][i % 3];
+      kit.frame([-168 - (i % 2) * 14, 0, 110 - i * 30], Math.PI / 2, () => { backdropBlock(c, w, h, 14, cream); towerRelief(c, w, h, 14, cream); kit.shape('sphere', [w * .45, w * .32, w * .45], [0, h + .2, -7], '#d9c8a4', 'stone'); kit.cylinder(.3, 5, [0, h + w * .3, -7], '#cdb98f', 'stone'); });
+      if (i % 2) yield;
+    }
+    for (let i = 0; i < 6; i++) hill(kit, [-228 + (i % 2) * 14, -3, 100 - i * 50], 48 + (i % 3) * 8, 34, 26 + (i % 4) * 6, i * 3.1, 12, 32); yield;
     for (let z = 10; z > -60; z -= 16) streetLight(c, -11.8, z, -1); yield;
     for (let z = 4; z > -58; z -= 12) { palm(c, -11.4, z - 6, 7); bench(c, -11.6, z, Math.PI / 2); }
     // One workplace per project along the lake front; the towers stand behind them.
-    d.frontage(1, POWAI_LABS.map(lab => ({ w: POWAI_PODS.w, setback: POWAI_PODS.setback, gap: POWAI_PODS.gap, build: (c: Ctx) => powaiLab(c, lab) })), POWAI_PODS.start); yield;
+    d.frontage(1, [
+      ...POWAI_LABS.map(lab => ({ w: POWAI_PODS.w, setback: POWAI_PODS.setback, gap: POWAI_PODS.gap, build: (c: Ctx) => powaiLab(c, lab) })),
+      // Past the last workplace the frontage carries on as an ordinary office block.
+      { w: 22, setback: POWAI_PODS.setback, build: (c: Ctx) => glassTower(c, { w: 22, d: 16, h: 34, glass: '#4e6a70', frame: '#d6d1c4', name: 'LAKESIDE TECH PARK' }) },
+    ], POWAI_PODS.start); yield;
     d.frontage(1, [
       { w: 22, setback: 13, build: c => neoclassical(c, { w: 22, d: 18, floors: 13, name: "POWAI BUILDER'S DISTRICT" }) },
       { w: 20, setback: 13, build: c => neoclassical(c, { w: 20, d: 18, floors: 15, color: '#ece2cb', name: 'HACKERSPACE · TOWER B' }) },
       { w: 18, setback: 13, build: c => neoclassical(c, { w: 18, d: 16, floors: 11, color: '#e2d6bd', dome: false, name: 'GITHUB WEEKEND LAB' }) },
     ]); yield;
     kit.box([3, .07, 72], [1 * (6.8 + 1.5), .02, -22], '#d6cdb9', 'paving'); yield;
-    hoarding(c, 10.5, 6.5, -55, -Math.PI / 2 + .4, 7.5, poster('#28473b', '#e3b04b', 'FIVE PROJECTS', 'Research terminals · recovery · route planners'), 'AD'); yield;
+    hoarding(c, 10.5, 6.5, -55, -Math.PI / 2 + .4, 7.5, poster('#28473b', '#e3b04b', 'FIVE PROJECTS', 'Trading desk · finance · code search · compilers · ASTFLOW'), 'AD'); yield;
     d.walkers(walkersOf(['jogger', 'office', 'salwar', 'jogger', 'kurta', 'school', 'office', 'sari'], 12), [-6.5, -8.4, -10.2], 12, -56, 1.15); yield;
     d.walkers(walkersOf(['office', 'office', 'salwar', 'shirt'], 7), [4.8, 5.6]); yield;
     d.idle('jogger', [-11.62, .03, 3.45], Math.PI / 2, 'sit'); d.idle('salwar', [-11.62, .03, 4.5], Math.PI / 2, 'sit'); yield;
@@ -159,7 +175,7 @@ const powai: DistrictSpec = {
 /* ============================================================ DADAR */
 const dadar: DistrictSpec = {
   id: 'dadar', guide: 'the platform announcer', guideOutfit: 'kurta',
-  traffic: ['bus', 'taxi', 'hatch', 'sedan', 'tempo', 'bike', 'sedan', 'taxi', 'suv', 'bus', 'hatch', 'bike'],
+  traffic: ['bus', 'taxi', 'hatch', 'sedan', 'tempo', 'bike', 'auto', 'sedan', 'taxi', 'suv', 'bus', 'hatch', 'bike'],
   *build(d) {
     const c = d.ctx, { kit } = c;
     const chawlShops: Array<[string, string?]> = [['VADA PAV CENTRE', 'वडा पाव'], ['STATIONERY · NOTEBOOKS', 'वह्या'], ['CHEMIST', 'औषधे'], ['TAILOR', 'शिंपी'], ['SWEETS · MITHAI', 'मिठाई'], ['KIRANA', 'किराणा'], ['XEROX · PRINTS'], ['BHAJI PAV', 'भाजी']]; yield;
@@ -175,13 +191,13 @@ const dadar: DistrictSpec = {
       for (let x = -16.5; x <= 16.5; x += 3) { kit.box([.6, 4.2, .6], [x, 2.1, .3], '#dccaa5', 'stone'); kit.box([2.2, 3.2, .1], [x + 1.5, 1.7, -.05], '#2d2924', 'solid'); }
       kit.box([37, .3, 2], [0, 4.3, .6], '#b9a580', 'stone');
       for (const s of [-1, 1]) kit.shape('box', [38, .16, 6], [0, 6.7, -2.5 + s * 2.6], '#9b4b32', 'stone', [s * .38, 0, 0]);
-      sign(c, 'DADAR', 9, [0, 4.95, .95], { draw: railBoard }, [1024, 192]);
+      sign(c, 'DADAR', 9, [0, 4.95, .95], { draw: railBoard, tier: 1 }, [1024, 192]);
       sign(c, 'PLATFORM 1 · WESTERN LINE ↑ · CENTRAL LINE →', 7, [10, 3.7, .7], { bg: '#1d3b6a', fg: '#ffffff', border: 'none' }, [1024, 96]);
     }); yield;
     // Foot-over bridge spanning Ranade Road.
     kit.box([18, .4, 3], [0, 6.6, -30], '#8e8a80', 'stone'); kit.box([18, 1.1, .08], [0, 7.3, -31.45], '#5d6a66', 'metal'); kit.box([18, 1.1, .08], [0, 7.3, -28.55], '#5d6a66', 'metal'); yield;
     kit.shape('box', [18.4, .1, 3.6], [0, 8.4, -30], '#7c8a86', 'metal'); for (const x of [-7.6, 7.6]) kit.wall([.5, 6.6, .5], [x, 3.3, -30], '#8e8a80', 'stone'); yield;
-    sign(c, 'DADAR STATION · पूर्व ⇄ पश्चिम', 7, [0, 7.1, -28.5], { bg: '#1d3b6a', fg: '#ffffff' }, [1024, 128]); yield;
+    sign(c, 'DADAR STATION · पूर्व ⇄ पश्चिम', 7, [0, 7.1, -28.5], { bg: '#1d3b6a', fg: '#ffffff', tier: 1 }, [1024, 128]); yield;
     // Flower market heaps on the west pavement, and a maidan for evening cricket.
     for (let z = -2; z > -24; z -= 4.4) { const k = kit; k.box([2, .5, 1.2], [-6.3, .25, z], '#6a5440', 'wood'); for (let i = 0; i < 30; i++) k.shape('sphere', [.09, .08, .09], [-7.1 + (i % 10) * .18, .55 + Math.floor(i / 10) * .07, z - .4 + Math.floor(i / 10) * .3], i % 3 ? '#f08a1c' : '#f6c624', 'foliage'); k.solid([2, .8, 1.2], [-6.3, .4, z]); for (let i = 0; i < 4; i++) k.shape('cylinder', [.04, .9, .04], [-5.6, 1.3, z - .4 + i * .25], '#f5a623', 'foliage'); }
     sign(c, 'DADAR FLOWER MARKET', 4.6, [-7.6, 3, -12], { bg: '#7a2b2b', fg: '#ffe2a8', local: 'फूल बाजार' }, [768, 128], Math.PI / 2); yield;
@@ -203,17 +219,17 @@ const dadar: DistrictSpec = {
 const worli: DistrictSpec = {
   id: 'worli', guide: 'the signal keeper', guideOutfit: 'office', west: 'open', westLimit: 13.4, skyline: 'east',
   palette: ['#e1d3b7', '#cfd8d2', '#e6c9b4', '#d5d0bd'],
-  traffic: ['sedan', 'taxi', 'suv', 'hatch', 'bike', 'bus', 'taxi', 'sedan', 'suv', 'hatch', 'taxi', 'bike'],
+  traffic: ['sedan', 'taxi', 'suv', 'hatch', 'bike', 'bus', 'auto', 'taxi', 'sedan', 'suv', 'hatch', 'taxi', 'bike'],
   *build(d) {
     const c = d.ctx, { kit } = c;
-    kit.box([9.4, .08, 290], [-8.5, .02, -22], '#c2b49b', 'paving'); for (let z = 118; z > -160; z -= 1.7) kit.box([.24, .14, 1.6], [-3.98, .06, z], '#2f2e2b'); yield;
-    // Sea wall the whole city sits on at sunset, then tetrapods and the Arabian Sea.
-    kit.box([.7, .75, 290], [-13.5, .38, -22], '#b7ad98', 'stone'); kit.box([.9, .12, 290], [-13.5, .8, -22], '#cfc5ae', 'stone'); yield;
-    kit.box([8, 2.2, 290], [-18, -1.2, -22], '#8b867a', 'stone'); yield;
-    tetrapods(c, -15, -21, 60, -110, 260); yield;
-    d.water(170, 320, [-100, -.55, -22], '#4e6f78', .16); yield;
-    // Bandra–Worli Sea Link on the north-western horizon.
-    const deck: V3 = [-72, 7, -95]; kit.frame(deck, -.55, () => {
+    kit.box([9.4, .08, 86], [-8.5, .02, -22], '#c2b49b', 'paving'); for (let z = 20; z > -65; z -= 1.7) kit.box([.24, .14, 1.6], [-3.98, .06, z], '#2f2e2b'); yield;
+    // Sea wall the whole city sits on at sunset, then tetrapods and the Arabian Sea out to the horizon.
+    kit.box([.7, .75, 86], [-13.5, .38, -22], '#b7ad98', 'stone'); kit.box([.9, .12, 86], [-13.5, .8, -22], '#cfc5ae', 'stone'); yield;
+    kit.box([8, 2.2, 86], [-18, -1.2, -22], '#8b867a', 'stone'); yield;
+    tetrapods(c, -15, -21, 20, -64, 90); yield;
+    d.water(640, 520, [-334, -.55, -22], '#4e6f78', .16); yield;
+    // Bandra–Worli Sea Link out on the water to the north-west.
+    const deck: V3 = [-150, 7, -150]; kit.frame(deck, -.55, () => {
       kit.box([1.2, .9, 190], [0, 0, 0], '#cfc8b8', 'stone');
       for (const z of [-40, 40]) { kit.rod([0, -8, z], [-1.8, 30, z], .5, '#d8d0bd', 'stone'); kit.rod([0, -8, z], [1.8, 30, z], .5, '#d8d0bd', 'stone'); kit.box([4.2, 1, 1], [0, 30, z], '#d8d0bd', 'stone'); for (let i = 1; i <= 9; i++) for (const s of [-1, 1]) kit.rod([0, 28 - i * 1.4, z], [0, .3, z + s * i * 4.3], .05, '#e6e2d6', 'metal'); }
       for (let z = -90; z <= 90; z += 15) kit.box([1.4, 8, 1.4], [0, -4.5, z], '#bdb6a6', 'stone');
@@ -227,11 +243,11 @@ const worli: DistrictSpec = {
       { w: 16, build: c => midrise(c, { w: 16, d: 13, floors: 5, style: 'deco', ground: 'wall', color: '#e3d2b2', corner: true, name: ['SEA VIEW', 'सी व्ह्यू'] }) },
       { w: 14, build: c => midrise(c, { w: 14, d: 13, floors: 4, style: 'deco', ground: 'wall', color: '#d5ddd5', name: ['SAGAR DARSHAN', 'सागर दर्शन'] }) },
       { w: 17, build: c => midrise(c, { w: 17, d: 13, floors: 6, style: 'deco', ground: 'lobby', color: '#e8c9b2', corner: true, name: ['NEPTUNE COURT'] }) },
-      { w: 14, build: c => midrise(c, { w: 14, d: 13, floors: 4, style: 'deco', ground: 'wall', color: '#d9d2bd', name: ['SHANTI NIWAS', 'शांती निवास'] }) },
+      { w: 14, build: c => midrise(c, { w: 14, d: 13, floors: 4, style: 'deco', ground: 'lobby', color: '#d9d2bd', name: ['SHANTI NIWAS', 'शांती निवास'] }) },
     ]); yield;
     hoarding(c, 9.4, 7, -55, -Math.PI / 2 + .35, 8, poster('#3a2f6a', '#e9a33c', 'PROOF, NOT ADJECTIVES', 'Big Code qualifier · five merged upstream PRs · metrics with sources'), 'AD'); yield;
-    sign(c, 'WORLI SEA FACE', 3.2, [-5.6, 2.4, 9], { bg: '#1e4b6e', fg: '#ffffff', local: 'वरळी सी फेस' }, [768, 160], Math.PI / 2); yield;
-    kit.cylinder(.06, 2.5, [-5.6, 1.25, 9], '#5a5f5c', 'metal', true); yield;
+    sign(c, 'WORLI SEA FACE', 3.2, [-5.6, 2.4, 9], { bg: '#1e4b6e', fg: '#ffffff', local: 'वरळी सी फेस', tier: 1 }, [768, 160], Math.PI / 2); yield;
+    kit.cylinder(.06, 2.6, [-5.69, 1.3, 9], '#5a5f5c', 'metal', true); // behind the board, not through its face yield;
     d.walkers(walkersOf(['jogger', 'jogger', 'salwar', 'elder', 'kurta', 'sari', 'jogger', 'office', 'school'], 18), [-6.2, -7.4, -8.6, -12.1], 12, -58, 1.2); yield;
     d.walkers(walkersOf(['office', 'shirt', 'salwar'], 5), [5, 5.6]); yield;
     for (let z = 8; z > -56; z -= 7) d.idle(z % 2 ? 'sari' : 'shirt', [-13.2, .55, z], -Math.PI / 2, 'sit'); yield;
@@ -246,12 +262,13 @@ const juhu: DistrictSpec = {
   traffic: ['suv', 'sedan', 'auto', 'bus', 'taxi', 'hatch', 'sedan', 'suv', 'bike', 'sedan', 'auto', 'hatch'],
   *build(d) {
     const c = d.ctx, { kit } = c;
-    kit.box([2.9, .08, 290], [-5.35, .02, -22], '#aea493', 'paving'); for (let z = 118; z > -160; z -= 1.7) kit.box([.24, .14, 1.6], [-3.98, .06, z], '#2f2e2b'); yield;
-    kit.box([1, .5, 290], [-7.2, .25, -22], '#c9bda6', 'stone'); yield;
-    kit.box([28, .1, 300], [-21.5, -.02, -22], '#dcc8a0', 'plaster'); kit.box([10, .1, 300], [-40.5, -.06, -22], '#a8946f', 'plaster'); yield;
-    const sea = d.water(200, 320, [-139, -.1, -22], '#557780', .09); yield;
-    const foam = new THREE.Mesh(new THREE.BoxGeometry(1.2, .03, 300), new THREE.MeshBasicMaterial({ color: '#efe9db', transparent: true, opacity: .75 })); d.group.add(foam); yield;
-    d.animate(time => { foam.position.set(-40 + Math.sin(time * .5) * 1.2, .02, -22); }); void sea; yield;
+    kit.box([2.9, .08, 86], [-5.35, .02, -22], '#aea493', 'paving'); for (let z = 20; z > -65; z -= 1.7) kit.box([.24, .14, 1.6], [-3.98, .06, z], '#2f2e2b'); yield;
+    kit.box([1, .5, 86], [-7.2, .25, -22], '#c9bda6', 'stone'); yield;
+    // Dry sand, then wet sand shelving under the Arabian Sea, which runs out to the horizon; the surf line moves with the waves.
+    kit.box([38, .1, 86], [-26.5, -.02, -22], '#dcc8a0', 'plaster'); kit.box([14, .1, 86], [-52.5, -.09, -22], '#a8946f', 'plaster'); kit.box([12, .1, 86], [-65, -.2, -22], '#8f7f60', 'plaster'); yield;
+    const sea = d.water(640, 520, [-379, -.22, -22], '#557780', .06); yield;
+    const foam = new THREE.Mesh(new THREE.BoxGeometry(1.6, .03, 86), new THREE.MeshBasicMaterial({ color: '#efe9db', transparent: true, opacity: .7 })); d.group.add(foam); yield;
+    d.animate(time => { foam.position.set(-59.5 + Math.sin(time * .5) * 1.4, -.1 + Math.sin(time * .5) * .04, -22); }); void sea; yield;
     // Chowpatty food stalls on the sand.
     const food: Array<[string, string, string]> = [['PAV BHAJI', 'पाव भाजी', '#c0392b'], ['BHEL PURI', 'भेळ', '#d68a1c'], ['PANI PURI', 'पाणी पुरी', '#1f7a5c'], ['KALA KHATTA GOLA', 'गोला', '#6b2d8c'], ['KULFI', 'कुल्फी', '#2a6fb0'], ['SUGARCANE JUICE', 'ऊस रस', '#3d8a2f']]; yield;
     food.forEach(([t, l, col], i) => stall(c, -13.5, 6 - i * 6.2, Math.PI / 2, col, ['#f2e3b0', '#e8b04a', '#c45a2a', '#7aa54a'], t, l)); yield;
@@ -263,7 +280,7 @@ const juhu: DistrictSpec = {
       { w: 16, setback: 2, build: c => midrise(c, { w: 16, d: 13, floors: 3, style: 'deco', ground: 'wall', color: '#f0e4d0', name: ['SANDCASTLE'] }) },
       { w: 15, setback: 2, build: c => bungalow(c, { w: 13, d: 11, color: '#e9dcc4' }) },
     ]); yield;
-    for (let z = 11; z > -58; z -= 10) tree(c, 7.6, z, 6.5, '#5a8a3c'); yield;
+    for (let z = 11; z > -58; z -= 10) tree(c, 7.6, z, 6.5, '#5a8a3c', 1, 'almond'); yield;
     hoarding(c, -30, 6, -56, .3, 9, poster('#a3423a', '#f1c56a', 'SAY HELLO', 'Résumé · GitHub · LinkedIn · harsh.jha'), 'AD'); yield;
     d.walkers(walkersOf(['salwar', 'shirt', 'sari', 'school', 'kurta', 'jogger', 'elder', 'school', 'office'], 18), [-17, -21, -26, -31, -35], 10, -54, .9); yield;
     d.walkers(walkersOf(['shirt', 'salwar', 'jogger'], 5), [-5, -5.6]); yield;
@@ -278,12 +295,12 @@ const juhu: DistrictSpec = {
 /* ============================================================ FILM CITY */
 const filmcity: DistrictSpec = {
   id: 'filmcity', guide: 'the projectionist', guideOutfit: 'shirt', palette: ['#c9c2b0', '#b8b29e', '#d0c4ad'], eastOpen: [[-7.8, 13.8]],
-  traffic: ['suv', 'bus', 'sedan', 'auto', 'hatch', 'sedan', 'tempo', 'suv', 'bike', 'hatch'],
+  traffic: ['suv', 'bus', 'sedan', 'auto', 'hatch', 'taxi', 'sedan', 'tempo', 'suv', 'bike', 'auto', 'hatch'],
   *build(d) {
     const c = d.ctx, { kit } = c;
     // Gate arch at the studio entrance.
     for (const s of [-1, 1]) kit.wall([1.2, 7, 1.2], [s * 6.2, 3.5, 15], '#7a2c38', 'plaster'); yield;
-    kit.box([14, 1.6, .9], [0, 7.6, 15], '#7a2c38', 'plaster'); for (const s of [-1, 1]) sign(c, 'FILM CITY · GOREGAON', 11, [0, 7.6, 15 + s * .46], { bg: '#7a2c38', fg: '#f4d488', local: 'दादासाहेब फाळके चित्रनगरी' }, [1024, 160], s < 0 ? Math.PI : 0); yield;
+    kit.box([14, 1.6, .9], [0, 7.6, 15], '#7a2c38', 'plaster'); for (const s of [-1, 1]) sign(c, 'FILM CITY · GOREGAON', 11, [0, 7.6, 15 + s * .46], { bg: '#7a2c38', fg: '#f4d488', local: 'दादासाहेब फाळके चित्रनगरी', tier: s < 0 ? 1 : 2 }, [1024, 160], s < 0 ? Math.PI : 0); yield;
     // Film City Talkies: an Art Deco single-screen with a bulb-lit marquee.
     d.frontage(1, [
       { w: 22, setback: 1, build: c => talkies(c, { screen: titleCard }) },
@@ -302,6 +319,9 @@ const filmcity: DistrictSpec = {
     sign(c, 'SCENE 2', 1.5, [12.6, 1.9, -7.59], { draw: filmPoster('#173a4a', 'UPSTREAM', 'five pull requests, one summer', '#e0b03a') }, [256, 352]); yield;
     for (const [x, title, tag, bg, hue] of [[9.8, 'SIGNALS', 'what the receipts say', '#3a2a14', '#e05a3a'], [12.6, 'NEXT CHAPTER', 'still being written', '#14303a', '#f0b03a']] as const) sign(c, title, 1.5, [x, 1.9, 13.59], { draw: filmPoster(bg, title, tag, hue) }, [256, 352], Math.PI); yield;
     d.idle('sari', [21.2, .03, 5.82], face(1, 0), 'sit'); d.idle('kurta', [21.2, .03, 7.06], face(1, 0), 'sit'); d.idle('school', [24.5, .03, -4.74], face(1, 0), 'sit', .72); yield;
+    // Show night: every other seat taken by a baked, instanced audience, and the trailer on the screen while the visitor is in the hall.
+    const audience = new TalkiesAudience([{ x: 21.2, z: 5.82 }, { x: 21.2, z: 7.06 }, { x: 24.5, z: -4.74 }]), screen = new TalkiesScreen();
+    d.group.add(audience.group, screen.mesh); d.animate((_t, _d, view) => { audience.update(view); screen.update(view); }); d.onDispose(() => { audience.dispose(); screen.dispose(); }); yield;
     d.idle('worker', [14.7, .03, 11.2], face(-1, 0), 'stand'); yield;
     // A film unit mid-shoot: camera crane, lights, director's chair.
     const rig = (x: number, z: number) => { kit.rod([x, 0, z], [x, 2.6, z], .03, '#222', 'metal'); kit.box([.6, .5, .3], [x, 2.8, z], '#1e1e1e', 'metal'); kit.box([.5, .4, .02], [x, 2.8, z + .16], '#fff3c8', 'glow'); for (let a = 0; a < 3; a++) kit.rod([x, 1.2, z], [x + Math.cos(a * 2.1) * .5, 0, z + Math.sin(a * 2.1) * .5], .02, '#222', 'metal'); }; yield;

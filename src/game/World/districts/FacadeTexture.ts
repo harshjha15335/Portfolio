@@ -65,3 +65,29 @@ export function facadeTexture() {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8;
   shared = t; return t;
 }
+
+let night: THREE.CanvasTexture | null = null;
+/**
+ * The same window grid as `facadeTexture`, as an emissive mask: after dark about half the flats are lit, in warm
+ * tungsten, cool tube-light or dim TV-blue, some only behind a curtain edge; everything else stays black. Varied, so a
+ * block never glows uniformly. Shared like the façade itself.
+ */
+export function facadeNightTexture() {
+  if (night) return night;
+  const size = 256, px = size / FACADE_TILE, c = document.createElement('canvas'); c.width = c.height = size;
+  const ctx = c.getContext('2d')!, random = seededRandom('district:facade-night');
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, size, size);
+  const tones = ['#ffc77a', '#ffb860', '#ffd9a0', '#e6efff', '#cfe0ff', '#7f9cff'];
+  for (let floor = 0; floor < 4; floor++) for (let bay = 0; bay < 4; bay++) {
+    const x0 = bay * 3 * px, top = size - (floor + 1) * 3 * px, ww = 1.55 * px, wh = 1.35 * px, wx = x0 + (3 * px - ww) / 2, wy = top + .75 * px;
+    if (random() > .55) continue;
+    const tone = tones[Math.floor(random() * tones.length)], dim = .45 + random() * .55;
+    ctx.globalAlpha = dim; ctx.fillStyle = tone; ctx.fillRect(wx, wy, ww, wh);
+    // A drawn curtain hides part of some lit windows.
+    if (random() > .6) { ctx.globalAlpha = 1; ctx.fillStyle = '#000'; const cw = ww * (.3 + random() * .4); ctx.fillRect(random() > .5 ? wx : wx + ww - cw, wy, cw, wh); }
+    ctx.globalAlpha = 1; ctx.fillStyle = '#000'; ctx.fillRect(wx + ww / 2 - 1, wy, 2, wh); ctx.fillRect(wx, wy + wh * .32, ww, 1.5);
+  }
+  ctx.fillStyle = '#000'; ctx.fillRect(0, 0, size, Math.round(size * (1 - FACADE_PLAIN_V) * 2));
+  night = new THREE.CanvasTexture(c); night.colorSpace = THREE.SRGBColorSpace; night.wrapS = night.wrapT = THREE.RepeatWrapping;
+  return night;
+}

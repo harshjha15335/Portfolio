@@ -163,7 +163,8 @@ describe('collision-safe driving scenarios', () => {
   });
   it('8 · buses only drive lanes they can turn in (straight through streets, never the Fort Road loop)', () => {
     const fort = createFortRoadTraffic(() => []);
-    for (const v of fort.diagnostics().filter(d => d.kind === 'bus')) expect(Math.abs(v.envelope.z + 62), 'bus on the cross street').toBeLessThan(3);
+    // Fort Road's buses run the cross street or straight up the avenue to BKC.
+    for (const v of fort.diagnostics().filter(d => d.kind === 'bus')) expect(Math.abs(v.envelope.z + 62) < 3 || (v.envelope.z < -66 && Math.abs(Math.abs(v.envelope.x) - 1.6) < .01), 'bus on the cross street or the avenue').toBe(true);
     for (const id of Object.keys(DISTRICT_SPECS)) { const w = districtWorld(id); for (const v of w.traffic.diagnostics().filter(d => d.kind === 'bus')) expect(Math.abs(Math.abs(v.envelope.x) - 1.6)).toBeLessThan(.01); }
   });
 });
@@ -180,8 +181,9 @@ describe('Fort Road with the passenger ride', () => {
       for (let i = 0; i < 30 * 240; i++) {
         const event = w.step(1 / 30, visitor, view);
         if (w.cab.stage === 'waiting' && !departed) { departed = true; w.cab.depart(cityRideLegs({ x: w.cab.pose.x, z: w.cab.pose.z }, destination), 1000); }
-        // Fare distance only grows, smoothly (the cut's virtual distance is released on the arrival road: tests/fare-meter.test.ts).
-        if (w.cab.stage === 'riding') { const jump = w.cab.chargeable - last; expect(jump).toBeGreaterThanOrEqual(0); expect(jump).toBeLessThan(.5); last = w.cab.chargeable; }
+        // Fare distance only grows, smoothly (the virtual city distance is released in step with the road driven:
+        // tests/fare-meter.test.ts), so a frame adds at most its own road scaled by that share.
+        if (w.cab.stage === 'riding') { const jump = w.cab.chargeable - last, road = Math.max(1, w.cab.tripLength - 1000); expect(jump).toBeGreaterThanOrEqual(0); expect(jump).toBeLessThan(.5 * (1 + 1000 / road)); last = w.cab.chargeable; }
         if (event === 'cut') { cut = true; break; }
         const r = worst(w.space); if (r.min < min) { min = r.min; pair = r.pair; }
         if (w.cab.stage === 'arrived') break;
@@ -262,6 +264,14 @@ describe('spawn and despawn rules', () => {
     for (let i = 0; i < 30 * 600; i++) { time += 1 / 30; space.clear(); t.update(time, 1 / 30, [new THREE.Vector3(200, 1.6, 0)], [], { space, view: look(200, 0, -Math.PI / 2) }); min = Math.min(min, worst(space).min); }
     expect(min).toBeGreaterThan(OVERLAP); expect(t.diagnostics().reduce((n, d) => n + d.entries, 0)).toBeGreaterThan(20);
   });
+  it('offers a passing auto or taxi coming toward the visitor at the kerb, and lets it leave the traffic', () => {
+    const t = new LaneTraffic(), lane = t.lane([[1.6, 0, 100], [1.6, 0, -100]]); t.vehicle(lane, 'sedan', .2, 'a'); t.vehicle(lane, 'taxi', .35, 'b'); t.vehicle(lane, 'auto', .7, 'c');
+    t.update(0, 0, [], [], {});
+    // The taxi is 30 m short of the visitor on the east kerb (coming north, −z); the auto has already passed.
+    const v = t.passing(4.6, 0)!; expect(v.kind).toBe('taxi'); expect(v.z).toBeCloseTo(30, 0);
+    expect(t.passing(-4.6, 0)).toBeNull();
+    t.withdraw(v.id); expect(t.diagnostics().find(d => d.id === v.id)!.active).toBe(false); expect(t.passing(4.6, 0)).toBeNull();
+  });
   it('leaves at the lane end only out of sight', () => {
     const t = new LaneTraffic(), lane = t.lane([[0, 0, 20], [0, 0, -20]]); t.vehicle(lane, 'sedan', .9, 'x');
     const visitor = new THREE.Vector3(6, 1.6, 0); let time = 0;
@@ -304,7 +314,8 @@ describe('long runs on every street', () => {
     }
     expect(min, pair).toBeGreaterThan(OVERLAP);
     expect(offRoad).toBe(0);
-    expect(stuck).toBe(0); expect(rides).toBeGreaterThan(2);
+    // A ride out of the district now drives its avenue to the seam (a minute or more), so two or three fit in the run.
+    expect(stuck).toBe(0); expect(rides).toBeGreaterThanOrEqual(2);
     expect([...jammed]).toEqual([]);
   }, 240000);
 });

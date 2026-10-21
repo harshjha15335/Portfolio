@@ -20,10 +20,10 @@ export interface Friend {
 
 export const FRIENDS: Friend[] = [
   {
-    id: 'aarush', name: 'Aarush Shetty', role: 'Research fellow, Fort Research Institute', cast: 'aarush', district: 'fort', offset: [0, 0],
+    id: 'aarush', name: 'Aarush Shetty', role: 'Fellow contributor, Fort Open Source Hall', cast: 'aarush', district: 'fort', offset: [0, 0],
     lines: [
-      'Hey, I’m Aarush. I look after the research room while Harsh is out on the streets.',
-      'Everything in here is FFprime: multipole electrostatics, written upstream for Theochem during Google Summer of Code 2026.',
+      'Hey, I’m Aarush. I look after the Open Source Hall while Harsh is out on the streets.',
+      'Harsh was a Google Summer of Code 2026 contributor at QC-Devs. Everything in here is FFprime: multipole electrostatics, written upstream and merged after review.',
       'Five pull requests were merged after review. The cork board on the wall strings them together in order, and each card links to GitHub.',
       'My favourite is the gradient check by the door. Three field formulas, one correct. One of Harsh’s PRs fixed exactly that factor of two.',
     ],
@@ -75,13 +75,13 @@ export const FRIENDS: Friend[] = [
     actions: [{ label: 'SEE THE ACHIEVEMENTS ↗', open: 'worli' }],
   },
   {
-    id: 'abhinav', name: 'Abhinav Jha', role: 'Achievements runner, Worli Proof Deck', cast: 'abhinav', district: 'worli', offset: [0, -3.5],
+    id: 'abhinav', name: 'Abhinav Jha', role: 'Studio helper, Juhu Studio', cast: 'abhinav', district: 'juhu', offset: [0, -2.4],
     lines: [
       'Hi! I’m Abhinav. Power up in progress!',
-      'I keep score of the achievements in your journal. Press J to see how many you have unlocked.',
-      'Visit all nine stops and you get the best one. I’m still collecting mine.',
+      'This is Juhu Studio, the human side of the city: who Harsh is, his résumé, and how to say hello.',
+      'Start with the notice board, pick up a résumé, then leave a message at the contact terminal. Press J any time to see your achievements.',
     ],
-    actions: [{ label: 'SEE THE ACHIEVEMENTS ↗', open: 'worli' }],
+    actions: [{ label: 'READ THE NOTICE BOARD', open: 'juhu-about' }, { label: 'PICK UP THE RÉSUMÉ', open: 'juhu-resume' }, { label: 'USE THE CONTACT TERMINAL', open: 'juhu-contact' }],
   },
 ];
 

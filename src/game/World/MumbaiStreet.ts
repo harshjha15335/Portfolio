@@ -23,6 +23,9 @@ import { FacadeBatch, faceFrame } from './architecture/BackdropFacades';
 import { createTransitModel, animateTransit } from './TransitModel';
 import { loadVehicleBody } from './AuthoredVehicles';
 import { StreetMaterials, type Surface } from './StreetMaterials';
+import type { SignRecord } from './districts/DistrictSystems';
+import { BrakeLights } from './traffic/BrakeLights';
+import { lightPoolMesh, POOL_COLOR } from './time/nightLights';
 import { facadeSpec, seededRandom } from './StreetArchitecture';
 import { FacadePanels } from './architecture/FacadePanels';
 import { SpatialIndex } from './spatial/SpatialIndex';
@@ -83,6 +86,10 @@ export class MumbaiStreet {
   private pedestrians: THREE.Group[] = [];
   private signAtlas: THREE.CanvasTexture;
   private signs: THREE.Mesh[] = [];
+  /** Every sign placed on Fort Road and at CST (world frame), for the sign audit; filled when the signs are merged. */
+  readonly signRecords: SignRecord[] = [];
+  /** Brake lamps of the Fort Road loop taxis and autos. */
+  private brakes = new BrakeLights(8);
   private signIndex = 0;
   private signCanvas: HTMLCanvasElement;
   readonly facadeCount = 14;
@@ -197,8 +204,10 @@ export class MumbaiStreet {
     for (let i = 0; i < uv.count; i++) uv.setXY(i, (col + uv.getX(i)) / 4, 1 - (row + 1 - uv.getY(i)) / 16);
     const key = 'sign-atlas';
     if (!this.materials.has(key)) this.materials.set(key, new THREE.MeshBasicMaterial({ map: this.signAtlas, side: THREE.DoubleSide }));
-    const mesh = new THREE.Mesh(geometry, this.materials.get(key)!); mesh.position.set(...position); parent.add(mesh); this.signs.push(mesh); return mesh;
+    const mesh = new THREE.Mesh(geometry, this.materials.get(key)!); mesh.position.set(...position); mesh.userData.sign = { text: english, tier: 2, aspect: 1 / 6 }; parent.add(mesh); this.signs.push(mesh); return mesh;
   }
+  /** Mark a sign Tier 1: a name or piece of wayfinding the visitor must be able to read (checked by `tests/signs.test.ts`). */
+  private named(mesh: THREE.Mesh) { mesh.userData.sign.tier = 1; return mesh; }
   /** Rows 14–15 of the sign atlas hold up to four 512×256 painted panels (boards and screens); signs fill rows 0–13. */
   private panelIndex = 0;
   private panel(parent: THREE.Object3D, draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => void, position: Triple, width: number) {
@@ -209,7 +218,7 @@ export class MumbaiStreet {
     const geometry = new THREE.PlaneGeometry(width, width / 2), uv = geometry.attributes.uv;
     for (let i = 0; i < uv.count; i++) uv.setXY(i, (index + uv.getX(i)) / 4, 1 - (16 - uv.getY(i) * 2) / 16);
     if (!this.materials.has('sign-atlas')) this.materials.set('sign-atlas', new THREE.MeshBasicMaterial({ map: this.signAtlas, side: THREE.DoubleSide }));
-    const mesh = new THREE.Mesh(geometry, this.materials.get('sign-atlas')!); mesh.position.set(...position); parent.add(mesh); this.signs.push(mesh); return mesh;
+    const mesh = new THREE.Mesh(geometry, this.materials.get('sign-atlas')!); mesh.position.set(...position); mesh.userData.sign = { text: 'panel', tier: 3, aspect: 1 / 2 }; parent.add(mesh); this.signs.push(mesh); return mesh;
   }
   private makeArch() {
     const shape = new THREE.Shape();
@@ -253,7 +262,8 @@ export class MumbaiStreet {
       this.solidProxy([1,4,82],[side*19,2,-22],this.group);
     }
     // Original invisible safety limits remain exactly where route/nav authoring expects them.
-    this.solidProxy([38,4,1],[0,2,-63],this.group);
+    // The north limit opens between the pavements: Fort Road carries on over the cross street as the avenue to BKC.
+    for(const side of [-1,1]){this.solidProxy([12.6,4,1],[side*12.95,2,-63],this.group);this.solidProxy([1,4,6.5],[side*19,2,-66.25],this.group);this.solidProxy([12.6,4,1],[side*12.95,2,-69],this.group);}
     this.solidProxy([38,4,1],[0,2,20],this.group);
     this.streetContinuation();
     for (let z = -54; z < 12; z += 6) this.box([.08, .008, 2], [0, .005, z], '#a2997e');
@@ -268,7 +278,6 @@ export class MumbaiStreet {
   private streetContinuation(){
     // A cross street and oblique corner mask the non-traversable north limit.
     this.box([72,.035,9],[0,-.012,-62],'#585b5d',false,this.group,false,false,'asphalt');
-    this.box([9,.035,48],[-23,-.012,-83],'#585b5d',false,this.group,false,false,'asphalt');
     for(const z of [-67,-57])this.box([74,.05,2.0],[0,.014,z],'#afa392',false,this.group,false,false,'paving');
     // Three layers continue beyond both termini. No distant façade is a navigation surface.
     const blocks=[[-1.5,-112,18,13,12],[-26,-23,15,13,18],[26,-29,18,14,20],[-9,-75,13,10,13],[8,-72,12,8,11],[26,-71,17,12,16],[-34,-82,14,10,12],[-10,-99,18,11,14],[13,-104,22,12,16],[34,-112,26,14,17],[-36,-116,24,13,16],[-14,41,16,12,15],[15,44,19,13,15],[-36,58,23,14,17],[34,66,27,15,18],[-12,82,29,16,18],[12,108,32,17,20]];
@@ -276,6 +285,8 @@ export class MumbaiStreet {
     const north=new FacadeBatch(),south=new FacadeBatch(),skyline=new FacadeBatch();
     const facade=(batch:FacadeBatch,parent:THREE.Object3D,offset:THREE.Vector3,yaw:number,width:number,height:number,color:string,seed:number,coarse=false)=>batch.add({frame:faceFrame(this.group,parent,offset,yaw),width,height,tint:new THREE.Color(color),seed,coarse,ground:!coarse});
     for(const [i,[x,z,h,w,d]] of blocks.entries()){
+      // North of the cross street the avenue to BKC and its own buildings take over.
+      if(z<-60)continue;
       const g=new THREE.Group();g.position.set(x,0,z);g.rotation.y=(i>0&&i<5?-.22:i%3===0?.13:0);this.group.add(g);
       const color=['#aa9987','#9b9e93','#b5aa98','#8e9994'][i%4],batch=z<-20?north:south;
       this.box([w,h,d],[0,h/2,0],color,false,g,false,true);
@@ -297,7 +308,7 @@ export class MumbaiStreet {
     // Fogged, overlapping skyline closes every azimuth instead of revealing a bare ground/sky seam.
     // It is static backdrop geometry outside the original safety envelope, not explorable districts.
     for(let i=0;i<32;i++){
-      const angle=i*Math.PI/16,h=16+(i%5)*3,g=new THREE.Group();g.position.set(Math.sin(angle)*120,0,-22+Math.cos(angle)*120);g.rotation.y=angle;this.group.add(g);
+      const angle=i*Math.PI/16,h=16+(i%5)*3;if(Math.abs(Math.sin(angle)*120)<40&&Math.cos(angle)<0)continue;const g=new THREE.Group();g.position.set(Math.sin(angle)*120,0,-22+Math.cos(angle)*120);g.rotation.y=angle;this.group.add(g);
       const color=['#9ba69e','#afb1a2','#97a4a0'][i%3];
       this.box([25,h,12],[0,h/2,0],color,false,g,false,true).castShadow=false;
       this.box([25.2,.25,12.2],[0,h+.13,0],'#8a938b',false,g,false,false,'stone').castShadow=false;
@@ -353,11 +364,11 @@ export class MumbaiStreet {
       }
       if(!hero)frontageBox([width,.28,.68],[0,2.82,-.1],color,false,g,false,true);
     }
-    const names=side<0?[['IRANI CHAI','चाय'],['RADIO REPAIR','रेडियो'],['FORT BOOK HOUSE','किताबें'],['SADAF TEXTILES','कपड़े'],['FORT RESEARCH INSTITUTE','फोर्ट'],['SHANTI STORES','दुकान'],['COASTAL CAFE','चाय']]:[['CST NEWS & PAPERS','मुंबई'],['SAHIL ELECTRICALS','बिजली'],['PRABHAT OPTICS','चश्मे'],['CITY CYCLE WORKS','साइकिल'],['VIDYA STATIONERY','किताबें'],['AZAD BAKERY','बेकरी'],['KONKAN LUNCH HOME','भोजन']];
+    const names=side<0?[['IRANI CHAI','चाय'],['RADIO REPAIR','रेडियो'],['FORT BOOK HOUSE','किताबें'],['SADAF TEXTILES','कपड़े'],['FORT OPEN SOURCE HALL','फोर्ट'],['SHANTI STORES','दुकान'],['COASTAL CAFE','चाय']]:[['CST NEWS & PAPERS','मुंबई'],['SAHIL ELECTRICALS','बिजली'],['PRABHAT OPTICS','चश्मे'],['CITY CYCLE WORKS','साइकिल'],['VIDYA STATIONERY','किताबें'],['AZAD BAKERY','बेकरी'],['KONKAN LUNCH HOME','भोजन']];
     // Shop boards sit at the ground floor, not across first-floor windows.
     if(!hero)frontageBox([width,.36,.7],[0,3.12,-.15],style==='heritage'?'#b8aa91':'#918c7d',false,g,false,false,'stone');
     if(hero){this.sign(g,'IRANI CHAI','चाय · BUN MASKA',[-1.87,2.90,.105],3.43,'#304d45','#e3d3ad');this.sign(g,'CHAI · BUN MASKA','Fresh from the kitchen',[-2.3,1.72,-1.999],1.28,'#354b42','#ded0aa').scale.y=2.1;this.sign(g,'PLEASE COME IN','चाय',[-3.75,1.60,-.057],.60,'#31433c','#d5c7a6').scale.y=4.1;this.sign(g,'TEA · BISCUITS · BUNS','Made here, served warm',[2.28,2.88,.12],3.2,'#af9f7d','#354b42');}
-    else this.sign(g,names[index][0],names[index][1],[0,2.83,.32],6.35,index%2?'#744d3c':'#35504b');
+    else { const board=this.sign(g,names[index][0],names[index][1],[0,2.83,.32],6.35,index%2?'#744d3c':'#35504b'); if(names[index][0]==='FORT OPEN SOURCE HALL')this.named(board); }
     if(!fort&&!hero) {
       const awning=this.shape(this.awnings[(index+(side>0?1:0))%4],[1,1,1],[0,2.40,.61],'#ffffff',g,false,false,true,'fabric');
       const cloth=awning.material as THREE.MeshStandardMaterial;cloth.vertexColors=true;cloth.side=THREE.DoubleSide;
@@ -442,7 +453,8 @@ export class MumbaiStreet {
     const dish=this.shape(this.sphereGeometry,[.34,.12,.34],[-1.5,height+.9,-2],'#a2a49a',g);dish.rotation.x=.65;
     this.wire(new THREE.Vector3(-1.5,height,-2),new THREE.Vector3(-1.5,height+.8,-2),.025,'#67716b',g);
     }
-    this.sign(g,index%2?'EVENING CLASSES':'THE JOURNEY SO FAR','मुंबई',[3.78,1.62,-.005],.52,'#c2ad88','#454944').scale.y=2.7;
+    // Notice by the shop door, clear of the bay's corner pilaster (the institute's own front wall would bury it).
+    if(!fort)this.sign(g,index%2?'EVENING CLASSES':'THE JOURNEY SO FAR','मुंबई',[3.6,1.62,-.005],.52,'#c2ad88','#454944').scale.y=2.7;
     // Local aging is aligned with piers and water paths, not scattered across windows.
     if(!fort)for(const x of [-4.03,4.03])this.paintWear(g,[x,1.05,.065],.145,1.15,color,`${spec.seed}:damp:${x}`);
     // Run-off streaks take over from the small per-storey pier patches, at about the same triangle cost.
@@ -567,7 +579,7 @@ export class MumbaiStreet {
       this.cylinder(.065,.6,[x,11.75,20.1],'#bba47b');
     }
     // Name board over the main entrance, above the arrival canopy's sight line from the forecourt.
-    const sign=this.sign(this.group,'CHHATRAPATI SHIVAJI TERMINUS','छत्रपती शिवाजी टर्मिनस',[0,4.75,17.93],5.2,'#4d5c50','#e4d4ae');sign.rotation.y=Math.PI;
+    const sign=this.named(this.sign(this.group,'CHHATRAPATI SHIVAJI TERMINUS','छत्रपती शिवाजी टर्मिनस',[0,4.75,17.93],5.2,'#4d5c50','#e4d4ae'));sign.rotation.y=Math.PI;
     for(const x of [-2.65,2.65]){
       // Dial, bronze bezel, hour marks and a pointed stone hood, all in the props batch.
       kit.add(new THREE.CircleGeometry(.38,24),BakedKit.matrix([1,1,1],[x,6.0,18.04],[0,face,0]),'#e8dcc0','plaster','none');
@@ -583,7 +595,7 @@ export class MumbaiStreet {
     this.stationHost=this.person([5.8,0,8.3],'#e8cfcb',false,false,HOST.cast);
     this.interactions.push({id:'cst',position:new THREE.Vector3(5.8,1.45,8.3),label:`Talk to ${HOST.name}`});
     this.departureBoard();
-    const board=this.sign(this.group,'FORT ROAD →','फोर्ट',[6.3,2.9,7.8],1.2,'#3e5c51');board.rotation.y=-.1;
+    const board=this.named(this.sign(this.group,'FORT ROAD →','फोर्ट',[6.3,2.9,7.8],1.2,'#3e5c51'));board.rotation.y=-.1;
     // Arrival canopy, ribs and transport notice board.
     this.box([10,.09,1.4],[0,3.7,15.82],'#80765e');for(const x of [-4.5,4.5])this.cylinder(.06,3.65,[x,1.83,15.5],'#69756a');
     // A cared-for monument: lighter ageing than the street so arches and carving stay legible.
@@ -641,7 +653,7 @@ export class MumbaiStreet {
       this.shape(this.leafGeometry,[.75,.8,.75],[side*2.15,.63,.34],'#758f64',g,false,false,true,'foliage');
     }
     this.shape(this.archGeometry,[1.70,.65,.7],[0,2.23,.14],'#c5b394',g,false,false,true,'stone');
-    this.sign(g,'RESEARCH · OPEN SOURCE','फोर्ट',[2.48,1.70,.12],.88,'#d0b994','#3c5147').scale.y=1.3;
+    this.named(this.sign(g,'GSOC CONTRIBUTOR · QC-DEVS','Open source · FFprime',[3.0,1.70,.12],1.6,'#d0b994','#3c5147'));
     const floor=this.box([8.5, .035, 6.5], [0, .025, -3.3], '#aaa793', false, g, false, false, 'stone');
     g.updateMatrixWorld(true);this.shelteredBounds.setFromObject(floor);this.shelteredBounds.max.y=3.2;
     this.box([8.5, 3, .3], [0, 1.5, -6.5], '#c4c2a9', true, g);
@@ -657,9 +669,10 @@ export class MumbaiStreet {
     this.box([3.4, .012, 2.3], [0, .048, -2.7], '#8a4434', false, g, false, false, 'fabric');
     this.box([3.0, .013, 1.9], [0, .05, -2.7], '#b0814f', false, g, false, false, 'fabric');
     this.box([2.7, .014, 1.6], [0, .052, -2.7], '#7c3b2f', false, g, false, false, 'fabric');
-    this.sign(g, 'FFPRIME / OPEN SCIENCE', 'फोर्ट', [0, 2.76, -6.22], 2.5, '#344d48', '#dce2c8');
-    this.sign(g, 'GSOC 2026 · THEOCHEM', 'Research, reviewed upstream', [-2.6, 2.76, -6.22], 2.5);
-    this.sign(g, '5 MERGED PULL REQUESTS', 'GitHub verified · 10 Oct 2026', [2.6, 2.76, -6.22], 2.5);
+    // Straight ahead of the door, the first thing a visitor reads on walking in: the role itself.
+    this.named(this.sign(g, 'GSOC CONTRIBUTOR AT QC-DEVS', 'Google Summer of Code 2026', [0, 2.72, -6.22], 3.6, '#344d48', '#f3e6bd'));
+    this.named(this.sign(g, 'FFPRIME / OPEN SOURCE', 'Reviewed and merged upstream', [-3.02, 2.76, -6.22], 2.0));
+    this.named(this.sign(g, '5 MERGED PULL REQUESTS', 'GitHub verified · 10 Oct 2026', [3.02, 2.76, -6.22], 2.0));
     this.box([4.2, .15, .85], [0, .78, -4.7], '#8c775a', true, g, false, false, 'wood');
     for(const x of [-1.9,1.9])for(const z of [-4.96,-4.44])this.box([.055,.7,.055],[x,.35,z],'#5d6c62',false,g,false,false,'metal');
     // Museum-style field table, calibrated to the same arbitrary teaching moments as the HTML exhibit.
@@ -740,14 +753,14 @@ export class MumbaiStreet {
       ctx.fillStyle = '#7e9790'; ctx.fillText('Which one passes?  Press E', 18, 226);
     }, [0, 0, .032], .8);
     this.person([-5.9, 0, -35.8], '#718d86', false, false, 'office-woman');
-    this.interactions.push({ id: 'fort', position: new THREE.Vector3(-5.9, 1.4, -35.8), label: 'Talk to the research fellow' });
+    this.interactions.push({ id: 'fort', position: new THREE.Vector3(-5.9, 1.4, -35.8), label: 'Talk to the fellow contributor' });
     // Aarush keeps the research room: on the rug between the door and the kiosk, turned to people coming in.
     const aarush = FRIENDS.find(f => f.id === 'aarush')!;
     this.person([-9.4, 0, -36.0], '#ece9df', false, false, aarush.cast).rotation.y = -2.0;
     this.interactions.push({ id: friendInteraction(aarush.id), position: new THREE.Vector3(-9.4, talkHeight(aarush.cast), -36.0), label: `Talk to ${aarush.name}` });
     g.updateMatrixWorld(true); const at = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyMatrix4(g.matrixWorld);
     this.interactions.push(
-      { id: 'ffprime', position: at(1.25, 1.42, -4.85), label: 'Read the FFprime research' },
+      { id: 'ffprime', position: at(1.25, 1.42, -4.85), label: 'Read the FFprime work' },
       { id: 'fort-workstation', position: at(-1.25, 1.42, -4.85), label: 'Use the coordinate workstation' },
       { id: 'fort-field', position: at(-2.45, 1.08, -4.46), label: 'Inspect the field table' },
       { id: 'fort-source', position: at(-4.05, 1.68, -2.2), label: 'Follow the five merged pull requests' },
@@ -756,6 +769,10 @@ export class MumbaiStreet {
     const light = new THREE.PointLight('#ffe5ba', 10, 9, 2); light.position.set(-10, 2.5, -34); this.group.add(light);
   }
   private streetDetails() {
+    // Night: each lamp throws a warm pool on the footpath and the road edge (one additive decal mesh; see nightLights).
+    const pools: THREE.BufferGeometry[] = [];
+    for (const side of [-1, 1]) for (let i = 0; i < 5; i++) { const g = new THREE.PlaneGeometry(7.5, 7.5); g.rotateX(-Math.PI / 2); g.translate(side * 5.95 - side * 1.5, .035, 7 - i * 13); pools.push(g); }
+    const poolMesh = lightPoolMesh(mergeGeometries(pools)!, POOL_COLOR); pools.forEach(g => g.dispose()); poolMesh.name = 'street:lamp-pools'; this.group.add(poolMesh);
     for (const side of [-1, 1]) for (let i = 0; i < 5; i++) {
       const z = 7 - i * 13, x = side * 5.95;
       this.cylinder(.09, 6.2, [x, 3.1, z], '#43454b');
@@ -865,6 +882,7 @@ export class MumbaiStreet {
       const vehicle = createTransitModel(kind); vehicle.position.set(kind === 'taxi' ? 7.4 : -7.4, .02, 12); vehicle.rotation.y = kind === 'auto' ? Math.PI : 0; this.group.add(vehicle);this.parkedVehicles.push(vehicle);this.solidProxy([2,1.5,3.8],[0,.8,0],vehicle);
       this.interactions.push({ id: `hail-${kind}`, label: `Hail ${kind === 'taxi' ? 'kaali-peeli taxi' : 'auto'}`, position: new THREE.Vector3(kind==='taxi'?6.1:-6.1, 1, vehicle.position.z) });
     }
+    this.group.add(this.brakes.mesh);
     for (let i=0;i<this.trafficSystem.agents.length;i++){const vehicle=createTransitModel(i===1||i===4?'auto':'taxi');(i<3?this.group:this.dense).add(vehicle);this.trafficVehicles.push(vehicle);const pose=this.trafficSystem.pose(i);vehicle.position.set(pose.x,.02,pose.z);vehicle.rotation.y=pose.heading;}
   }
   private instanceStatics() {
@@ -887,8 +905,13 @@ export class MumbaiStreet {
   }
   private mergeSigns() {
     this.group.updateMatrixWorld(true);
+    for (const sign of this.signs) {
+      const { text, tier, aspect } = sign.userData.sign ?? { text: 'panel', tier: 3, aspect: 1 / 2 }, p = new THREE.Vector3(), q = new THREE.Quaternion(), k = new THREE.Vector3(); sign.matrixWorld.decompose(p, q, k);
+      const width = (sign.geometry as THREE.PlaneGeometry).parameters.width * k.x;
+      this.signRecords.push({ text, tier, center: p, normal: new THREE.Vector3(0, 0, 1).applyQuaternion(q), right: new THREE.Vector3(1, 0, 0).applyQuaternion(q), width, height: (sign.geometry as THREE.PlaneGeometry).parameters.width * aspect * k.y });
+    }
     const geometries = this.signs.map(sign => { const geometry = sign.geometry.clone().applyMatrix4(sign.matrixWorld); sign.removeFromParent(); sign.geometry.dispose(); return geometry; });
-    this.group.add(new THREE.Mesh(mergeGeometries(geometries)!, this.signs[0].material)); geometries.forEach(g => g.dispose());
+    const merged = new THREE.Mesh(mergeGeometries(geometries)!, this.signs[0].material); merged.name = 'street:signs'; this.group.add(merged); geometries.forEach(g => g.dispose());
   }
   private instancePedestrians() {
     const buckets = new Map<string, THREE.Mesh[]>();
@@ -973,7 +996,7 @@ export class MumbaiStreet {
       this.navigation.crowd.update(1/30,delta,3);
     }
     this.npcUpdateMs=performance.now()-start;const trafficStart=performance.now();this.roadWalkers.length=0;for(const w of [...this.walkers,...this.denseWalkers])if(w.agent&&w.group.visible!==false&&Math.abs(w.group.position.x)<3.9)this.roadWalkers.push(w.group.position);this.trafficSystem.step(delta,time,[{x:this.viewPosition.x,z:this.viewPosition.z},...this.roadWalkers.map(p=>({x:p.x,z:p.z}))],this.loopTraffic,this.trafficSpace??undefined,this.trafficJunctions?{reservations:this.trafficJunctions,time}:undefined);
-    this.trafficVehicles.forEach((vehicle,i)=>{vehicle.visible=this.trafficSystem.live[i];if(!vehicle.visible)return;const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y=p.heading;animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);});this.trafficUpdateMs=performance.now()-trafficStart;
+    this.brakes.begin();this.trafficVehicles.forEach((vehicle,i)=>{vehicle.visible=this.trafficSystem.live[i];if(!vehicle.visible)return;const p=this.trafficSystem.pose(i),turn=Math.atan2(Math.sin(p.heading-vehicle.rotation.y),Math.cos(p.heading-vehicle.rotation.y));vehicle.position.set(p.x,.02,p.z);vehicle.rotation.y=p.heading;animateTransit(vehicle,this.trafficSystem.agents[i].distance,turn);const d=this.trafficSystem.drivers[i];const braking=this.brakes.braking(vehicle,d.speed,d.state,delta);if(vehicle.parent===this.group||this.dense.visible)this.brakes.add(vehicle,RoadTraffic.kindOf(i),braking);});this.brakes.end();this.trafficUpdateMs=performance.now()-trafficStart;
     for (const animate of this.motion) animate(reduced ? 0 : time);
     this.group.updateMatrixWorld(true);
     for (const { instance, meshes } of this.dynamicBatches) { meshes.forEach((mesh, i) => { let visible=true; for(let p:THREE.Object3D|null=mesh.parent;p&&p!==this.group;p=p.parent)if(!p.visible)visible=false; instance.setMatrixAt(i,visible?mesh.matrixWorld:COLLAPSED); }); instance.instanceMatrix.needsUpdate = true;instance.computeBoundingSphere(); }

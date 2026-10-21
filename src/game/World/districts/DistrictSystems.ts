@@ -6,16 +6,28 @@ import type { V3 } from './ColorMesh';
 import { pedestrianGreen, type LoopVehicle } from '../traffic/RoadTraffic';
 import { CAST_LOD, districtCast, type CastAct, type CastFigure, type DistrictCast } from './DistrictCast';
 import { footprint, personBlocker, PERSON_RADIUS, type Blocker } from '../collision/DynamicBlockers';
+import { BrakeLights } from '../traffic/BrakeLights';
 import { DRIVE_PROFILE, VEHICLE_BODY, TrafficSpace, drive, exitBlocked, inView, onCarriageway, stoppingDistance, type DriveState, type Driver, type Envelope, type Hold, type JunctionReservations, type SpawnDecision, type ViewCone } from '../traffic/TrafficSafety';
 
 /* ------------------------------------------------------------------ signs */
-export interface SignStyle { bg?: string; fg?: string; border?: string; font?: string; local?: string; draw?: (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => void }
+/**
+ * `tier` ranks how much a visitor must be able to read a sign: 1 for district and building names and other wayfinding
+ * the brief requires to be legible (checked by `tests/signs.test.ts`), 2 for shop and street text (the default), 3 for
+ * painted posters and decoration (the default for `draw` signs).
+ */
+export interface SignStyle { bg?: string; fg?: string; border?: string; font?: string; local?: string; tier?: 1 | 2 | 3; draw?: (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => void }
+/** Where a sign was placed, in its district's local frame: the centre and outward normal of its face, and its size in metres. */
+export interface SignRecord { text: string; tier: 1 | 2 | 3; center: THREE.Vector3; normal: THREE.Vector3; right: THREE.Vector3; width: number; height: number }
 /**
  * One canvas atlas per district for every painted board, hoarding and poster,
  * merged into a single unlit draw. Text is drawn once at build time.
  */
 export class SignAtlas {
   private canvas: HTMLCanvasElement; private ctx: CanvasRenderingContext2D; readonly texture: THREE.CanvasTexture;
+  /** Every sign placed, for the sign audit. */
+  readonly records: SignRecord[] = [];
+  /** Signs that did not fit in the atlas and were not drawn. */
+  readonly dropped: string[] = [];
   private pieces: THREE.BufferGeometry[] = []; private shelves: Array<{ y: number; h: number; x: number }> = []; private next = 0;
   constructor(private size = 2048) {
     this.canvas = document.createElement('canvas'); this.canvas.width = this.canvas.height = size; this.ctx = this.canvas.getContext('2d')!;
@@ -27,7 +39,7 @@ export class SignAtlas {
     // Shelf packing: a sign joins the snuggest shelf that fits it, so short signs don't waste tall rows.
     let shelf = this.shelves.filter(s => s.h >= h && s.h <= h * 1.5 && s.x + w <= this.size).sort((a, b) => a.h - b.h)[0];
     if (!shelf) {
-      if (this.next + h > this.size) { if (import.meta.env?.DEV) console.warn(`[signs] atlas full after ${this.pieces.length} signs, dropped "${text}"`); return null; }
+      if (this.next + h > this.size) { if (import.meta.env?.DEV) console.warn(`[signs] atlas full after ${this.pieces.length} signs, dropped "${text}"`); this.dropped.push(text); return null; }
       shelf = { y: this.next, h, x: 0 }; this.shelves.push(shelf); this.next += h;
     }
     const x = shelf.x, y = shelf.y; shelf.x += w;
@@ -44,7 +56,9 @@ export class SignAtlas {
     }
     const g = new THREE.PlaneGeometry(width, width * h / w), uv = g.getAttribute('uv');
     for (let i = 0; i < uv.count; i++) uv.setXY(i, (x + uv.getX(i) * w) / this.size, 1 - (y + (1 - uv.getY(i)) * h) / this.size);
-    g.applyMatrix4(matrix); this.pieces.push(g); return g;
+    g.applyMatrix4(matrix); this.pieces.push(g);
+    this.records.push({ text, tier: style.tier ?? (style.draw ? 3 : 2), center: new THREE.Vector3().setFromMatrixPosition(matrix), normal: new THREE.Vector3(0, 0, 1).transformDirection(matrix), right: new THREE.Vector3(1, 0, 0).transformDirection(matrix), width, height: width * h / w });
+    return g;
   }
   build() {
     this.texture.needsUpdate = true;
@@ -314,11 +328,15 @@ let trafficSystems = 0;
 
 export class LaneTraffic {
   readonly group = new THREE.Group(); private lanes: Lane[] = []; private agents: Agent[] = [];
+  /** Brake lamps of the vehicles that are slowing or held, near the visitor. */
+  private brakes = new BrakeLights(); constructor() { this.group.add(this.brakes.mesh); }
   private stops: Array<{ lane: number; s: number; active: (time: number) => boolean }> = [];
   /** Unique prefix of this system's envelope ids. */
   readonly id = `traffic${trafficSystems++}`;
   /** True when buildings hide a vehicle (centre, length) from `view`; such vehicles draw nothing. */
   occluded: ((position: THREE.Vector3, length: number, view: THREE.Vector3) => boolean) | null = null;
+  /** Speed factor at a lane position (local z): the avenues between districts are faster than the streets. */
+  cruiseAt: (z: number) => number = () => 1;
   /** Areas where movements cross; set by the street that owns this traffic. */
   junctions: JunctionReservations | null = null;
   /** What the visitor saw at the last update (local), for spawn and despawn decisions. */
@@ -376,13 +394,28 @@ export class LaneTraffic {
       a.mesh = mesh; if (cast) this.seat(a, cast);
     }
   }
-  dispose() { for (const a of this.agents) { a.rider?.dispose(); a.rider = null; } }
+  dispose() { for (const a of this.agents) { a.rider?.dispose(); a.rider = null; } this.brakes.dispose(); }
   /** True when the visitor could see this point (within the haze, in the view cone and not behind the frontages). */
   private seen(x: number, z: number, radius: number, length: number) {
     const v = this.view; if (!v) return false;
     if (Math.hypot(x - v.x, z - v.z) - radius > VEHICLE_HIDDEN || !inView(v, x, z, radius)) return false;
     return !this.occluded?.(new THREE.Vector3(x, 0, z), length, this.viewPoint);
   }
+  /**
+   * A passing auto or taxi that someone at the kerb at (x, z) (local) can wave down: coming toward them in the lane on
+   * their side of the road, 9 to 60 m off. The nearest, or null.
+   */
+  passing(x: number, z: number) {
+    let best: Agent | null = null, nearest = 60;
+    for (const a of this.agents) {
+      if (!a.active || a.max === 0 || (a.kind !== 'auto' && a.kind !== 'taxi') || Math.sign(a.mesh.position.x) !== Math.sign(x)) continue;
+      const fx = -Math.sin(a.mesh.rotation.y), fz = -Math.cos(a.mesh.rotation.y), dx = x - a.mesh.position.x, dz = z - a.mesh.position.z;
+      const ahead = dx * fx + dz * fz; if (ahead > 9 && ahead < nearest && Math.abs(dx * fz - dz * fx) < 6) { nearest = ahead; best = a; }
+    }
+    return best && { id: best.driver.env.id, kind: best.kind as 'auto' | 'taxi', x: best.mesh.position.x, z: best.mesh.position.z, yaw: best.mesh.rotation.y, speed: best.driver.speed };
+  }
+  /** A vehicle waved down becomes the visitor's ride: it leaves the traffic (and re-enters at its lane start later). */
+  withdraw(id: string) { const a = this.agents.find(a => a.driver.env.id === id); if (a?.active) this.retire(a); }
   /** Take a vehicle off the road (it re-enters at its lane start when the spawn rules allow). */
   private retire(a: Agent, space?: TrafficSpace) {
     a.active = false; a.mesh.visible = false; a.driver.speed = 0; a.driver.state = 'inactive'; a.driver.blockedBy = null;
@@ -459,6 +492,7 @@ export class LaneTraffic {
     // Remember when each lane start was last in view: nothing enters where the visitor has just been looking.
     for (const lane of this.lanes) if (!lane.closed) { const p = this.at(lane, 0); if (this.seen(p.x, p.z, 6, 12)) lane.lastSeen = time; }
     const junctions = this.junctions ? { reservations: this.junctions, time } : undefined;
+    this.brakes.begin();
     for (const a of this.agents) {
       const near = visitor ? a.mesh.position.distanceTo(visitor) : 0;
       if (visitor) setVehicleDetail(a.mesh as THREE.Mesh, near > VEHICLE_HIDDEN || this.occluded?.(a.mesh.position, a.length, visitor) ? 'hidden' : near < VEHICLE_NEAR ? 0 : near < VEHICLE_FAR ? 1 : 2);
@@ -482,6 +516,7 @@ export class LaneTraffic {
       }
       // Another system's vehicles on a shared loop, when they are not in the space themselves.
       if (!context.space) for (const b of lane.shared()) { const ahead = ((b.s - a.s) % lane.length + lane.length) % lane.length; if (ahead < lane.length / 2) holds.push({ distance: ahead - (a.length + b.length) / 2 - d.profile.minGap, state: 'following' }); }
+      d.desired = a.max * this.cruiseAt(a.mesh.position.z);
       const moved = drive(space, d, s => this.at(lane, a.s + s), delta, holds, undefined, junctions);
       a.s += moved;
       if (lane.closed) a.s %= lane.length;
@@ -492,7 +527,9 @@ export class LaneTraffic {
       }
       this.pose(a);
       a.mesh.position.y = .02 + (a.kind === 'auto' || a.kind === 'bike' ? Math.sin(time * 13 + a.s) * .006 * Math.min(1, d.speed) : 0);
+      const braking = this.brakes.braking(a.mesh, d.speed, d.state, delta); if (a.mesh.visible && near < VEHICLE_FAR) this.brakes.add(a.mesh, a.kind, braking);
     }
+    this.brakes.end();
   }
   get size() { return this.agents.length; }
   /** Vehicles on the road within `range` of `view` (local), as world-space blockers. */

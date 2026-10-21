@@ -32,7 +32,7 @@ test('intro enters a rendered world and supports menu and directory', async ({ p
 
 test('quick view exposes all projects, verifiable résumé and real code links', async ({ page, request }) => {
   await quick(page);
-  await expect(page.locator('.project-row')).toHaveCount(7);
+  await expect(page.locator('.project-row')).toHaveCount(6);
   await page.screenshot({ path: 'docs/screenshots/quick-desktop.png', fullPage: true });
   const resume = await request.get('/resume/Harsh-Jha-Resume.pdf');
   expect(resume.ok()).toBe(true);
@@ -132,14 +132,12 @@ test('Powai flagship labs run their ported project logic', async ({ page }) => {
   await expect(page.locator('.lab-table tr.flagged')).toHaveCount(0);
   await page.getByRole('button', { name: 'PARSE SMS' }).click();
   await expect(page.locator('output.lab-note')).toContainText('Expense · ₹1,250 · 2026-10-05 · HDFC Transaction');
-  await page.goto('/#/project/meeting-intelligence-service');
-  await page.getByLabel(/Send a malformed request/).check();
-  await expect(page.locator('.lab-json')).toContainText('VALIDATION_ERROR');
-  await page.locator('.cite', { hasText: '02:10' }).click();
-  await expect(page.locator('.transcript li.cited')).toContainText('release notes');
-  await page.goto('/#/project/rideflow');
-  await page.getByLabel('Preference').selectOption('cheapest');
-  await expect(page.locator('.route-results li').first()).toContainText('Transit Economizer');
+  await page.goto('/#/project/compilerlab');
+  await expect(page.getByRole('region', { name: 'Compiler Lab Workshop working demo' })).toContainText('DFA · 4 STATES');
+  await page.getByLabel('Test string').fill('abba');
+  await expect(page.locator('.lab-verdict')).toContainText('REJECT');
+  await page.getByLabel('Regular expression').fill('(ab');
+  await expect(page.locator('.lab-verdict')).toContainText('no closing');
   await page.goto('/#/project/repolens');
   await page.getByRole('button', { name: 'where is divide defined' }).click();
   await expect(page.locator('.lab-columns > div').nth(2).locator('li').first()).toContainText('Calculator.divide');
@@ -161,7 +159,7 @@ test('reduced motion follows system preference and user choice persists', async 
 
 test('WebGL failure retains usable quick view and project navigation', async ({ page }) => {
   await page.goto('/?webgl=off#world');
-  await expect(page.getByRole('status')).toContainText('3D experience unavailable');
+  await expect(page.getByRole('status').filter({ hasText: '3D experience unavailable' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Engineering, with evidence.' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'ENTER WORLD' })).toHaveCount(0);
   await page.keyboard.press('Control+k');
@@ -238,8 +236,8 @@ test.describe('mobile guided exploration', () => {
     await page.screenshot({ path: 'docs/screenshots/world-mobile.png' });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.getByRole('button', { name: 'CITY DIRECTORY' }).click();
-    await page.getByRole('button', { name: 'Travel to Fort Research Institute', exact: true }).click();
-    await page.getByRole('button', { name: /Talk · The research fellow/ }).click();
+    await page.getByRole('button', { name: 'Travel to Fort Open Source Hall', exact: true }).click();
+    await page.getByRole('button', { name: /Talk · The fellow contributor/ }).click();
     await page.getByRole('button', { name: 'SHOW ME AROUND' }).click();
     await page.getByRole('button', { name: 'OPEN FFPRIME CASE STUDY' }).click();
     const dialog = page.getByRole('dialog', { name: 'CASE STUDY / FFprime' });

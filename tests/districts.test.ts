@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import * as CANNON from 'cannon-es';
 import { MumbaiStreet } from '../src/game/World/MumbaiStreet';
-import { cityRideLegs, cityZones, DISTRICT_SPACING, districtViews, streetStops, zoneAt, zoneIndexAt } from '../src/game/World/streetLayout';
+import { acrossSeam, cityRideLegs, cityZones, DISTRICT_SPACING, districtViews, streetStops, zoneAt, zoneIndexAt } from '../src/game/World/streetLayout';
 import { CityDistricts } from '../src/game/World/districts/CityDistricts';
 import { createCityVehicle } from '../src/game/World/districts/CityVehicles';
 import { districts } from '../src/data/city';
@@ -26,11 +26,14 @@ describe('city districts', () => {
     expect(districts.filter(d => !streetStops[d.id]).map(d => d.id)).toEqual([]);
     expect(zoneIndexAt(-30)).toBe(0); expect(zoneIndexAt(DISTRICT_SPACING * 3 + 12)).toBe(3);
   });
-  it('rides between districts as an exit leg and an arrival leg that end at the stop', () => {
+  it('rides between districts as one leg per district driven through, meeting at the seams, ending at the stop', () => {
     const legs = cityRideLegs({ x: 4.6, z: 11.5 }, 'juhu');
-    expect(legs).toHaveLength(2);
-    expect(zoneAt(legs[0][0].x).id).toBe('cst');
-    const last = legs[1][legs[1].length - 1];
+    // CST, BKC, Andheri, Powai, Dadar, Worli, Juhu: the cab drives every avenue and street between, no teleport.
+    expect(legs).toHaveLength(7);
+    expect(legs.map(l => zoneAt(l[0].x).id)).toEqual(['cst', 'bkc', 'andheri', 'powai', 'dadar', 'worli', 'juhu']);
+    // Each leg ends at the seam where the next begins: the same place in the two districts' frames.
+    for (let i = 0; i + 1 < legs.length; i++) { const end = legs[i][legs[i].length - 1], start = legs[i + 1][0], across = acrossSeam(end.x, end.z - .01) ?? acrossSeam(end.x, end.z + .01); expect(across, `seam ${i}`).not.toBeNull(); expect(Math.hypot(across!.x - start.x, across!.z - start.z), `seam ${i}`).toBeLessThan(1.5); }
+    const last = legs[legs.length - 1][legs[legs.length - 1].length - 1];
     // The vehicle pulls up at the kerb beside the stop.
     expect(Math.hypot(last.x - streetStops.juhu.x, last.z - streetStops.juhu.z)).toBeLessThan(2);
     expect(legs.every(leg => routeLength(leg) > 5)).toBe(true);
@@ -55,12 +58,17 @@ describe('city districts', () => {
         else movers++;
       });
       district.crowd.group.traverse(o => { if ((o as THREE.SkinnedMesh).isSkinnedMesh) expect((o.userData.lodGeometries as unknown[]).length).toBe(3); });
-      for (const v of district.traffic.group.children) expect((v.userData.lodGeometries as unknown[]).length).toBe(3);
+      for (const v of district.traffic.group.children.filter(c => c.name !== 'traffic:brake-lights')) expect((v.userData.lodGeometries as unknown[]).length).toBe(3);
       // Nobody stands inside anybody else.
       const standing = district.crowd.standing().map(p => p.group.position);
       for (let a = 0; a < standing.length; a++) for (let b = a + 1; b < standing.length; b++) expect(Math.hypot(standing[a].x - standing[b].x, standing[a].z - standing[b].z), cityZones[i].id).toBeGreaterThan(.8);
-      expect(staticDraws, cityZones[i].id).toBeLessThan(20);
-      expect(staticTriangles, cityZones[i].id).toBeLessThan(180_000);
+      // The avenues to the neighbours draw in the district's own meshes (no extra draws); their triangles are budgeted
+      // apart: each copy carries fine detail only on its own half, so it stays well under the street's own budget.
+      const avenues = district.avenues.map(a => a.kit.bakedTriangles);
+      expect(staticDraws, cityZones[i].id).toBeLessThan(21);
+      expect(staticTriangles - avenues.reduce((t, n) => t + n, 0), cityZones[i].id).toBeLessThan(180_000);
+      for (const n of avenues) expect(n, `${cityZones[i].id} avenue`).toBeLessThan(75_000);
+      expect(avenues.length, cityZones[i].id).toBe(i === cityZones.length - 1 ? 1 : 2);
       expect(movers, cityZones[i].id).toBeLessThan(120);
       // Only the active district is kept alive.
       expect(root.children).toHaveLength(1);

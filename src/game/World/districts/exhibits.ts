@@ -4,8 +4,12 @@ import { SignAtlas, placed } from './DistrictSystems';
 import { exhibitsOf, type DistrictExhibit } from '../../../data/districtExhibits';
 import { districts } from '../../../data/city';
 
-/** Board face: 1.3 × 0.65 m, centre 1.55 m up, painted at 512 × 256. */
+/** Wall board face: 1.3 × 0.65 m, centre 1.55 m up, painted at 512 × 256. */
 export const EXHIBIT_PANEL = { width: 1.3, height: .65, centre: 1.55 };
+/** Free-standing boards are bigger, so they read from the pavement and down the street: 1.9 × 0.95 m, centre 1.62 m up. */
+export const STANDING_PANEL = { width: 1.9, height: .95, centre: 1.62 };
+/** The shop-sign header over a free-standing board, painted at 512 × 80. */
+const TOPPER_PX: [number, number] = [512, 80];
 
 /** One line, condensed by the canvas if it would overrun the board. */
 const fit = (ctx: CanvasRenderingContext2D, text: string, x: number, y: number, max: number) => ctx.fillText(text, x, y, max);
@@ -33,9 +37,9 @@ function painter(e: DistrictExhibit, accent: string) {
 export function buildExhibits(d: District) {
   const list = exhibitsOf(d.spec.id); if (!list.length) return null;
   const atlas = new SignAtlas(1024), { kit } = d, accent = districts.find(x => x.id === d.spec.id)?.color ?? '#2f4a4a';
-  const { width, height, centre } = EXHIBIT_PANEL;
   for (const e of list) {
     const nx = e.x > 0 ? -1 : 1, yaw = nx < 0 ? -Math.PI / 2 : Math.PI / 2, mount = e.mount ?? 'board';
+    const { width, height, centre } = mount === 'board' ? STANDING_PANEL : EXHIBIT_PANEL;
     if (mount !== 'marker') kit.frame([e.x, 0, e.z], yaw, () => {
       if (mount === 'wall') {
         // Flush on the wall behind: a frame and an accent rail, nothing on the floor.
@@ -44,10 +48,15 @@ export function buildExhibits(d: District) {
         atlas.add(e.panel.title, width, placed([0, centre, -.01], 0, kit.here), { draw: painter(e, accent) }, [512, 256]);
         return;
       }
-      // Local frame: +z is the board's facing direction.
-      for (const sx of [-1, 1]) kit.box([.07, centre + height / 2 + .2, .07], [sx * (width / 2 + .06), (centre + height / 2 + .2) / 2, -.03], '#2b3233', 'metal');
+      // Local frame: +z is the board's facing direction. With a topper, the posts carry its sign above the board.
+      const topperH = e.topper ? (width + .2) * TOPPER_PX[1] / TOPPER_PX[0] : 0, topperY = centre + height / 2 + .2 + topperH / 2, postH = e.topper ? topperY + topperH / 2 + .04 : centre + height / 2 + .2;
+      for (const sx of [-1, 1]) kit.box([.08, postH, .08], [sx * (width / 2 + .06), postH / 2, -.03], '#2b3233', 'metal');
       kit.box([width + .16, height + .14, .05], [0, centre, -.04], '#2b3233', 'metal');
-      kit.box([width + .3, .06, .14], [0, centre + height / 2 + .12, -.02], accent, 'metal');
+      kit.box([width + .3, .06, .14], [0, centre + height / 2 + .1, -.02], accent, 'metal');
+      if (e.topper) {
+        kit.box([width + .3, topperH + .08, .06], [0, topperY, -.04], '#2b3233', 'metal');
+        atlas.add(e.topper, width + .2, placed([0, topperY, -.005], 0, kit.here), { bg: accent, fg: '#fff8e8', border: 'none', tier: 1 }, TOPPER_PX);
+      }
       kit.box([width + .3, .08, .4], [0, .04, -.03], '#8d8676', 'stone');
       kit.solid([width + .3, 1, .3], [0, .5, -.03]);
       atlas.add(e.panel.title, width, placed([0, centre, -.01], 0, kit.here), { draw: painter(e, accent) }, [512, 256]);

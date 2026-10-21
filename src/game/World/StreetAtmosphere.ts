@@ -182,19 +182,25 @@ export function patchMaterial(material:THREE.MeshStandardMaterial,uniforms:Atmos
 }
 
 /** Sky dome with warm horizon haze and a soft low-sun glow matching the fog tint. */
+/** Sky colours and strengths the time of day drives (see time/environmentState); defaults are the shipped golden hour. */
+export type SkyUniforms={uTop:{value:THREE.Color};uMid:{value:THREE.Color};uHorizon:{value:THREE.Color};uCloud:{value:THREE.Color};uGlow:{value:number};uStars:{value:number}};
 export function createSkyMaterial(uniforms:AtmosphereUniforms){
- return new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{uSunDir:uniforms.uSunDir,uSunHaze:uniforms.uSunHaze},
+ const sky:SkyUniforms={uTop:{value:new THREE.Color().setRGB(.26,.39,.55)},uMid:{value:new THREE.Color().setRGB(.55,.60,.62)},uHorizon:{value:new THREE.Color().setRGB(.86,.70,.52)},uCloud:{value:new THREE.Color().setRGB(.78,.70,.62)},uGlow:{value:1},uStars:{value:0}};
+ const material=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{uSunDir:uniforms.uSunDir,uSunHaze:uniforms.uSunHaze,...sky},
   vertexShader:'varying vec3 vPosition; void main(){vPosition=position; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-  fragmentShader:`uniform vec3 uSunDir; uniform vec3 uSunHaze; varying vec3 vPosition;
+  fragmentShader:`uniform vec3 uSunDir; uniform vec3 uSunHaze; uniform vec3 uTop; uniform vec3 uMid; uniform vec3 uHorizon; uniform vec3 uCloud; uniform float uGlow; uniform float uStars; varying vec3 vPosition;
+float skyHash(vec3 p){p=fract(p*vec3(443.897,441.423,437.195));p+=dot(p,p.yzx+19.19);return fract((p.x+p.y)*p.z);}
 void main(){
  vec3 d=normalize(vPosition); float h=max(d.y,0.0);
- vec3 horizon=vec3(.86,.70,.52); vec3 middle=vec3(.55,.60,.62); vec3 top=vec3(.26,.39,.55);
- vec3 c=mix(horizon,middle,smoothstep(0.,.3,h)); c=mix(c,top,smoothstep(.2,.9,h));
+ vec3 c=mix(uHorizon,uMid,smoothstep(0.,.3,h)); c=mix(c,uTop,smoothstep(.2,.9,h));
  float sun=max(dot(d,uSunDir),0.0);
- c=mix(c,uSunHaze,pow(sun,5.0)*.75*(1.-smoothstep(.1,.6,h)));
- c+=vec3(1.0,.72,.45)*(pow(sun,48.0)*.55+pow(sun,900.0)*1.6);
+ c=mix(c,uSunHaze,pow(sun,5.0)*.75*(1.-smoothstep(.1,.6,h))*uGlow);
+ c+=vec3(1.0,.72,.45)*(pow(sun,48.0)*.55+pow(sun,900.0)*1.6)*uGlow;
  float cloud=sin(d.x*24.+d.z*12.)*sin(d.z*33.-d.y*42.);
- c=mix(c,mix(vec3(.78,.70,.62),uSunHaze*1.05,pow(sun,3.0)),smoothstep(.38,.85,cloud)*smoothstep(.02,.12,h)*(1.-smoothstep(.25,.5,h))*.35);
+ c=mix(c,mix(uCloud,uSunHaze*1.05,pow(sun,3.0)*uGlow),smoothstep(.38,.85,cloud)*smoothstep(.02,.12,h)*(1.-smoothstep(.25,.5,h))*.35);
+ // A few stars where the city's light pollution lets them through: sparse, high, and never in the haze.
+ if(uStars>0.0){vec3 cell=floor(d*180.);float s=skyHash(cell);c+=vec3(.9,.92,1.)*step(.9985,s)*smoothstep(.25,.6,h)*uStars*(.5+.5*skyHash(cell+7.));}
  gl_FragColor=vec4(c,1.);
 }`});
+ material.userData.sky=sky;return material;
 }
