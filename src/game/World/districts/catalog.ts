@@ -8,6 +8,7 @@ import { powaiLab, type PowaiLab } from './powaiLabs';
 import { ANDHERI_SHOP_BOARDS, POWAI_PODS } from '../../../data/districtExhibits';
 import { POWAI_PROJECTS, projects } from '../../../data/projects';
 import { bkcOffice, juhuStudio, studioBungalow, systemsOffice, talkies, talkiesInterior } from './interiors';
+import { TalkiesAudience, TalkiesScreen } from './TalkiesHouse';
 
 /* Painted hoardings and posters. Plain canvas calls only: original artwork, no assets. */
 type Draw = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) => void;
@@ -32,9 +33,9 @@ const titleCard: Draw = (ctx, x, y, w, h) => {
   const g = ctx.createLinearGradient?.(x, y, x, y + h); if (g) { g.addColorStop(0, '#2a1d18'); g.addColorStop(1, '#0d0a09'); ctx.fillStyle = g; } else ctx.fillStyle = '#1a1210';
   ctx.fillRect(x, y, w, h); ctx.fillStyle = '#f7e2b0'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.font = `${Math.round(h * .07)}px Arial, sans-serif`; ctx.fillText('FILM CITY TALKIES PRESENTS', x + w / 2, y + h * .26, w * .8);
-  ctx.font = `bold ${Math.round(h * .2)}px Georgia, serif`; ctx.fillText('NINE SCENES', x + w / 2, y + h * .47, w * .86);
-  ctx.font = `${Math.round(h * .065)}px Arial, sans-serif`; ctx.fillText('one engineering story · you control the pace', x + w / 2, y + h * .64, w * .8);
-  ctx.fillStyle = '#d8a84a'; ctx.font = `bold ${Math.round(h * .055)}px Arial, sans-serif`; ctx.fillText('STAND IN THE AISLE AND PRESS E', x + w / 2, y + h * .82, w * .8);
+  ctx.font = `bold ${Math.round(h * .2)}px Georgia, serif`; ctx.fillText('HARSH JHA', x + w / 2, y + h * .47, w * .86);
+  ctx.font = `${Math.round(h * .065)}px Arial, sans-serif`; ctx.fillText('built for what’s next · the trailer · 42 s', x + w / 2, y + h * .64, w * .8);
+  ctx.fillStyle = '#d8a84a'; ctx.font = `bold ${Math.round(h * .055)}px Arial, sans-serif`; ctx.fillText('HOUSE FULL · PRESS E IN THE AISLE TO WATCH WITH SOUND', x + w / 2, y + h * .82, w * .8);
 };
 const railBoard: Draw = (ctx, x, y, w, h) => {
   ctx.fillStyle = '#f2c52e'; ctx.fillRect(x, y, w, h); ctx.strokeStyle = '#111'; ctx.lineWidth = h * .05; ctx.strokeRect(x + h * .05, y + h * .05, w - h * .1, h - h * .1);
@@ -310,6 +311,9 @@ const filmcity: DistrictSpec = {
     sign(c, 'SCENE 2', 1.5, [12.6, 1.9, -7.59], { draw: filmPoster('#173a4a', 'UPSTREAM', 'five pull requests, one summer', '#e0b03a') }, [256, 352]); yield;
     for (const [x, title, tag, bg, hue] of [[9.8, 'SIGNALS', 'what the receipts say', '#3a2a14', '#e05a3a'], [12.6, 'NEXT CHAPTER', 'still being written', '#14303a', '#f0b03a']] as const) sign(c, title, 1.5, [x, 1.9, 13.59], { draw: filmPoster(bg, title, tag, hue) }, [256, 352], Math.PI); yield;
     d.idle('sari', [21.2, .03, 5.82], face(1, 0), 'sit'); d.idle('kurta', [21.2, .03, 7.06], face(1, 0), 'sit'); d.idle('school', [24.5, .03, -4.74], face(1, 0), 'sit', .72); yield;
+    // Show night: every other seat taken by a baked, instanced audience, and the trailer on the screen while the visitor is in the hall.
+    const audience = new TalkiesAudience([{ x: 21.2, z: 5.82 }, { x: 21.2, z: 7.06 }, { x: 24.5, z: -4.74 }]), screen = new TalkiesScreen();
+    d.group.add(audience.group, screen.mesh); d.animate((_t, _d, view) => { audience.update(view); screen.update(view); }); d.onDispose(() => { audience.dispose(); screen.dispose(); }); yield;
     d.idle('worker', [14.7, .03, 11.2], face(-1, 0), 'stand'); yield;
     // A film unit mid-shoot: camera crane, lights, director's chair.
     const rig = (x: number, z: number) => { kit.rod([x, 0, z], [x, 2.6, z], .03, '#222', 'metal'); kit.box([.6, .5, .3], [x, 2.8, z], '#1e1e1e', 'metal'); kit.box([.5, .4, .02], [x, 2.8, z + .16], '#fff3c8', 'glow'); for (let a = 0; a < 3; a++) kit.rod([x, 1.2, z], [x + Math.cos(a * 2.1) * .5, 0, z + Math.sin(a * 2.1) * .5], .02, '#222', 'metal'); }; yield;

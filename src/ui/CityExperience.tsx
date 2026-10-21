@@ -9,6 +9,7 @@ import { AstflowLab, SkillShops } from './LazyLabs';
 import { Modal } from './Modal';
 import { streetStops, zoneAt } from '../game/World/streetLayout';
 import type { Point, TransitKind } from '../game/World/transit';
+import { TRAILER } from '../data/trailer';
 export { RideMeter } from './RideMeter';
 
 export function CityMap({ position, canRide, objective, waypoint, onMark, onTravel, onOpen, onRide, onClose }: {
@@ -67,14 +68,70 @@ export const scenes = [
   { name: 'Arrival', title: 'Harsh Jha. Builder, in motion.', body: portfolio.tagline, label: 'SOFTWARE / AI / SCIENTIFIC COMPUTING' },
   { name: 'Foundations', title: 'VIT. A place to start.', body: `${portfolio.education}. Expected graduation: ${portfolio.graduation}.`, label: 'CLASS OF 2028 / JOURNEY IN PROGRESS' },
   { name: 'The first builds', title: 'Ideas need working systems.', body: 'From personal finance tools to route planning and AI systems, projects make the learning tangible.', label: 'BUILD / TEST / ITERATE' },
-  { name: 'Open source', title: 'Open source, reviewed upstream.', body: experience[0].description + ' Five merged upstream pull requests; 32 passing tests reported in PR #13.', label: 'GSOC 2026 / QC-DEVS' },
+  { name: 'Open source', title: 'Open source, reviewed upstream.', body: experience[0].description + ' Five merged upstream pull requests; 32 passing tests reported in PR #13.', label: 'GSOC 2026 CONTRIBUTOR / QC-DEVS' },
   { name: 'Enterprise', title: 'Code meets real constraints.', body: experience[1].description, label: 'CCIEEXPERT / JULY 2026' },
-  { name: 'The products', title: 'Seven workplaces. Different problems.', body: projects.filter(p => p.id !== 'ffprime').map(p => `${p.title}: ${p.subtitle}`).join(' · '), label: 'POWAI PRODUCT DISTRICT' },
+  { name: 'The products', title: 'Many workplaces. Different problems.', body: projects.filter(p => p.id !== 'ffprime').map(p => `${p.title}: ${p.subtitle}`).join(' · '), label: 'POWAI PRODUCT DISTRICT' },
   { name: 'The signals', title: 'Evidence, not buzzwords.', body: achievements[0].detail + '. FFprime speedup and RMSE figures are résumé reported; project case studies retain their source qualifiers.', label: 'GOOGLE BIG CODE 2026 / SOURCE-AWARE' },
   { name: 'Next chapter', title: 'Keep building. Keep validating.', body: 'Scientific computing, useful AI, and software that stands up to real constraints. The next project starts with a good question.', label: 'AN INTEREST, NOT A CLAIM OF FUTURE WORK' },
   { name: 'Until next time', title: 'Let’s build something.', body: 'For engineering opportunities, research, or a good technical conversation. Thanks for taking the scenic route.', label: 'THE END / OR THE BEGINNING' },
 ];
-export function Theatre({ reduced, onContact, onExit, onFinale, initialScene = 0 }: { reduced: boolean; onContact: () => void; onExit: () => void; onFinale?: () => void; initialScene?: number }) {
+/** The Talkies on show night: the trailer with sound, with the nine scenes kept as a readable programme. */
+export function Theatre({ reduced, onContact, onExit, onFinale, initialScene }: { reduced: boolean; onContact: () => void; onExit: () => void; onFinale?: () => void; initialScene?: number }) {
+  const [mode, setMode] = useState<'film' | 'scenes'>(initialScene === undefined ? 'film' : 'scenes');
+  return mode === 'film'
+    ? <TrailerScreen reduced={reduced} onContact={onContact} onExit={onExit} onFinale={onFinale} onScenes={() => setMode('scenes')} />
+    : <SceneTheatre reduced={reduced} onContact={onContact} onExit={onExit} onFinale={onFinale} initialScene={initialScene ?? 0} onFilm={() => setMode('film')} />;
+}
+
+const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+function TrailerScreen({ reduced, onContact, onExit, onFinale, onScenes }: { reduced: boolean; onContact: () => void; onExit: () => void; onFinale?: () => void; onScenes: () => void }) {
+  const root = useRef<HTMLElement>(null), video = useRef<HTMLVideoElement>(null);
+  const [playing, setPlaying] = useState(false), [muted, setMuted] = useState(false), [time, setTime] = useState(0), [length, setLength] = useState(TRAILER.seconds), [ended, setEnded] = useState(false), [cc, setCc] = useState(false);
+  useEffect(() => { root.current?.focus({ preventScroll: true }); root.current?.scrollIntoView({ block: 'start', behavior: 'instant' }); }, []);
+  // Opening the theatre is the visitor's own click or key press, so the film may start with sound; if the browser still refuses, it starts muted.
+  useEffect(() => {
+    const v = video.current; if (!v || reduced) return;
+    v.muted = false; v.play().catch(() => { v.muted = true; setMuted(true); return v.play(); }).catch(() => {});
+  }, [reduced]);
+  const toggle = () => { const v = video.current; if (!v) return; if (v.paused) { setEnded(false); void v.play().catch(() => {}); } else v.pause(); };
+  const replay = () => { const v = video.current; if (!v) return; v.currentTime = 0; setEnded(false); void v.play().catch(() => {}); };
+  // The titles are burned in; captions add the sound descriptions for anyone who wants them.
+  const captions = () => { const track = video.current?.textTracks[0]; if (!track) return; track.mode = track.mode === 'showing' ? 'hidden' : 'showing'; setCc(track.mode === 'showing'); };
+  const sound = () => { const v = video.current; if (!v) return; v.muted = !v.muted; setMuted(v.muted); };
+  const onKey = (event: ReactKeyboardEvent) => {
+    if ((event.target as HTMLElement).closest('a,input')) return;
+    const keys: Record<string, () => void> = { ' ': toggle, k: toggle, m: sound, Home: replay };
+    const action = keys[event.key]; if (action && !((event.target as HTMLElement).tagName === 'BUTTON' && event.key === ' ')) { event.preventDefault(); action(); }
+  };
+  return <section ref={root} tabIndex={-1} className="talkies talkies-film" aria-label="Film City story theatre" onKeyDown={onKey}>
+    <div className="projector-beam" aria-hidden="true"/>
+    <div className="cinema-film">
+      <video ref={video} poster={TRAILER.poster} playsInline preload="auto" aria-label="Trailer: Harsh Jha, built for what’s next (42 seconds, with sound)"
+        onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onLoadedMetadata={e => setLength(e.currentTarget.duration || TRAILER.seconds)}
+        onTimeUpdate={e => setTime(e.currentTarget.currentTime)} onEnded={() => { setEnded(true); setPlaying(false); onFinale?.(); }} onClick={toggle}>
+        {TRAILER.sources.map(source => <source key={source.src} src={source.src} type={source.type} />)}
+        <track kind="captions" src={TRAILER.captions} srcLang="en" label="English" />
+      </video>
+      {(ended || (!playing && time === 0)) && <div className="film-overlay">{ended
+        ? <><span className="caption">THE END / OR THE BEGINNING</span><button className="primary-button" onClick={onContact}>GET IN TOUCH ↗</button><button onClick={replay}>↺ WATCH AGAIN</button></>
+        : <button className="primary-button" onClick={toggle}>▶ PLAY THE TRAILER</button>}</div>}
+    </div>
+    <div className="cinema-house" aria-hidden="true" />
+    <div className="film-progress" aria-hidden="true"><i style={{ width: `${Math.min(100, time / length * 100)}%` }} /></div>
+    <nav className="theatre-controls" aria-label="Film controls">
+      <button aria-pressed={playing} onClick={toggle}>{playing ? '❚❚ PAUSE' : '▶ PLAY'}</button>
+      <button aria-pressed={!muted} onClick={sound}>{muted ? 'SOUND OFF' : 'SOUND ON'}</button>
+      <span>{clock(time)} / {clock(length)} · HOUSE FULL</span>
+      <button onClick={replay}>↺ REPLAY</button>
+      <button aria-pressed={cc} onClick={captions}>CC</button>
+      <button onClick={onScenes}>READ THE NINE SCENES</button>
+      <button onClick={onExit}>← EXIT THEATRE</button>
+    </nav>
+    <p className="caption">ORIGINAL SCORE · FILMED IN THIS CITY · SPACE PLAY / PAUSE · M SOUND · HOME REPLAY · ESC EXIT</p>
+  </section>;
+}
+
+function SceneTheatre({ reduced, onContact, onExit, onFinale, initialScene, onFilm }: { reduced: boolean; onContact: () => void; onExit: () => void; onFinale?: () => void; initialScene: number; onFilm: () => void }) {
   const root = useRef<HTMLElement>(null);
   const [index, setIndex] = useState(initialScene);
   const [playing, setPlaying] = useState(false);
@@ -94,5 +151,5 @@ export function Theatre({ reduced, onContact, onExit, onFinale, initialScene = 0
     const keys: Record<string, () => void> = { ArrowRight: () => setIndex(i => Math.min(i + 1, scenes.length - 1)), ArrowLeft: () => setIndex(i => Math.max(i - 1, 0)), ' ': () => setPlaying(p => !p), Home: () => { setIndex(0); setPlaying(false); }, End: () => { setIndex(scenes.length - 1); setPlaying(false); } };
     const action = keys[event.key]; if (action && !((event.target as HTMLElement).tagName === 'BUTTON' && event.key === ' ')) { event.preventDefault(); action(); }
   };
-  return <section ref={root} tabIndex={-1} className="talkies" aria-label="Film City story theatre" onKeyDown={onKey}><div className="projector-beam" aria-hidden="true"/><div className="cinema-screen" aria-live={playing ? 'off' : 'polite'}><span className="caption">{scene.label}</span><span className="scene-number" aria-hidden="true">0{index + 1}</span><h3>{scene.title}</h3><p>{scene.body}</p>{index === scenes.length - 1 && <button className="primary-button" onClick={onContact}>GET IN TOUCH ↗</button>}</div><div className="cinema-seats" aria-hidden="true">▰ ▰ ▰ ▰ ▰ ▰ ▰</div><nav className="theatre-controls" aria-label="Story controls"><button disabled={index === 0} onClick={() => setIndex(i => i - 1)}>← PREVIOUS</button><button aria-pressed={playing} onClick={() => setPlaying(p => !p)}>{playing ? 'PAUSE' : 'AUTOPLAY'}</button><span>{index + 1} / {scenes.length} · {scene.name}</span><button disabled={index === scenes.length - 1} onClick={() => setIndex(i => i + 1)}>NEXT →</button><button onClick={() => { setIndex(0); setPlaying(false); }}>↺ RESTART</button><button disabled={index === scenes.length - 1} onClick={() => { setIndex(scenes.length - 1); setPlaying(false); }}>SKIP TO THE END ⇥</button><button onClick={onExit}>EXIT THEATRE</button></nav><div className="scene-selector">{scenes.map((s, i) => <button key={s.name} aria-label={`Scene ${i + 1}: ${s.name}`} aria-current={i === index ? 'step' : undefined} onClick={() => setIndex(i)}>{String(i + 1).padStart(2, '0')}</button>)}</div><p className="caption">TEXT-LED CINEMA / NO AUDIO · ← → STEP · SPACE PLAY · HOME RESTART · END SKIP · ESC EXIT</p></section>;
+  return <section ref={root} tabIndex={-1} className="talkies" aria-label="Film City story theatre" onKeyDown={onKey}><div className="projector-beam" aria-hidden="true"/><div className="cinema-screen" aria-live={playing ? 'off' : 'polite'}><span className="caption">{scene.label}</span><span className="scene-number" aria-hidden="true">0{index + 1}</span><h3>{scene.title}</h3><p>{scene.body}</p>{index === scenes.length - 1 && <button className="primary-button" onClick={onContact}>GET IN TOUCH ↗</button>}</div><div className="cinema-house" aria-hidden="true" /><nav className="theatre-controls" aria-label="Story controls"><button disabled={index === 0} onClick={() => setIndex(i => i - 1)}>← PREVIOUS</button><button aria-pressed={playing} onClick={() => setPlaying(p => !p)}>{playing ? 'PAUSE' : 'AUTOPLAY'}</button><span>{index + 1} / {scenes.length} · {scene.name}</span><button disabled={index === scenes.length - 1} onClick={() => setIndex(i => i + 1)}>NEXT →</button><button onClick={() => { setIndex(0); setPlaying(false); }}>↺ RESTART</button><button disabled={index === scenes.length - 1} onClick={() => { setIndex(scenes.length - 1); setPlaying(false); }}>SKIP TO THE END ⇥</button><button onClick={onFilm}>▶ WATCH THE TRAILER</button><button onClick={onExit}>← EXIT THEATRE</button></nav><div className="scene-selector">{scenes.map((s, i) => <button key={s.name} aria-label={`Scene ${i + 1}: ${s.name}`} aria-current={i === index ? 'step' : undefined} onClick={() => setIndex(i)}>{String(i + 1).padStart(2, '0')}</button>)}</div><p className="caption">THE PROGRAMME IN TEXT · ← → STEP · SPACE PLAY · HOME RESTART · END SKIP · ESC EXIT</p></section>;
 }

@@ -69,6 +69,7 @@ test('theatre can skip to the end, restart and exit by keyboard', async ({ page 
   await page.goto('/?webgl=off#/place/filmcity');
   await page.getByRole('button', { name: 'TAKE A SEAT' }).click();
   const theatre = page.getByRole('region', { name: 'Film City story theatre' });
+  await theatre.getByRole('button', { name: 'READ THE NINE SCENES' }).click();
   await theatre.focus(); await page.keyboard.press('End');
   await expect(theatre.getByRole('button', { name: 'GET IN TOUCH' })).toBeVisible();
   await theatre.getByRole('button', { name: '↺ RESTART' }).click();

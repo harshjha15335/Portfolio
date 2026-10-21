@@ -25,6 +25,7 @@ import { setCityDensity } from '../game/World/districts/District';
 import { createFortRoadTraffic, FORT_LOOP_LANE } from '../game/World/districts/FortRoadTraffic';
 import { DistrictCast, districtCast, setDistrictCast } from '../game/World/districts/DistrictCast';
 import { setFriendSource } from '../game/World/npc/FriendSlot';
+import { setTalkiesActive, setTalkiesReduced, setTalkiesSound } from '../game/World/districts/TalkiesHouse';
 import type { GLBAssetLibrary } from '../game/World/assets/GLBAssetLibrary';
 import { VEHICLE_HIDDEN, type LaneTraffic } from '../game/World/districts/DistrictSystems';
 import { districts as directory } from '../data/city';
@@ -125,7 +126,7 @@ export class WorldEngine {
   private fill = new THREE.HemisphereLight(STREET_MOOD.skyColor, STREET_MOOD.groundColor, STREET_MOOD.hemisphereIntensity);
 
   constructor(private container: HTMLElement, private options: WorldOptions) {
-    this.reducedMotion = options.reducedMotion; this.quality=new AdaptiveQuality(options.mobile);this.appliedLow=this.quality.low;
+    this.reducedMotion = options.reducedMotion; setTalkiesReduced(options.reducedMotion); this.quality=new AdaptiveQuality(options.mobile);this.appliedLow=this.quality.low;
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.25));this.renderer.info.autoReset=false;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -209,18 +210,20 @@ export class WorldEngine {
   };
   setMode(mode: Mode) {
     if (mode !== 'world') { this.endRide(); this.unlock(); }
-    this.mode = mode; this.audio?.setActive(this.soundEnabled&&mode==='world'&&!this.paused); this.releaseInput(); this.accumulator = 0;
+    this.mode = mode; this.audio?.setActive(this.soundEnabled&&mode==='world'&&!this.paused); this.syncTalkies(); this.releaseInput(); this.accumulator = 0;
     if (mode === 'world') { this.updateCamera(); this.updateNear(); } else this.options.onNear(null);
     if (this.debug) this.debug.hidden = mode !== 'world';
   }
-  setPaused(paused: boolean) { this.paused = paused; this.audio?.setActive(this.soundEnabled&&!paused&&this.mode==='world'&&!document.hidden); this.pausedFrameDirty = true; this.releaseInput(); this.accumulator = 0; this.visitor.velocity.setZero(); if (paused) this.unlock(); }
+  setPaused(paused: boolean) { this.paused = paused; this.audio?.setActive(this.soundEnabled&&!paused&&this.mode==='world'&&!document.hidden); this.syncTalkies(); this.pausedFrameDirty = true; this.releaseInput(); this.accumulator = 0; this.visitor.velocity.setZero(); if (paused) this.unlock(); }
   /** Turn city sound on or off. The audio context is created on the first turn-on, which is always a visitor's gesture (autoplay rules). */
-  setSound(enabled:boolean) { this.soundEnabled=enabled; if(enabled&&!this.audio){try{this.audio=new Soundscape(this.audioLevels);}catch{this.soundEnabled=false;}} this.audio?.setActive(this.soundEnabled&&this.mode==='world'&&!this.paused&&!document.hidden); this.renderer.domElement.dataset.audio=this.audio&&this.soundEnabled?'on':'off'; }
+  setSound(enabled:boolean) { this.soundEnabled=enabled; if(enabled&&!this.audio){try{this.audio=new Soundscape(this.audioLevels);}catch{this.soundEnabled=false;}} this.audio?.setActive(this.soundEnabled&&this.mode==='world'&&!this.paused&&!document.hidden); this.renderer.domElement.dataset.audio=this.audio&&this.soundEnabled?'on':'off'; setTalkiesSound(this.soundEnabled); }
+  /** The Talkies screen plays only while the world is on screen and nothing covers it. */
+  private syncTalkies() { setTalkiesActive(this.mode==='world'&&!this.paused&&!document.hidden); }
   setAudioLevels(levels:AudioLevels) { this.audioLevels={...levels}; this.audio?.setLevels(levels); }
   /** Sound diagnostics: context state, one-shot voices, levels (dev overlay, tests). */
   get audioStats() { return this.audio?.stats() ?? null; }
   setRenderPreset(preset:RenderPreset){this.renderPreset=preset;setCityDensity(preset);this.rendering.setPreset(this.quality.low?'low':preset);this.street.setDensity(preset==='high'&&!this.quality.low);this.renderer.shadowMap.enabled=preset!=='low'&&!this.options.mobile&&!this.quality.low;this.syncSunBalance();this.renderer.shadowMap.needsUpdate=true;this.resize();this.pausedFrameDirty=true;}
-  setReducedMotion(reduced: boolean) { this.reducedMotion = reduced;this.pausedFrameDirty=true; }
+  setReducedMotion(reduced: boolean) { this.reducedMotion = reduced; setTalkiesReduced(reduced);this.pausedFrameDirty=true; }
   /** Visitor benchmark (`?bench`): per-rendered-frame cost, a look override, quality pinning and the GPU name. */
   setFrameObserver(observer: ((frame: BenchFrame) => void) | null) { this.frameObserver = observer; }
   setView(yaw: number, pitch = -.015) { this.yaw = yaw; this.pitch = pitch; this.updateCamera(); }
@@ -428,7 +431,7 @@ export class WorldEngine {
   private releaseInput = () => { this.keys.clear(); this.touchKeys.clear(); this.dragging = null; };
   private unlock() { if (document.pointerLockElement === this.renderer.domElement) document.exitPointerLock(); }
   private lockChanged = () => { if (!document.pointerLockElement) this.releaseInput(); };
-  private visibilityChanged = () => { this.audio?.setActive(this.soundEnabled&&!document.hidden&&!this.paused&&this.mode==='world'); this.releaseInput(); this.lastTime = 0; this.accumulator = 0; if (!document.hidden) { this.environment.update(performance.now(), true); this.pausedFrameDirty = true; } };
+  private visibilityChanged = () => { this.audio?.setActive(this.soundEnabled&&!document.hidden&&!this.paused&&this.mode==='world'); this.syncTalkies(); this.releaseInput(); this.lastTime = 0; this.accumulator = 0; if (!document.hidden) { this.environment.update(performance.now(), true); this.pausedFrameDirty = true; } };
   private contextLost = (event: Event) => { event.preventDefault(); this.options.onError(new Error('WebGL context lost')); };
   private keyDown = (event: KeyboardEvent) => {
     if ((event.target as HTMLElement)?.closest('input, textarea, select, [contenteditable="true"]') || this.mode !== 'world' || this.paused) return;
