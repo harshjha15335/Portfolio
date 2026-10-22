@@ -1,8 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
 
+/** The WebGL-off page once the app has mounted (its effects, the Ctrl+K listener among them, have run). */
+async function fallbackReady(page: Page) {
+  await expect(page.getByRole('status').filter({ hasText: '3D experience unavailable' })).toBeVisible();
+}
+
 /** Open a project's case study from the command palette, the way a visitor without the world finds it. */
 async function search(page: Page, query: string) {
-  await page.keyboard.press('Control+k');
+  // The header button rather than Ctrl+K: a shortcut pressed before the app's key listener is attached is lost.
+  await page.getByRole('button', { name: 'Open command palette' }).click();
   const box = page.getByRole('textbox', { name: 'Search commands' });
   await box.fill(query);
   await box.press('Enter');
@@ -35,6 +41,7 @@ test('intro enters a rendered world and supports menu and directory', async ({ p
 
 test('case studies expose every project, a verifiable résumé and real code links', async ({ page, request }) => {
   await page.goto('/?webgl=off');
+  await fallbackReady(page);
   await page.keyboard.press('Control+k');
   for (const name of ['FFprime', 'NORTHSTAR', 'RECO', 'MoneyMetrics', 'RepoLens', 'Compiler Lab']) {
     await page.getByRole('textbox', { name: 'Search commands' }).fill(name);
@@ -82,6 +89,7 @@ test('browser back and forward restore project overlays', async ({ page }) => {
 
 test('command palette searches technologies, executes keys, and has an empty state', async ({ page }) => {
   await page.goto('/?webgl=off');
+  await fallbackReady(page);
   await page.keyboard.press('Control+k');
   const search = page.getByRole('textbox', { name: 'Search commands' });
   await expect(search).toBeFocused();
