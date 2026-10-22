@@ -20,7 +20,7 @@ export function RideMeter({ ride, onChoose, onSkip, onExit, onOpen }: { ride: Ri
   if (ride.phase === 'idle') return null;
   const destination = districts.find(d => d.id === ride.destination);
   return <section className="ride-meter" aria-label="Portfolio Meter">
-    {ride.phase === 'hailing' ? <p role="status">Your {ride.kind === 'auto' ? 'auto rickshaw' : 'kaali-peeli taxi'} is on the way · <span data-testid="ride-eta">{etaText(ride.eta)}</span>. Look for the yellow arrow above it.</p>
+    {ride.phase === 'hailing' ? <p role="status">Your {ride.kind === 'auto' ? 'auto rickshaw' : 'kaali-peeli taxi'} is on the way · <span data-testid="ride-eta">{etaText(ride.eta)}</span>. Look for the yellow triangle above it.</p>
       : ride.phase === 'boarding' ? <select aria-label="Ride destination" value="" onChange={e => onChoose(e.target.value)}><option value="" disabled>Where to?</option>{districts.filter(d => streetStops[d.id]).map(d => <option key={d.id} value={d.id}>{d.title}</option>)}</select>
       : ride.phase === 'riding' ? <button className="ride-skip" onClick={onSkip}>SKIP TO ARRIVAL →</button>
       : <><p role="status" className="sr-only">Arrived at {destination?.title}.</p><button className="ride-step-out" onClick={() => { onExit(); if (destination) onOpen(destination.id); }}>STEP OUT & MEET THE GUIDE →</button></>}
