@@ -10,6 +10,10 @@ import { cityVehicleGeometry, scooterGeometry, type VehicleDetail } from './City
  * kaali-peeli taxis, autos, motorbikes, a Tata tempo, handcarts and milk bicycles.
  * Drivers are baked seated people merged into the body. Front faces -Z (the heading convention).
  */
+/** What a rider's hands hold, by vehicle build: the handlebar of a two- or three-wheeler or a steering wheel (see riders.ts). */
+export type RiderGrip = 'auto' | 'scooter' | 'scooter-model' | 'motorbike' | 'motorbike-model' | 'cycle' | 'bus' | 'tempo';
+/** The bus and tempo steering wheel relative to the driving seat point. */
+export const CAB_WHEEL = { at: [0, .3, -.5] as V3, radius: .2, tilt: .9 };
 export type CityVehicleKind = 'bus' | 'hatch' | 'sedan' | 'taxi' | 'auto' | 'bike' | 'tempo' | 'cart' | 'cycle' | 'suv';
 export const VEHICLE_LENGTH: Record<CityVehicleKind, number> = { bus: 11.0, hatch: 3.7, sedan: 4.4, suv: 4.6, taxi: 4.1, auto: 2.7, bike: 2.0, tempo: 5.6, cart: 2.2, cycle: 1.8 };
 export const VEHICLE_SPEED: Record<CityVehicleKind, number> = { bus: 4.2, hatch: 5.6, sedan: 5.8, suv: 5.8, taxi: 5.2, auto: 4.6, bike: 6.2, tempo: 4.4, cart: 1.1, cycle: 2.6 };
@@ -31,15 +35,19 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
   const level: VehicleDetail = detail === true ? 1 : detail === false ? 0 : detail, lite = level > 0;
   const r = seededRandom(`vehicle:${seed}`), m = new ColorMesh(lite), pick = <T,>(l: T[]) => l[Math.floor(r() * l.length)];
   // Where the driver or rider sits; a licensed cast figure takes this seat when the baked one is left out.
-  let seat: V3 | null = null;
-  const ride = (key: string, x: number, y: number, z: number) => { seat = [x, y + .92, z]; if (rider) addDriver(m, key, x, y, z); };
+  let seat: V3 | null = null, grip: RiderGrip | null = null;
+  const ride = (key: string, x: number, y: number, z: number, hold: RiderGrip) => {
+    seat = [x, y + .92, z]; grip = hold; if (rider) addDriver(m, key, x, y, z);
+    // Buses and tempos get the wheel their driver holds (riders.ts puts the hands at ten to two on it).
+    if (hold === 'bus' || hold === 'tempo') m.steering([x + CAB_WHEEL.at[0], y + .92 + CAB_WHEEL.at[1], z + CAB_WHEEL.at[2]], CAB_WHEEL.radius, CAB_WHEEL.tilt);
+  };
   switch (kind) {
     case 'bus': {
       // BEST: most are the red double-decker; some are the newer single-deck red AC buses.
       const red = '#b3241b', deep = '#8c1a14', cream = '#ece2c8', L = 10.2, double = r() < .65;
       // The modelled BEST bus once loaded (CityVehicleModels); the lofted shell below stands in until then.
       const modelled = cityVehicleGeometry(double ? 'bus-double' : 'bus-single', level);
-      if (modelled) { m.model(modelled); ride(`${seed}:bus`, .65, .25, -L / 2 + 1.0); break; }
+      if (modelled) { m.model(modelled); ride(`${seed}:bus`, .65, .25, -L / 2 + 1.0, 'bus'); break; }
       // Shells are swept through rounded sections with softened front and rear corners.
       const shell = (y0: number, y1: number, w: number, len: number, dz: number, color: string) => { const e = len / 2; m.loft(sweep([[dz - e, w * .9, y0 + .04, y1 - .05], [dz - e + .06, w * .985, y0, y1], [dz - e + .25, w, y0, y1], [dz + e - .25, w, y0, y1], [dz + e - .06, w * .985, y0, y1], [dz + e, w * .9, y0 + .04, y1 - .05]], lite ? 12 : 20, 9), color); };
       shell(.36, 2.3, 1.25, L, 0, red);
@@ -62,7 +70,7 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
       m.box([2.46, .34, .22], [0, .5, -L / 2 - .06], '#262626'); m.box([.6, .14, .05], [0, .55, -L / 2 - .18], '#f2efe6');
       m.box([1.6, .6, .05], [0, 1.0, L / 2 + .02], '#3d3d3b'); for (let i = 0; i < 5; i++) m.box([1.5, .04, .06], [0, .8 + i * .1, L / 2 + .04], '#222');
       for (const z of [-L / 2 + 1.9, L / 2 - 2.3]) { m.shape('tyre', [.6, 2.52, .6], [0, .5, z], '#121314', [0, 0, Math.PI / 2]); for (const sd of [-1, 1]) m.wheel(.5, .3, [sd * 1.1, .5, z], tyre, '#8d8f8a'); }
-      ride(`${seed}:bus`, .65, .25, -L / 2 + 1.0); break;
+      ride(`${seed}:bus`, .65, .25, -L / 2 + 1.0, 'bus'); break;
     }
     case 'hatch': case 'sedan': case 'suv': case 'taxi': {
       // Lofted pressed-metal body (CarBodies); the kaali-peeli gets its yellow roof. Glass is opaque, so no driver is baked in.
@@ -86,7 +94,7 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
       m.rounded([.2, .12, .08], [0, .9, -1.22], lamp); m.rounded([.7, .1, .05], [0, .72, 1.19], '#e8d24a');
       m.rod([-.32, 1.18, -.62], [.32, 1.18, -.62], .015, '#202020');
       m.wheel(.25, .14, [0, .25, -.94]); for (const s of [-1, 1]) m.wheel(.255, .16, [s * .69, .255, .78]);
-      ride(`${seed}:auto`, 0, -.15, -.25); break;
+      ride(`${seed}:auto`, 0, -.15, -.25, 'auto'); break;
     }
     case 'bike': case 'cycle': {
       const scooter = kind === 'bike' && r() < .6, q = lite ? 8 : 14;
@@ -95,7 +103,7 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
         const body = pick(['#e9e7e1', '#b52a24', '#8d9399', '#2b4f7a', '#1e1f21', '#c8b89a', '#5e6b52']), rad = .22;
         // The authored Vino scooter once loaded: half keep its own blue, the rest in Mumbai's usual scooter colours.
         const modelled = scooterGeometry(level, r() < .5 ? undefined : body);
-        if (modelled) { m.model(modelled); ride(`${seed}:rider`, 0, -.12, .25); break; }
+        if (modelled) { m.model(modelled); ride(`${seed}:rider`, 0, -.12, .25, 'scooter-model'); break; }
         m.wheel(rad, .1, [0, rad, -.62], tyre, '#9a9c98'); m.wheel(rad, .1, [0, rad, .6], tyre, '#9a9c98');
         m.loft(sweep([[-.08, .1, .34, .5], [.08, .2, .3, .66], [.4, .23, .3, .74], [.72, .2, .34, .72], [.9, .1, .44, .64]], q, 2.6), body);
         m.loft(sweep([[-.05, .16, .73, .79], [.35, .17, .74, .82], [.7, .14, .72, .79]], q, 3), '#1b1b1c');
@@ -105,11 +113,11 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
         m.loft(sweep([[-.56, .1, .93, 1.04], [-.47, .24, .94, 1.08], [-.36, .2, .95, 1.05]], q, 3), body); m.rounded([.12, .07, .04], [0, 1.0, -.565], lamp);
         for (const sd of [-1, 1]) { m.rod([sd * .2, 1.05, -.44], [sd * .32, 1.04, -.42], .016, '#2a2a2a'); m.rod([sd * .16, 1.07, -.44], [sd * .2, 1.24, -.46], .008, '#2a2a2a'); m.rounded([.08, .05, .02], [sd * .2, 1.25, -.46], '#3d4448'); }
         m.rounded([.16, .06, .03], [0, .62, .9], tail); m.rounded([.14, .12, .3], [.13, .3, .56], '#4b4d4f');
-        ride(`${seed}:rider`, 0, -.12, .25); break;
+        ride(`${seed}:rider`, 0, -.12, .25, 'scooter'); break;
       }
       const frame = kind === 'bike' ? pick(['#1f2a44', '#7b1e1e', '#2b2b2b', '#5c6168']) : '#2a2f36', rad = kind === 'bike' ? .3 : .33;
       const modelled = kind === 'bike' ? cityVehicleGeometry('motorbike', level, frame) : null;
-      if (modelled) { m.model(modelled); ride(`${seed}:rider`, 0, -.14, .45); break; }
+      if (modelled) { m.model(modelled); ride(`${seed}:rider`, 0, -.14, .45, 'motorbike-model'); break; }
       m.wheel(rad, kind === 'bike' ? .09 : .045, [0, rad, -.68], tyre, '#8a8c88'); m.wheel(rad, kind === 'bike' ? .1 : .045, [0, rad, .66], tyre, '#8a8c88');
       if (kind === 'bike') {
         // Commuter motorcycle: teardrop tank, finned engine, long seat, chrome exhaust.
@@ -124,7 +132,7 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
         m.rounded([.14, .06, .26], [0, .92, .14], '#1d1d1d'); m.box([.42, .03, .3], [0, .82, .78], '#3a3a3a');
         for (const s of [-1, 1]) m.shape('cylinder', [.13, .4, .13], [s * .24, .62, .55], '#b9bab5');
       }
-      ride(`${seed}:rider`, 0, kind === 'bike' ? -.15 : -.05, kind === 'bike' ? .2 : .25); break;
+      ride(`${seed}:rider`, 0, kind === 'bike' ? -.15 : -.05, kind === 'bike' ? .2 : .25, kind === 'bike' ? 'motorbike' : 'cycle'); break;
     }
     case 'tempo': {
       const cab = pick(['#2d5f8f', '#d4a13a', '#c9c2b0']);
@@ -136,7 +144,7 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
       m.rounded([1.9, .2, 2.4], [0, 1.5, .9], '#3f6e8f');
       for (const s of [-1, 1]) { m.box([.24, .14, .04], [s * .7, .9, -2.71], lamp); m.wheel(.38, .24, [s * .85, .38, -1.85]); m.wheel(.38, .3, [s * .85, .38, 1.6]); }
       m.box([1.9, .3, .1], [0, .58, -2.72], '#2b2b2b');
-      ride(`${seed}:tempo`, .42, .03, -2.0); break;
+      ride(`${seed}:tempo`, .42, .03, -2.0, 'tempo'); break;
     }
     case 'cart': {
       m.box([1.2, .08, 1.9], [0, .78, 0], '#8a6239'); for (const s of [-1, 1]) m.box([.06, .18, 1.9], [s * .6, .88, 0], '#6f4c2b');
@@ -147,7 +155,7 @@ export function createCityVehicle(kind: CityVehicleKind, seed: string, rider = t
       break;
     }
   }
-  const mesh = new THREE.Mesh(m.build(), paintMaterial()); mesh.castShadow = true; mesh.receiveShadow = true; mesh.name = `city-vehicle:${kind}`; mesh.userData.seat = seat;
+  const mesh = new THREE.Mesh(m.build(), paintMaterial()); mesh.castShadow = true; mesh.receiveShadow = true; mesh.name = `city-vehicle:${kind}`; mesh.userData.seat = seat; mesh.userData.grip = grip;
   return mesh;
 }
 

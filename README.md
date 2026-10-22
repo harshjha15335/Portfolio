@@ -59,7 +59,7 @@ Hail a taxi or auto, wait for pickup and choose any district. The camera enters 
 | Juhu Studio | About, résumé, GitHub, contact |
 | Film City Talkies | Nine-scene journey theatre |
 
-Quick View, project case studies, résumé, contact links, command palette and native-dialog focus remain available. `#/place/fort` opens the HTML guide. Existing `#/project/<id>` links work independently of the 3D world. `/?webgl=off#world` exercises fallback. Original portfolio data and source qualifiers are retained; see [docs/SOURCES.md](docs/SOURCES.md).
+Project case studies, résumé, contact links, the city directory, command palette and native-dialog focus remain available. `#/place/fort` opens the HTML guide. Existing `#/project/<id>` links work independently of the 3D world. `/?webgl=off#world` exercises fallback. Original portfolio data and source qualifiers are retained; see [docs/SOURCES.md](docs/SOURCES.md).
 
 ## Architecture and performance
 

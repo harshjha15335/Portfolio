@@ -4,10 +4,10 @@ import AxeBuilder from '@axe-core/playwright';
 /**
  * Accessibility acceptance for the HTML side of the portfolio (what a keyboard, screen-reader or phone visitor
  * relies on). axe checks WCAG 2.1 A/AA rules; serious and critical findings fail. The 3D canvas is excluded:
- * its accessible equivalent is the quick view and the place pages, which are scanned here.
+ * its accessible equivalent is the intro, the city directory, the place pages and the case studies, which are scanned here.
  */
 const PAGES: Array<[string, string]> = [
-  ['quick view', '/#quick'],
+  ['intro', '/?webgl=off'],
   ['case study', '/#/project/reco'],
   ['flagship lab', '/#/project/northstar'],
   ['district page', '/?webgl=off#/place/juhu'],
@@ -29,8 +29,8 @@ for (const [name, url] of PAGES) {
   });
 }
 
-test('a11y: keyboard focus is always visible in the quick view', async ({ page }) => {
-  await settle(page, '/#quick');
+test('a11y: keyboard focus is always visible on the intro and a case study', async ({ page }) => {
+  await settle(page, '/#/project/reco');
   const missing: string[] = [];
   for (let i = 0; i < 40; i++) {
     await page.keyboard.press('Tab');
@@ -47,7 +47,7 @@ test('a11y: keyboard focus is always visible in the quick view', async ({ page }
 test('a11y: touch targets on a phone are at least 24 × 24 px', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const page = await context.newPage();
-  await settle(page, '/#quick');
+  await settle(page, '/?webgl=off#/place/juhu');
   // WCAG 2.2 target size (minimum): interactive controls, except links inside running text.
   const small = await page.evaluate(() => [...document.querySelectorAll<HTMLElement>('button, a[href], input, select, [role="button"]')]
     .filter(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; })

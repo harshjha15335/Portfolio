@@ -17,7 +17,6 @@ The final package follows the user's PC-only request: **46 original screenshots 
 | --- | --- | --- |
 | Home | [Home](screenshots/redesign/home-1440.png) | [Home](screenshots/redesign/home-1920.png) |
 | Driving world | [World](screenshots/redesign/world-1440.png) | [World](screenshots/redesign/world-1920.png) |
-| Quick View | [Quick View](screenshots/redesign/quick-1440.png) | [Quick View](screenshots/redesign/quick-1920.png) |
 | FFprime | [FFprime](screenshots/redesign/ffprime-1440.png) | [FFprime](screenshots/redesign/ffprime-1920.png) |
 | NORTHSTAR | [NORTHSTAR](screenshots/redesign/northstar-1440.png) | [NORTHSTAR](screenshots/redesign/northstar-1920.png) |
 | RECO | [RECO](screenshots/redesign/reco-1440.png) | [RECO](screenshots/redesign/reco-1920.png) |

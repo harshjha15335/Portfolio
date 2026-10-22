@@ -3,12 +3,12 @@ import original from './playwright.config';
 
 /**
  * GitHub Actions smoke run on GPU-less runners, in Chromium, Firefox and WebKit, plus phone-sized Chrome and
- * Safari. Only the HTML-side flows and the accessibility checks run here (quick view, case studies, labs,
+ * Safari. Only the HTML-side flows and the accessibility checks run here (intro, case studies, labs,
  * fallback); world-rendering specs take minutes each under software WebGL and stay in the local cloud suite.
  */
 export default defineConfig({
   ...original,
-  grep: /quick view exposes|deep links|back and forward|command palette|skip link|local demonstrations|coordinate workstation|flagship labs|WebGL failure|loads without 3D|a11y:/,
+  grep: /case studies expose|deep links|back and forward|command palette|skip link|local demonstrations|coordinate workstation|flagship labs|WebGL failure|loads without 3D|a11y:/,
   reporter: [['list']],
   timeout: 90_000,
   expect: { timeout: 30_000 },

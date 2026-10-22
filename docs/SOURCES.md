@@ -63,4 +63,4 @@ No test totals, user counts, uptime, AI accuracy or production impact were inven
 
 ## Editing policy
 
-Both World Mode and Quick View consume `src/data`. Keep metric qualifiers in the metric labels when updating copy. Add a source URL or a résumé qualifier to every new quantitative claim. Replace résumé-reported performance figures with reproducible benchmark evidence when available. Do not silently promote fixture values or simulations to production results.
+World Mode and the HTML case studies and district guides consume `src/data`. Keep metric qualifiers in the metric labels when updating copy. Add a source URL or a résumé qualifier to every new quantitative claim. Replace résumé-reported performance figures with reproducible benchmark evidence when available. Do not silently promote fixture values or simulations to production results.

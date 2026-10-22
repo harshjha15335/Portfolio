@@ -1,8 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 
-async function quick(page: Page) {
-  await page.goto('/#quick');
-  await expect(page.getByRole('heading', { name: 'Engineering, with evidence.' })).toBeVisible();
+/** Open a project's case study from the command palette, the way a visitor without the world finds it. */
+async function search(page: Page, query: string) {
+  await page.keyboard.press('Control+k');
+  const box = page.getByRole('textbox', { name: 'Search commands' });
+  await box.fill(query);
+  await box.press('Enter');
 }
 
 test('intro enters a rendered world and supports menu and directory', async ({ page }) => {
@@ -30,39 +33,46 @@ test('intro enters a rendered world and supports menu and directory', async ({ p
   expect(errors).toEqual([]);
 });
 
-test('quick view exposes all projects, verifiable résumé and real code links', async ({ page, request }) => {
-  await quick(page);
-  await expect(page.locator('.project-row')).toHaveCount(6);
-  await page.screenshot({ path: 'docs/screenshots/quick-desktop.png', fullPage: true });
+test('case studies expose every project, a verifiable résumé and real code links', async ({ page, request }) => {
+  await page.goto('/?webgl=off');
+  await page.keyboard.press('Control+k');
+  for (const name of ['FFprime', 'NORTHSTAR', 'RECO', 'MoneyMetrics', 'RepoLens', 'Compiler Lab']) {
+    await page.getByRole('textbox', { name: 'Search commands' }).fill(name);
+    await expect(page.locator('.command-results button').first()).toContainText(name);
+  }
+  await page.keyboard.press('Escape');
+  // The palette closes after its exit animation; Ctrl+K toggles, so wait before opening it again.
+  await expect(page.getByRole('textbox', { name: 'Search commands' })).toHaveCount(0);
   const resume = await request.get('/resume/Harsh-Jha-Resume.pdf');
   expect(resume.ok()).toBe(true);
   expect(resume.headers()['content-type']).toContain('application/pdf');
   expect((await resume.body()).subarray(0, 5).toString()).toBe('%PDF-');
-  await expect(page.getByRole('link', { name: 'DOWNLOAD RÉSUMÉ' })).toHaveAttribute('href', '/resume/Harsh-Jha-Resume.pdf');
+  await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'RÉSUMÉ' })).toHaveAttribute('href', '/resume/Harsh-Jha-Resume.pdf');
   await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'GITHUB' })).toHaveAttribute('href', 'https://github.com/harshjha15335');
-  await page.getByRole('button', { name: 'Open FFprime case study' }).click();
+  await search(page, 'FFprime');
   const dialog = page.getByRole('dialog', { name: 'CASE STUDY / FFprime' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('link', { name: 'VIEW CODE' })).toHaveAttribute('href', 'https://github.com/theochem/ffprime');
   await expect(dialog).toContainText('résumé reported');
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('button', { name: 'Open FFprime case study' })).toBeFocused();
+  await expect(dialog).toHaveCount(0);
 });
 
-test('deep links refresh, set project metadata, and close to quick view', async ({ page }) => {
+test('deep links refresh, set project metadata, and close into the city', async ({ page }) => {
   await page.goto('/#/project/reco');
   await expect(page.getByRole('dialog', { name: 'CASE STUDY / RECO' })).toBeVisible();
   await expect(page).toHaveTitle('RECO — Harsh Jha');
   await page.reload();
   await expect(page.getByRole('dialog', { name: 'CASE STUDY / RECO' })).toContainText('seeded');
   await page.getByRole('button', { name: 'Close CASE STUDY / RECO' }).click();
-  await expect(page).toHaveURL(/#quick$/);
-  await expect(page.getByRole('heading', { name: 'Engineering, with evidence.' })).toBeVisible();
+  await expect(page).toHaveURL(/#world$/);
+  // Closing the shared case study starts the city: a canvas where the browser has WebGL, the stated fallback where it has none.
+  await expect(page.locator('.world-container canvas').or(page.getByRole('status').filter({ hasText: '3D experience unavailable' }))).toBeVisible();
 });
 
 test('browser back and forward restore project overlays', async ({ page }) => {
-  await quick(page);
-  await page.getByRole('button', { name: 'Open NORTHSTAR case study' }).click();
+  await page.goto('/?webgl=off');
+  await search(page, 'NORTHSTAR');
   await expect(page.getByRole('dialog', { name: 'CASE STUDY / NORTHSTAR' })).toBeVisible();
   await page.goBack();
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -71,7 +81,7 @@ test('browser back and forward restore project overlays', async ({ page }) => {
 });
 
 test('command palette searches technologies, executes keys, and has an empty state', async ({ page }) => {
-  await quick(page);
+  await page.goto('/?webgl=off');
   await page.keyboard.press('Control+k');
   const search = page.getByRole('textbox', { name: 'Search commands' });
   await expect(search).toBeFocused();
@@ -157,17 +167,19 @@ test('reduced motion follows system preference and user choice persists', async 
   await expect(page.locator('html')).toHaveAttribute('data-motion', 'reduced');
 });
 
-test('WebGL failure retains usable quick view and project navigation', async ({ page }) => {
+test('WebGL failure keeps the city directory, districts and project navigation', async ({ page }) => {
   await page.goto('/?webgl=off#world');
   await expect(page.getByRole('status').filter({ hasText: '3D experience unavailable' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Engineering, with evidence.' })).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'ENTER WORLD' })).toHaveCount(0);
-  await page.keyboard.press('Control+k');
-  const search = page.getByRole('textbox', { name: 'Search commands' });
-  await search.fill('Go to FFprime');
-  await search.press('Enter');
+  await expect(page.locator('.app')).toHaveClass(/mode-intro/);
+  await page.getByRole('button', { name: 'OPEN THE CITY DIRECTORY' }).click();
+  const directory = page.getByRole('dialog', { name: 'MUMBAI CITY DIRECTORY' });
+  await expect(directory.locator('.city-map-stop')).toHaveCount(9);
+  await directory.getByRole('button', { name: 'Travel to Juhu Studio', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Juhu Studio', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await search(page, 'Go to FFprime');
   await expect(page.getByRole('dialog', { name: 'CASE STUDY / FFprime' })).toBeVisible();
-  await expect(page.locator('.app')).toHaveClass(/mode-quick/);
+  await expect(page.locator('.app')).toHaveClass(/mode-intro/);
 });
 
 test('WebGL context loss switches a running world to accessible content', async ({ page }) => {
@@ -181,26 +193,27 @@ test('WebGL context loss switches a running world to accessible content', async 
     if (!extension) throw new Error('Browser does not provide WEBGL_lose_context');
     extension.loseContext();
   });
-  await expect(page.getByRole('status')).toContainText('3D experience unavailable');
-  await expect(page.getByRole('heading', { name: 'Engineering, with evidence.' })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: '3D experience unavailable' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'OPEN THE CITY DIRECTORY' })).toBeVisible();
   await expect(canvas).toHaveCount(0);
 });
 
-test('quick view loads without 3D and hides a missing or invalid résumé', async ({ page }) => {
+test('a shared case study loads without 3D and hides a missing or invalid résumé', async ({ page }) => {
   const requests: string[] = [];
   page.on('request', request => requests.push(request.url()));
   await page.route('**/resume/Harsh-Jha-Resume.pdf', route => route.fulfill({ status: 200, contentType: 'text/html', body: 'Missing PDF' }));
   const response = page.waitForResponse(/\/resume\/Harsh-Jha-Resume\.pdf$/);
-  await quick(page);
+  await page.goto('/#/project/reco');
+  await expect(page.getByRole('dialog', { name: 'CASE STUDY / RECO' })).toBeVisible();
   await response;
   await page.evaluate(() => document.fonts.ready);
   expect(requests.some(url => /fonts\.(googleapis|gstatic)\.com/.test(url))).toBe(false);
   expect(await page.evaluate(() => ['Barlow Condensed', 'DM Sans', 'IBM Plex Mono'].every(family => [...document.fonts].some(face => face.family.replace(/["']/g, '') === family && face.status === 'loaded')))).toBe(true);
-  await expect(page.getByRole('link', { name: /RÉSUMÉ/ })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: /RÉSUMÉ/ })).toHaveCount(0);
   await expect(page.locator('.world-container canvas')).toHaveCount(0);
   expect(requests.some(url => url.includes('/src/core/WorldEngine') || /\/deps\/(three|cannon-es)/.test(url))).toBe(false);
-  await page.getByRole('button', { name: 'ENTER WORLD' }).click();
-  // The world loads on demand: a canvas where the browser has WebGL, the stated fallback where it has none (headless Firefox on CI).
+  await page.getByRole('button', { name: 'Close CASE STUDY / RECO' }).click();
+  // The world loads once the case study closes: a canvas where the browser has WebGL, the stated fallback where it has none (headless Firefox on CI).
   await expect(page.locator('.world-container canvas').or(page.getByRole('status').filter({ hasText: '3D experience unavailable' }))).toBeVisible();
   expect(requests.some(url => url.includes('/src/core/WorldEngine'))).toBe(true);
 });
@@ -226,11 +239,10 @@ test('first-person walking accelerates, stops, pauses in overlays, and resets at
 
 test.describe('mobile guided exploration', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  test('quick view, world, and case study fit a phone screen', async ({ page }) => {
-    await quick(page);
+  test('intro, world, and case study fit a phone screen', async ({ page }) => {
+    await page.goto('/');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await page.screenshot({ path: 'docs/screenshots/quick-mobile.png', fullPage: true });
-    await page.getByRole('button', { name: 'ENTER WORLD' }).click();
+    await page.getByRole('button', { name: 'ENTER CITY' }).click();
     await expect(page.getByText('DRAG TO LOOK · HOLD ARROWS TO WALK')).toBeVisible();
     await expect(page.locator('.world-container canvas')).toBeVisible();
     await page.screenshot({ path: 'docs/screenshots/world-mobile.png' });

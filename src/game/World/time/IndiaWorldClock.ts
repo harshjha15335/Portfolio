@@ -4,7 +4,7 @@
  *
  * Time is held as an epoch instant (ms). It is only ever *formatted* in IST with Intl; it is never shifted by +5:30
  * and parsed back. Solar position uses the NOAA low-precision equations (≈0.01° over 1950–2050), which is far finer
- * than a lighting rig needs. Pure module: no Three.js, so Quick View and the HUD can import it.
+ * than a lighting rig needs. Pure module: no Three.js, so the HUD can import it.
  */
 export const MUMBAI = { lat: 18.94, lon: 72.835 } as const;
 export const IST_ZONE = 'Asia/Kolkata';
