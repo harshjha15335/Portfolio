@@ -12,6 +12,7 @@ import * as CANNON from 'cannon-es';
 import { createVisitor } from '../game/World/WalkingBody';
 import { MumbaiStreet } from '../game/World/MumbaiStreet';
 import { createTransitModel, animateTransit } from '../game/World/TransitModel';
+import { CabPointer } from '../game/World/CabPointer';
 import { idleRide, type Point, type RideStatus, type TransitKind } from '../game/World/transit';
 import { CITY_METRES_PER_MAP_UNIT, CITY_METRES_PER_WORLD_METRE, DEMO_FARES, FareMeter } from '../game/World/meter/FareMeter';
 import type { PhysicalMeter } from '../game/World/meter/MeterModel';
@@ -26,7 +27,7 @@ import { Avenue } from '../game/World/districts/avenue';
 import { createFortRoadTraffic, FORT_LOOP_LANE } from '../game/World/districts/FortRoadTraffic';
 import { DistrictCast, districtCast, setDistrictCast } from '../game/World/districts/DistrictCast';
 import { setFriendSource } from '../game/World/npc/FriendSlot';
-import { setTalkiesActive, setTalkiesReduced, setTalkiesSound } from '../game/World/districts/TalkiesHouse';
+import { SEATED_EYE, TALKIES_SEAT_ID, TALKIES_STAND_ID, skipToFilmEnd, setTalkiesActive, setTalkiesReduced, setTalkiesSound } from '../game/World/districts/TalkiesHouse';
 import type { GLBAssetLibrary } from '../game/World/assets/GLBAssetLibrary';
 import { SignAtlas, VEHICLE_HIDDEN, type LaneTraffic } from '../game/World/districts/DistrictSystems';
 import { districts as directory } from '../data/city';
@@ -45,6 +46,25 @@ interface WorldOptions {
   /** A directory jump is waiting for its district to finish building (the stop's id), or has landed (null). */
   onArriving?: (id: string | null) => void;
 }
+/** Main-thread time per task while the world is first built (the page stays responsive between tasks). */
+const BUILD_SLICE_MS = 40;
+/** Meshes whose shaders are queued per build slice during the first warm-up. */
+const WARMUP_BATCH = 24;
+/** The longest the first frame waits for the driver's parallel shader linking at startup. */
+const STARTUP_LINK_WAIT_MS = 4000;
+/**
+ * A stand-in for compiling `object`'s shaders: the same geometry, material and draw kind, without the costly parts of
+ * clone() (userData goes through JSON, an instanced mesh copies every instance matrix), none of which a compile reads.
+ */
+function warmCopy(object: THREE.Object3D) {
+  const instanced = object as THREE.InstancedMesh, userData = object.userData; object.userData = {};
+  try {
+    if (!instanced.isInstancedMesh) return object.clone(false);
+    const copy = new THREE.InstancedMesh(instanced.geometry, instanced.material, 0); copy.count = instanced.count;
+    copy.instanceMatrix = instanced.instanceMatrix; copy.instanceColor = instanced.instanceColor; copy.morphTexture = instanced.morphTexture;
+    copy.layers.mask = instanced.layers.mask; copy.castShadow = instanced.castShadow; copy.receiveShadow = instanced.receiveShadow; return copy;
+  } finally { object.userData = userData; }
+}
 /** Main-thread time per frame given to building a district ahead of arrival. */
 const DISTRICT_SLICE_MS = 6;
 /** Longest a directory jump waits on the driver linking the new district's shaders before landing anyway. */
@@ -56,7 +76,7 @@ import { playCue } from './audio/cues';
 import type { Surface } from './audio/soundscapeMix';
 import { StreetRenderer, type RenderPreset } from './StreetRenderer';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-type Mode = 'intro' | 'world' | 'quick';
+type Mode = 'intro' | 'world';
 /** Radius of the visitor's footprint against traffic and people (the physics body uses .32 m spheres). */
 const VISITOR_RADIUS = .3;
 /** Height of the visitor body's origin when standing on the street (its lowest .32 m sphere touches y = 0). */
@@ -69,7 +89,7 @@ export class WorldEngine {
   private scene = new THREE.Scene();
   private camera = new THREE.PerspectiveCamera(68, 1, .06, 180);
   private physics = new CANNON.World({ gravity: new CANNON.Vec3(0, -19, 0) });
-  private visitor: CANNON.Body;
+  private visitor!: CANNON.Body;
   private street: MumbaiStreet;
   private friendLibrary: GLBAssetLibrary | null = null;
   private city!: CityDistricts; private fortTraffic!: LaneTraffic;
@@ -108,7 +128,7 @@ export class WorldEngine {
   private rideYaw = 0; private ridePitch = 0; private gait = 0;
   private dragging: { x: number; y: number } | null = null;
   private frameId = 0; private lastTime = 0; private accumulator = 0; private time = 0; private lastHud = 0;
-  private resizeObserver: ResizeObserver;
+  private resizeObserver!: ResizeObserver;
   private nearest: string | null = null;
   /** Small gold chevron that hovers over whatever the visitor is looking at and could interact with. */
   private marker!: THREE.Mesh; private markerBase = new THREE.Vector3();
@@ -147,14 +167,37 @@ export class WorldEngine {
     this.rendering=new StreetRenderer(this.renderer,this.scene,this.camera,this.benchmarkEnabled);this.renderPreset=options.mobile?'low':'medium';this.rendering.setPreset(this.renderPreset);
     this.physics.broadphase = new VisitorBroadphase(); this.physics.allowSleep = true;
     this.physics.defaultContactMaterial.friction = 0; this.physics.defaultContactMaterial.restitution = 0;
-    this.street = new MumbaiStreet(this.physics); this.scene.add(this.street.group);
+    this.street = new MumbaiStreet(this.physics, true); this.scene.add(this.street.group);
+  }
+  /**
+   * Build a world into `container`. The street, the first district systems and the shader warm-up are built a slice
+   * at a time between browser tasks, so the page (the intro, the pointer, buttons) stays responsive while it loads.
+   */
+  static async create(container: HTMLElement, options: WorldOptions, signal?: AbortSignal) {
+    const engine = new WorldEngine(container, options), steps = engine.construct();
+    signal?.addEventListener('abort', () => engine.dispose(), { once: true });
+    const nextTask = () => new Promise<void>(resolve => { const channel = new MessageChannel(); channel.port1.onmessage = () => resolve(); channel.port2.postMessage(null); });
+    for (let done = false; !done;) {
+      const start = performance.now();
+      let wait: Promise<void> | void = undefined;
+      do { const step = steps.next(); done = Boolean(step.done); wait = step.value; } while (!done && !wait && performance.now() - start < BUILD_SLICE_MS);
+      if (!done) await (wait ?? nextTask());
+      if (engine.disposed) throw new Error('World disposed while it was being built');
+    }
+    return engine;
+  }
+  private *construct(): Generator<void | Promise<void>> {
+    yield* this.street.build(); yield;
     // Districts are built on first need and receive the same weathering/haze patch as the street.
     setCityDensity(this.renderPreset);
     // Modelled district traffic loads in the background; lofted bodies stand in until it arrives.
+    yield;
     this.city = new CityDistricts(this.physics, this.street.surfaceLibrary, this.scene, district => { applyStreetAtmosphere(district.group, this.atmosphere); const before = this.renderer.info.programs?.length ?? 0; this.compiling = this.warm(district.group); this.linkStarted = performance.now(); this.linkPrograms = (this.renderer.info.programs?.length ?? 0) - before; if (import.meta.env.DEV) console.info(`District ${district.spec.id} built in ${district.buildMs.toFixed(0)} ms`); }); this.fortTraffic = createFortRoadTraffic(() => this.street.loopVehicles); applyStreetAtmosphere(this.fortTraffic.group, this.atmosphere); this.scene.add(this.fortTraffic.group);
+    yield;
     // Fort Road's avenue north to BKC, built over the first frames (see `frame`), with the street's other zone-0 parts.
     this.streetAvenue = new Avenue(this.physics, this.street.surfaceLibrary, new THREE.Vector3(), { index: 0, end: 'south', signs: this.streetAvenueSigns, ground: true, onParked: (kind, x, z, yaw) => this.fortTraffic.parkedAt(kind, x, z, yaw) });
     this.streetAvenueJob = this.streetAvenue.steps(); this.street.group.add(this.streetAvenue.group); if (typeof location !== 'undefined') void preloadCityVehicleModels(location.origin).then(() => { if (this.disposed) return; this.fortTraffic.refresh(); this.city.refreshVehicles(); this.warm(this.scene); this.pausedFrameDirty = true; }); this.street.setQuality(this.quality.low);this.renderer.shadowMap.needsUpdate=true;void this.street.assetsReady.then(()=>{if(!this.disposed){this.pausedFrameDirty=true;this.renderer.shadowMap.needsUpdate=true;}});
+    yield;
     const preview=import.meta.env.DEV?new URLSearchParams(location.search).get('characterPreview'):null;
     // Licensed street cast: approved characters load at runtime; DEV ?characterPreview also shows candidates.
     const castPreview=preview==='idle'||preview==='walk'||preview==='cast';
@@ -168,21 +211,29 @@ export class WorldEngine {
     if(stationCharacter&&(stationCharacter.status==='approved'&&stationCharacter.visualReview||preview==='idle'||preview==='walk'))void this.street.installStationCharacter(stationCharacter.asset,preview==='walk').then(refresh).catch(error=>console.warn('Character admission failed; existing host retained',error));
     this.visitor = createVisitor(STREET_SPAWN.x, STREET_SPAWN.z);
     this.physics.addBody(this.visitor);
-    this.transit.add(this.taxi, this.auto); this.transit.visible = false; this.scene.add(this.transit);
+    this.transit.add(this.taxi, this.auto); this.transit.visible = false; this.scene.add(this.transit); this.scene.add(this.cabPointer.group);
     this.marker = new THREE.Mesh(new THREE.ConeGeometry(.055, .12, 4), this.street.surfaceLibrary.get('#ffd27a', 'glow')); this.marker.rotation.x = Math.PI; this.marker.visible = false; this.marker.name = 'Interaction marker'; this.scene.add(this.marker);
     this.camera.rotation.order = 'YXZ'; this.updateCamera();
+    const container = this.container, canvas = this.renderer.domElement;
     this.resizeObserver = new ResizeObserver(this.resize); this.resizeObserver.observe(container); this.resize();
     window.addEventListener('keydown', this.keyDown); window.addEventListener('keyup', this.keyUp); window.addEventListener('blur', this.releaseInput);
     document.addEventListener('visibilitychange', this.visibilityChanged); document.addEventListener('pointerlockchange', this.lockChanged);
     canvas.addEventListener('pointerdown', this.pointerDown); window.addEventListener('pointermove', this.pointerMove); window.addEventListener('pointerup', this.pointerUp); canvas.addEventListener('pointercancel', this.pointerUp);
     canvas.addEventListener('webglcontextlost', this.contextLost);
-    if (import.meta.env.DEV && new URLSearchParams(location.search).has('debug')) {window.addEventListener('street-review-view',this.reviewView); this.debug = document.createElement('div'); this.debug.className = 'world-debug'; this.debug.setAttribute('aria-label', 'Renderer diagnostics'); container.append(this.debug); (window as unknown as {__world?:WorldEngine}).__world=this; if (new URLSearchParams(location.search).has('traffic')) { this.trafficOverlay = new TrafficOverlay(); this.scene.add(this.trafficOverlay.lines); } }
+    if (import.meta.env.DEV && new URLSearchParams(location.search).has('debug')) {window.addEventListener('street-review-view',this.reviewView); this.debug = document.createElement('div'); this.debug.className = 'world-debug'; this.debug.setAttribute('aria-label', 'Renderer diagnostics'); container.append(this.debug); (window as unknown as {__world?:WorldEngine;__skipFilm?:()=>void}).__world=this;(window as unknown as {__skipFilm?:()=>void}).__skipFilm=skipToFilmEnd; if (new URLSearchParams(location.search).has('traffic')) { this.trafficOverlay = new TrafficOverlay(); this.scene.add(this.trafficOverlay.lines); } }
     this.atmosphere.uShelterMin.value.copy(this.street.shelteredBounds.min);this.atmosphere.uShelterMax.value.copy(this.street.shelteredBounds.max);
     applyStreetAtmosphere(this.scene,this.atmosphere);this.syncSunBalance();
     // Public Three API primes light state before the first shadow pass, avoiding
     // duplicate zero-light depth programs retained after the following lit pass.
-    const warmup=new THREE.Group();this.scene.traverseVisible(object=>{if((object as THREE.Mesh).isMesh)warmup.add(object.clone(false));});
-    this.renderer.compile(warmup,this.camera,this.scene);warmup.clear();
+    // Queued in batches, one per slice, so a software or slow driver does not hold the page for the whole set.
+    const meshes:THREE.Object3D[]=[];this.scene.traverseVisible(object=>{if((object as THREE.Mesh).isMesh)meshes.push(object);});
+    for(let i=0;i<meshes.length;i+=WARMUP_BATCH){yield;const warmup=new THREE.Group();for(const object of meshes.slice(i,i+WARMUP_BATCH))warmup.add(warmCopy(object));for(const material of this.renderer.compile(warmup,this.camera,this.scene))this.compiling.add(material);warmup.clear();}
+    // Let the driver finish linking before the first frame instead of inside it (capped). A few programs are asked per
+    // tick: where linking is not truly parallel, asking waits for that program, so the wait is spread over many tasks.
+    const linking=performance.now();while(!this.shadersReady(4)&&performance.now()-linking<STARTUP_LINK_WAIT_MS)yield new Promise<void>(resolve=>setTimeout(resolve,16));this.compiling.clear();
+    // Then read each program's uniforms, which three otherwise does inside the first frame: it is where a driver that links
+    // lazily (or a software one) actually links, a program at a time.
+    for(const program of this.renderer.info.programs??[]){yield;(program as unknown as {getUniforms():unknown}).getUniforms();}
     if(this.benchmarkEnabled){this.profiler=new GPUFrameProfiler(this.renderer);window.addEventListener('street-benchmark',this.benchmarkCommand);}
     this.frameId = requestAnimationFrame(this.frame);
   }
@@ -295,7 +346,7 @@ export class WorldEngine {
     if (k >= 1) { this.tween = null; this.visitor.wakeUp(); this.updateNear(); }
   }
   private placeVisitor(x: number, z: number, yaw: number) {
-    this.syncZone(x); this.visitor.position.set(x, .33, z); this.visitor.previousPosition.copy(this.visitor.position); this.visitor.velocity.setZero(); this.visitor.wakeUp();
+    this.seated = null; this.syncZone(x); this.visitor.position.set(x, .33, z); this.visitor.previousPosition.copy(this.visitor.position); this.visitor.velocity.setZero(); this.visitor.wakeUp();
     this.yaw = yaw; this.pitch = -.015; this.gait = 0; this.releaseInput(); this.updateCamera();
   }
   setMove(key: string, down: boolean) { if (down) this.touchKeys.add(key); else this.touchKeys.delete(key); }
@@ -313,7 +364,7 @@ export class WorldEngine {
       this.cab.standAt(kind, route); this.transit.visible = true;
     } else if (this.flagDown(kind, routes[0])) this.transit.visible = true;
     else { this.cab.hail(kind, routes); this.transit.visible = false; }
-    this.placeTransit(0); this.options.onRide({ ...this.ride });
+    this.ride.eta = this.cab.pickupEta; this.placeTransit(0); this.options.onRide({ ...this.ride });
   }
   /** A passing auto or taxi coming toward the visitor standing at the kerb, which they could wave down. */
   private passingCab(kind?: TransitKind) {
@@ -444,7 +495,7 @@ export class WorldEngine {
     const destination = this.ride.destination && streetStops[this.ride.destination];
     const phase = this.ride.phase, wasPlaced = this.cab.active;
     this.meter.apply('cancel'); this.meter.apply('reset'); this.meter.apply('power-off'); this.showMeter();
-    this.ride = idleRide(); this.transit.visible = false;
+    this.ride = idleRide(); this.transit.visible = false; this.cabPointer.hide();
     if (phase === 'arrived' && destination) this.placeVisitor(destination.x, destination.z, destination.yaw);
     else if (phase !== 'hailing' && wasPlaced) { const ox = cityZones[zoneIndexAt(this.cab.pose.x)].originX; this.placeVisitor(ox + (this.cab.pose.x - ox < 0 ? -4.9 : 4.9), this.cab.pose.z, this.cab.pose.yaw); }
     this.cab.end(); this.junctions.forEach(j => j.forget('ride'));
@@ -456,6 +507,8 @@ export class WorldEngine {
     this.transit.rotation.z = this.reducedMotion || this.ride.phase !== 'riding' ? 0 : Math.sin(this.ride.elapsed * 9) * .0018 * Math.min(1, this.cab.speed) + THREE.MathUtils.clamp(turn * 8, -.3, .3) * .025;
   }
   private cabTravelled = 0;
+  /** Marks the hailed cab while it comes to the visitor. */
+  private cabPointer = new CabPointer();
   /** Copy the meter's readings into the ride status and onto the boarded cab's physical meter. */
   private readMeter() { const r = this.meter.reading; this.ride.fare = r.fare; this.ride.distance = r.distance; this.ride.waiting = r.waiting; this.ride.meter = r.state; this.showMeter(); }
   private showMeter() { for (const model of [this.taxi, this.auto]) (model.userData.meter as PhysicalMeter | undefined)?.show(model === (this.ride.kind === 'auto' ? this.auto : this.taxi) ? this.meter.reading : { ...this.meter.reading, state: 'OFF' }); }
@@ -476,6 +529,10 @@ export class WorldEngine {
     const turn = Math.atan2(Math.sin(this.cab.pose.yaw - before), Math.cos(this.cab.pose.yaw - before));
     this.cabTravelled += Math.max(0, this.cab.driven - was) + (this.ride.phase === 'hailing' ? this.cab.speed * delta : 0);
     this.placeTransit(turn); animateTransit(this.ride.kind === 'taxi' ? this.taxi : this.auto, this.cabTravelled, turn * 8);
+    if (this.ride.phase === 'hailing') {
+      this.ride.eta = this.cab.pickupEta;
+      if (this.transit.visible) this.cabPointer.update(this.transit.position, this.ride.kind === 'auto' ? 1.75 : 1.55, this.camera.position, this.time, this.reducedMotion); else this.cabPointer.hide();
+    } else { this.ride.eta = 0; this.cabPointer.hide(); }
     if (this.ride.phase === 'riding') {
       this.ride.elapsed += delta; this.street.updateDrivers(this.reducedMotion ? 0 : delta, turn * 8);
       // Waiting is not charged while the road ahead is still being built (the next district not ready).
@@ -493,21 +550,35 @@ export class WorldEngine {
   };
   private releaseInput = () => { this.keys.clear(); this.touchKeys.clear(); this.dragging = null; };
   private unlock() { if (document.pointerLockElement === this.renderer.domElement) document.exitPointerLock(); }
-  private lockChanged = () => { if (!document.pointerLockElement) this.releaseInput(); };
+  /** Browsers can report one large jump in the first movement after the pointer locks; that event is skipped. */
+  private lockFresh = false;
+  private lockChanged = () => { if (!document.pointerLockElement) this.releaseInput(); else this.lockFresh = true; };
   private visibilityChanged = () => { this.audio?.setActive(this.soundEnabled&&!document.hidden&&!this.paused&&this.mode==='world'); this.syncTalkies(); this.releaseInput(); this.lastTime = 0; this.accumulator = 0; if (!document.hidden) { this.environment.update(performance.now(), true); this.pausedFrameDirty = true; } };
   private contextLost = (event: Event) => { event.preventDefault(); this.options.onError(new Error('WebGL context lost')); };
   private keyDown = (event: KeyboardEvent) => {
     if ((event.target as HTMLElement)?.closest('input, textarea, select, [contenteditable="true"]') || this.mode !== 'world' || this.paused) return;
     const key = event.key.toLowerCase();
     if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'shift', ',', '.'].includes(key)) { event.preventDefault(); this.keys.add(key); if (key !== 'shift') this.tween = null; if (key === ',' || key === '.') this.noteLook(1); }
-    if (key === ' ' && !event.repeat && this.ride.phase === 'idle' && !this.tween) { event.preventDefault(); this.jumpQueued = true; }
+    if (key === ' ' && !event.repeat && this.ride.phase === 'idle' && !this.tween && !this.seated) { event.preventDefault(); this.jumpQueued = true; }
     if (key === 'r' && !event.repeat) this.reset();
     if (key === 'e' && !event.repeat && this.ride.phase === 'idle' && this.nearest) this.interact();
   };
-  /** Act on the target under the visitor's gaze: hail at a stand, otherwise open it. Also used by click. */
+  /** Act on the target under the visitor's gaze: hail at a stand, sit in or stand up from the Talkies seat, otherwise open it. Also used by click. */
   interact() {
     if (this.ride.phase !== 'idle' || !this.nearest) return;
+    if (this.nearest === TALKIES_SEAT_ID || this.nearest === TALKIES_STAND_ID) { this.toggleSeat(); return; }
     this.unlock(); if (this.nearest.startsWith('hail-') || this.nearest.startsWith('flag-')) this.options.onHail(this.nearest.endsWith('taxi') ? 'taxi' : 'auto'); else this.options.onSelect(this.nearest);
+  }
+  /** The visitor's seat in the Talkies while they sit in it (world x, z); the body waits in the aisle. */
+  private seated: { x: number; z: number } | null = null;
+  get isSeated() { return this.seated !== null; }
+  /** Sit down facing the screen, or stand up again where the visitor left the aisle. */
+  private toggleSeat() {
+    if (this.seated) { this.seated = null; this.nearest = null; this.updateCamera(); this.updateNear(); this.pausedFrameDirty = true; return; }
+    const seat = this.district?.interactions.find(t => t.id === TALKIES_SEAT_ID); if (!seat) return;
+    this.seated = { x: seat.position.x, z: seat.position.z }; this.visitor.velocity.setZero(); this.keys.clear();
+    this.yaw = -Math.PI / 2; this.pitch = .07; this.tween = null; this.marker.visible = false;
+    this.nearest = TALKIES_STAND_ID; this.options.onNear(TALKIES_STAND_ID, 'Stand up'); this.updateCamera(); this.pausedFrameDirty = true;
   }
   private keyUp = (event: KeyboardEvent) => { this.keys.delete(event.key.toLowerCase()); };
   private pointerDown = (event: PointerEvent) => {
@@ -522,6 +593,8 @@ export class WorldEngine {
     const locked = document.pointerLockElement === this.renderer.domElement;
     if (!locked && !this.dragging) return;
     const dx = locked ? event.movementX : event.clientX - this.dragging!.x, dy = locked ? event.movementY : event.clientY - this.dragging!.y;
+    // Skip the first locked movement and any spurious jump (no hand moves a mouse 250 px between two events).
+    if (locked && (this.lockFresh || Math.abs(dx) > 250 || Math.abs(dy) > 250)) { this.lockFresh = false; return; }
     if (this.ride.phase !== 'idle' && this.ride.phase !== 'hailing') { this.rideYaw = THREE.MathUtils.clamp(this.rideYaw - dx * .003, -1.2, 1.2); this.ridePitch = THREE.MathUtils.clamp(this.ridePitch - dy * .003, -.55, .55); }
     else { if (this.tween && Math.hypot(dx, dy) > 2) this.tween = null; if (!this.tween) { this.yaw -= dx * .003; this.pitch = THREE.MathUtils.clamp(this.pitch - dy * .003, -1.05, 1.05); } }
     this.noteLook(Math.hypot(dx, dy) * .003);
@@ -536,7 +609,7 @@ export class WorldEngine {
    */
   private warm(root: THREE.Object3D): Set<THREE.Material> {
     if (this.disposed) return new Set();
-    const group = new THREE.Group(); root.traverse(o => { if ((o as THREE.Mesh).isMesh) { const c = o.clone(false); c.visible = true; c.matrixWorld.copy(o.matrixWorld); group.add(c); } });
+    const group = new THREE.Group(); root.traverse(o => { if ((o as THREE.Mesh).isMesh) { const c = warmCopy(o); c.visible = true; c.matrixWorld.copy(o.matrixWorld); group.add(c); } });
     // compile() only queues the programs (the driver links them in parallel where KHR_parallel_shader_compile exists);
     // compileAsync's readiness polling throws if a material is disposed meanwhile, as retired stand-in figures are, so `shadersReady` polls instead.
     try { return this.renderer.compile(group, this.camera, this.scene); } catch { return new Set(); /* Compiled on first draw instead. */ } finally { group.clear(); }
@@ -547,9 +620,10 @@ export class WorldEngine {
   /** The last directory jump's shader wait, for `?bench`. */
   lastArrival: ArrivalShaders | null = null;
   /** True once the driver has linked every program `warm` queued for the new district, so its first frame does not stall on them. */
-  private shadersReady() {
+  private shadersReady(limit = Infinity) {
     if (!this.renderer.extensions.has('KHR_parallel_shader_compile')) this.compiling.clear();
     for (const material of this.compiling) {
+      if (limit-- <= 0) break;
       const program = (this.renderer.properties.get(material) as { currentProgram?: { isReady(): boolean } }).currentProgram;
       if (!program || program.isReady()) this.compiling.delete(material);
     }
@@ -600,11 +674,13 @@ export class WorldEngine {
   private nearPose = new THREE.Vector4(Infinity, 0, 0, 0);
   /** Re-test targets only after the visitor moves 5 cm or turns, as Bruno Simon's InteractivePoints does; each test casts rays. */
   private updateNearIfMoved() {
+    if (this.seated) return;
     const p = this.visitor.position, pose = this.nearPose;
     if (Math.hypot(p.x - pose.x, p.z - pose.y) < .05 && Math.abs(this.yaw - pose.z) < .01 && Math.abs(this.pitch - pose.w) < .01) return;
     pose.set(p.x, p.z, this.yaw, this.pitch); this.updateNear();
   }
   private updateNear() {
+    if (this.seated) return;
     this.nearPose.set(this.visitor.position.x, this.visitor.position.z, this.yaw, this.pitch);
     const district = this.district, spatial = district?.spatial ?? this.street.spatial;
     const eye = new THREE.Vector3(this.visitor.position.x, this.visitor.position.y + 1.36, this.visitor.position.z), chest = new THREE.Vector3(this.visitor.position.x, 1.4, this.visitor.position.z);
@@ -623,7 +699,8 @@ export class WorldEngine {
     } else {
       const speed = Math.hypot(this.visitor.velocity.x, this.visitor.velocity.z);
       const bob = this.reducedMotion || this.paused ? 0 : Math.sin(this.gait) * .012 * Math.min(speed / 2.7, 1);
-      this.camera.position.set(this.visitor.position.x, this.visitor.position.y + 1.36 + bob, this.visitor.position.z);
+      if (this.seated) this.camera.position.set(this.seated.x, SEATED_EYE, this.seated.z);
+      else this.camera.position.set(this.visitor.position.x, this.visitor.position.y + 1.36 + bob, this.visitor.position.z);
       this.camera.rotation.set(this.pitch, this.yaw, 0);
     }
   }
@@ -674,7 +751,9 @@ export class WorldEngine {
           const forward = Number(held('w') || held('arrowup')) - Number(held('s') || held('arrowdown'));
           const strafe = Number(held('d') || held('arrowright')) - Number(held('a') || held('arrowleft'));
           this.yaw += (Number(held(',')) - Number(held('.'))) * delta * 1.3;
-          const velocity = walkingVelocity(forward, strafe, this.yaw, held('shift') ? 4 : 2.7);
+          // Walking keys stand a seated visitor up; until then the body stays put in the aisle.
+          if (this.seated && (forward || strafe)) this.toggleSeat();
+          const velocity = this.seated ? { x: 0, z: 0 } : walkingVelocity(forward, strafe, this.yaw, held('shift') ? 4 : 2.7);
           const physicsDelta=walkingSimulationDelta(elapsed);simulatedWalkingMs=physicsDelta*1000;
           this.accumulator += physicsDelta;
           const blockers = this.collectBlockers();
@@ -692,7 +771,7 @@ export class WorldEngine {
       }
       this.syncZone(this.ride.phase === 'idle' || this.ride.phase === 'hailing' ? this.visitor.position.x : this.transit.position.x);
       this.updateCamera(); this.manageNeighbours(); this.street.nearDetail=this.ride.phase==='idle'||this.ride.phase==='hailing';
-      this.marker.visible = !!this.nearest && this.ride.phase === 'idle' && !this.tween; if (this.marker.visible) { this.marker.position.copy(this.markerBase); if (!this.reducedMotion) { this.marker.position.y += Math.sin(this.time * 3) * .025; this.marker.rotation.y = this.time * 1.4; } } 
+      this.marker.visible = !!this.nearest && !this.seated && this.ride.phase === 'idle' && !this.tween; if (this.marker.visible) { this.marker.position.copy(this.markerBase); if (!this.reducedMotion) { this.marker.position.y += Math.sin(this.time * 3) * .025; this.marker.rotation.y = this.time * 1.4; } } 
       this.advanceTraffic(this.paused ? 0 : step);
       const needsRender=!this.reducedMotion||forceRender||this.camera.position.distanceToSquared(this.lastRenderPosition)>1e-8||this.camera.quaternion.angleTo(this.lastRenderRotation)>.0001||(this.renderer.shadowMap.enabled&&this.renderer.shadowMap.needsUpdate);
       if(needsRender&&!this.paused&&!this.reviewQuality&&this.quality.sample(elapsed)&&!this.applyLowTier())this.resize();
@@ -711,11 +790,11 @@ export class WorldEngine {
     } catch (error) { this.dispose(); this.options.onError(error); }
   };
   dispose() {
-    if (this.disposed) return; this.disposed = true; cancelAnimationFrame(this.frameId); this.audio?.dispose(); this.resizeObserver.disconnect(); this.releaseInput(); this.unlock();
+    if (this.disposed) return; this.disposed = true; cancelAnimationFrame(this.frameId); this.audio?.dispose(); this.resizeObserver?.disconnect(); this.releaseInput(); this.unlock();
     window.removeEventListener('street-review-view',this.reviewView);window.removeEventListener('keydown', this.keyDown); window.removeEventListener('keyup', this.keyUp); window.removeEventListener('blur', this.releaseInput);
     document.removeEventListener('visibilitychange', this.visibilityChanged); document.removeEventListener('pointerlockchange', this.lockChanged);
     const canvas = this.renderer.domElement; canvas.removeEventListener('pointerdown', this.pointerDown); window.removeEventListener('pointermove', this.pointerMove); window.removeEventListener('pointerup', this.pointerUp); canvas.removeEventListener('pointercancel', this.pointerUp); canvas.removeEventListener('webglcontextlost', this.contextLost);
-    setFriendSource(null);void this.friendLibrary?.dispose();window.removeEventListener('street-benchmark',this.benchmarkCommand);this.profiler?.dispose();this.city.dispose();districtCast()?.dispose();setDistrictCast(null);this.street.dispose();this.fortTraffic.group.traverse(o=>{const m=o as THREE.Mesh;if(!m.isMesh)return;for(const g of new Set([m.geometry,...((m.userData.lodGeometries??[]) as THREE.BufferGeometry[])]))g.dispose();});this.rendering.dispose();this.environmentTarget.dispose();
+    setFriendSource(null);void this.friendLibrary?.dispose();window.removeEventListener('street-benchmark',this.benchmarkCommand);this.profiler?.dispose();this.city?.dispose();districtCast()?.dispose();setDistrictCast(null);this.street.dispose();this.fortTraffic?.group.traverse(o=>{const m=o as THREE.Mesh;if(!m.isMesh)return;for(const g of new Set([m.geometry,...((m.userData.lodGeometries??[]) as THREE.BufferGeometry[])]))g.dispose();});this.rendering.dispose();this.environmentTarget.dispose();
     const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>(), textures = new Set<THREE.Texture>(), skeletons = new Set<THREE.Skeleton>();
     this.scene.traverse(object => { const mesh = object as THREE.SkinnedMesh; if (mesh.isSkinnedMesh) skeletons.add(mesh.skeleton); if (mesh.geometry) geometries.add(mesh.geometry); for(const g of (mesh.userData.lodGeometries??[]) as THREE.BufferGeometry[]) geometries.add(g); if (mesh.material) for (const m of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) { materials.add(m); for(const key of ['map','bumpMap','roughnessMap','normalMap'] as const)if((m as THREE.MeshStandardMaterial)[key])textures.add((m as THREE.MeshStandardMaterial)[key]!); } });
     skeletons.forEach(s => s.dispose()); geometries.forEach(g => g.dispose()); materials.forEach(m => m.dispose()); textures.forEach(t => t.dispose()); this.renderer.dispose(); canvas.remove(); this.debug?.remove(); this.trafficOverlay?.dispose();

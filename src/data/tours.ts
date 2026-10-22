@@ -21,7 +21,7 @@ export const TOURS: Record<string, Tour> = {
       { title: 'The departure board', body: 'The board over the pavement is the portfolio’s index: open source, internships, skills, projects, education, achievements, about and cinema. Press E under it to pick a destination and mark it on your map.', view: { x: 4.6, z: 9.2, yaw: 0, pitch: .3 }, exhibit: 'cst-board' },
       { title: 'Taxis and autos', body: 'Kaali-peeli taxis and autos wait at the stand. Hail one, choose a stop and watch the meter. The fare is a game meter, not an official tariff, and you can skip to the destination or get out at any time.', view: { x: 4.4, z: 8.6, yaw: .55, pitch: -.12 } },
       { title: 'Up Fort Road', body: 'The Fort Open Source Hall is about 45 metres up this street, on the left. That is where the Google Summer of Code work lives.', view: { x: 4.6, z: 9.2, yaw: .2, pitch: .02 } },
-      { title: 'Where next?', body: 'Walk to Fort, or open the map with M for every district. Quick View in the header has the whole portfolio on one page if you are short on time.', next: 'fort' },
+      { title: 'Where next?', body: 'Walk to Fort, or open the map with M for every district.', next: 'fort' },
     ],
   },
   fort: {
@@ -58,7 +58,7 @@ for (const [i, id] of DISTRICT_TOUR_ORDER.entries()) {
       { title: place.title, body: INTROS[id], view: { x: zone.originX + zone.stop.x, z: zone.stop.z, yaw: zone.stop.yaw, pitch: 0 } },
       ...exhibitsOf(id).map(e => { const v = readingSpot(e); return { title: e.tour.title, body: e.tour.body, exhibit: e.id, view: { ...v, x: zone.originX + v.x } }; }),
       next ? { title: 'Where next?', body: `${districts.find(d => d.id === next)!.title}: ${districts.find(d => d.id === next)!.descriptor}. Hail a taxi or an auto, or open the map with M.`, next }
-        : { title: 'Where next?', body: 'That is the whole city. Juhu Studio has the résumé and a way to say hello, and Quick View has everything on one page.', next: 'juhu' },
+        : { title: 'Where next?', body: 'That is the whole city. Juhu Studio has the résumé and a way to say hello.', next: 'juhu' },
     ],
   };
 }

@@ -1,4 +1,4 @@
-"""Original trailer score, synthesised from scratch with numpy (no samples, no third-party audio).
+"""Original film score, synthesised from scratch with numpy (no samples, no third-party audio).
 120 BPM, D minor. Cold open drone -> BRAAM title -> driving percussion + ostinato -> anthem -> riser -> silence -> final BRAAM + horn line."""
 import numpy as np, wave, sys
 

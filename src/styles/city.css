@@ -153,7 +153,7 @@
 .mode-world .proximity-prompt strong { font-size:12px; font-weight:500; }.mode-world .proximity-prompt kbd { border-color:#efd4a155; color:#efd4a1; background:transparent; }
 .mode-world .city-transport-actions { left:auto; right:24px; top:20px; width:auto; gap:6px; }
 .mode-world .city-transport-actions button { color:#ead3a9; border-color:#e8d8b72d; background:#22262dc4; padding:8px 10px; font-size:8px; }
-.mode-world .custom-cursor { display:none; }.mode-world, .mode-world button, .mode-world a, .mode-world canvas { cursor:auto!important; }
+.mode-world canvas { cursor:crosshair; }
 .street-intro { background:radial-gradient(ellipse at 70% 60%,#44313c 0,#171e2c 45%,#0d111b 80%); color:#e5d5b7; padding:9vh 9vw 5vh; min-height:calc(100dvh - 92px); position:relative; overflow:hidden; }
 .street-intro::before { content:""; position:absolute; width:50vw; height:90vh; right:-7vw; bottom:-42vh; transform:rotate(-18deg); background:linear-gradient(90deg,transparent,#df8d4e12,transparent); pointer-events:none; }
 .arrival-line { display:flex; align-items:center; gap:20px; font:9px var(--mono); color:#c3a381; margin-bottom:8vh; }.arrival-line span:first-child { font-size:23px; }.arrival-line i { height:1px; background:#c3a38144; width:100px; }
@@ -198,7 +198,7 @@
 .sound-levels legend { padding:0 4px; letter-spacing:.06em; text-transform:uppercase; }
 .sound-levels label { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); align-items:center; gap:10px; }
 .sound-levels input[type=range] { width:100%; min-height:24px; accent-color:#c8862f; }
-/* Film City Talkies: the trailer screen and a full house. */
+/* Film City Talkies: the film screen and a full house. */
 .talkies-film { padding-top:24px; }
 .cinema-film { position:relative; aspect-ratio:1280 / 544; background:#000; border:8px solid #11191d; box-shadow:0 0 60px #f3c87a22; }
 .cinema-film video { display:block; width:100%; height:100%; object-fit:contain; background:#000; cursor:pointer; }
@@ -214,3 +214,12 @@
     radial-gradient(circle at 50% 38%, #151d20 0 8px, transparent 9px) 15px 18px / 30px 32px,
     linear-gradient(#20272b00, #9f574e55); }
 @media (max-width:700px) { .cinema-film { border-width:4px; } .cinema-house { height:44px; margin:8px -12px 0; } }
+/* The standing ovation: the house rises and hands go up clapping. */
+.cinema-house { position:relative; transition:transform 900ms var(--ease); }
+.cinema-house.ovation { transform:translateY(-16px); }
+.cinema-house.ovation::after { content:''; position:absolute; left:0; right:0; top:-12px; height:16px;
+  background:radial-gradient(ellipse at 40% 50%, #c99a76 0 4px, transparent 5px) 0 0 / 30px 16px, radial-gradient(ellipse at 60% 50%, #b98a66 0 4px, transparent 5px) 15px 0 / 30px 16px;
+  animation:clap 260ms steps(2) infinite; }
+@keyframes clap { 50% { background-position:3px 0, 12px 0; } }
+[data-motion=reduced] .cinema-house { transition:none; }
+[data-motion=reduced] .cinema-house.ovation::after { animation:none; }

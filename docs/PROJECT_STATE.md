@@ -8,7 +8,7 @@ Statuses used below: **PASS** (checked, with the evidence named), **PARTIAL** (s
 
 ## 1. Summary
 
-- The site is a first-person, golden-hour Mumbai you walk through to read Harsh's portfolio, plus a plain HTML "Quick View" of the same content that never loads the 3D engine.
+- The site is a first-person, golden-hour Mumbai you walk through to read Harsh's portfolio, with HTML case studies and district guides that open without the 3D engine.
 - All nine canonical districts are walkable. Each has a guide, exhibit boards opened with E, a guided tour and journal entries. Several have working interactive demos ported from the real projects.
 - Eight named people stand in the city: Harsh hosts at CST and seven friends and family members have one district each.
 - PRs #1 to #26 are all merged. No PR is open.
@@ -21,8 +21,8 @@ Statuses used below: **PASS** (checked, with the evidence named), **PARTIAL** (s
 | --- | --- |
 | Live URL | <https://portfolio-beta-murex-52.vercel.app/> |
 | Production deploy | Vercel deployed `65b812c` to Production at 03:57 UTC, 21 October 2026 (GitHub deployments API) |
-| Ways in | The 3D world (`#world`), or Quick View, an HTML portfolio with projects, case studies, experience, skills, résumé and contact |
-| Fallback | Quick View also covers a WebGL failure or a lost GPU context; `/?webgl=off#world` exercises it |
+| Ways in | The 3D world (`#world`); every project case study and district guide also opens as a plain HTML page |
+| Fallback | On a WebGL failure or a lost GPU context the intro opens the city directory, which reaches every district and case study; `/?webgl=off#world` exercises it |
 | Deep links | `#/project/<id>` opens a project page without the 3D world; `#/place/fort` opens the HTML guide |
 | SEO | Canonical URL, Open Graph image, sitemap and robots point at the Vercel origin; `tests/seo.test.ts` guards them |
 
@@ -93,8 +93,8 @@ Built from Harsh's photos as stylised likenesses on licensed Rocketbox bodies, n
 
 | Path | Responsibility |
 | --- | --- |
-| `src/app/App.tsx` | Modes (intro, world, quick), hash routes, overlays, map, journal |
-| `src/core/WorldEngine.ts` | Renderer, camera, input, physics, interactions, rides, teardown. Loaded with a dynamic import, so Quick View never downloads Three.js. |
+| `src/app/App.tsx` | Modes (intro, world), hash routes, overlays, map, journal |
+| `src/core/WorldEngine.ts` | Renderer, camera, input, physics, interactions, rides, teardown. Loaded with a dynamic import and built a slice at a time, so the intro stays responsive while the city loads. |
 | `src/core/StreetRenderer.ts`, `AdaptiveQuality.ts` | High, Medium and Low presets; runtime render-scale fallback that drops one way to the low tier |
 | `src/game/World/MumbaiStreet.ts` | The CST–Fort street, the Fort room, crowd and traffic |
 | `src/game/World/districts/` | `CityDistricts` builds the seven outer districts in time slices and disposes the inactive ones; `DistrictCast`, `CityVehicleModels`, `exhibits.ts`, `interiors.ts`, `powaiLabs.ts`, `nature.ts`, `signAudit.ts` |

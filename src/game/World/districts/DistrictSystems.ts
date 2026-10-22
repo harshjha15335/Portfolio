@@ -7,6 +7,7 @@ import { pedestrianGreen, type LoopVehicle } from '../traffic/RoadTraffic';
 import { CAST_LOD, districtCast, type CastAct, type CastFigure, type DistrictCast } from './DistrictCast';
 import { footprint, personBlocker, PERSON_RADIUS, type Blocker } from '../collision/DynamicBlockers';
 import { BrakeLights } from '../traffic/BrakeLights';
+import { BakedRider, seatRider } from './riders';
 import { DRIVE_PROFILE, VEHICLE_BODY, TrafficSpace, drive, exitBlocked, inView, onCarriageway, stoppingDistance, type DriveState, type Driver, type Envelope, type Hold, type JunctionReservations, type SpawnDecision, type ViewCone } from '../traffic/TrafficSafety';
 
 /* ------------------------------------------------------------------ signs */
@@ -286,7 +287,7 @@ export class Crowd {
 
 /* ------------------------------------------------------------------ traffic */
 interface Agent {
-  mesh: THREE.Mesh; kind: CityVehicleKind; lane: number; s: number; max: number; length: number; active: boolean; seed: string; rider: CastFigure | null;
+  mesh: THREE.Mesh; kind: CityVehicleKind; lane: number; s: number; max: number; length: number; active: boolean; seed: string; rider: BakedRider | null;
   /** The collision-safe driver: envelope, speed, state. */
   driver: Driver;
   /** Why it last could or could not enter the road (open lanes). */
@@ -373,13 +374,8 @@ export class LaneTraffic {
     const a: Agent = { mesh, kind, lane, s: at * this.lanes[lane].length, max, length: VEHICLE_LENGTH[kind], active: true, seed, rider: null, driver, decision: null, entries: 0 };
     this.agents.push(a); this.pose(a); if (cast) this.seat(a, cast); return mesh;
   }
-  /** Put a licensed cast figure in the vehicle's driving seat, posed sitting, riding with the vehicle. */
-  private seat(a: Agent, cast: DistrictCast) {
-    const seat = a.mesh.userData.seat as V3 | null; if (!seat) return;
-    const figure = cast.figure(RIDER_OUTFIT[a.kind] ?? 'shirt', 'sit', `${a.seed}:rider`, 1);
-    figure.mesh.matrix.premultiply(new THREE.Matrix4().makeTranslation(seat[0], seat[1] + .12 - figure.pelvisHeight, seat[2]));
-    a.mesh.add(figure.mesh); a.rider = figure;
-  }
+  /** Put a licensed cast member in the vehicle's driving seat, hands on the handlebar or wheel, riding with the vehicle. */
+  private seat(a: Agent, cast: DistrictCast) { a.rider = seatRider(a.mesh, cast, RIDER_OUTFIT[a.kind] ?? 'shirt', `${a.seed}:rider`); }
   /** Swap the baked procedural drivers for the licensed cast once it has loaded. */
   adopt(cast: DistrictCast) { this.rebuild(a => !a.rider && Boolean(a.mesh.userData.seat), cast); }
   /** Rebuild every vehicle body, e.g. once the modelled vehicles (CityVehicleModels) have loaded. */

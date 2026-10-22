@@ -13,6 +13,8 @@ export const FORT_JUNCTIONS: ConflictZone[] = [{ id: 'north-turn', minX: -3.9, m
 export const DISTRICT_JUNCTIONS: ConflictZone[] = [{ id: 'north-turn', minX: -3.9, maxX: 3.9, minZ: -56, maxZ: -48 }, { id: 'south-turn', minX: -3.9, maxX: 3.9, minZ: 8, maxZ: 16 }];
 /** Cruising speed (m/s) of the boarded cab: an auto a little slower than a taxi. */
 export const RIDE_SPEED: Record<TransitKind, number> = { taxi: 5.2, auto: 4.2 };
+/** A hailed cab's average pace for its ETA, as a share of RIDE_SPEED (it slows for traffic, the zebra and the kerb). */
+const ETA_PACE = .75;
 /** The boarded cab's body (the passenger models, without mirrors). */
 export const RIDE_BODY: Record<TransitKind, { length: number; width: number }> = { taxi: { length: 3.9, width: 1.8 }, auto: { length: 2.5, width: 1.45 } };
 /** Every street's zebra lies across the road at this local z; the ride stops this far either side of its centre while it is held. */
@@ -96,6 +98,15 @@ export class PassengerRide {
   get nextLeg() { return this.legs[this.leg + 1]?.at(0) ?? null; }
   get path() { return this.legs[this.leg]; }
   /** Distance (m) left to the end of the current leg. */
+  /**
+   * Seconds until a hailed cab pulls up, as the visitor is told it: the road still to drive at a pace that allows
+   * for traffic and the zebra, plus the time to set off while it is still being dispatched. 0 once it is waiting.
+   */
+  get pickupEta() {
+    const pace = RIDE_SPEED[this.kind] * ETA_PACE;
+    if (this.stage === 'dispatching') return (this.candidates[0]?.length ?? 0) / pace + Math.max(0, DISPATCH_PATIENCE - this.dispatchFor) * .5;
+    return this.stage === 'approaching' ? this.remaining / pace : 0;
+  }
   get remaining() { return this.legs[this.leg] ? this.legs[this.leg].length - this.s : 0; }
   private setKind(kind: TransitKind) {
     this.kind = kind; const body = RIDE_BODY[kind], d = this.driver;

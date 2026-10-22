@@ -86,6 +86,17 @@ export class ColorMesh {
   }
   box(size: V3, position: V3, color: string | THREE.Color, rotation: V3 = [0, 0, 0]) { return this.shape('box', size, position, color, rotation); }
   rounded(size: V3, position: V3, color: string | THREE.Color, rotation: V3 = [0, 0, 0]) { return this.shape('rounded', size, position, color, rotation); }
+  /** A steering wheel for a driver facing −Z: rim, two spokes and the column, its face tilted back by `tilt` (near build only). */
+  steering(centre: V3, radius: number, tilt: number, color = '#1b1c1d') {
+    if (this.lite) return;
+    const turn: V3 = [Math.PI / 2 - tilt, 0, 0];
+    this.add(lathe(16, 'tyre'), color, centre, [radius, .045, radius], turn);
+    this.shape('cylinder', [radius * .22, .05, radius * .22], centre, color, turn);
+    this.box([radius * 1.7, .022, .03], centre, color, [-tilt, 0, 0]);
+    // The column runs from the hub away from the driver, along the wheel's axis.
+    const down: V3 = [centre[0], centre[1] - Math.sin(tilt) * .3, centre[2] - Math.cos(tilt) * .3];
+    this.rod(centre, down, .022, color);
+  }
   /** A wheel lying across X: a rounded tyre, a dished rim with spokes and a hub cap. */
   wheel(radius: number, width: number, position: V3, color = '#1d2021', hub = '#8b8d86') {
     const turn: V3 = [0, 0, Math.PI / 2];

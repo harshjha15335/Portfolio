@@ -1,6 +1,6 @@
 import { chromium } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
-// Usage: node scripts/trailer/comp.mjs <work> [fromFrame toFrame]. Reads <work>/shots-out, writes <work>/comp-out/0000.png ….
+// Usage: node scripts/film/comp.mjs <work> [fromFrame toFrame]. Reads <work>/shots-out, writes <work>/comp-out/0000.png ….
 import { resolve } from 'node:path';
 
 const dir = new URL('.', import.meta.url).pathname, work = resolve(process.argv[2] ?? '.'), out = `${work}/comp-out`; await mkdir(out, { recursive: true });

@@ -61,6 +61,9 @@ export class CastFigure {
   get walkSpeed() { return this.member.walkSpeed * this.member.drivers[this.driver].rate * this.size; }
   /** Height of the seat surface below the pelvis when seated, so the crowd can lower the body onto it. */
   get pelvisHeight() { return this.member.sitPelvis * this.size; }
+  /** The off-screen rig this person follows, and its index (for baking a static pose from it). */
+  get rig() { return this.member.drivers[this.driver].root; }
+  get driverIndex() { return this.driver; }
   setAct(act: CastAct) {
     if (this.member.drivers[this.driver].act === act) return;
     this.cast.use(this.member, this.driver, -1); this.driver = this.cast.driverFor(this.member, act, this.key); this.cast.use(this.member, this.driver, 1);

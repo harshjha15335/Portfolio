@@ -36,42 +36,6 @@
     "width": 1440
   },
   {
-    "file": "quick-1440.png",
-    "label": "Quick View",
-    "group": "screen",
-    "width": 1440
-  },
-  {
-    "file": "quick-full-1440.png",
-    "label": "Quick View / complete page",
-    "group": "full-page",
-    "width": 1440
-  },
-  {
-    "file": "quick-work-1440.png",
-    "label": "Selected work",
-    "group": "section",
-    "width": 1440
-  },
-  {
-    "file": "quick-experience-1440.png",
-    "label": "Experience",
-    "group": "section",
-    "width": 1440
-  },
-  {
-    "file": "quick-skills-1440.png",
-    "label": "Skills",
-    "group": "section",
-    "width": 1440
-  },
-  {
-    "file": "quick-footer-1440.png",
-    "label": "Contact footer",
-    "group": "section",
-    "width": 1440
-  },
-  {
     "file": "contact-1440.png",
     "label": "Contact",
     "group": "screen",
@@ -213,18 +177,6 @@
     "file": "about-1920.png",
     "label": "About / career",
     "group": "screen",
-    "width": 1920
-  },
-  {
-    "file": "quick-1920.png",
-    "label": "Quick View",
-    "group": "screen",
-    "width": 1920
-  },
-  {
-    "file": "quick-full-1920.png",
-    "label": "Quick View / complete page",
-    "group": "full-page",
     "width": 1920
   },
   {

@@ -9,7 +9,8 @@ import { AstflowLab, SkillShops } from './LazyLabs';
 import { Modal } from './Modal';
 import { streetStops, zoneAt } from '../game/World/streetLayout';
 import type { Point, TransitKind } from '../game/World/transit';
-import { TRAILER } from '../data/trailer';
+import { FILM } from '../data/film';
+import { OVATION_SECONDS, ovationContext, playApplause } from '../core/audio/applause';
 export { RideMeter } from './RideMeter';
 
 export function CityMap({ position, canRide, objective, waypoint, onMark, onTravel, onOpen, onRide, onClose }: {
@@ -40,16 +41,16 @@ export function CityMap({ position, canRide, objective, waypoint, onMark, onTrav
   </Modal>;
 }
 
-export function DistrictExperience({ district: d, reduced, resumeAvailable, onClose, onProject, onQuick, onContact, onDestination, onTour, onFinale }: {
+export function DistrictExperience({ district: d, reduced, resumeAvailable, onClose, onProject, onContact, onDestination, onTour, onFinale }: {
   district: District; reduced: boolean; resumeAvailable: boolean; onClose: () => void;
-  onProject: (id: string) => void; onQuick: () => void; onContact: () => void; onDestination: (id: string) => void;
+  onProject: (id: string) => void; onContact: () => void; onDestination: (id: string) => void;
   /** Present when this guide offers an in-world guided tour. */
   onTour?: () => void; onFinale?: () => void;
 }) {
   const [inside, setInside] = useState(false);
   return <Modal title={d.title} onClose={onClose} className={`district-modal district-${d.id}`}>
     <div className="district-heading" style={{ '--district-color': d.color } as CSSProperties}><span className="eyebrow">STOP {String(districts.indexOf(d) + 1).padStart(2, '0')} / MINI MUMBAI</span><h2>{d.title}</h2><p>{d.descriptor}</p></div>
-    <div className="guide-dialogue"><div className="guide-avatar" aria-hidden="true">☻</div><div><span className="eyebrow">{d.guide}</span><p>“{d.greeting}”</p><div className="guide-actions"><button className="primary-button" onClick={() => setInside(true)}>{d.id === 'filmcity' ? 'TAKE A SEAT →' : 'SHOW ME AROUND →'}</button>{onTour && <button className="primary-button" onClick={onTour}>TAKE THE GUIDED TOUR ↗</button>}<button className="text-button" onClick={onQuick}>QUICK VIEW ↗</button><button className="back-button" onClick={onClose}>← BACK TO THE CITY</button></div></div></div>
+    <div className="guide-dialogue"><div className="guide-avatar" aria-hidden="true">☻</div><div><span className="eyebrow">{d.guide}</span><p>“{d.greeting}”</p><div className="guide-actions"><button className="primary-button" onClick={() => setInside(true)}>{d.id === 'filmcity' ? 'TAKE A SEAT →' : 'SHOW ME AROUND →'}</button>{onTour && <button className="primary-button" onClick={onTour}>TAKE THE GUIDED TOUR ↗</button>}<button className="back-button" onClick={onClose}>← BACK TO THE CITY</button></div></div></div>
     {inside && <div className="district-content"><button className="back-button district-back" onClick={() => setInside(false)}>← BACK TO {d.guide.toUpperCase()}</button>
       {d.id === 'cst' && <><h3>Welcome to Harsh’s city.</h3><p>{portfolio.tagline} {portfolio.education}. Expected graduation: {portfolio.graduation}.</p><div className="district-stop-list">{districts.filter(item => item.id !== 'cst').map(item => <button key={item.id} onClick={() => onDestination(item.id)}>{item.title}<span>↗</span></button>)}</div></>}
       {d.id === 'fort' && <><ResearchExhibition/><h3>Scientific Python, developed upstream.</h3><p>{experience[0].description}</p><ul>{experience[0].highlights.map(h => <li key={h}>{h}</li>)}</ul><div className="district-metrics">{projects[0].metrics.map(m => <a key={m.label} href={m.source} target="_blank" rel="noreferrer"><strong>{m.value}</strong><span>{m.label} ↗</span></a>)}</div><button className="primary-button" onClick={() => onProject('ffprime')}>OPEN FFPRIME CASE STUDY ↗</button></>}
@@ -75,24 +76,31 @@ export const scenes = [
   { name: 'Next chapter', title: 'Keep building. Keep validating.', body: 'Scientific computing, useful AI, and software that stands up to real constraints. The next project starts with a good question.', label: 'AN INTEREST, NOT A CLAIM OF FUTURE WORK' },
   { name: 'Until next time', title: 'Let’s build something.', body: 'For engineering opportunities, research, or a good technical conversation. Thanks for taking the scenic route.', label: 'THE END / OR THE BEGINNING' },
 ];
-/** The Talkies on show night: the trailer with sound, with the nine scenes kept as a readable programme. */
+/** The Talkies on show night: the film with sound, with the nine scenes kept as a readable programme. */
 export function Theatre({ reduced, onContact, onExit, onFinale, initialScene }: { reduced: boolean; onContact: () => void; onExit: () => void; onFinale?: () => void; initialScene?: number }) {
   const [mode, setMode] = useState<'film' | 'scenes'>(initialScene === undefined ? 'film' : 'scenes');
   return mode === 'film'
-    ? <TrailerScreen reduced={reduced} onContact={onContact} onExit={onExit} onFinale={onFinale} onScenes={() => setMode('scenes')} />
+    ? <FilmScreen reduced={reduced} onContact={onContact} onExit={onExit} onFinale={onFinale} onScenes={() => setMode('scenes')} />
     : <SceneTheatre reduced={reduced} onContact={onContact} onExit={onExit} onFinale={onFinale} initialScene={initialScene ?? 0} onFilm={() => setMode('film')} />;
 }
 
 const clock = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-function TrailerScreen({ reduced, onContact, onExit, onFinale, onScenes }: { reduced: boolean; onContact: () => void; onExit: () => void; onFinale?: () => void; onScenes: () => void }) {
+function FilmScreen({ reduced, onContact, onExit, onFinale, onScenes }: { reduced: boolean; onContact: () => void; onExit: () => void; onFinale?: () => void; onScenes: () => void }) {
   const root = useRef<HTMLElement>(null), video = useRef<HTMLVideoElement>(null);
-  const [playing, setPlaying] = useState(false), [muted, setMuted] = useState(false), [time, setTime] = useState(0), [length, setLength] = useState(TRAILER.seconds), [ended, setEnded] = useState(false), [cc, setCc] = useState(false);
+  const [playing, setPlaying] = useState(false), [muted, setMuted] = useState(false), [time, setTime] = useState(0), [length, setLength] = useState(FILM.seconds), [ended, setEnded] = useState(false), [cc, setCc] = useState(false), [ovation, setOvation] = useState(false);
   useEffect(() => { root.current?.focus({ preventScroll: true }); root.current?.scrollIntoView({ block: 'start', behavior: 'instant' }); }, []);
   // Opening the theatre is the visitor's own click or key press, so the film may start with sound; if the browser still refuses, it starts muted.
   useEffect(() => {
     const v = video.current; if (!v || reduced) return;
     v.muted = false; v.play().catch(() => { v.muted = true; setMuted(true); return v.play(); }).catch(() => {});
   }, [reduced]);
+  // Every screening ends with the house on its feet: a standing ovation with applause (when the film's sound is on).
+  useEffect(() => {
+    if (!ovation) return;
+    const context = muted ? null : ovationContext(), stop = context ? playApplause(context, .6) : null;
+    const timer = window.setTimeout(() => setOvation(false), OVATION_SECONDS * 1000);
+    return () => { clearTimeout(timer); stop?.(); };
+  }, [ovation]); // eslint-disable-line react-hooks/exhaustive-deps -- the applause starts with the ovation, not on a later mute
   const toggle = () => { const v = video.current; if (!v) return; if (v.paused) { setEnded(false); void v.play().catch(() => {}); } else v.pause(); };
   const replay = () => { const v = video.current; if (!v) return; v.currentTime = 0; setEnded(false); void v.play().catch(() => {}); };
   // The titles are burned in; captions add the sound descriptions for anyone who wants them.
@@ -106,17 +114,18 @@ function TrailerScreen({ reduced, onContact, onExit, onFinale, onScenes }: { red
   return <section ref={root} tabIndex={-1} className="talkies talkies-film" aria-label="Film City story theatre" onKeyDown={onKey}>
     <div className="projector-beam" aria-hidden="true"/>
     <div className="cinema-film">
-      <video ref={video} poster={TRAILER.poster} playsInline preload="auto" aria-label="Trailer: Harsh Jha, built for what’s next (42 seconds, with sound)"
-        onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onLoadedMetadata={e => setLength(e.currentTarget.duration || TRAILER.seconds)}
-        onTimeUpdate={e => setTime(e.currentTarget.currentTime)} onEnded={() => { setEnded(true); setPlaying(false); onFinale?.(); }} onClick={toggle}>
-        {TRAILER.sources.map(source => <source key={source.src} src={source.src} type={source.type} />)}
-        <track kind="captions" src={TRAILER.captions} srcLang="en" label="English" />
+      <video ref={video} poster={FILM.poster} playsInline preload="auto" aria-label="Film: Harsh Jha, built for what’s next (42 seconds, with sound)"
+        onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onLoadedMetadata={e => setLength(e.currentTarget.duration || FILM.seconds)}
+        onTimeUpdate={e => setTime(e.currentTarget.currentTime)} onEnded={() => { setEnded(true); setPlaying(false); setOvation(true); onFinale?.(); }} onClick={toggle}>
+        {FILM.sources.map(source => <source key={source.src} src={source.src} type={source.type} />)}
+        <track kind="captions" src={FILM.captions} srcLang="en" label="English" />
       </video>
       {(ended || (!playing && time === 0)) && <div className="film-overlay">{ended
-        ? <><span className="caption">THE END / OR THE BEGINNING</span><button className="primary-button" onClick={onContact}>GET IN TOUCH ↗</button><button onClick={replay}>↺ WATCH AGAIN</button></>
-        : <button className="primary-button" onClick={toggle}>▶ PLAY THE TRAILER</button>}</div>}
+        ? <><span className="caption">{ovation ? 'HOUSE FULL · STANDING OVATION' : 'THE END / OR THE BEGINNING'}</span><button className="primary-button" onClick={onContact}>GET IN TOUCH ↗</button><button onClick={replay}>↺ WATCH AGAIN</button></>
+        : <button className="primary-button" onClick={toggle}>▶ PLAY THE FILM</button>}</div>}
     </div>
-    <div className="cinema-house" aria-hidden="true" />
+    <div className={`cinema-house${ovation ? ' ovation' : ''}`} aria-hidden="true" />
+    {ovation && <p className="sr-only" role="status">The house is on its feet: a standing ovation.</p>}
     <div className="film-progress" aria-hidden="true"><i style={{ width: `${Math.min(100, time / length * 100)}%` }} /></div>
     <nav className="theatre-controls" aria-label="Film controls">
       <button aria-pressed={playing} onClick={toggle}>{playing ? '❚❚ PAUSE' : '▶ PLAY'}</button>
@@ -151,5 +160,5 @@ function SceneTheatre({ reduced, onContact, onExit, onFinale, initialScene, onFi
     const keys: Record<string, () => void> = { ArrowRight: () => setIndex(i => Math.min(i + 1, scenes.length - 1)), ArrowLeft: () => setIndex(i => Math.max(i - 1, 0)), ' ': () => setPlaying(p => !p), Home: () => { setIndex(0); setPlaying(false); }, End: () => { setIndex(scenes.length - 1); setPlaying(false); } };
     const action = keys[event.key]; if (action && !((event.target as HTMLElement).tagName === 'BUTTON' && event.key === ' ')) { event.preventDefault(); action(); }
   };
-  return <section ref={root} tabIndex={-1} className="talkies" aria-label="Film City story theatre" onKeyDown={onKey}><div className="projector-beam" aria-hidden="true"/><div className="cinema-screen" aria-live={playing ? 'off' : 'polite'}><span className="caption">{scene.label}</span><span className="scene-number" aria-hidden="true">0{index + 1}</span><h3>{scene.title}</h3><p>{scene.body}</p>{index === scenes.length - 1 && <button className="primary-button" onClick={onContact}>GET IN TOUCH ↗</button>}</div><div className="cinema-house" aria-hidden="true" /><nav className="theatre-controls" aria-label="Story controls"><button disabled={index === 0} onClick={() => setIndex(i => i - 1)}>← PREVIOUS</button><button aria-pressed={playing} onClick={() => setPlaying(p => !p)}>{playing ? 'PAUSE' : 'AUTOPLAY'}</button><span>{index + 1} / {scenes.length} · {scene.name}</span><button disabled={index === scenes.length - 1} onClick={() => setIndex(i => i + 1)}>NEXT →</button><button onClick={() => { setIndex(0); setPlaying(false); }}>↺ RESTART</button><button disabled={index === scenes.length - 1} onClick={() => { setIndex(scenes.length - 1); setPlaying(false); }}>SKIP TO THE END ⇥</button><button onClick={onFilm}>▶ WATCH THE TRAILER</button><button onClick={onExit}>← EXIT THEATRE</button></nav><div className="scene-selector">{scenes.map((s, i) => <button key={s.name} aria-label={`Scene ${i + 1}: ${s.name}`} aria-current={i === index ? 'step' : undefined} onClick={() => setIndex(i)}>{String(i + 1).padStart(2, '0')}</button>)}</div><p className="caption">THE PROGRAMME IN TEXT · ← → STEP · SPACE PLAY · HOME RESTART · END SKIP · ESC EXIT</p></section>;
+  return <section ref={root} tabIndex={-1} className="talkies" aria-label="Film City story theatre" onKeyDown={onKey}><div className="projector-beam" aria-hidden="true"/><div className="cinema-screen" aria-live={playing ? 'off' : 'polite'}><span className="caption">{scene.label}</span><span className="scene-number" aria-hidden="true">0{index + 1}</span><h3>{scene.title}</h3><p>{scene.body}</p>{index === scenes.length - 1 && <button className="primary-button" onClick={onContact}>GET IN TOUCH ↗</button>}</div><div className="cinema-house" aria-hidden="true" /><nav className="theatre-controls" aria-label="Story controls"><button disabled={index === 0} onClick={() => setIndex(i => i - 1)}>← PREVIOUS</button><button aria-pressed={playing} onClick={() => setPlaying(p => !p)}>{playing ? 'PAUSE' : 'AUTOPLAY'}</button><span>{index + 1} / {scenes.length} · {scene.name}</span><button disabled={index === scenes.length - 1} onClick={() => setIndex(i => i + 1)}>NEXT →</button><button onClick={() => { setIndex(0); setPlaying(false); }}>↺ RESTART</button><button disabled={index === scenes.length - 1} onClick={() => { setIndex(scenes.length - 1); setPlaying(false); }}>SKIP TO THE END ⇥</button><button onClick={onFilm}>▶ WATCH THE FILM</button><button onClick={onExit}>← EXIT THEATRE</button></nav><div className="scene-selector">{scenes.map((s, i) => <button key={s.name} aria-label={`Scene ${i + 1}: ${s.name}`} aria-current={i === index ? 'step' : undefined} onClick={() => setIndex(i)}>{String(i + 1).padStart(2, '0')}</button>)}</div><p className="caption">THE PROGRAMME IN TEXT · ← → STEP · SPACE PLAY · HOME RESTART · END SKIP · ESC EXIT</p></section>;
 }

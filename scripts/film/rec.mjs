@@ -1,5 +1,5 @@
-// Trailer shot recorder: virtual-time rAF + fixed world step + scripted camera override.
-// Usage (dev server on :5173): node scripts/trailer/rec.mjs scripts/trailer/shots.mjs <work>/shots-out [shotId,...]
+// Film shot recorder: virtual-time rAF + fixed world step + scripted camera override.
+// Usage (dev server on :5173): node scripts/film/rec.mjs scripts/film/shots.mjs <work>/shots-out [shotId,...]
 // PREVIEW=1 renders only the first and last frame of each shot; FORCE=1 re-renders shots already on disk.
 import { chromium } from '@playwright/test';
 import { mkdir, readdir } from 'node:fs/promises';

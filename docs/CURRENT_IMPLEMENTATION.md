@@ -6,10 +6,10 @@ This page describes what ships today. Older checkpoints are kept for history: th
 
 ## 1. What a visitor gets
 
-Two ways into the same portfolio:
+One way in, with plain pages for everything:
 
 - **The world**: a first-person, golden-hour Mumbai. All nine canonical districts are walkable streets. CST Arrival Terminus and Fort Open Source Hall share one street; the other seven (BKC, Andheri, Powai, Dadar, Worli, Juhu, Film City) are built one at a time, each 600 m apart along X, and stream in when you travel there.
-- **Quick View**: an HTML portfolio (projects, case studies, experience, skills, résumé, contact) that never loads the 3D engine. It is also the fallback when WebGL fails or the context is lost.
+- **Plain pages**: every project case study (`#/project/<id>`) and every district's guide (`#/place/<id>`) is an HTML dialog that does not need the 3D engine. When WebGL fails or the context is lost, the intro offers the city directory, which opens all of them.
 
 | District | Content | Physical state |
 | --- | --- | --- |
@@ -60,7 +60,7 @@ The visitor collides with buildings, props, people and vehicles (cannon spheres 
 | `src/ui/` | HTML panels, labs, exhibits, HUD, theatre |
 | `src/data/` | Portfolio claims with source qualifiers (see [SOURCES.md](SOURCES.md)) |
 
-`WorldEngine` is a dynamic import, so Quick View never downloads Three.js, physics or navigation.
+`WorldEngine` is a dynamic import: a shared case study or district page opens without downloading Three.js, physics or navigation, and the city loads behind it once it is closed. `WorldEngine.create` builds the city a slice at a time (40 ms steps between browser tasks), then warms shaders in batches, so the intro and the pointer stay responsive while it loads.
 
 ## 4. Quality and performance
 

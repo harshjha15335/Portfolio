@@ -114,7 +114,7 @@ function JavaScriptRun() {
 
 /* B: Frontend Studio. This site's own RideMeter component, with its props on the bench. */
 function FrontendBench() {
-  const [ride, setRide] = useState<RideStatus>({ phase: 'riding', kind: 'taxi', destination: 'fort', elapsed: 42, distance: 380, fare: 64.5, progress: .45, meter: 'RUNNING', waiting: 12 });
+  const [ride, setRide] = useState<RideStatus>({ phase: 'riding', kind: 'taxi', destination: 'fort', elapsed: 42, distance: 380, fare: 64.5, progress: .45, meter: 'RUNNING', waiting: 12, eta: 0 });
   const [events, setEvents] = useState<string[]>([]);
   const log = (e: string) => setEvents(s => [e, ...s].slice(0, 5));
   const set = <K extends keyof RideStatus>(k: K, v: RideStatus[K]) => setRide(r => ({ ...r, [k]: v }));

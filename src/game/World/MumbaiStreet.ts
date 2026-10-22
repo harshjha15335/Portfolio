@@ -145,12 +145,17 @@ export class MumbaiStreet {
   npcUpdateMs = 0; trafficUpdateMs = 0;
   private destinations = [{x:4.9,y:0,z:8},{x:5,y:0,z:-26},{x:4.8,y:0,z:-45},{x:-4.9,y:0,z:-43},{x:-4.8,y:0,z:-22},{x:-4.8,y:0,z:7}];
 
-  constructor(private physics: CANNON.World) {
+  /** `deferred`: build later, a piece at a time, by iterating `build()` (the engine does, so the page stays responsive). */
+  constructor(private physics: CANNON.World, deferred = false) {
     this.signCanvas = document.createElement('canvas'); this.signCanvas.width = 2048; this.signCanvas.height = 2048;
     this.signAtlas = new THREE.CanvasTexture(this.signCanvas); this.signAtlas.colorSpace = THREE.SRGBColorSpace;
-    this.landscape();
-    for (let i = 0; i < 7; i++) for (const side of [-1, 1]) this.facade(side, 4 - i * 9.5, i);
-    this.station(); this.researchRoom(); this.streetDetails(); this.vegetation(); this.people(); this.traffic(); this.densePeople(); this.group.add(this.dense);
+    if (!deferred) for (const _ of this.build()) { /* all at once */ }
+  }
+  /** The street, one piece per step: landscape, each pair of frontages, the station, the details, the people and traffic, then merging. */
+  *build(): Generator<void> {
+    this.landscape(); yield;
+    for (let i = 0; i < 7; i++) { for (const side of [-1, 1]) this.facade(side, 4 - i * 9.5, i); yield; }
+    this.station(); yield; this.researchRoom(); yield; this.streetDetails(); yield; this.vegetation(); yield; this.people(); yield; this.traffic(); yield; this.densePeople(); this.group.add(this.dense); yield;
     this.spatial = new SpatialIndex(this.colliderGeometry); this.colliderGeometry.forEach(g=>g.dispose()); this.colliderGeometry=[];
     void NavMeshManager.create(this.obstacles).then(nav=>{if(this.disposed){nav.dispose();return;}this.navigation=nav;this.navigationStatus='ready';for(const [i,w] of this.walkers.entries()){w.agent=nav.add({x:w.group.position.x,y:0,z:w.group.position.z});w.target=i%this.destinations.length;w.agent.requestMoveTarget(this.destinations[w.target]);}if(this.dense.visible)this.joinDenseCrowd();}).catch(()=>{this.navigationStatus='unavailable';});
     const scooters=new ParkedScooters(this.scooterPlacements,seededRandom('parked-scooters'));this.scooters=scooters;this.group.add(scooters.group);
@@ -158,7 +163,7 @@ export class MumbaiStreet {
     // Props beyond ~30 m along the street are a few pixels each; whole thirds drop out by distance.
     this.propKits.forEach((kit,n)=>{const props=kit.build(`Street props ${n}`,.3).group,[lo,hi]=[[-12,20],[-34,-12],[-70,-34]][n];this.group.add(props);
       this.motion.push(()=>{const z=this.viewPosition.z;props.visible=Math.max(lo-z,z-hi,0)<30;});});
-    this.signAtlas.needsUpdate = true; this.instanceStatics(); this.mergeSigns(); this.mergePatina(); this.instancePedestrians();
+    yield; this.signAtlas.needsUpdate = true; this.instanceStatics(); yield; this.mergeSigns(); this.mergePatina(); yield; this.instancePedestrians();
   }
   private material(color: string, glow = false, wall = false, surface: Surface = 'solid') {
     return this.surfaces.get(color, glow ? 'glow' : wall ? 'plaster' : surface);
@@ -980,7 +985,7 @@ export class MumbaiStreet {
   /** Animate live drivers (only the boarded cabin's driver is live). */
   updateDrivers(delta:number,steering:number){for(const d of this.drivers)if(d.live&&d.vehicle.visible)d.update(delta,steering);}
   private retireHuman(human:Human){human.mesh.visible=false;human.mesh.removeFromParent();for(const g of new Set(human.mesh.userData.lodGeometries as THREE.BufferGeometry[]))g.dispose();(human.mesh.material as THREE.Material).dispose();human.mesh.skeleton.dispose();}
-  dispose(){this.disposed=true;this.scooters.dispose();this.castSlots.forEach(s=>s.actor?.dispose());this.drivers.forEach(d=>d.dispose());this.stationCharacter?.dispose();void this.assetLibrary?.dispose();this.surfaces.dispose();this.navigation?.dispose();this.navigation=null;this.spatial.dispose();this.panels.dispose();}
+  dispose(){this.disposed=true;this.scooters?.dispose();this.castSlots.forEach(s=>s.actor?.dispose());this.drivers.forEach(d=>d.dispose());this.stationCharacter?.dispose();void this.assetLibrary?.dispose();this.surfaces.dispose();this.navigation?.dispose();this.navigation=null;this.spatial?.dispose();this.panels.dispose();}
   update(time: number, reduced: boolean, viewPosition?:THREE.Vector3) {
     if(viewPosition)this.viewPosition.copy(viewPosition);const delta=reduced?0:Math.min(.08,Math.max(0,time-this.previousTime));this.previousTime=time;
     const start=performance.now();

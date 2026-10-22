@@ -13,10 +13,7 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1920, height: 108
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await expect(home).toContainText('A portfolio you walk through.');
     await expect(home.getByRole('button', { name: 'ENTER CITY' })).toBeInViewport({ ratio: 1 });
-    await expect(home.getByRole('button', { name: 'QUICK VIEW' })).toBeInViewport({ ratio: 1 });
-    await home.getByRole('button', { name: 'QUICK VIEW' }).click();
-    await expect(page.locator('.quick-view')).toBeVisible();
-    await expect(page.locator('.project-row')).toHaveCount(6);
+    await expect(page.getByRole('button', { name: /QUICK VIEW/ })).toHaveCount(0);
   });
 }
 
@@ -24,10 +21,12 @@ for (const motion of ['reduce', 'no-preference'] as const) {
 test(`phone case-study spreads remain readable and restore keyboard focus with ${motion} motion`, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: motion });
-  await page.goto('/#quick');
+  await page.goto('/?webgl=off');
   for (const name of ['FFprime', 'NORTHSTAR', 'RECO', 'MoneyMetrics', 'RepoLens', 'Compiler Lab']) {
-    const trigger = page.getByRole('button', { name: `Open ${name} case study` });
+    const trigger = page.getByRole('button', { name: 'Open command palette' });
     await trigger.click();
+    await page.getByRole('textbox', { name: 'Search commands' }).fill(name);
+    await page.getByRole('textbox', { name: 'Search commands' }).press('Enter');
     const spread = page.getByRole('dialog', { name: `CASE STUDY / ${name}` });
     await expect(spread).toBeVisible();
     await expect.poll(() => spread.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
@@ -40,12 +39,10 @@ test(`phone case-study spreads remain readable and restore keyboard focus with $
 });
 }
 
-test('short landscape arrival keeps both ways into the portfolio reachable', async ({ page }) => {
+test('short landscape arrival keeps the way into the city reachable', async ({ page }) => {
   await page.setViewportSize({width:650,height:514}); await page.goto('/');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
-  await expect(page.getByRole('button',{name:'ENTER CITY'})).toBeVisible();
-  await page.locator('.intro').getByRole('button',{name:'QUICK VIEW'}).click();
-  await expect(page.locator('.project-row')).toHaveCount(6);
+  await expect(page.getByRole('button',{name:'ENTER CITY'})).toBeInViewport({ ratio: 1 });
 });
 
 test('poster directory fast travel arrives at a working research landmark', async ({ page }) => {

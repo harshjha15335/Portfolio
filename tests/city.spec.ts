@@ -28,7 +28,7 @@ for (const kind of ['TAXI', 'AUTO']) {
 }
 
 test('every stop has an accessible guide and meaningful sourced content', async ({ page }) => {
-  await page.goto('/#quick');
+  await page.goto('/?webgl=off');
   for (const district of districts) {
     await page.keyboard.press('Control+k');
     await page.getByRole('textbox', { name: 'Search commands' }).fill(district.title);
@@ -179,12 +179,12 @@ test('theatre autoplay advances and pause holds the current scene', async ({ pag
   await expect(theatre).toContainText('VIT. A place to start.');
 });
 
-test('the Talkies plays the trailer with sound controls and keeps the scenes as text', async ({ page }) => {
+test('the Talkies plays the film with sound controls and keeps the scenes as text', async ({ page }) => {
   await page.goto('/?webgl=off#/place/filmcity');
   await page.getByRole('button', { name: 'TAKE A SEAT' }).click();
   const theatre = page.getByRole('region', { name: 'Film City story theatre' });
   const video = theatre.locator('video');
-  await expect(video).toHaveAttribute('poster', '/media/talkies-trailer.jpg');
+  await expect(video).toHaveAttribute('poster', '/media/talkies-film.jpg');
   // Whichever source this browser can play loads (MP4/H.264 or WebM/VP9), and its length is the 42 s cut.
   await expect.poll(() => video.evaluate((v: HTMLVideoElement) => v.readyState >= 1 ? Math.round(v.duration) : 0), { timeout: 30_000 }).toBe(42);
   const sound = theatre.getByRole('button', { name: /^SOUND (ON|OFF)$/ });
@@ -193,7 +193,7 @@ test('the Talkies plays the trailer with sound controls and keeps the scenes as 
   await expect(sound).not.toHaveText(before!);
   await theatre.getByRole('button', { name: 'READ THE NINE SCENES' }).click();
   await expect(theatre).toContainText('Harsh Jha. Builder, in motion.');
-  await theatre.getByRole('button', { name: '▶ WATCH THE TRAILER' }).click();
+  await theatre.getByRole('button', { name: '▶ WATCH THE FILM' }).click();
   await expect(theatre.locator('video')).toBeVisible();
   await theatre.getByRole('button', { name: 'EXIT THEATRE' }).click();
   await expect(page.getByRole('region', { name: 'Film City story theatre' })).toHaveCount(0);

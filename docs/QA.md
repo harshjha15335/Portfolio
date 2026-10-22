@@ -47,8 +47,6 @@ The full browser run captured these images for visual inspection. The self-hoste
 
 - [Desktop intro](screenshots/intro-desktop.png)
 - [Desktop world](screenshots/world-desktop.png)
-- [Desktop Quick View, full page](screenshots/quick-desktop.png)
-- [Phone Quick View, full page](screenshots/quick-mobile.png)
 - [Phone world](screenshots/world-mobile.png)
 
 Earlier runs exposed a malformed-URI crash, insufficient chassis movement, palette focus loss, and Escape immediately dismissing the newly opened world menu. The source owners corrected those issues; the final full suites pass. An initially ambiguous search assertion was corrected to distinguish project evidence from a matching skill command.

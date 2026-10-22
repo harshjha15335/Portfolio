@@ -1,6 +1,6 @@
 # Gameplay mechanics
 
-How a visitor plays the portfolio, and where each mechanic lives in the code. Everything here is optional: no mechanic gates portfolio content, and Quick View and the WebGL-off pages show everything without playing.
+How a visitor plays the portfolio, and where each mechanic lives in the code. Everything here is optional: no mechanic gates portfolio content, and the case studies, district guides and the WebGL-off city directory show everything without playing.
 
 ## Controls
 
@@ -114,6 +114,10 @@ Each district's guided tour is generated from its boards (`src/data/tours.ts`): 
 
 Previous, Next, Autoplay/Pause, Restart, **Skip to the end** (the contact scene), **Exit theatre**, and the scene picker. Keyboard inside the theatre: ← →, Space, Home, End; Esc closes.
 
+## Talkies hall
+
+The hall is houseful except row E, seat 7. Press E at that seat to sit facing the screen (seated eye height, looking still works); E again or any walking key stands you up. Every screening of the film ends with the audience rising and clapping for eight seconds, with applause when sound is on. See [TALKIES_FILM.md](TALKIES_FILM.md).
+
 ## Taxi and auto
 
-Unchanged in this pass (see `docs/TRAFFIC_SYSTEM.md` and the README): hail at a stand or from the HUD, choose a stop, watch the meter, skip or get out at any time. A finished ride now counts towards the journal.
+Unchanged in this pass (see `docs/TRAFFIC_SYSTEM.md` and the README): hail at a stand or from the HUD, choose a stop, watch the meter, skip or get out at any time. A finished ride now counts towards the journal. While a hailed cab comes to you, a small yellow triangle over it (drawn through buildings and traffic) shows which vehicle is yours, and the ride bar gives its ETA (`PassengerRide.pickupEta`, shown rounded to 5 s by `etaText`). The triangle fades as the cab pulls up beside you.

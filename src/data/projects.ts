@@ -24,7 +24,7 @@ export interface Project {
   priority: number;
 }
 
-/** The projects shown as Powai workplaces, in street order (ASTFLOW follows them; RECO stays a Quick View case study). */
+/** The projects shown as Powai workplaces, in street order (ASTFLOW follows them; RECO stays a case study in the command palette). */
 export const POWAI_PROJECTS = ['northstar', 'moneymetrics', 'repolens', 'compilerlab'];
 
 export const projects: Project[] = [
