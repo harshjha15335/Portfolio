@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import {clothingGeometry} from './ClothingGeometry';
 import {seededRandom} from '../StreetArchitecture';
+import {solveTwoBone} from './DriverRig';
 
 interface Ring {y:number;x:number;z:number;cx?:number;cz?:number;}
 export interface Human {group:THREE.Group; mesh:THREE.SkinnedMesh; bones:THREE.Bone[]; setDetail:(close:boolean)=>void; animate:(time:number,walking:boolean,seated?:boolean)=>void;}
@@ -63,13 +64,35 @@ export function createHuman(seed:string,shirt:string,detail:'close'|'street'='cl
  return {group,mesh,bones,setDetail(close){mesh.geometry=close?geometry:streetGeometry;},animate(time,walking,seated=false){const gait=time*4.7+phase;for(let i=0;i<2;i++){const swing=Math.sin(gait+i*Math.PI);bones[4+i*3].rotation.x=seated?Math.PI/2:walking?swing*.29:0;bones[5+i*3].rotation.x=seated?-Math.PI/2:walking?Math.max(0,-swing)*.51:0;bones[10+i*3].rotation.x=walking?-swing*.21:Math.sin(time*.5+phase)*.035;bones[11+i*3].rotation.x=.12;}bones[3].rotation.y=Math.sin(time*.37+phase)*.08;bones[1].rotation.z=walking?Math.sin(gait)*.012:0;}};
 }
 
-/** Bake an original seated driver once. No extra skeleton updates or bone textures in traffic. */
-export function createSeatedDriver(seed:string,detail:'close'|'street'='close') {
+/** Palm centre below the wrist bone, along the straight hand (see the hand and finger profiles above), before scale. */
+const PALM=.07;
+/**
+ * Bake an original seated driver once. No extra skeleton updates or bone textures in traffic. With `grips` (pairs of
+ * left/right palm points in the driver's own space: feet under the seat, facing -Z), each pair is baked as its own pose
+ * with both arms solved onto it, e.g. the wheel or handlebar at a few steering angles; `userData.poses` holds them all.
+ * `hold` shapes the reach: `bend` tips the hands at the wrist (positive up, round a wheel rim; negative over a
+ * handlebar), `splay` turns the elbows out from the body.
+ */
+export function createSeatedDriver(seed:string,detail:'close'|'street'='close',grips?:Array<[THREE.Vector3,THREE.Vector3]>,hold={bend:0,splay:0}) {
  const human=createHuman(seed,'#a49576',detail);human.animate(0,false,true);
  for(const i of [10,13])human.bones[i].rotation.x=1.02;
  for(const i of [11,14])human.bones[i].rotation.x=.94;
  human.bones[10].rotation.z=.06;human.bones[13].rotation.z=-.06;
- human.group.updateMatrixWorld(true);human.mesh.skeleton.update();
+ const rest=human.bones.map(b=>b.quaternion.clone()),scale=human.group.scale.x;
+ const poses=(grips??[undefined]).map(hands=>{
+  human.bones.forEach((b,i)=>b.quaternion.copy(rest[i]));human.group.updateMatrixWorld(true);
+  // Reach the palm (not the wrist) to each grip, the hand bent at the wrist to close over it: solve for the wrist,
+  // see where the bent palm lands and move the wrist target by the miss.
+  if(hands)hands.forEach((palm,i)=>{const [upper,fore,wrist]=[10,11,12].map(n=>human.bones[n+i*3]),target=palm.clone(),at=new THREE.Vector3();
+   wrist.rotation.x=hold.bend;upper.rotation.z-=(i?-1:1)*hold.splay;upper.updateMatrixWorld(true);
+   for(let pass=0;pass<4;pass++){solveTwoBone(upper,fore,wrist,target);wrist.updateMatrixWorld(true);target.add(palm.clone().sub(wrist.localToWorld(at.set(0,-PALM,0))));}});
+  human.group.updateMatrixWorld(true);human.mesh.skeleton.update();return bakeSkin(human);
+ });
+ const result=new THREE.Mesh(poses[0],human.mesh.material);result.castShadow=true;result.receiveShadow=true;result.userData.poses=poses;
+ for(const g of new Set(human.mesh.userData.lodGeometries as THREE.BufferGeometry[]))g.dispose();human.mesh.skeleton.dispose();return result;
+}
+/** The human's current pose as a static geometry. */
+function bakeSkin(human:Human){
  const geometry=human.mesh.geometry.clone(),p=geometry.attributes.position,n=geometry.attributes.normal,w=geometry.attributes.skinWeight,indices=geometry.attributes.skinIndex;
  const boneNormals=human.bones.map((b,i)=>new THREE.Matrix3().getNormalMatrix(new THREE.Matrix4().multiplyMatrices(b.matrixWorld,human.mesh.skeleton.boneInverses[i])));
  const inverseNormal=new THREE.Matrix3().getNormalMatrix(human.mesh.bindMatrixInverse),worldNormal=new THREE.Matrix3().getNormalMatrix(human.mesh.matrixWorld);
@@ -80,7 +103,5 @@ export function createSeatedDriver(seed:string,detail:'close'|'street'='close') 
   for(let k=0;k<4;k++){const weight=w.getComponent(i,k);if(weight)normal.addScaledVector(part.copy(source).applyMatrix3(boneNormals[indices.getComponent(i,k)]),weight);}
   normal.applyNormalMatrix(inverseNormal).applyNormalMatrix(worldNormal);n.setXYZ(i,normal.x,normal.y,normal.z);
  }
- geometry.deleteAttribute('skinIndex');geometry.deleteAttribute('skinWeight');
- const result=new THREE.Mesh(geometry,human.mesh.material);result.castShadow=true;result.receiveShadow=true;
- for(const g of new Set(human.mesh.userData.lodGeometries as THREE.BufferGeometry[]))g.dispose();human.mesh.skeleton.dispose();return result;
+ geometry.deleteAttribute('skinIndex');geometry.deleteAttribute('skinWeight');return geometry;
 }
