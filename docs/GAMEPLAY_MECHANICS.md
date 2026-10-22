@@ -120,4 +120,4 @@ The hall is houseful except row E, seat 7. Press E at that seat to sit facing th
 
 ## Taxi and auto
 
-Unchanged in this pass (see `docs/TRAFFIC_SYSTEM.md` and the README): hail at a stand or from the HUD, choose a stop, watch the meter, skip or get out at any time. A finished ride now counts towards the journal.
+Unchanged in this pass (see `docs/TRAFFIC_SYSTEM.md` and the README): hail at a stand or from the HUD, choose a stop, watch the meter, skip or get out at any time. A finished ride now counts towards the journal. While a hailed cab comes to you, a yellow arrow over it (drawn through buildings and traffic, with a line down to its roof) shows which vehicle is yours, and the ride bar gives its ETA (`PassengerRide.pickupEta`, shown rounded to 5 s by `etaText`). The arrow fades as the cab pulls up beside you.

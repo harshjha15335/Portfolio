@@ -12,6 +12,7 @@ import * as CANNON from 'cannon-es';
 import { createVisitor } from '../game/World/WalkingBody';
 import { MumbaiStreet } from '../game/World/MumbaiStreet';
 import { createTransitModel, animateTransit } from '../game/World/TransitModel';
+import { CabPointer } from '../game/World/CabPointer';
 import { idleRide, type Point, type RideStatus, type TransitKind } from '../game/World/transit';
 import { CITY_METRES_PER_MAP_UNIT, CITY_METRES_PER_WORLD_METRE, DEMO_FARES, FareMeter } from '../game/World/meter/FareMeter';
 import type { PhysicalMeter } from '../game/World/meter/MeterModel';
@@ -210,7 +211,7 @@ export class WorldEngine {
     if(stationCharacter&&(stationCharacter.status==='approved'&&stationCharacter.visualReview||preview==='idle'||preview==='walk'))void this.street.installStationCharacter(stationCharacter.asset,preview==='walk').then(refresh).catch(error=>console.warn('Character admission failed; existing host retained',error));
     this.visitor = createVisitor(STREET_SPAWN.x, STREET_SPAWN.z);
     this.physics.addBody(this.visitor);
-    this.transit.add(this.taxi, this.auto); this.transit.visible = false; this.scene.add(this.transit);
+    this.transit.add(this.taxi, this.auto); this.transit.visible = false; this.scene.add(this.transit); this.scene.add(this.cabPointer.group);
     this.marker = new THREE.Mesh(new THREE.ConeGeometry(.055, .12, 4), this.street.surfaceLibrary.get('#ffd27a', 'glow')); this.marker.rotation.x = Math.PI; this.marker.visible = false; this.marker.name = 'Interaction marker'; this.scene.add(this.marker);
     this.camera.rotation.order = 'YXZ'; this.updateCamera();
     const container = this.container, canvas = this.renderer.domElement;
@@ -363,7 +364,7 @@ export class WorldEngine {
       this.cab.standAt(kind, route); this.transit.visible = true;
     } else if (this.flagDown(kind, routes[0])) this.transit.visible = true;
     else { this.cab.hail(kind, routes); this.transit.visible = false; }
-    this.placeTransit(0); this.options.onRide({ ...this.ride });
+    this.ride.eta = this.cab.pickupEta; this.placeTransit(0); this.options.onRide({ ...this.ride });
   }
   /** A passing auto or taxi coming toward the visitor standing at the kerb, which they could wave down. */
   private passingCab(kind?: TransitKind) {
@@ -494,7 +495,7 @@ export class WorldEngine {
     const destination = this.ride.destination && streetStops[this.ride.destination];
     const phase = this.ride.phase, wasPlaced = this.cab.active;
     this.meter.apply('cancel'); this.meter.apply('reset'); this.meter.apply('power-off'); this.showMeter();
-    this.ride = idleRide(); this.transit.visible = false;
+    this.ride = idleRide(); this.transit.visible = false; this.cabPointer.hide();
     if (phase === 'arrived' && destination) this.placeVisitor(destination.x, destination.z, destination.yaw);
     else if (phase !== 'hailing' && wasPlaced) { const ox = cityZones[zoneIndexAt(this.cab.pose.x)].originX; this.placeVisitor(ox + (this.cab.pose.x - ox < 0 ? -4.9 : 4.9), this.cab.pose.z, this.cab.pose.yaw); }
     this.cab.end(); this.junctions.forEach(j => j.forget('ride'));
@@ -506,6 +507,8 @@ export class WorldEngine {
     this.transit.rotation.z = this.reducedMotion || this.ride.phase !== 'riding' ? 0 : Math.sin(this.ride.elapsed * 9) * .0018 * Math.min(1, this.cab.speed) + THREE.MathUtils.clamp(turn * 8, -.3, .3) * .025;
   }
   private cabTravelled = 0;
+  /** Marks the hailed cab while it comes to the visitor. */
+  private cabPointer = new CabPointer();
   /** Copy the meter's readings into the ride status and onto the boarded cab's physical meter. */
   private readMeter() { const r = this.meter.reading; this.ride.fare = r.fare; this.ride.distance = r.distance; this.ride.waiting = r.waiting; this.ride.meter = r.state; this.showMeter(); }
   private showMeter() { for (const model of [this.taxi, this.auto]) (model.userData.meter as PhysicalMeter | undefined)?.show(model === (this.ride.kind === 'auto' ? this.auto : this.taxi) ? this.meter.reading : { ...this.meter.reading, state: 'OFF' }); }
@@ -526,6 +529,10 @@ export class WorldEngine {
     const turn = Math.atan2(Math.sin(this.cab.pose.yaw - before), Math.cos(this.cab.pose.yaw - before));
     this.cabTravelled += Math.max(0, this.cab.driven - was) + (this.ride.phase === 'hailing' ? this.cab.speed * delta : 0);
     this.placeTransit(turn); animateTransit(this.ride.kind === 'taxi' ? this.taxi : this.auto, this.cabTravelled, turn * 8);
+    if (this.ride.phase === 'hailing') {
+      this.ride.eta = this.cab.pickupEta;
+      if (this.transit.visible) this.cabPointer.update(this.transit.position, this.ride.kind === 'auto' ? 1.75 : 1.55, this.camera.position, this.time, this.reducedMotion); else this.cabPointer.hide();
+    } else { this.ride.eta = 0; this.cabPointer.hide(); }
     if (this.ride.phase === 'riding') {
       this.ride.elapsed += delta; this.street.updateDrivers(this.reducedMotion ? 0 : delta, turn * 8);
       // Waiting is not charged while the road ahead is still being built (the next district not ready).

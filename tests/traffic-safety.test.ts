@@ -192,6 +192,19 @@ describe('Fort Road with the passenger ride', () => {
       expect(cut || w.cab.stage === 'arrived', `ride stuck at ${w.cab.stage} (warm ${warm})`).toBe(true);
     }
   }, 120000);
+  it('a hailed cab\'s ETA is close to how long it takes, and falls to 0 when it pulls up', () => {
+    for (const [x, z] of [[4.6, -24], [-4.6, -40], [4.6, 8]] as const) {
+      const w = fortWorld(), visitor = new THREE.Vector3(x, 1.6, z), view = look(x, z, x > 0 ? .3 : -.3);
+      w.cab.hail(x > 0 ? 'taxi' : 'auto', pickupRoutes({ x, z }));
+      const estimate = w.cab.pickupEta; let t = 0, approaching = Infinity;
+      expect(estimate).toBeGreaterThan(0);
+      for (; t < 240 && w.cab.stage !== 'waiting'; t += 1 / 30) { w.step(1 / 30, visitor, view); if (w.cab.stage === 'approaching') { expect(w.cab.pickupEta).toBeLessThanOrEqual(approaching + 1e-6); approaching = w.cab.pickupEta; } }
+      expect(w.cab.stage).toBe('waiting');
+      expect(w.cab.pickupEta).toBe(0);
+      expect(t / estimate, `took ${t.toFixed(1)} s, told ${estimate.toFixed(1)} s`).toBeGreaterThan(.4);
+      expect(t / estimate, `took ${t.toFixed(1)} s, told ${estimate.toFixed(1)} s`).toBeLessThan(2.5);
+    }
+  }, 60000);
   it('10 · traffic passes a visitor on the kerb and stops for one in the road', () => {
     const w = fortWorld(), kerb = new THREE.Vector3(4.6, 1.6, -24), view = look(4.6, -24, .3);
     let travelled = 0; const before = () => w.road.agents.reduce((t, a) => t + a.distance, 0);

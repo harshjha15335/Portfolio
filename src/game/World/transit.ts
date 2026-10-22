@@ -5,8 +5,10 @@ export interface RideStatus {
   phase: 'idle' | 'hailing' | 'boarding' | 'riding' | 'arrived'; kind: TransitKind;
   /** `distance` (m), `fare` (₹) and `waiting` (s) are the cab's fare meter readings; `meter` is its state. */
   destination: string | null; elapsed: number; distance: number; fare: number; progress: number; meter: MeterState; waiting: number;
+  /** While hailing: estimated seconds until the cab pulls up. */
+  eta: number;
 }
-export const idleRide = (): RideStatus => ({ phase: 'idle', kind: 'taxi', destination: null, elapsed: 0, distance: 0, fare: 0, progress: 0, meter: 'OFF', waiting: 0 });
+export const idleRide = (): RideStatus => ({ phase: 'idle', kind: 'taxi', destination: null, elapsed: 0, distance: 0, fare: 0, progress: 0, meter: 'OFF', waiting: 0, eta: 0 });
 export const TRANSIT_RADIUS = 21;
 export const ringPoint = (angle: number, radius = TRANSIT_RADIUS): Point => ({ x: Math.sin(angle) * radius, z: Math.cos(angle) * radius });
 export function arrivalPoint(position: [number, number, number]): Point {
