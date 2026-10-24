@@ -32,4 +32,21 @@ describe('visual rebuild systems',()=>{
     // The low tier never flips back on its own: that switch recompiles shaders mid-walk.
     expect(quality.low).toBe(true);
   });
+  it('keeps the cab and auto drivers\' hands on the wheel and handlebar as they turn',()=>{
+    for(const kind of ['taxi','auto'] as const)for(const detail of ['street','close'] as const){
+      const model=createTransitModel(kind,detail),driver=model.userData.driver as THREE.Mesh,turns=detail==='close'?[-.35,0,.35]:[0];
+      expect((driver.userData.poses as THREE.BufferGeometry[]).length).toBe(detail==='close'?5:1);
+      for(const turn of turns){
+        animateTransit(model,0,turn);model.updateMatrixWorld(true);
+        // The controls: the boarded cabin's turning group, or the parts folded into the street body around them.
+        const controls:THREE.Vector3[]=[],steering=model.userData.steering as THREE.Group;
+        const centre=kind==='taxi'?new THREE.Vector3(.34,1.07,-.53):new THREE.Vector3(0,1.06,-.75);
+        if(detail==='close')steering.traverse(o=>{const m=o as THREE.Mesh;if(m.isMesh){const p=m.geometry.attributes.position;for(let i=0;i<p.count;i++)controls.push(new THREE.Vector3().fromBufferAttribute(p,i).applyMatrix4(m.matrixWorld));}});
+        else for(let i=0;i<64;i++){const a=i/64*Math.PI*2;controls.push(kind==='taxi'?new THREE.Vector3(Math.cos(a)*.195,Math.sin(a)*.195,0).applyAxisAngle(new THREE.Vector3(1,0,0),-.36).add(centre):new THREE.Vector3((i/63-.5)*.6,0,0).add(centre));}
+        const p=driver.geometry.attributes.position,hands=[Infinity,Infinity],v=new THREE.Vector3();
+        for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i).applyMatrix4(driver.matrixWorld);if(v.y<.85)continue;const side=v.x<centre.x?0:1;for(const c of controls)hands[side]=Math.min(hands[side],v.distanceTo(c));}
+        expect(hands[0],`${kind} ${detail} ${turn} left`).toBeLessThan(.03);expect(hands[1],`${kind} ${detail} ${turn} right`).toBeLessThan(.03);
+      }
+    }
+  });
 });
